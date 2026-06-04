@@ -33,6 +33,48 @@
   --radius:      10px;
 }
 
+/* ── MODO CLARO ── */
+html.light {
+  --gold:        #8a6010;
+  --gold-bright: #6a4808;
+  --gold-dim:    #d4a855;
+  --gold-glow:   rgba(138,96,16,0.10);
+  --bg:          #faf8f4;
+  --bg2:         #f3efe8;
+  --bg3:         #ece7dc;
+  --bg4:         #e4ddd0;
+  --border:      #ddd6c8;
+  --border2:     #cec5b4;
+  --text:        #1a1610;
+  --text-mid:    #5a4e38;
+  --text-dim:    #9a8e78;
+  --green:       #2a8a30;
+  --green-dim:   #d0ecd2;
+  --blue:        #1a5a9a;
+  --red:         #c03030;
+}
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-toggle {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
@@ -739,6 +781,21 @@ body::before {
 }
 
 /* ════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+════════════════════════════════════════ */
+html.light .parasha-banner {
+  background: linear-gradient(135deg, #f5efe0, #ede4cc);
+}
+html.light .btn-premium {
+  background: linear-gradient(135deg, #c8960a, #a07008);
+  color: #fff8ee;
+}
+html.light .lex-header {
+  background: linear-gradient(135deg, #f0e8d0, #e8dcc0);
+}
+html.light body::before { opacity: 0.06; }
+
+/* ════════════════════════════════════════
    ANIMATIONS
 ════════════════════════════════════════ */
 @keyframes fadeIn {
@@ -830,6 +887,7 @@ body::before {
         <option value="NVI">NVI</option>
         <option value="KJV">KJV</option>
       </select>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
       <button class="btn-premium" onclick="showToast('✦ Próximamente — Plan Berith')">✦ Berith</button>
     </div>
   </header>
@@ -1379,9 +1437,27 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════
+   THEME TOGGLE
+════════════════════════════════════ */
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('kodesh_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+}
+
+/* ════════════════════════════════════
    INIT
 ════════════════════════════════════ */
 function init() {
+  initTheme();
   updateBookList();
   updateProgress();
 
