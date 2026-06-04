@@ -621,9 +621,91 @@ body::before {
 }
 .lex-close:hover { border-color: var(--red); color: var(--red); }
 
-/* ════════════════════════════════════════
-   MOBILE OVERLAY SIDEBAR
-════════════════════════════════════════ */
+/* ── Parasha banner in reader ── */
+.parasha-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #0a0800, #140e02);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.parasha-banner-heb {
+  font-family: serif;
+  font-size: 1.5rem;
+  color: var(--gold);
+  direction: rtl;
+  line-height: 1;
+}
+.parasha-banner-info { flex: 1; }
+.parasha-banner-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 3px;
+}
+.parasha-banner-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+.parasha-banner-range {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.parasha-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.parasha-chap-dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  max-width: 140px;
+  justify-content: flex-end;
+}
+.parasha-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  font-size: 0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.parasha-dot.current {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.parasha-dot.read {
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+.parasha-dot:hover { border-color: var(--gold); }
+.parasha-banner-link {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  text-decoration: none;
+  border: 1px solid var(--gold-dim);
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.parasha-banner-link:hover { color: var(--gold); background: var(--gold-glow); }
 .sidebar-toggle {
   display: none;
   background: none;
@@ -892,7 +974,33 @@ let state = {
   currentChapter: 1,
   version: 'RVR60',
   readChapters: JSON.parse(localStorage.getItem('kodesh_read') || '{}'),
+  activeParasha: null, // { nombre, startChapter, endChapter, num }
 };
+
+/* ════════════════════════════════════
+   PARASHOT — para marcar en el lector
+════════════════════════════════════ */
+let PARASHOT_DATA = null;
+
+async function loadParashot() {
+  if (PARASHOT_DATA) return PARASHOT_DATA;
+  try {
+    const res = await fetch('./parashot-data.json');
+    PARASHOT_DATA = await res.json();
+  } catch(e) { PARASHOT_DATA = []; }
+  return PARASHOT_DATA;
+}
+
+async function getParashaForChapter(bookId, chapter) {
+  const data = await loadParashot();
+  return data.find(p =>
+    p.book === bookId &&
+    chapter >= p.startChapter &&
+    chapter <= p.endChapter
+  ) || null;
+}
+
+loadParashot();
 
 /* ════════════════════════════════════
    BIBLIA LOCAL — JSON
@@ -930,7 +1038,7 @@ function makeClickableWords(text) {
   });
 }
 
-function renderBibleText(verses, bookName, chapterNum) {
+function renderBibleText(verses, bookName, chapterNum, parasha) {
   const main = document.getElementById('mainContent');
   const bookData = getAllBooks().find(b => b.id === state.currentBook);
   const totalChapters = bookData ? bookData.chapters : 1;
@@ -938,7 +1046,36 @@ function renderBibleText(verses, bookName, chapterNum) {
   const prevOk = chapterNum > 1;
   const nextOk = chapterNum < totalChapters;
 
+  // Build parasha banner if this chapter belongs to one
+  let parashaBanner = '';
+  if (parasha) {
+    const totalP = parasha.endChapter - parasha.startChapter + 1;
+    const dots = Array.from({length: totalP}, (_,i) => {
+      const ch = parasha.startChapter + i;
+      const isCurrent = ch === chapterNum;
+      const isReadCh = isChapterRead(state.currentBook, ch);
+      return `<div class="parasha-dot ${isCurrent ? 'current' : ''} ${isReadCh ? 'read' : ''}"
+        title="Cap. ${ch}" onclick="loadChapter('${state.currentBook}',${ch})"></div>`;
+    }).join('');
+
+    parashaBanner = `
+      <div class="parasha-banner">
+        <div class="parasha-banner-heb">${parasha.heb}</div>
+        <div class="parasha-banner-info">
+          <div class="parasha-banner-label">Porción Semanal · Pará­shá ${parasha.num}</div>
+          <div class="parasha-banner-name">${parasha.nombre} — ${parasha.sig}</div>
+          <div class="parasha-banner-range">${parasha.torah}</div>
+        </div>
+        <div class="parasha-progress">
+          <div class="parasha-chap-dots">${dots}</div>
+        </div>
+        <a class="parasha-banner-link" href="parashot.html">Ver detalle →</a>
+      </div>
+    `;
+  }
+
   let html = `
+    ${parashaBanner}
     <div class="chapter-header">
       <div class="chapter-book-name">${bookName}</div>
       <div class="chapter-title">Capítulo ${chapterNum}</div>
@@ -1000,9 +1137,12 @@ async function loadChapter(bookId, chapterNum) {
   updateBookList();
 
   try {
-    const chapterObj = await fetchChapter(bookId, chapterNum);
+    const [chapterObj, parasha] = await Promise.all([
+      fetchChapter(bookId, chapterNum),
+      getParashaForChapter(bookId, chapterNum)
+    ]);
     const verses = parseLocalChapter(chapterObj);
-    renderBibleText(verses, bookName, chapterNum);
+    renderBibleText(verses, bookName, chapterNum, parasha);
   } catch (err) {
     main.innerHTML = `
       <div class="loading">
