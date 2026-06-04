@@ -795,9 +795,127 @@ html.light .lex-header {
 }
 html.light body::before { opacity: 0.06; }
 
-/* ════════════════════════════════════════
-   ANIMATIONS
-════════════════════════════════════════ */
+/* ── Search open button ── */
+.btn-search-open {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-search-open:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+/* ── Search modal ── */
+.search-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 600;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 60px 20px 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.search-overlay.open { opacity: 1; pointer-events: auto; }
+.search-modal {
+  background: var(--bg2);
+  border: 1px solid var(--gold-dim);
+  border-radius: 16px;
+  width: 100%; max-width: 680px; max-height: 80vh;
+  overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px var(--gold-glow);
+  transform: translateY(-16px); transition: transform 0.2s;
+}
+.search-overlay.open .search-modal { transform: translateY(0); }
+.search-header {
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0a0800, #120e02);
+}
+html.light .search-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); }
+.search-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.search-icon-title { color: var(--gold); font-size: 1rem; }
+.search-title {
+  font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 600;
+  color: var(--gold); letter-spacing: 2px; text-transform: uppercase; flex: 1;
+}
+.search-close {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
+}
+.search-close:hover { border-color: var(--red); color: var(--red); }
+.search-examples { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.search-eg-label {
+  font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.search-eg {
+  font-family: 'Crimson Pro', serif; font-size: 0.78rem; font-style: italic;
+  color: var(--text-dim); background: var(--bg3); border: 1px solid var(--border2);
+  padding: 3px 10px; border-radius: 20px; cursor: pointer; transition: all 0.15s;
+}
+.search-eg:hover { border-color: var(--gold-dim); color: var(--gold); }
+.search-input-wrap {
+  display: flex; gap: 8px; padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.search-input-main {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: 'Crimson Pro', serif; font-size: 1rem;
+  padding: 10px 14px; border-radius: 8px; outline: none; transition: border 0.2s;
+}
+.search-input-main:focus { border-color: var(--gold-dim); }
+.search-input-main::placeholder { color: var(--text-dim); font-style: italic; }
+.search-btn-run {
+  background: linear-gradient(135deg, var(--gold-dim), #3a2a08);
+  border: 1px solid var(--gold-dim); color: var(--gold-bright);
+  font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 10px 18px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.search-btn-run:hover { box-shadow: 0 0 16px var(--gold-glow); }
+.search-btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a07008); color: #fff8ee; }
+.search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-placeholder { text-align: center; padding: 40px 20px; }
+.search-placeholder-icon { font-size: 2rem; margin-bottom: 12px; }
+.search-placeholder-text {
+  font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+}
+.search-placeholder-sub { font-size: 0.85rem; color: var(--text-dim); font-style: italic; }
+.search-loading { display: flex; align-items: center; gap: 12px; padding: 24px; }
+.search-spinner {
+  width: 20px; height: 20px; border: 2px solid var(--border2);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+.search-loading-text {
+  font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.search-result-item {
+  background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--gold-dim);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.search-result-item:hover { border-color: var(--gold); border-left-color: var(--gold); background: var(--bg4); }
+.result-ref {
+  font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 6px;
+}
+.result-text { font-size: 0.95rem; color: var(--text); line-height: 1.6; margin-bottom: 6px; }
+.result-reason { font-size: 0.8rem; color: var(--text-dim); font-style: italic; }
+.result-go {
+  font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--gold-dim); margin-top: 8px;
+}
+.search-error { padding: 20px; text-align: center; color: var(--red); font-size: 0.9rem; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -857,6 +975,44 @@ html.light body::before { opacity: 0.06; }
   </div>
 </div>
 
+<!-- ══ SEARCH MODAL ══ -->
+<div class="search-overlay" id="searchOverlay" onclick="closeSearchOutside(event)">
+  <div class="search-modal">
+    <div class="search-header">
+      <div class="search-title-row">
+        <span class="search-icon-title">✦</span>
+        <span class="search-title">Búsqueda Inteligente</span>
+        <button class="search-close" onclick="closeSearch()">✕</button>
+      </div>
+      <div class="search-examples">
+        <span class="search-eg-label">Prueba:</span>
+        <button class="search-eg" onclick="fillSearch('versículo donde diga que me esfuerce y sea valiente')">esfuérzate y sé valiente</button>
+        <button class="search-eg" onclick="fillSearch('promesa de que Dios no me abandonará')">Dios no me abandona</button>
+        <button class="search-eg" onclick="fillSearch('versículo sobre el amor de Dios al mundo')">amor de Dios al mundo</button>
+        <button class="search-eg" onclick="fillSearch('pasaje donde Yeshúa sana a un leproso')">Yeshúa sana leproso</button>
+      </div>
+    </div>
+    <div class="search-input-wrap">
+      <input
+        class="search-input-main"
+        id="searchInputMain"
+        type="text"
+        placeholder="Escribe en tus propias palabras... ej: 'versículo sobre la fe que mueve montañas'"
+        onkeydown="if(event.key==='Enter') runSearch()"
+        autofocus
+      />
+      <button class="search-btn-run" id="searchBtnRun" onclick="runSearch()">Buscar →</button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-placeholder">
+        <div class="search-placeholder-icon">📖</div>
+        <div class="search-placeholder-text">Escribe una pregunta, tema o paráfrasis de un versículo</div>
+        <div class="search-placeholder-sub">La IA buscará en toda la Escritura y encontrará los pasajes más relevantes</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ APP ══ -->
 <div class="app">
 
@@ -870,6 +1026,7 @@ html.light body::before { opacity: 0.06; }
 
     <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">☰</button>
     <a href="parashot.html" style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);transition:all 0.2s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border2)'">Parashot</a>
+    <button class="btn-search-open" onclick="openSearch()" title="Búsqueda inteligente">🔍 Buscar</button>
 
     <div class="topbar-center">
       <div class="progress-global">
@@ -1431,6 +1588,190 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
+
+/* ════════════════════════════════════
+   BÚSQUEDA INTELIGENTE — IA
+════════════════════════════════════ */
+const BOOK_NAME_TO_ID = {
+  'génesis':'GEN','genesis':'GEN','éxodo':'EXO','exodo':'EXO',
+  'levítico':'LEV','levitico':'LEV','números':'NUM','numeros':'NUM',
+  'deuteronomio':'DEU','josué':'JOS','josue':'JOS','jueces':'JDG',
+  'rut':'RUT','1 samuel':'1SA','2 samuel':'2SA','1 reyes':'1KI',
+  '2 reyes':'2KI','1 crónicas':'1CH','cronicas':'1CH','2 crónicas':'2CH',
+  'esdras':'EZR','nehemías':'NEH','nehemias':'NEH','ester':'EST','job':'JOB',
+  'salmos':'PSA','salmo':'PSA','proverbios':'PRO','eclesiastés':'ECC',
+  'cantares':'SNG','isaías':'ISA','isaias':'ISA','jeremías':'JER','jeremias':'JER',
+  'lamentaciones':'LAM','ezequiel':'EZK','daniel':'DAN','oseas':'HOS',
+  'joel':'JOL','amós':'AMO','amos':'AMO','abdías':'OBA','jonás':'JON',
+  'miqueas':'MIC','nahúm':'NAM','habacuc':'HAB','sofonías':'ZEP',
+  'hageo':'HAG','zacarías':'ZEC','zacarias':'ZEC','malaquías':'MAL','malaquias':'MAL',
+  'mateo':'MAT','marcos':'MRK','lucas':'LUK','juan':'JHN','hechos':'ACT',
+  'romanos':'ROM','1 corintios':'1CO','2 corintios':'2CO','gálatas':'GAL',
+  'galatas':'GAL','efesios':'EPH','filipenses':'PHP','colosenses':'COL',
+  '1 tesalonicenses':'1TH','2 tesalonicenses':'2TH','1 timoteo':'1TI',
+  '2 timoteo':'2TI','tito':'TIT','filemón':'PHM','hebreos':'HEB',
+  'santiago':'JAS','1 pedro':'1PE','2 pedro':'2PE','1 juan':'1JN',
+  '2 juan':'2JN','3 juan':'3JN','judas':'JUD','apocalipsis':'REV',
+};
+
+function parseVerseRef(ref) {
+  // Parse "Juan 3:16" → { bookId:'JHN', chapter:3, verse:16 }
+  const match = ref.match(/^(.+?)\s+(\d+):(\d+)/i);
+  if (!match) return null;
+  const bookName = match[1].toLowerCase().trim();
+  const chapter = parseInt(match[2]);
+  const verse = parseInt(match[3]);
+  const bookId = BOOK_NAME_TO_ID[bookName];
+  return bookId ? { bookId, chapter, verse } : null;
+}
+
+function openSearch() {
+  document.getElementById('searchOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('searchInputMain').focus(), 100);
+}
+
+function closeSearch() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeSearchOutside(e) {
+  if (e.target === document.getElementById('searchOverlay')) closeSearch();
+}
+
+function fillSearch(text) {
+  document.getElementById('searchInputMain').value = text;
+  runSearch();
+}
+
+async function runSearch() {
+  const query = document.getElementById('searchInputMain').value.trim();
+  if (!query) return;
+
+  const results = document.getElementById('searchResults');
+  const btn = document.getElementById('searchBtnRun');
+  btn.disabled = true;
+
+  results.innerHTML = `
+    <div class="search-loading">
+      <div class="search-spinner"></div>
+      <div class="search-loading-text">Buscando en las Escrituras...</div>
+    </div>
+  `;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Eres un asistente bíblico para la plataforma KODESH, orientada a la comunidad Hebreo-Mesiánica hispanohablante. 
+Cuando el usuario haga una pregunta o descripción, encuentra los 3 versículos más relevantes de toda la Biblia.
+
+IMPORTANTE: Usa siempre los nombres mesiánicos:
+- YHWH en lugar de Jehová o Señor (cuando refiere al Tetragrama)  
+- Yeshúa en lugar de Jesús
+- Mashíaj en lugar de Cristo
+- Yeshúa el Mashíaj en lugar de Jesucristo
+
+Responde SOLO en formato JSON válido, sin texto adicional, sin markdown, sin backticks:
+{
+  "resultados": [
+    {
+      "referencia": "Josué 1:9",
+      "libro_id": "JOS",
+      "capitulo": 1,
+      "versiculo": 9,
+      "texto": "Mira que te mando que te esfuerces y seas valiente...",
+      "razon": "Este versículo es exactamente sobre ser valiente y esforzado"
+    }
+  ]
+}
+
+Solo JSON. Nada más.`,
+        messages: [{ role: 'user', content: query }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text.trim());
+    } catch(e) {
+      // Try to extract JSON if there's extra text
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+      else throw new Error('No se pudo parsear la respuesta');
+    }
+
+    const resultados = parsed.resultados || [];
+    if (resultados.length === 0) {
+      results.innerHTML = '<div class="search-error">No se encontraron resultados. Intenta con otras palabras.</div>';
+      return;
+    }
+
+    results.innerHTML = resultados.map((r, i) => `
+      <div class="search-result-item" onclick="goToVerse('${r.libro_id}',${r.capitulo},${r.versiculo})">
+        <div class="result-ref">📖 ${r.referencia}</div>
+        <div class="result-text">"${r.texto}"</div>
+        <div class="result-reason">${r.razon}</div>
+        <div class="result-go">Toca para abrir este versículo →</div>
+      </div>
+    `).join('');
+
+  } catch(err) {
+    console.error('Search error:', err);
+    results.innerHTML = `<div class="search-error">
+      Error al buscar. Verifica tu conexión e intenta de nuevo.<br>
+      <small style="color:var(--text-dim)">${err.message}</small>
+    </div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function goToVerse(bookId, chapter, verse) {
+  closeSearch();
+  // Switch testament if needed
+  const isNT = BIBLE_BOOKS.NT.some(b => b.id === bookId);
+  if (isNT && state.testament !== 'NT') {
+    state.testament = 'NT';
+    document.getElementById('tab-at').classList.remove('active');
+    document.getElementById('tab-nt').classList.add('active');
+  } else if (!isNT && state.testament !== 'AT') {
+    state.testament = 'AT';
+    document.getElementById('tab-at').classList.add('active');
+    document.getElementById('tab-nt').classList.remove('active');
+  }
+  selectBook(bookId);
+  loadChapter(bookId, chapter).then(() => {
+    // Scroll to verse after load
+    setTimeout(() => {
+      const verseEls = document.querySelectorAll('.verse-num');
+      for (const el of verseEls) {
+        if (el.textContent.trim() === String(verse)) {
+          el.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.parentElement.style.background = 'var(--gold-glow)';
+          setTimeout(() => el.parentElement.style.background = '', 3000);
+          break;
+        }
+      }
+    }, 600);
+  });
+}
+
+// Keyboard shortcut Cmd/Ctrl+K to open search
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    openSearch();
+  }
+  if (e.key === 'Escape') closeSearch();
+});
 
 /* ════════════════════════════════════
    THEME TOGGLE
