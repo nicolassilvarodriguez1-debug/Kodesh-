@@ -864,47 +864,23 @@ const BIBLE_BOOKS = {
 const TOTAL_CHAPTERS = [...BIBLE_BOOKS.AT, ...BIBLE_BOOKS.NT].reduce((s, b) => s + b.chapters, 0);
 
 /* ════════════════════════════════════
-   STRONG'S DEMO DATA
-   (Real dataset will be JSON file)
+   LEXICÓN — Strong's dinámico
 ════════════════════════════════════ */
-const STRONGS_DEMO = {
-  'en': { original:'אֵן', translit:'ên', strongs:'H369', lang:'hebrew',
-    def:'Nada, no hay, ausencia de. Expresa la inexistencia o negación de algo.',
-    uses:['negación','ausencia','nada'] },
-  'principio': { original:'רֵאשִׁית', translit:'rêʼshîyth', strongs:'H7225', lang:'hebrew',
-    def:'Primicia, comienzo, principio. Lo primero en orden, lugar, rango o tiempo. Relacionado con "rosh" (cabeza).',
-    uses:['comienzo','primicia','primer fruto','sabiduría'] },
-  'dios': { original:'אֱלֹהִים', translit:'ʼĕlôhîym', strongs:'H430', lang:'hebrew',
-    def:'Dioses, jueces, ángeles. Plural de majestad para el Dios de Israel. El más usado de los nombres divinos — 2,600+ veces.',
-    uses:['Dios único','poder','jueces','ángeles'] },
-  'creó': { original:'בָּרָא', translit:'bârâʼ', strongs:'H1254', lang:'hebrew',
-    def:'Crear, cortar, producir. Usado exclusivamente de la actividad creadora divina — solo Dios es sujeto de este verbo.',
-    uses:['creación divina','producir','nuevo'] },
-  'cielos': { original:'שָׁמַיִם', translit:'shâmayim', strongs:'H8064', lang:'hebrew',
-    def:'Cielos, firmamento, el lugar donde están las estrellas y Dios mora. Plural dual que sugiere "las aguas de arriba".',
-    uses:['firmamento','morada de Dios','estrellas','lluvia'] },
-  'tierra': { original:'אֶרֶץ', translit:'ʼerets', strongs:'H776', lang:'hebrew',
-    def:'Tierra, suelo, país, territorio. La tierra habitada, el suelo físico, o una nación específica según contexto.',
-    uses:['suelo','país','territorio','mundo'] },
-  'dios': { original:'אֱלֹהִים', translit:'ʼĕlôhîym', strongs:'H430', lang:'hebrew',
-    def:'Dioses, jueces, ángeles. Plural de majestad para el Dios de Israel.',
-    uses:['Dios único','poder','ángeles'] },
-  'amor': { original:'אַהֲבָה', translit:'ʼahăbâh', strongs:'H160', lang:'hebrew',
-    def:'Amor, afecto. El amor profundo entre personas o de Dios hacia su pueblo. Incluye amor familiar, romántico y divino.',
-    uses:['amor divino','afecto','intimidad'] },
-  'gracia': { original:'χάρις', translit:'charis', strongs:'G5485', lang:'greek',
-    def:'Gracia, favor inmerecido. El favor de Dios dado libremente, no por mérito. Central en la teología paulina.',
-    uses:['don gratuito','favor divino','agradecimiento'] },
-  'fe': { original:'πίστις', translit:'pistis', strongs:'G4102', lang:'greek',
-    def:'Fe, confianza, fidelidad. Creencia activa y confianza en Dios o en Yeshúa. No es mera creencia intelectual.',
-    uses:['confianza','fidelidad','creer'] },
-  'palabra': { original:'לֹגֹס', translit:'logos', strongs:'G3056', lang:'greek',
-    def:'Palabra, razón, discurso divino. En Juan 1 identifica a Yeshúa como la Palabra creadora eterna.',
-    uses:['habla divina','razón','Yeshúa'] },
-  'verdad': { original:'אֱמֶת', translit:'ʼĕmeth', strongs:'H571', lang:'hebrew',
-    def:'Verdad, fidelidad, firmeza. Derivado de "amén". Implica confiabilidad y estabilidad, no solo veracidad.',
-    uses:['fidelidad','firmeza','amén'] },
-};
+let STRONGS_DATA = null;
+
+async function loadStrongs() {
+  if (STRONGS_DATA) return STRONGS_DATA;
+  try {
+    const res = await fetch('./strongs.json');
+    STRONGS_DATA = await res.json();
+  } catch(e) {
+    STRONGS_DATA = {};
+  }
+  return STRONGS_DATA;
+}
+
+// Preload on start
+loadStrongs();
 
 /* ════════════════════════════════════
    STATE
@@ -1171,55 +1147,53 @@ function changeVersion() {
 /* ════════════════════════════════════
    LEXICON POPUP
 ════════════════════════════════════ */
-function lookupWord(event, cleanWord, rawWord) {
+async function lookupWord(event, cleanWord, rawWord) {
   event.stopPropagation();
 
-  // Remove previous highlight
   document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
   event.target.classList.add('highlighted');
 
-  // Look up in demo data
-  const key = cleanWord.toLowerCase();
-  const entry = STRONGS_DEMO[key];
+  const strongs = await loadStrongs();
+  const key = cleanWord.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // strip accents for matching
+    .replace(/[^a-z]/g,'');
+
+  // Try exact match first, then accent-stripped
+  const entry = strongs[cleanWord.toLowerCase()] || strongs[key];
 
   const popup = document.getElementById('lexiconPopup');
 
   if (!entry) {
-    // Word not in demo — show placeholder
     document.getElementById('lexOriginal').textContent = '—';
     document.getElementById('lexOriginal').className = 'lex-original';
     document.getElementById('lexTranslit').textContent = rawWord;
-    document.getElementById('lexStrongs').textContent = 'Disponible en Berith ✦';
+    document.getElementById('lexStrongs').textContent = 'Ampliar en plan Berith ✦';
     document.getElementById('lexLangBadge').textContent = 'Hebreo';
     document.getElementById('lexLangBadge').className = 'lex-lang-badge hebrew';
-    document.getElementById('lexDef').textContent = 'El análisis lexical completo de esta palabra está disponible en el plan Berith. Incluye Strong\'s completo, raíz, morfología y todos sus usos en la Escritura.';
+    document.getElementById('lexDef').textContent = 'El análisis lexical completo de esta palabra está disponible en el plan Berith. Incluye Strong\'s número, raíz original, morfología y todos sus usos en las Escrituras.';
     document.getElementById('lexUsage').innerHTML = '';
   } else {
-    document.getElementById('lexOriginal').textContent = entry.original;
-    document.getElementById('lexOriginal').className = `lex-original ${entry.lang === 'greek' ? 'greek' : ''}`;
-    document.getElementById('lexTranslit').textContent = entry.translit;
-    document.getElementById('lexStrongs').textContent = entry.strongs;
+    document.getElementById('lexOriginal').textContent = entry.h;
+    document.getElementById('lexOriginal').className = `lex-original ${entry.l === 'griego' ? 'greek' : ''}`;
+    document.getElementById('lexTranslit').textContent = entry.t;
+    document.getElementById('lexStrongs').textContent = entry.s;
 
     const badge = document.getElementById('lexLangBadge');
-    badge.textContent = entry.lang === 'hebrew' ? 'Hebreo' : 'Griego';
-    badge.className = `lex-lang-badge ${entry.lang}`;
+    badge.textContent = entry.l === 'hebreo' ? 'Hebreo' : 'Griego';
+    badge.className = `lex-lang-badge ${entry.l === 'hebreo' ? 'hebrew' : 'greek'}`;
 
-    document.getElementById('lexDef').textContent = entry.def;
-
-    const usageEl = document.getElementById('lexUsage');
-    usageEl.innerHTML = entry.uses.map(u =>
+    document.getElementById('lexDef').textContent = entry.d;
+    document.getElementById('lexUsage').innerHTML = entry.u.map(u =>
       `<span class="lex-usage-tag">${u}</span>`
     ).join('');
   }
 
-  // Position popup near click
   const rect = event.target.getBoundingClientRect();
   const popupW = 320;
   const popupH = 280;
   let left = rect.left + window.scrollX;
   let top = rect.bottom + window.scrollY + 8;
 
-  // Keep within viewport
   if (left + popupW > window.innerWidth - 16) left = window.innerWidth - popupW - 16;
   if (top + popupH > window.innerHeight + window.scrollY - 16) {
     top = rect.top + window.scrollY - popupH - 8;
