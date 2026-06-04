@@ -204,6 +204,7 @@ body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--te
       </div>
       <div class="modal-nav">
         <button class="btn-modal-nav" id="btnPrev" onclick="navigateModal(-1)">← Anterior</button>
+        <button class="btn-modal-nav" id="btnBible" onclick="goToBible(document.getElementById('modalTorah').textContent)" style="border-color:var(--gold-dim);color:var(--gold);">📖 Leer en Biblia</button>
         <button class="btn-modal-nav" id="btnNext" onclick="navigateModal(1)">Siguiente →</button>
       </div>
     </div>
@@ -294,21 +295,53 @@ function getBookId(num) {
   return 'GEN';
 }
 
-/* ── CURRENT PARASHA ── */
+/* ── CURRENT PARASHA — Fechas reales 5786 ── */
+const PARASHA_DATES = {"1":"2025-10-04","2":"2025-10-11","3":"2025-10-18","4":"2025-10-25","5":"2025-11-01","6":"2025-11-08","7":"2025-11-15","8":"2025-11-22","9":"2025-11-29","10":"2025-12-06","11":"2025-12-13","12":"2025-12-20","13":"2025-12-27","14":"2026-01-03","15":"2026-01-10","16":"2026-01-17","17":"2026-01-24","18":"2026-01-31","19":"2026-02-07","20":"2026-02-14","21":"2026-02-21","22":"2026-02-28","23":"2026-03-07","24":"2026-03-14","25":"2026-03-21","26":"2026-03-28","27":"2026-04-04","28":"2026-04-11","29":"2026-04-18","30":"2026-04-25","31":"2026-05-02","32":"2026-05-09","33":"2026-05-16","34":"2026-05-23","35":"2026-05-30","36":"2026-06-06","37":"2026-06-13","38":"2026-06-20","39":"2026-06-27","40":"2026-07-04","41":"2026-07-11","42":"2026-07-18","43":"2026-07-25","44":"2026-08-01","45":"2026-08-08","46":"2026-08-15","47":"2026-08-22","48":"2026-08-29","49":"2026-09-05","50":"2026-09-12","51":"2026-09-19","52":"2026-09-26"};
+
 function getCurrentParashaNum() {
-  // Calculate current parasha based on date
-  // Cycle starts on Simjat Torah (after Sucot, ~Oct)
-  // Simple approximation: weeks since last Simjat Torah
-  const now = new Date();
-  // Find last Simjat Torah (approx Oct 15 of current or previous year)
-  let year = now.getFullYear();
-  let simjatTorah = new Date(year, 9, 15); // Oct 15
-  if (now < simjatTorah) simjatTorah = new Date(year-1, 9, 15);
-  const weeksPassed = Math.floor((now - simjatTorah) / (7*24*60*60*1000));
-  return (weeksPassed % 52) + 1;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let current = 1;
+  for (const [num, dateStr] of Object.entries(PARASHA_DATES)) {
+    const shabbat = new Date(dateStr);
+    // Week of this parasha: from Sunday before to Shabbat
+    const weekStart = new Date(shabbat);
+    weekStart.setDate(shabbat.getDate() - 6);
+    if (today >= weekStart && today <= shabbat) {
+      return parseInt(num);
+    }
+    if (today > shabbat) current = parseInt(num);
+  }
+  return current;
 }
 
-/* ── LOAD DATA ── */
+/* ── NAVIGATE TO BIBLE ── */
+// Maps torah reference like "Génesis 1:1–6:8" to book/chapter
+const TORAH_BOOK_MAP = {
+  'génesis':'GEN','genesis':'GEN','éxodo':'EXO','exodo':'EXO',
+  'levítico':'LEV','levitico':'LEV','números':'NUM','numeros':'NUM',
+  'deuteronomio':'DEU'
+};
+
+function goToBible(torahRef) {
+  // Parse "Génesis 1:1–6:8" → book=GEN, chapter=1
+  const lower = torahRef.toLowerCase();
+  let bookId = null;
+  let chapter = 1;
+  for (const [name, id] of Object.entries(TORAH_BOOK_MAP)) {
+    if (lower.includes(name)) {
+      bookId = id;
+      const match = torahRef.match(/(\d+):/);
+      if (match) chapter = parseInt(match[1]);
+      break;
+    }
+  }
+  if (bookId) {
+    window.location.href = `index.html?book=${bookId}&chapter=${chapter}`;
+  } else {
+    window.location.href = 'index.html';
+  }
+}
 async function loadData() {
   try {
     const res = await fetch('./parashot-data.json');
@@ -329,7 +362,7 @@ function renderCurrentParasha() {
   document.getElementById('currentName').textContent = `${p.nombre} — ${p.sig}`;
   document.getElementById('currentRefs').textContent = p.torah;
   document.getElementById('currentHeb').textContent = p.heb;
-  document.getElementById('btnCurrentStudy').onclick = () => openModal(num-1);
+  document.getElementById('btnCurrentStudy').onclick = () => goToBible(p.torah);
 }
 
 /* ── RENDER GRID ── */
@@ -411,7 +444,10 @@ function renderGrid() {
         <div class="card-tema">${p.tema}</div>
         <div class="card-footer">
           <span class="card-translit">${p.translit}</span>
-          <button class="btn-ver" onclick="openModal(${p.num-1})">Ver conexión →</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-ver" onclick="goToBible('${p.torah}')">📖 Leer</button>
+            <button class="btn-ver" onclick="openModal(${p.num-1})">Conexión →</button>
+          </div>
         </div>
       </div>
     `;

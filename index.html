@@ -1244,8 +1244,22 @@ function showToast(msg) {
 function init() {
   updateBookList();
   updateProgress();
-  selectBook('GEN');
-  loadChapter('GEN', 1);
+
+  // Check URL params — from Parashot navigation
+  const params = new URLSearchParams(window.location.search);
+  const book = params.get('book') || 'GEN';
+  const chapter = parseInt(params.get('chapter')) || 1;
+
+  // Find which testament and select it
+  const isNT = BIBLE_BOOKS.NT.some(b => b.id === book);
+  if (isNT) {
+    state.testament = 'NT';
+    document.getElementById('tab-at').classList.remove('active');
+    document.getElementById('tab-nt').classList.add('active');
+  }
+
+  selectBook(book);
+  loadChapter(book, chapter);
 }
 
 init();
