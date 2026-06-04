@@ -1661,52 +1661,18 @@ async function runSearch() {
   `;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: `Eres un asistente bíblico para la plataforma KODESH, orientada a la comunidad Hebreo-Mesiánica hispanohablante. 
-Cuando el usuario haga una pregunta o descripción, encuentra los 3 versículos más relevantes de toda la Biblia.
-
-IMPORTANTE: Usa siempre los nombres mesiánicos:
-- YHWH en lugar de Jehová o Señor (cuando refiere al Tetragrama)  
-- Yeshúa en lugar de Jesús
-- Mashíaj en lugar de Cristo
-- Yeshúa el Mashíaj en lugar de Jesucristo
-
-Responde SOLO en formato JSON válido, sin texto adicional, sin markdown, sin backticks:
-{
-  "resultados": [
-    {
-      "referencia": "Josué 1:9",
-      "libro_id": "JOS",
-      "capitulo": 1,
-      "versiculo": 9,
-      "texto": "Mira que te mando que te esfuerces y seas valiente...",
-      "razon": "Este versículo es exactamente sobre ser valiente y esforzado"
-    }
-  ]
-}
-
-Solo JSON. Nada más.`,
-        messages: [{ role: 'user', content: query }]
-      })
+      body: JSON.stringify({ query })
     });
 
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text.trim());
-    } catch(e) {
-      // Try to extract JSON if there's extra text
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) parsed = JSON.parse(match[0]);
-      else throw new Error('No se pudo parsear la respuesta');
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || `Error ${response.status}`);
     }
+
+    const parsed = await response.json();
 
     const resultados = parsed.resultados || [];
     if (resultados.length === 0) {
