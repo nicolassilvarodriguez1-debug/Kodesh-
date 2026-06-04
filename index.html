@@ -1154,12 +1154,13 @@ async function lookupWord(event, cleanWord, rawWord) {
   event.target.classList.add('highlighted');
 
   const strongs = await loadStrongs();
-  const key = cleanWord.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // strip accents for matching
-    .replace(/[^a-z]/g,'');
+  const raw = cleanWord.toLowerCase();
+  // Strip accents for fallback matching
+  const noAccent = raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-záéíóúüñ]/g,'');
+  const noAccentClean = noAccent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
 
-  // Try exact match first, then accent-stripped
-  const entry = strongs[cleanWord.toLowerCase()] || strongs[key];
+  // Try: exact → no-accent → no-accent-clean
+  const entry = strongs[raw] || strongs[noAccent] || strongs[noAccentClean];
 
   const popup = document.getElementById('lexiconPopup');
 
