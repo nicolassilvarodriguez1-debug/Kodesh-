@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KODESH · קֹדֶשׁ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ════════════════════════════════════════
+   VARIABLES & RESET
+════════════════════════════════════════ */
+:root {
+  --gold:        #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim:    #5a4820;
+  --gold-glow:   rgba(201,168,76,0.15);
+  --bg:          #05050a;
+  --bg2:         #0a0a12;
+  --bg3:         #0f0f1a;
+  --bg4:         #141428;
+  --border:      #1a1a2a;
+  --border2:     #252538;
+  --text:        #ede5d5;
+  --text-mid:    #a09880;
+  --text-dim:    #5a5870;
+  --green:       #5ccc68;
+  --green-dim:   #1a3a1e;
+  --blue:        #5a9cf0;
+  --red:         #e05a5a;
+  --scroll-w:    6px;
+  --radius:      10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: var(--scroll-w); }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+
+/* ════════════════════════════════════════
+   NOISE OVERLAY
+════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ════════════════════════════════════════
+   LAYOUT
+════════════════════════════════════════ */
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 64px 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "sidebar main";
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════
+   TOPBAR
+════════════════════════════════════════ */
+.topbar {
+  grid-area: topbar;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.logo-hebrew {
+  font-family: serif;
+  font-size: 1.3rem;
+  color: var(--gold);
+  line-height: 1;
+}
+.logo-text {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 3px;
+}
+.logo-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border2);
+  margin: 0 4px;
+}
+
+.topbar-center { flex: 1; }
+
+.progress-global {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.progress-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.progress-bar-wrap {
+  flex: 1;
+  max-width: 300px;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+.progress-pct {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--gold);
+  min-width: 40px;
+  text-align: right;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.version-select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.version-select:focus { border-color: var(--gold-dim); }
+
+.btn-premium {
+  background: linear-gradient(135deg, var(--gold-dim), #3a2a08);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-bright);
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-premium:hover {
+  background: linear-gradient(135deg, #3a2a08, var(--gold-dim));
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+/* ════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════ */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+}
+
+.sidebar-section {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0 16px;
+  margin-bottom: 10px;
+}
+
+/* Testament selector */
+.testament-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  margin-bottom: 12px;
+}
+.testament-tab {
+  flex: 1;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  background: transparent;
+  transition: all 0.2s;
+}
+.testament-tab.active {
+  background: var(--gold-glow);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+/* Book list */
+.book-list { list-style: none; }
+.book-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 2px solid transparent;
+}
+.book-item:hover { background: var(--bg3); }
+.book-item.active {
+  background: var(--bg3);
+  border-left-color: var(--gold);
+}
+.book-name {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  flex: 1;
+  line-height: 1.2;
+}
+.book-item.active .book-name { color: var(--text); }
+.book-progress-mini {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+.book-item.active .book-progress-mini { color: var(--gold); }
+
+/* Chapter dot grid */
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  padding: 12px 16px;
+}
+.chapter-dot {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chapter-dot:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+.chapter-dot.read {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.chapter-dot.active {
+  background: var(--gold-glow);
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ════════════════════════════════════════
+   MAIN CONTENT
+════════════════════════════════════════ */
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: 40px 60px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Chapter header */
+.chapter-header {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.chapter-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 60px;
+  height: 1px;
+  background: var(--gold);
+}
+.chapter-book-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 6px;
+}
+.chapter-title {
+  font-family: 'Cinzel', serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.chapter-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.chapter-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* Read toggle */
+.btn-read-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.btn-read-toggle:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+.btn-read-toggle.done {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.check-icon { font-size: 0.9rem; }
+
+/* Bible text */
+.bible-text {
+  line-height: 1.9;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.verse {
+  display: inline;
+}
+
+.verse-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--gold);
+  vertical-align: super;
+  margin-right: 3px;
+  user-select: none;
+  opacity: 0.8;
+}
+
+/* Clickable word */
+.word {
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s, color 0.1s;
+  padding: 0 1px;
+}
+.word:hover {
+  background: var(--gold-glow);
+  color: var(--gold-bright);
+}
+.word.highlighted {
+  background: var(--gold-glow);
+  color: var(--gold-bright);
+}
+
+/* Navigation buttons */
+.chapter-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.btn-nav {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-nav:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+.btn-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+  color: var(--text-dim);
+}
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ════════════════════════════════════════
+   LEXICON POPUP
+════════════════════════════════════════ */
+.lexicon-popup {
+  position: fixed;
+  z-index: 1000;
+  width: 320px;
+  background: var(--bg2);
+  border: 1px solid var(--gold-dim);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(201,168,76,0.05),
+    0 20px 60px rgba(0,0,0,0.8),
+    0 0 30px var(--gold-glow);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.lexicon-popup.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.lex-header {
+  background: linear-gradient(135deg, #0e0b04, #1a1206);
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--gold-dim);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lex-original {
+  font-family: serif;
+  font-size: 1.8rem;
+  color: var(--gold-bright);
+  line-height: 1;
+  direction: rtl;
+}
+.lex-original.greek { direction: ltr; font-style: italic; }
+.lex-header-right { flex: 1; }
+.lex-transliteration {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+.lex-strongs {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+.lex-lang-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  align-self: flex-start;
+}
+.lex-lang-badge.hebrew { background: #1a1000; color: var(--gold); border: 1px solid var(--gold-dim); }
+.lex-lang-badge.greek  { background: #001020; color: var(--blue); border: 1px solid #1a3060; }
+
+.lex-body { padding: 14px 16px; }
+.lex-definition {
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.lex-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.lex-usage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.lex-usage-tag {
+  font-size: 0.72rem;
+  color: var(--text-mid);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.lex-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lex-premium-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.lex-close {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lex-close:hover { border-color: var(--red); color: var(--red); }
+
+/* ════════════════════════════════════════
+   MOBILE OVERLAY SIDEBAR
+════════════════════════════════════════ */
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text-mid);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 64px;
+    height: calc(100vh - 64px);
+    z-index: 200;
+    transition: left 0.3s ease;
+  }
+  .sidebar.open { left: 0; }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px; }
+  .chapter-title { font-size: 1.4rem; }
+}
+
+/* ════════════════════════════════════════
+   ANIMATIONS
+════════════════════════════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.bible-text { animation: fadeIn 0.4s ease; }
+.chapter-header { animation: fadeIn 0.3s ease; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--green);
+  color: var(--text);
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.9rem;
+  padding: 12px 18px;
+  border-radius: 8px;
+  z-index: 2000;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.3s;
+  pointer-events: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ LEXICON POPUP ══ -->
+<div class="lexicon-popup" id="lexiconPopup">
+  <div class="lex-header">
+    <div id="lexOriginal" class="lex-original"></div>
+    <div class="lex-header-right">
+      <div id="lexTranslit" class="lex-transliteration"></div>
+      <div id="lexStrongs" class="lex-strongs"></div>
+    </div>
+    <span id="lexLangBadge" class="lex-lang-badge hebrew">Hebreo</span>
+  </div>
+  <div class="lex-body">
+    <div id="lexDef" class="lex-definition"></div>
+    <div class="lex-section-title">Usos en la Escritura</div>
+    <div id="lexUsage" class="lex-usage"></div>
+  </div>
+  <div class="lex-footer">
+    <span class="lex-premium-hint">✦ Análisis completo en Berith</span>
+    <button class="lex-close" onclick="closeLexicon()">Cerrar</button>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a class="logo" href="#">
+      <span class="logo-hebrew">קֹדֶשׁ</span>
+      <span class="logo-sep"></span>
+      <span class="logo-text">KODESH</span>
+    </a>
+
+    <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">☰</button>
+
+    <div class="topbar-center">
+      <div class="progress-global">
+        <span class="progress-label">Biblia leída</span>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="globalProgressBar" style="width:0%"></div>
+        </div>
+        <span class="progress-pct" id="globalProgressPct">0.0%</span>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <select class="version-select" id="versionSelect" onchange="changeVersion()">
+        <option value="RVR60">RVR60</option>
+        <option value="NVI">NVI</option>
+        <option value="KJV">KJV</option>
+      </select>
+      <button class="btn-premium" onclick="showToast('✦ Próximamente — Plan Berith')">✦ Berith</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Testamento</div>
+      <div class="testament-tabs">
+        <button class="testament-tab active" id="tab-at" onclick="switchTestament('AT')">Antiguo</button>
+        <button class="testament-tab" id="tab-nt" onclick="switchTestament('NT')">Nuevo</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Libros</div>
+      <ul class="book-list" id="bookList"></ul>
+    </div>
+
+    <div class="sidebar-section" id="chapterSection" style="display:none">
+      <div class="sidebar-title" id="chapterSidebarTitle">Capítulos</div>
+      <div class="chapter-grid" id="chapterGrid"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="mainContent">
+    <div class="loading" id="loadingState">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Cargando Escrituras</div>
+    </div>
+  </main>
+
+</div>
+
+<!-- ══ SCRIPT ══ -->
+<script>
+/* ════════════════════════════════════
+   DATA — Bible structure
+════════════════════════════════════ */
+const BIBLE_BOOKS = {
+  AT: [
+    { id:'GEN', name:'Génesis',      abbr:'Gén',  chapters:50 },
+    { id:'EXO', name:'Éxodo',        abbr:'Éxo',  chapters:40 },
+    { id:'LEV', name:'Levítico',     abbr:'Lev',  chapters:27 },
+    { id:'NUM', name:'Números',      abbr:'Núm',  chapters:36 },
+    { id:'DEU', name:'Deuteronomio', abbr:'Deu',  chapters:34 },
+    { id:'JOS', name:'Josué',        abbr:'Jos',  chapters:24 },
+    { id:'JDG', name:'Jueces',       abbr:'Jue',  chapters:21 },
+    { id:'RUT', name:'Rut',          abbr:'Rut',  chapters:4  },
+    { id:'1SA', name:'1 Samuel',     abbr:'1Sa',  chapters:31 },
+    { id:'2SA', name:'2 Samuel',     abbr:'2Sa',  chapters:24 },
+    { id:'1KI', name:'1 Reyes',      abbr:'1Re',  chapters:22 },
+    { id:'2KI', name:'2 Reyes',      abbr:'2Re',  chapters:25 },
+    { id:'1CH', name:'1 Crónicas',   abbr:'1Cr',  chapters:29 },
+    { id:'2CH', name:'2 Crónicas',   abbr:'2Cr',  chapters:36 },
+    { id:'EZR', name:'Esdras',       abbr:'Esd',  chapters:10 },
+    { id:'NEH', name:'Nehemías',     abbr:'Neh',  chapters:13 },
+    { id:'EST', name:'Ester',        abbr:'Est',  chapters:10 },
+    { id:'JOB', name:'Job',          abbr:'Job',  chapters:42 },
+    { id:'PSA', name:'Salmos',       abbr:'Sal',  chapters:150},
+    { id:'PRO', name:'Proverbios',   abbr:'Pro',  chapters:31 },
+    { id:'ECC', name:'Eclesiastés',  abbr:'Ecl',  chapters:12 },
+    { id:'SNG', name:'Cantares',     abbr:'Cnt',  chapters:8  },
+    { id:'ISA', name:'Isaías',       abbr:'Isa',  chapters:66 },
+    { id:'JER', name:'Jeremías',     abbr:'Jer',  chapters:52 },
+    { id:'LAM', name:'Lamentaciones',abbr:'Lam',  chapters:5  },
+    { id:'EZK', name:'Ezequiel',     abbr:'Eze',  chapters:48 },
+    { id:'DAN', name:'Daniel',       abbr:'Dan',  chapters:12 },
+    { id:'HOS', name:'Oseas',        abbr:'Ose',  chapters:14 },
+    { id:'JOL', name:'Joel',         abbr:'Joe',  chapters:3  },
+    { id:'AMO', name:'Amós',         abbr:'Amó',  chapters:9  },
+    { id:'OBA', name:'Abdías',       abbr:'Abd',  chapters:1  },
+    { id:'JON', name:'Jonás',        abbr:'Jon',  chapters:4  },
+    { id:'MIC', name:'Miqueas',      abbr:'Miq',  chapters:7  },
+    { id:'NAM', name:'Nahúm',        abbr:'Nah',  chapters:3  },
+    { id:'HAB', name:'Habacuc',      abbr:'Hab',  chapters:3  },
+    { id:'ZEP', name:'Sofonías',     abbr:'Sof',  chapters:3  },
+    { id:'HAG', name:'Hageo',        abbr:'Hag',  chapters:2  },
+    { id:'ZEC', name:'Zacarías',     abbr:'Zac',  chapters:14 },
+    { id:'MAL', name:'Malaquías',    abbr:'Mal',  chapters:4  },
+  ],
+  NT: [
+    { id:'MAT', name:'Mateo',          abbr:'Mat', chapters:28 },
+    { id:'MRK', name:'Marcos',         abbr:'Mar', chapters:16 },
+    { id:'LUK', name:'Lucas',          abbr:'Luc', chapters:24 },
+    { id:'JHN', name:'Juan',           abbr:'Jua', chapters:21 },
+    { id:'ACT', name:'Hechos',         abbr:'Hec', chapters:28 },
+    { id:'ROM', name:'Romanos',        abbr:'Rom', chapters:16 },
+    { id:'1CO', name:'1 Corintios',    abbr:'1Co', chapters:16 },
+    { id:'2CO', name:'2 Corintios',    abbr:'2Co', chapters:13 },
+    { id:'GAL', name:'Gálatas',        abbr:'Gál', chapters:6  },
+    { id:'EPH', name:'Efesios',        abbr:'Efe', chapters:6  },
+    { id:'PHP', name:'Filipenses',     abbr:'Fil', chapters:4  },
+    { id:'COL', name:'Colosenses',     abbr:'Col', chapters:4  },
+    { id:'1TH', name:'1 Tesalonicenses',abbr:'1Te',chapters:5  },
+    { id:'2TH', name:'2 Tesalonicenses',abbr:'2Te',chapters:3  },
+    { id:'1TI', name:'1 Timoteo',      abbr:'1Ti', chapters:6  },
+    { id:'2TI', name:'2 Timoteo',      abbr:'2Ti', chapters:4  },
+    { id:'TIT', name:'Tito',           abbr:'Tit', chapters:3  },
+    { id:'PHM', name:'Filemón',        abbr:'Flm', chapters:1  },
+    { id:'HEB', name:'Hebreos',        abbr:'Heb', chapters:13 },
+    { id:'JAS', name:'Santiago',       abbr:'Snt', chapters:5  },
+    { id:'1PE', name:'1 Pedro',        abbr:'1Pe', chapters:5  },
+    { id:'2PE', name:'2 Pedro',        abbr:'2Pe', chapters:3  },
+    { id:'1JN', name:'1 Juan',         abbr:'1Jn', chapters:5  },
+    { id:'2JN', name:'2 Juan',         abbr:'2Jn', chapters:1  },
+    { id:'3JN', name:'3 Juan',         abbr:'3Jn', chapters:1  },
+    { id:'JUD', name:'Judas',          abbr:'Jud', chapters:1  },
+    { id:'REV', name:'Apocalipsis',    abbr:'Apo', chapters:22 },
+  ]
+};
+
+// Total chapters in the Bible
+const TOTAL_CHAPTERS = [...BIBLE_BOOKS.AT, ...BIBLE_BOOKS.NT].reduce((s, b) => s + b.chapters, 0);
+
+/* ════════════════════════════════════
+   STRONG'S DEMO DATA
+   (Real dataset will be JSON file)
+════════════════════════════════════ */
+const STRONGS_DEMO = {
+  'en': { original:'אֵן', translit:'ên', strongs:'H369', lang:'hebrew',
+    def:'Nada, no hay, ausencia de. Expresa la inexistencia o negación de algo.',
+    uses:['negación','ausencia','nada'] },
+  'principio': { original:'רֵאשִׁית', translit:'rêʼshîyth', strongs:'H7225', lang:'hebrew',
+    def:'Primicia, comienzo, principio. Lo primero en orden, lugar, rango o tiempo. Relacionado con "rosh" (cabeza).',
+    uses:['comienzo','primicia','primer fruto','sabiduría'] },
+  'dios': { original:'אֱלֹהִים', translit:'ʼĕlôhîym', strongs:'H430', lang:'hebrew',
+    def:'Dioses, jueces, ángeles. Plural de majestad para el Dios de Israel. El más usado de los nombres divinos — 2,600+ veces.',
+    uses:['Dios único','poder','jueces','ángeles'] },
+  'creó': { original:'בָּרָא', translit:'bârâʼ', strongs:'H1254', lang:'hebrew',
+    def:'Crear, cortar, producir. Usado exclusivamente de la actividad creadora divina — solo Dios es sujeto de este verbo.',
+    uses:['creación divina','producir','nuevo'] },
+  'cielos': { original:'שָׁמַיִם', translit:'shâmayim', strongs:'H8064', lang:'hebrew',
+    def:'Cielos, firmamento, el lugar donde están las estrellas y Dios mora. Plural dual que sugiere "las aguas de arriba".',
+    uses:['firmamento','morada de Dios','estrellas','lluvia'] },
+  'tierra': { original:'אֶרֶץ', translit:'ʼerets', strongs:'H776', lang:'hebrew',
+    def:'Tierra, suelo, país, territorio. La tierra habitada, el suelo físico, o una nación específica según contexto.',
+    uses:['suelo','país','territorio','mundo'] },
+  'dios': { original:'אֱלֹהִים', translit:'ʼĕlôhîym', strongs:'H430', lang:'hebrew',
+    def:'Dioses, jueces, ángeles. Plural de majestad para el Dios de Israel.',
+    uses:['Dios único','poder','ángeles'] },
+  'amor': { original:'אַהֲבָה', translit:'ʼahăbâh', strongs:'H160', lang:'hebrew',
+    def:'Amor, afecto. El amor profundo entre personas o de Dios hacia su pueblo. Incluye amor familiar, romántico y divino.',
+    uses:['amor divino','afecto','intimidad'] },
+  'gracia': { original:'χάρις', translit:'charis', strongs:'G5485', lang:'greek',
+    def:'Gracia, favor inmerecido. El favor de Dios dado libremente, no por mérito. Central en la teología paulina.',
+    uses:['don gratuito','favor divino','agradecimiento'] },
+  'fe': { original:'πίστις', translit:'pistis', strongs:'G4102', lang:'greek',
+    def:'Fe, confianza, fidelidad. Creencia activa y confianza en Dios o en Yeshúa. No es mera creencia intelectual.',
+    uses:['confianza','fidelidad','creer'] },
+  'palabra': { original:'לֹגֹס', translit:'logos', strongs:'G3056', lang:'greek',
+    def:'Palabra, razón, discurso divino. En Juan 1 identifica a Yeshúa como la Palabra creadora eterna.',
+    uses:['habla divina','razón','Yeshúa'] },
+  'verdad': { original:'אֱמֶת', translit:'ʼĕmeth', strongs:'H571', lang:'hebrew',
+    def:'Verdad, fidelidad, firmeza. Derivado de "amén". Implica confiabilidad y estabilidad, no solo veracidad.',
+    uses:['fidelidad','firmeza','amén'] },
+};
+
+/* ════════════════════════════════════
+   STATE
+════════════════════════════════════ */
+let state = {
+  testament: 'AT',
+  currentBook: 'GEN',
+  currentChapter: 1,
+  version: 'RVR60',
+  readChapters: JSON.parse(localStorage.getItem('kodesh_read') || '{}'),
+};
+
+/* ════════════════════════════════════
+   API — API.Bible
+════════════════════════════════════ */
+// API key de demo — para producción necesitas la tuya de scripture.api.bible
+const API_KEY = 'a5ed1de5c5c4083s17e2ae14f3n6fad2'; // demo key — puede fallar
+const VERSION_IDS = {
+  RVR60: 'b32b9d1b64b4ef29-01',
+  KJV:   'de4e12af7f28f599-02',
+  NVI:   '592420522e16049f-01',
+};
+
+async function fetchChapter(bookId, chapter, version) {
+  const versionId = VERSION_IDS[version] || VERSION_IDS.RVR60;
+  const chapterId = `${bookId}.${chapter}`;
+  const url = `https://api.scripture.api.bible/v1/bibles/${versionId}/chapters/${chapterId}?content-type=json&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=true`;
+
+  const res = await fetch(url, {
+    headers: { 'api-key': API_KEY }
+  });
+
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  return data.data;
+}
+
+/* ════════════════════════════════════
+   RENDER HELPERS
+════════════════════════════════════ */
+function parseAPIContent(content) {
+  // Parse API.Bible JSON content into verse objects
+  const verses = [];
+  if (!content || !Array.isArray(content)) return verses;
+
+  content.forEach(item => {
+    if (item.type === 'tag' && item.name === 'verse') {
+      const verseNum = item.attrs?.number || '';
+      let text = '';
+      const extractText = (nodes) => {
+        if (!nodes) return;
+        nodes.forEach(n => {
+          if (n.type === 'text') text += n.text;
+          if (n.items) extractText(n.items);
+        });
+      };
+      extractText(item.items);
+      if (text.trim()) verses.push({ num: verseNum, text: text.trim() });
+    }
+  });
+  return verses;
+}
+
+function makeClickableWords(text) {
+  // Wrap each word in a span for lexicon lookup
+  return text.replace(/(\S+)/g, (word) => {
+    const clean = word.toLowerCase().replace(/[¿¡.,;:!?"""''()\[\]]/g, '');
+    return `<span class="word" onclick="lookupWord(event,'${clean}','${word}')">${word}</span>`;
+  });
+}
+
+function renderBibleText(verses, bookName, chapterNum) {
+  const main = document.getElementById('mainContent');
+  const bookData = getAllBooks().find(b => b.id === state.currentBook);
+  const totalChapters = bookData ? bookData.chapters : 1;
+  const isRead = isChapterRead(state.currentBook, chapterNum);
+  const prevOk = chapterNum > 1;
+  const nextOk = chapterNum < totalChapters;
+
+  let html = `
+    <div class="chapter-header">
+      <div class="chapter-book-name">${bookName}</div>
+      <div class="chapter-title">Capítulo ${chapterNum}</div>
+      <div class="chapter-meta">
+        <span class="chapter-badge">${state.version} · ${verses.length} versículos</span>
+        <button class="btn-read-toggle ${isRead ? 'done' : ''}" id="readToggleBtn" onclick="toggleRead()">
+          <span class="check-icon">${isRead ? '✓' : '○'}</span>
+          ${isRead ? 'Leído' : 'Marcar leído'}
+        </button>
+      </div>
+    </div>
+
+    <div class="bible-text">
+  `;
+
+  verses.forEach(v => {
+    const clickable = makeClickableWords(v.text);
+    html += `<span class="verse"><sup class="verse-num">${v.num}</sup>${clickable} </span>`;
+  });
+
+  html += `</div>
+    <div class="chapter-nav">
+      <button class="btn-nav" onclick="goChapter(${chapterNum - 1})" ${!prevOk ? 'disabled' : ''}>
+        ← Capítulo ${chapterNum - 1}
+      </button>
+      <span style="font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);letter-spacing:2px">
+        ${chapterNum} / ${totalChapters}
+      </span>
+      <button class="btn-nav" onclick="goChapter(${chapterNum + 1})" ${!nextOk ? 'disabled' : ''}>
+        Capítulo ${chapterNum + 1} →
+      </button>
+    </div>
+  `;
+
+  main.innerHTML = html;
+  main.scrollTo(0, 0);
+}
+
+function renderOfflineDemo(bookName, chapterNum) {
+  // Demo content when API is unavailable
+  const demoVerses = [
+    { num:'1', text:'En el principio creó Dios los cielos y la tierra.' },
+    { num:'2', text:'Y la tierra estaba desordenada y vacía, y las tinieblas estaban sobre la faz del abismo, y el Espíritu de Dios se movía sobre la faz de las aguas.' },
+    { num:'3', text:'Y dijo Dios: Sea la luz; y fue la luz.' },
+    { num:'4', text:'Y vio Dios que la luz era buena; y separó Dios la luz de las tinieblas.' },
+    { num:'5', text:'Y llamó Dios a la luz Día, y a las tinieblas llamó Noche. Y fue la tarde y la mañana un día.' },
+    { num:'6', text:'Luego dijo Dios: Haya expansión en medio de las aguas, y separe las aguas de las aguas.' },
+    { num:'7', text:'E hizo Dios la expansión, y separó las aguas que estaban debajo de la expansión, de las aguas que estaban sobre la expansión. Y fue así.' },
+    { num:'8', text:'Y llamó Dios a la expansión Cielos. Y fue la tarde y la mañana el día segundo.' },
+    { num:'9', text:'Dijo también Dios: Júntense las aguas que están debajo de los cielos en un lugar, y descúbrase lo seco. Y fue así.' },
+    { num:'10', text:'Y llamó Dios a lo seco Tierra, y a la reunión de las aguas llamó Mares. Y vio Dios que era bueno.' },
+    { num:'11', text:'Después dijo Dios: Produzca la tierra hierba verde, hierba que dé semilla; árbol de fruto que dé fruto según su género, que su semilla esté en él, sobre la tierra. Y fue así.' },
+    { num:'12', text:'Produjo, pues, la tierra hierba verde, hierba que da semilla según su naturaleza, y árbol que da fruto, cuya semilla está en él, según su género. Y vio Dios que era bueno.' },
+    { num:'26', text:'Entonces dijo Dios: Hagamos al hombre a nuestra imagen, conforme a nuestra semejanza; y señoree en los peces del mar, en las aves de los cielos, en las bestias, en toda la tierra, y en todo animal que se arrastra sobre la tierra.' },
+    { num:'27', text:'Y creó Dios al hombre a su imagen, a imagen de Dios lo creó; varón y hembra los creó.' },
+    { num:'28', text:'Y los bendijo Dios, y les dijo: Fructificad y multiplicaos; llenad la tierra, y sojuzgadla, y señoread en los peces del mar, en las aves de los cielos, y en todas las bestias que se mueven sobre la tierra.' },
+    { num:'31', text:'Y vio Dios todo lo que había hecho, y he aquí que era bueno en gran manera. Y fue la tarde y la mañana el día sexto.' },
+  ];
+  renderBibleText(demoVerses, bookName, chapterNum);
+  showToast('📖 Modo demo — conecta tu API key para texto completo');
+}
+
+/* ════════════════════════════════════
+   LOAD CHAPTER
+════════════════════════════════════ */
+async function loadChapter(bookId, chapterNum) {
+  state.currentBook = bookId;
+  state.currentChapter = chapterNum;
+
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Cargando escrituras</div>
+    </div>
+  `;
+
+  const bookData = getAllBooks().find(b => b.id === bookId);
+  const bookName = bookData ? bookData.name : bookId;
+
+  updateChapterGrid();
+  updateBookList();
+
+  try {
+    const data = await fetchChapter(bookId, chapterNum, state.version);
+    const verses = parseAPIContent(data.content);
+
+    if (verses.length === 0) {
+      renderOfflineDemo(bookName, chapterNum);
+    } else {
+      renderBibleText(verses, bookName, chapterNum);
+    }
+  } catch (err) {
+    console.warn('API unavailable, using demo:', err.message);
+    renderOfflineDemo(bookName, chapterNum);
+  }
+
+  // Close sidebar on mobile
+  if (window.innerWidth < 768) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+}
+
+/* ════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════ */
+function goChapter(num) {
+  if (num < 1) return;
+  const bookData = getAllBooks().find(b => b.id === state.currentBook);
+  if (bookData && num > bookData.chapters) return;
+  loadChapter(state.currentBook, num);
+}
+
+/* ════════════════════════════════════
+   PROGRESS TRACKING
+════════════════════════════════════ */
+function getReadKey(bookId, chapter) {
+  return `${bookId}:${chapter}`;
+}
+function isChapterRead(bookId, chapter) {
+  return !!state.readChapters[getReadKey(bookId, chapter)];
+}
+function toggleRead() {
+  const key = getReadKey(state.currentBook, state.currentChapter);
+  if (state.readChapters[key]) {
+    delete state.readChapters[key];
+    showToast('Capítulo desmarcado');
+  } else {
+    state.readChapters[key] = true;
+    showToast('✓ Capítulo marcado como leído');
+  }
+  localStorage.setItem('kodesh_read', JSON.stringify(state.readChapters));
+  updateProgress();
+  updateChapterGrid();
+
+  const btn = document.getElementById('readToggleBtn');
+  if (btn) {
+    const isNowRead = !!state.readChapters[key];
+    btn.className = `btn-read-toggle ${isNowRead ? 'done' : ''}`;
+    btn.innerHTML = `<span class="check-icon">${isNowRead ? '✓' : '○'}</span> ${isNowRead ? 'Leído' : 'Marcar leído'}`;
+  }
+}
+
+function updateProgress() {
+  const readCount = Object.keys(state.readChapters).length;
+  const pct = (readCount / TOTAL_CHAPTERS * 100).toFixed(1);
+  document.getElementById('globalProgressBar').style.width = pct + '%';
+  document.getElementById('globalProgressPct').textContent = pct + '%';
+}
+
+/* ════════════════════════════════════
+   SIDEBAR — Book list
+════════════════════════════════════ */
+function getAllBooks() {
+  return [...BIBLE_BOOKS.AT, ...BIBLE_BOOKS.NT];
+}
+
+function updateBookList() {
+  const books = BIBLE_BOOKS[state.testament];
+  const list = document.getElementById('bookList');
+  list.innerHTML = '';
+
+  books.forEach(book => {
+    const readCount = Array.from({length: book.chapters}, (_, i) =>
+      isChapterRead(book.id, i+1) ? 1 : 0
+    ).reduce((a,b) => a+b, 0);
+
+    const li = document.createElement('li');
+    li.className = `book-item ${state.currentBook === book.id ? 'active' : ''}`;
+    li.innerHTML = `
+      <span class="book-name">${book.name}</span>
+      <span class="book-progress-mini">${readCount}/${book.chapters}</span>
+    `;
+    li.onclick = () => selectBook(book.id);
+    list.appendChild(li);
+  });
+}
+
+function selectBook(bookId) {
+  state.currentBook = bookId;
+  updateBookList();
+  showChapterSection(bookId);
+}
+
+function showChapterSection(bookId) {
+  const bookData = getAllBooks().find(b => b.id === bookId);
+  if (!bookData) return;
+
+  const section = document.getElementById('chapterSection');
+  const title = document.getElementById('chapterSidebarTitle');
+  title.textContent = `${bookData.name} — Capítulos`;
+  section.style.display = 'block';
+  updateChapterGrid();
+}
+
+function updateChapterGrid() {
+  const bookData = getAllBooks().find(b => b.id === state.currentBook);
+  if (!bookData) return;
+
+  const grid = document.getElementById('chapterGrid');
+  grid.innerHTML = '';
+
+  for (let i = 1; i <= bookData.chapters; i++) {
+    const div = document.createElement('div');
+    const isRead = isChapterRead(state.currentBook, i);
+    const isActive = state.currentChapter === i && state.currentBook === bookData.id;
+
+    div.className = `chapter-dot ${isRead ? 'read' : ''} ${isActive ? 'active' : ''}`;
+    div.textContent = i;
+    div.onclick = () => loadChapter(state.currentBook, i);
+    grid.appendChild(div);
+  }
+}
+
+function switchTestament(t) {
+  state.testament = t;
+  document.getElementById('tab-at').classList.toggle('active', t === 'AT');
+  document.getElementById('tab-nt').classList.toggle('active', t === 'NT');
+  updateBookList();
+  document.getElementById('chapterSection').style.display = 'none';
+}
+
+/* ════════════════════════════════════
+   VERSION CHANGE
+════════════════════════════════════ */
+function changeVersion() {
+  state.version = document.getElementById('versionSelect').value;
+  loadChapter(state.currentBook, state.currentChapter);
+}
+
+/* ════════════════════════════════════
+   LEXICON POPUP
+════════════════════════════════════ */
+function lookupWord(event, cleanWord, rawWord) {
+  event.stopPropagation();
+
+  // Remove previous highlight
+  document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
+  event.target.classList.add('highlighted');
+
+  // Look up in demo data
+  const key = cleanWord.toLowerCase();
+  const entry = STRONGS_DEMO[key];
+
+  const popup = document.getElementById('lexiconPopup');
+
+  if (!entry) {
+    // Word not in demo — show placeholder
+    document.getElementById('lexOriginal').textContent = '—';
+    document.getElementById('lexOriginal').className = 'lex-original';
+    document.getElementById('lexTranslit').textContent = rawWord;
+    document.getElementById('lexStrongs').textContent = 'Disponible en Berith ✦';
+    document.getElementById('lexLangBadge').textContent = 'Hebreo';
+    document.getElementById('lexLangBadge').className = 'lex-lang-badge hebrew';
+    document.getElementById('lexDef').textContent = 'El análisis lexical completo de esta palabra está disponible en el plan Berith. Incluye Strong\'s completo, raíz, morfología y todos sus usos en la Escritura.';
+    document.getElementById('lexUsage').innerHTML = '';
+  } else {
+    document.getElementById('lexOriginal').textContent = entry.original;
+    document.getElementById('lexOriginal').className = `lex-original ${entry.lang === 'greek' ? 'greek' : ''}`;
+    document.getElementById('lexTranslit').textContent = entry.translit;
+    document.getElementById('lexStrongs').textContent = entry.strongs;
+
+    const badge = document.getElementById('lexLangBadge');
+    badge.textContent = entry.lang === 'hebrew' ? 'Hebreo' : 'Griego';
+    badge.className = `lex-lang-badge ${entry.lang}`;
+
+    document.getElementById('lexDef').textContent = entry.def;
+
+    const usageEl = document.getElementById('lexUsage');
+    usageEl.innerHTML = entry.uses.map(u =>
+      `<span class="lex-usage-tag">${u}</span>`
+    ).join('');
+  }
+
+  // Position popup near click
+  const rect = event.target.getBoundingClientRect();
+  const popupW = 320;
+  const popupH = 280;
+  let left = rect.left + window.scrollX;
+  let top = rect.bottom + window.scrollY + 8;
+
+  // Keep within viewport
+  if (left + popupW > window.innerWidth - 16) left = window.innerWidth - popupW - 16;
+  if (top + popupH > window.innerHeight + window.scrollY - 16) {
+    top = rect.top + window.scrollY - popupH - 8;
+  }
+
+  popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
+  popup.classList.add('visible');
+}
+
+function closeLexicon() {
+  document.getElementById('lexiconPopup').classList.remove('visible');
+  document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
+}
+
+// Close popup on outside click
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('lexiconPopup');
+  if (!popup.contains(e.target) && !e.target.classList.contains('word')) {
+    closeLexicon();
+  }
+});
+
+/* ════════════════════════════════════
+   SIDEBAR TOGGLE (mobile)
+════════════════════════════════════ */
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+/* ════════════════════════════════════
+   TOAST
+════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ════════════════════════════════════
+   INIT
+════════════════════════════════════ */
+function init() {
+  updateBookList();
+  updateProgress();
+  selectBook('GEN');
+  loadChapter('GEN', 1);
+}
+
+init();
+</script>
+</body>
+</html>
