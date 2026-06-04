@@ -1364,29 +1364,24 @@ async function lookupWord(event, cleanWord, rawWord) {
   const popup = document.getElementById('lexiconPopup');
 
   if (!entry) {
-    document.getElementById('lexOriginal').textContent = '—';
-    document.getElementById('lexOriginal').className = 'lex-original';
-    document.getElementById('lexTranslit').textContent = rawWord;
-    document.getElementById('lexStrongs').textContent = 'Ampliar en plan Berith ✦';
-    document.getElementById('lexLangBadge').textContent = 'Hebreo';
-    document.getElementById('lexLangBadge').className = 'lex-lang-badge hebrew';
-    document.getElementById('lexDef').textContent = 'El análisis lexical completo de esta palabra está disponible en el plan Berith. Incluye Strong\'s número, raíz original, morfología y todos sus usos en las Escrituras.';
-    document.getElementById('lexUsage').innerHTML = '';
-  } else {
-    document.getElementById('lexOriginal').textContent = entry.h;
-    document.getElementById('lexOriginal').className = `lex-original ${entry.l === 'griego' ? 'greek' : ''}`;
-    document.getElementById('lexTranslit').textContent = entry.t;
-    document.getElementById('lexStrongs').textContent = entry.s;
-
-    const badge = document.getElementById('lexLangBadge');
-    badge.textContent = entry.l === 'hebreo' ? 'Hebreo' : 'Griego';
-    badge.className = `lex-lang-badge ${entry.l === 'hebreo' ? 'hebrew' : 'greek'}`;
-
-    document.getElementById('lexDef').textContent = entry.d;
-    document.getElementById('lexUsage').innerHTML = entry.u.map(u =>
-      `<span class="lex-usage-tag">${u}</span>`
-    ).join('');
+    document.getElementById('lexiconPopup').classList.remove('visible');
+    document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
+    return;
   }
+
+  document.getElementById('lexOriginal').textContent = entry.h;
+  document.getElementById('lexOriginal').className = `lex-original ${entry.l === 'griego' ? 'greek' : ''}`;
+  document.getElementById('lexTranslit').textContent = entry.t;
+  document.getElementById('lexStrongs').textContent = entry.s;
+
+  const badge = document.getElementById('lexLangBadge');
+  badge.textContent = entry.l === 'hebreo' ? 'Hebreo' : 'Griego';
+  badge.className = `lex-lang-badge ${entry.l === 'hebreo' ? 'hebrew' : 'greek'}`;
+
+  document.getElementById('lexDef').textContent = entry.d;
+  document.getElementById('lexUsage').innerHTML = entry.u.map(u =>
+    `<span class="lex-usage-tag">${u}</span>`
+  ).join('');
 
   const rect = event.target.getBoundingClientRect();
   const popupW = 320;
