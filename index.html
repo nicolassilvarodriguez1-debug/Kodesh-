@@ -1677,7 +1677,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
   </button>
   <button class="mobile-nav-btn" id="mnav-parashot" onclick="window.location.href='parashot.html'">
     <span class="mobile-nav-icon">🕍</span>
-    <span class="mobile-nav-label">Parashot</span>
+    <span class="mobile-nav-label">Estudio</span>
   </button>
   <button class="mobile-nav-btn" id="mnav-marcadores" onclick="mobileNavTo('marcadores')">
     <span class="mobile-nav-icon">🔖</span>
@@ -1886,7 +1886,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
     </a>
 
     <button class="sidebar-toggle" onclick="openNav()" id="sidebarToggle">☰</button>
-    <a href="parashot.html" style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);transition:all 0.2s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border2)'">Parashot</a>
+    <a href="parashot.html" style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);transition:all 0.2s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border2)'">Ciclo de Estudio</a>
     <button class="btn-search-open" onclick="openSearch()" title="Búsqueda inteligente">🔍 Buscar</button>
 
     <div class="topbar-center">
@@ -2154,14 +2154,14 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
       <div class="parasha-banner">
         <div class="parasha-banner-heb">${parasha.heb}</div>
         <div class="parasha-banner-info">
-          <div class="parasha-banner-label">Porción Semanal · Pará­shá ${parasha.num}</div>
+          <div class="parasha-banner-label">Ciclo de Estudio · Porción ${parasha.num}</div>
           <div class="parasha-banner-name">${parasha.nombre} — ${parasha.sig}</div>
           <div class="parasha-banner-range">${parasha.torah}</div>
         </div>
         <div class="parasha-progress">
           <div class="parasha-chap-dots">${dots}</div>
         </div>
-        <a class="parasha-banner-link" href="parashot.html">Ver detalle →</a>
+        <a class="parasha-banner-link" href="parashot.html">Ver Ciclo →</a>
       </div>
     `;
   }

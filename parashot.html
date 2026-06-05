@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KODESH · Parashot</title>
+<title>KODESH · Ciclo de Estudio</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -56,7 +56,8 @@ body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--te
 .nav-link:hover{color:var(--gold);border-color:var(--gold-dim);}
 .nav-link.active{color:var(--gold);border-color:var(--gold-dim);background:var(--gold-glow);}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.btn-gold{background:linear-gradient(135deg,var(--gold-dim),#3a2a08);border:1px solid var(--gold-dim);color:var(--gold-bright);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.btn-gold{background:linear-gradient(135deg,var(--gold-dim),var(--gold-glow));border:1px solid var(--gold-dim);color:var(--gold-bright);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+html.light .btn-gold{background:linear-gradient(135deg,#c8960a,#a07008);color:#fff8ee;}
 .btn-gold:hover{box-shadow:0 0 16px var(--gold-glow);}
 
 /* ── HERO ── */
@@ -109,9 +110,12 @@ body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--te
 .card-refs{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
 .ref-row{display:flex;align-items:center;gap:8px;}
 .ref-badge{font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
-.ref-badge.torah{background:#1a1000;color:var(--gold);border:1px solid var(--gold-dim);}
-.ref-badge.haftarah{background:#001020;color:var(--blue);border:1px solid #1a3060;}
-.ref-badge.mesianica{background:#1a001a;color:var(--purple);border:1px solid #3a1a5a;}
+.ref-badge.torah{background:var(--gold-glow);color:var(--gold);border:1px solid var(--gold-dim);}
+.ref-badge.haftarah{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue);}
+.ref-badge.mesianica{background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple);}
+html.light .ref-badge.torah{background:#f5e8c0;color:#7a5008;border-color:#c9a84c;}
+html.light .ref-badge.haftarah{background:#d0e4f8;color:#1a4a8a;border-color:#5a8cc9;}
+html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9a6cf0;}
 .ref-text{font-size:0.78rem;color:var(--text-mid);}
 .card-tema{font-size:0.8rem;color:var(--text-dim);line-height:1.5;margin-bottom:10px;border-top:1px solid var(--border);padding-top:10px;}
 .card-footer{display:flex;align-items:center;justify-content:space-between;}
@@ -244,7 +248,7 @@ body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--te
     <span class="logo-txt">KODESH</span>
   </a>
   <a class="nav-link" href="index.html">Biblia</a>
-  <a class="nav-link active" href="parashot.html">Parashot</a>
+  <a class="nav-link active" href="parashot.html">Ciclo de Estudio</a>
   <div class="topbar-right">
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
     <button class="btn-gold" onclick="showToast('✦ Próximamente — Plan Berith')">✦ Berith</button>
@@ -253,9 +257,9 @@ body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--te
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-eyebrow">Ciclo Anual de la Torah</div>
-  <div class="hero-title">Las <span>52 Parashot</span></div>
-  <div class="hero-sub">Porciones semanales de la Torah con Haftarah tradicional y conexiones al Brit Hadashá — la Haftarah Mesiánica.</div>
+  <div class="hero-eyebrow">Ciclo Anual de Estudio Bíblico</div>
+  <div class="hero-title">Las <span>52 Porciones</span></div>
+  <div class="hero-sub">Porciones semanales de la Torah con lecturas proféticas y conexiones al Nuevo Pacto — el hilo rojo que une toda la Escritura.</div>
   <div class="hero-stats">
     <div class="stat"><div class="stat-num">52</div><div class="stat-label">Porciones</div></div>
     <div class="stat"><div class="stat-num">5</div><div class="stat-label">Libros de Moisés</div></div>
