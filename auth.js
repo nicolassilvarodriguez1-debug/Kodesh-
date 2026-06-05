@@ -40,6 +40,26 @@ async function initAuth() {
 
 /* ── USER LOGGED IN ── */
 async function onUserLoggedIn(user) {
+  // Check if this is a different user than before
+  const lastUserId = localStorage.getItem('kodesh_last_user');
+  if (lastUserId && lastUserId !== user.id) {
+    // Different user — clear all local data
+    localStorage.removeItem('kodesh_read');
+    localStorage.removeItem('kodesh_bookmarks');
+    // Clear all notes
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('note:')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    // Reset state
+    state.readChapters = {};
+    state.bookmarks = {};
+  }
+  // Save current user id
+  localStorage.setItem('kodesh_last_user', user.id);
+
   updateUserUI(user);
   await syncProgressFromCloud();
   await syncBookmarksFromCloud();
@@ -121,6 +141,16 @@ function closeUserMenu(e) {
 async function signOut() {
   const sb = getSupabase();
   if (sb) await sb.auth.signOut();
+  // Clear all local data on logout
+  localStorage.removeItem('kodesh_last_user');
+  localStorage.removeItem('kodesh_read');
+  localStorage.removeItem('kodesh_bookmarks');
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('note:')) keysToRemove.push(key);
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
   document.getElementById('profileOverlay')?.classList.remove('open');
   document.body.style.overflow = '';
   window.location.href = 'login.html';
