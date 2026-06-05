@@ -759,6 +759,95 @@ body::before {
   font-size: 1rem;
 }
 
+/* ════ BOOK/CHAPTER NAV MODAL ════ */
+.nav-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 400;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.nav-overlay.open { opacity: 1; pointer-events: auto; }
+.nav-modal {
+  background: var(--bg2); border: 1px solid var(--gold-dim);
+  border-radius: 16px; width: 100%; max-width: 500px; max-height: 80vh;
+  overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  transform: scale(0.96); transition: transform 0.2s;
+}
+.nav-overlay.open .nav-modal { transform: scale(1); }
+.nav-step { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.nav-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0a0800, #140e02); flex-shrink: 0;
+}
+html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); }
+.nav-header-title {
+  font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 600;
+  color: var(--gold); letter-spacing: 2px; text-transform: uppercase;
+}
+.nav-close {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  font-size: 0.8rem; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
+}
+.nav-close:hover { border-color: var(--red); color: var(--red); }
+.nav-back {
+  background: none; border: 1px solid var(--border2); color: var(--gold);
+  font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 1px;
+  text-transform: uppercase; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
+}
+.nav-back:hover { background: var(--gold-glow); }
+.nav-testament-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.nav-tab {
+  flex: 1; font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 12px; text-align: center;
+  cursor: pointer; color: var(--text-dim); background: transparent; border: none;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: var(--bg3); }
+.nav-book-grid {
+  overflow-y: auto; padding: 12px;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+}
+.nav-book-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 8px; cursor: pointer; transition: all 0.15s; text-align: left;
+}
+.nav-book-btn:hover { border-color: var(--gold-dim); background: var(--gold-glow); }
+.nav-book-btn.current { border-color: var(--gold); background: var(--gold-glow); }
+.nav-book-name { font-family: 'Cinzel', serif; font-size: 0.75rem; color: var(--text); }
+.nav-book-progress { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text-dim); }
+.nav-book-btn.current .nav-book-progress { color: var(--gold); }
+.nav-chapter-grid {
+  overflow-y: auto; padding: 14px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+}
+.nav-ch-btn {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 8px; cursor: pointer; transition: all 0.15s; color: var(--text-dim);
+  position: relative;
+}
+.nav-ch-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.nav-ch-btn.read { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.nav-ch-btn.current { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); font-weight: 700; }
+.nav-ch-btn.has-note::after {
+  content: ''; position: absolute; top: 3px; right: 3px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+}
+@media (max-width: 768px) {
+  .nav-overlay { padding: 0; align-items: flex-end; }
+  .nav-modal { border-radius: 20px 20px 0 0; max-height: 88vh; border-bottom: none; transform: translateY(20px); }
+  .nav-overlay.open .nav-modal { transform: translateY(0); }
+  .nav-book-grid { grid-template-columns: 1fr; }
+  .nav-chapter-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
 /* ════ BOOKMARK SYSTEM ════ */
 .bookmark-blue   { background: rgba(90,156,240,0.12); border-radius:3px; }
 .bookmark-green  { background: rgba(92,204,104,0.12); border-radius:3px; }
@@ -1578,7 +1667,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 <!-- ══ MOBILE BOTTOM NAV ══ -->
 <nav class="mobile-nav" id="mobileNav">
   <div class="mobile-nav-progress" id="mobileNavProgress" style="transform:scaleX(0)"></div>
-  <button class="mobile-nav-btn active" id="mnav-biblia" onclick="mobileNavTo('biblia')">
+  <button class="mobile-nav-btn active" id="mnav-biblia" onclick="openNav()">
     <span class="mobile-nav-icon">📖</span>
     <span class="mobile-nav-label">Biblia</span>
   </button>
@@ -1758,6 +1847,33 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
   </div>
 </div>
 
+<!-- ══ BOOK/CHAPTER NAV MODAL ══ -->
+<div class="nav-overlay" id="navOverlay" onclick="closeNavOutside(event)">
+  <div class="nav-modal" id="navModal">
+    <!-- Step 1: Book selection -->
+    <div class="nav-step" id="navStepBook">
+      <div class="nav-header">
+        <div class="nav-header-title">Seleccionar Libro</div>
+        <button class="nav-close" onclick="closeNav()">✕</button>
+      </div>
+      <div class="nav-testament-tabs">
+        <button class="nav-tab active" id="navTabAT" onclick="navSwitchTestament('AT')">Antiguo Testamento</button>
+        <button class="nav-tab" id="navTabNT" onclick="navSwitchTestament('NT')">Nuevo Testamento</button>
+      </div>
+      <div class="nav-book-grid" id="navBookGrid"></div>
+    </div>
+    <!-- Step 2: Chapter selection -->
+    <div class="nav-step" id="navStepChapter" style="display:none">
+      <div class="nav-header">
+        <button class="nav-back" onclick="navGoBack()">← Libros</button>
+        <div class="nav-header-title" id="navChapterTitle">Capítulos</div>
+        <button class="nav-close" onclick="closeNav()">✕</button>
+      </div>
+      <div class="nav-chapter-grid" id="navChapterGrid"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ APP ══ -->
 <div class="app">
 
@@ -1769,7 +1885,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
       <span class="logo-text">KODESH</span>
     </a>
 
-    <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">☰</button>
+    <button class="sidebar-toggle" onclick="openNav()" id="sidebarToggle">☰</button>
     <a href="parashot.html" style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);transition:all 0.2s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border2)'">Parashot</a>
     <button class="btn-search-open" onclick="openSearch()" title="Búsqueda inteligente">🔍 Buscar</button>
 
@@ -2220,7 +2336,14 @@ function updateBookList() {
       <span class="book-name">${book.name}</span>
       <span class="book-progress-mini">${readCount}/${book.chapters}</span>
     `;
-    li.onclick = () => selectBook(book.id);
+    li.onclick = () => {
+      navTestament = state.testament;
+      navSelectBook(book.id, book.name, book.chapters);
+      document.getElementById('navStepBook').style.display = 'none';
+      document.getElementById('navStepChapter').style.display = 'flex';
+      document.getElementById('navOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
     list.appendChild(li);
   });
 }
@@ -2376,6 +2499,93 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ════════════════════════════════════
+   BOOK/CHAPTER NAV MODAL
+════════════════════════════════════ */
+let navTestament = 'AT';
+
+function openNav() {
+  navTestament = state.testament;
+  renderNavBooks();
+  document.getElementById('navStepBook').style.display = 'flex';
+  document.getElementById('navStepChapter').style.display = 'none';
+  document.getElementById('navOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Close sidebar if open
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop')?.remove();
+}
+
+function closeNav() {
+  document.getElementById('navOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeNavOutside(e) {
+  if (e.target === document.getElementById('navOverlay')) closeNav();
+}
+
+function navSwitchTestament(t) {
+  navTestament = t;
+  document.getElementById('navTabAT').classList.toggle('active', t === 'AT');
+  document.getElementById('navTabNT').classList.toggle('active', t === 'NT');
+  renderNavBooks();
+}
+
+function renderNavBooks() {
+  const books = BIBLE_BOOKS[navTestament];
+  const grid = document.getElementById('navBookGrid');
+  grid.innerHTML = books.map(book => {
+    const readCount = Array.from({length: book.chapters}, (_, i) =>
+      isChapterRead(book.id, i+1) ? 1 : 0
+    ).reduce((a,b) => a+b, 0);
+    const isCurrent = book.id === state.currentBook;
+    return `
+      <button class="nav-book-btn ${isCurrent ? 'current' : ''}" onclick="navSelectBook('${book.id}','${book.name}',${book.chapters})">
+        <span class="nav-book-name">${book.name}</span>
+        <span class="nav-book-progress">${readCount}/${book.chapters}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function navSelectBook(bookId, bookName, totalChapters) {
+  // Show chapter step
+  document.getElementById('navStepBook').style.display = 'none';
+  document.getElementById('navStepChapter').style.display = 'flex';
+  document.getElementById('navChapterTitle').textContent = bookName;
+
+  const grid = document.getElementById('navChapterGrid');
+  grid.innerHTML = Array.from({length: totalChapters}, (_, i) => {
+    const ch = i + 1;
+    const isRead = isChapterRead(bookId, ch);
+    const isCurrent = bookId === state.currentBook && ch === state.currentChapter;
+    const hasNote = !!localStorage.getItem(`note:${bookId}:${ch}`);
+    return `
+      <button class="nav-ch-btn ${isRead ? 'read' : ''} ${isCurrent ? 'current' : ''} ${hasNote ? 'has-note' : ''}"
+        onclick="navGoToChapter('${bookId}',${ch},'${navTestament}')">
+        ${ch}
+      </button>
+    `;
+  }).join('');
+}
+
+function navGoBack() {
+  document.getElementById('navStepBook').style.display = 'flex';
+  document.getElementById('navStepChapter').style.display = 'none';
+}
+
+function navGoToChapter(bookId, chapter, testament) {
+  // Update testament
+  state.testament = testament;
+  document.getElementById('tab-at').classList.toggle('active', testament === 'AT');
+  document.getElementById('tab-nt').classList.toggle('active', testament === 'NT');
+
+  selectBook(bookId);
+  loadChapter(bookId, chapter);
+  closeNav();
 }
 
 /* ════════════════════════════════════
