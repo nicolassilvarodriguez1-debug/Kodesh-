@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KODESH · Bienvenido</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#c9a84c; --gold-bright:#e8c96a; --gold-dim:#5a4820; --gold-glow:rgba(201,168,76,0.15);
+  --bg:#05050a; --bg2:#0a0a12; --bg3:#0f0f1a;
+  --border:#1a1a2a; --border2:#252538;
+  --text:#ede5d5; --text-mid:#a09880; --text-dim:#5a5870;
+  --green:#5ccc68; --red:#e05a5a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body {
+  font-family:'Crimson Pro',Georgia,serif;
+  background:var(--bg); color:var(--text);
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(201,168,76,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, rgba(90,72,32,0.07) 0%, transparent 50%);
+  pointer-events:none;
+}
+
+.onboard-wrap {
+  width:100%; max-width:520px;
+  position:relative; z-index:1;
+}
+
+/* Progress dots */
+.progress-dots {
+  display:flex; justify-content:center; gap:8px;
+  margin-bottom:28px;
+}
+.dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--border2); transition:all 0.3s;
+}
+.dot.active { background:var(--gold); transform:scale(1.3); }
+.dot.done { background:var(--gold-dim); }
+
+/* Card */
+.onboard-card {
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* Step */
+.step { display:none; padding:32px 28px; }
+.step.active { display:block; animation:fadeUp 0.3s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.step-eyebrow {
+  font-family:'Cinzel',serif; font-size:0.6rem;
+  letter-spacing:3px; text-transform:uppercase;
+  color:var(--gold-dim); margin-bottom:8px;
+}
+.step-title {
+  font-family:'Cinzel',serif; font-size:1.6rem;
+  font-weight:900; color:var(--text); line-height:1.2;
+  margin-bottom:8px;
+}
+.step-title span { color:var(--gold); }
+.step-sub {
+  font-size:1rem; color:var(--text-dim);
+  line-height:1.6; margin-bottom:24px;
+}
+
+/* Form elements */
+.form-group { margin-bottom:18px; }
+.form-label {
+  font-family:'Cinzel',serif; font-size:0.6rem;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--text-dim); display:block; margin-bottom:6px;
+}
+.form-input {
+  width:100%; background:var(--bg3);
+  border:1px solid var(--border2); color:var(--text);
+  font-family:'Crimson Pro',serif; font-size:1.05rem;
+  padding:11px 14px; border-radius:8px; outline:none;
+  transition:border 0.2s;
+}
+.form-input:focus { border-color:var(--gold-dim); }
+.form-input::placeholder { color:var(--text-dim); }
+
+/* Goal options */
+.goals-grid {
+  display:grid; grid-template-columns:repeat(2,1fr);
+  gap:8px; margin-bottom:8px;
+}
+@media(max-width:480px) { .goals-grid { grid-template-columns:1fr; } }
+
+.goal-btn {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:12px 14px; border-radius:10px;
+  border:1px solid var(--border2);
+  background:var(--bg3); cursor:pointer;
+  transition:all 0.2s; text-align:left;
+}
+.goal-btn:hover { border-color:var(--gold-dim); }
+.goal-btn.selected {
+  border-color:var(--gold);
+  background:var(--gold-glow);
+}
+.goal-icon { font-size:1.3rem; flex-shrink:0; margin-top:1px; }
+.goal-text-wrap {}
+.goal-title {
+  font-family:'Cinzel',serif; font-size:0.68rem;
+  font-weight:600; letter-spacing:0.5px;
+  color:var(--text); margin-bottom:2px;
+}
+.goal-desc { font-size:0.78rem; color:var(--text-dim); line-height:1.4; }
+.goal-btn.selected .goal-title { color:var(--gold); }
+
+/* Reading pace */
+.pace-options {
+  display:flex; gap:8px; flex-wrap:wrap;
+}
+.pace-btn {
+  flex:1; min-width:80px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:12px 8px; border-radius:10px;
+  border:1px solid var(--border2); background:var(--bg3);
+  cursor:pointer; transition:all 0.2s;
+}
+.pace-btn:hover { border-color:var(--gold-dim); }
+.pace-btn.selected { border-color:var(--gold); background:var(--gold-glow); }
+.pace-num {
+  font-family:'Cinzel',serif; font-size:1.2rem;
+  font-weight:900; color:var(--gold); line-height:1;
+}
+.pace-label {
+  font-family:'Cinzel',serif; font-size:0.55rem;
+  letter-spacing:1px; text-transform:uppercase;
+  color:var(--text-dim); text-align:center;
+}
+.pace-btn.selected .pace-label { color:var(--gold-dim); }
+
+/* Buttons */
+.btn-next {
+  width:100%;
+  background:linear-gradient(135deg,var(--gold-dim),#3a2a08);
+  border:1px solid var(--gold-dim); color:var(--gold-bright);
+  font-family:'Cinzel',serif; font-size:0.7rem;
+  letter-spacing:2px; text-transform:uppercase;
+  padding:13px; border-radius:8px; cursor:pointer;
+  transition:all 0.2s; margin-top:8px;
+}
+.btn-next:hover { box-shadow:0 0 20px var(--gold-glow); }
+.btn-next:disabled { opacity:0.4; cursor:not-allowed; }
+
+.btn-skip {
+  width:100%; background:none; border:none;
+  color:var(--text-dim); font-family:'Crimson Pro',serif;
+  font-size:0.85rem; font-style:italic;
+  padding:10px; cursor:pointer; transition:color 0.2s;
+  margin-top:4px;
+}
+.btn-skip:hover { color:var(--text-mid); }
+
+/* Welcome step */
+.welcome-hebrew {
+  text-align:center; font-family:serif;
+  font-size:3rem; color:var(--gold);
+  margin-bottom:8px; line-height:1;
+}
+.welcome-name {
+  text-align:center; font-family:'Cinzel',serif;
+  font-size:1rem; color:var(--gold-bright);
+  letter-spacing:3px; margin-bottom:24px;
+}
+.welcome-stats {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:10px; margin-bottom:24px;
+}
+.welcome-stat {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; padding:14px 8px; text-align:center;
+}
+.welcome-stat-num {
+  font-family:'Cinzel',serif; font-size:1.4rem;
+  font-weight:900; color:var(--gold); line-height:1;
+  margin-bottom:4px;
+}
+.welcome-stat-label {
+  font-family:'Cinzel',serif; font-size:0.52rem;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--text-dim);
+}
+.welcome-plan {
+  background:linear-gradient(135deg,#0a0800,#140e02);
+  border:1px solid var(--gold-dim); border-radius:10px;
+  padding:16px; margin-bottom:20px;
+}
+.welcome-plan-title {
+  font-family:'Cinzel',serif; font-size:0.65rem;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--gold); margin-bottom:8px;
+}
+.welcome-plan-text { font-size:0.95rem; color:var(--text-mid); line-height:1.6; }
+
+/* Error */
+.error-msg {
+  background:#1a0808; border:1px solid var(--red);
+  color:var(--red); border-radius:6px;
+  padding:10px 14px; font-size:0.85rem;
+  margin-bottom:14px; display:none;
+}
+.error-msg.show { display:block; }
+</style>
+</head>
+<body>
+
+<div class="onboard-wrap">
+
+  <!-- Progress -->
+  <div class="progress-dots">
+    <div class="dot active" id="dot-0"></div>
+    <div class="dot" id="dot-1"></div>
+    <div class="dot" id="dot-2"></div>
+    <div class="dot" id="dot-3"></div>
+  </div>
+
+  <div class="onboard-card">
+
+    <!-- ══ STEP 0: Bienvenida ══ -->
+    <div class="step active" id="step-0">
+      <div class="step-eyebrow">Bienvenido a KODESH</div>
+      <div class="step-title">Shalom, <span id="greetName">hermano</span></div>
+      <div class="step-sub">Antes de comenzar, cuéntanos un poco sobre ti para personalizar tu experiencia de estudio.</div>
+
+      <div class="error-msg" id="step0-error"></div>
+
+      <div class="form-group">
+        <label class="form-label">¿Cómo quieres que te llamemos?</label>
+        <input class="form-input" type="text" id="displayName"
+          placeholder="Escribe tu nombre o apodo..."
+          oninput="updateGreeting()" />
+      </div>
+
+      <button class="btn-next" onclick="goStep(1)">Continuar →</button>
+    </div>
+
+    <!-- ══ STEP 1: Objetivos ══ -->
+    <div class="step" id="step-1">
+      <div class="step-eyebrow">Paso 2 de 4</div>
+      <div class="step-title">¿Cuáles son tus <span>objetivos</span>?</div>
+      <div class="step-sub">Selecciona todos los que apliquen — usaremos esto para sugerirte contenido relevante.</div>
+
+      <div class="goals-grid" id="goalsGrid">
+        <div class="goal-btn" data-goal="leer_biblia" onclick="toggleGoal(this)">
+          <span class="goal-icon">📖</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Leer la Biblia completa</div>
+            <div class="goal-desc">Terminar de leer los 66 libros</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="estudio_profundo" onclick="toggleGoal(this)">
+          <span class="goal-icon">🔍</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Estudio profundo</div>
+            <div class="goal-desc">Análisis del texto original hebreo y griego</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="torah" onclick="toggleGoal(this)">
+          <span class="goal-icon">✡️</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Seguir el ciclo Torah</div>
+            <div class="goal-desc">Estudiar las 52 porciones semanales</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="devocional" onclick="toggleGoal(this)">
+          <span class="goal-icon">🙏</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Devocional diario</div>
+            <div class="goal-desc">Lectura y oración cada día</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="memorizar" onclick="toggleGoal(this)">
+          <span class="goal-icon">⭐</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Memorizar versículos</div>
+            <div class="goal-desc">Aprender textos clave de memoria</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="familia" onclick="toggleGoal(this)">
+          <span class="goal-icon">👨‍👩‍👧</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Estudio familiar</div>
+            <div class="goal-desc">Estudiar con mi familia o congregación</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="conexiones" onclick="toggleGoal(this)">
+          <span class="goal-icon">🔗</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Conexiones mesiánicas</div>
+            <div class="goal-desc">Ver cómo el AT apunta a Yeshúa</div>
+          </div>
+        </div>
+        <div class="goal-btn" data-goal="predicacion" onclick="toggleGoal(this)">
+          <span class="goal-icon">🎤</span>
+          <div class="goal-text-wrap">
+            <div class="goal-title">Preparar enseñanzas</div>
+            <div class="goal-desc">Para predicar o enseñar en la congregación</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-next" onclick="goStep(2)">Continuar →</button>
+      <button class="btn-skip" onclick="goStep(2)">Saltar por ahora</button>
+    </div>
+
+    <!-- ══ STEP 2: Meta de lectura ══ -->
+    <div class="step" id="step-2">
+      <div class="step-eyebrow">Paso 3 de 4</div>
+      <div class="step-title">Tu <span>meta</span> de lectura</div>
+      <div class="step-sub">¿Cuántos capítulos quieres leer por día? Puedes cambiar esto después.</div>
+
+      <div class="pace-options" id="paceOptions">
+        <div class="pace-btn" data-pace="1" onclick="selectPace(this)">
+          <div class="pace-num">1</div>
+          <div class="pace-label">Cap. / día</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Relajado</div>
+        </div>
+        <div class="pace-btn selected" data-pace="2" onclick="selectPace(this)">
+          <div class="pace-num">2</div>
+          <div class="pace-label">Cap. / día</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Recomendado</div>
+        </div>
+        <div class="pace-btn" data-pace="3" onclick="selectPace(this)">
+          <div class="pace-num">3</div>
+          <div class="pace-label">Cap. / día</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Constante</div>
+        </div>
+        <div class="pace-btn" data-pace="5" onclick="selectPace(this)">
+          <div class="pace-num">5</div>
+          <div class="pace-label">Cap. / día</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Intenso</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin:16px 0;text-align:center;">
+        <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Con este ritmo leerás la Biblia completa en</div>
+        <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold)" id="completionTime">~1 año y 2 meses</div>
+      </div>
+
+      <button class="btn-next" onclick="goStep(3)">Continuar →</button>
+    </div>
+
+    <!-- ══ STEP 3: Todo listo ══ -->
+    <div class="step" id="step-3">
+      <div class="welcome-hebrew">קֹדֶשׁ</div>
+      <div class="welcome-name" id="welcomeFinalName">SHALOM, NIKO</div>
+
+      <div class="welcome-stats">
+        <div class="welcome-stat">
+          <div class="welcome-stat-num">66</div>
+          <div class="welcome-stat-label">Libros</div>
+        </div>
+        <div class="welcome-stat">
+          <div class="welcome-stat-num">1,189</div>
+          <div class="welcome-stat-label">Capítulos</div>
+        </div>
+        <div class="welcome-stat">
+          <div class="welcome-stat-num">52</div>
+          <div class="welcome-stat-label">Porciones</div>
+        </div>
+      </div>
+
+      <div class="welcome-plan">
+        <div class="welcome-plan-title">✦ Tu plan personalizado está listo</div>
+        <div class="welcome-plan-text" id="welcomePlanText">Basado en tus objetivos hemos preparado tu experiencia en KODESH. El asistente de estudio ya conoce tus metas y te acompañará en cada capítulo.</div>
+      </div>
+
+      <button class="btn-next" id="btnFinish" onclick="finishOnboarding()">
+        Comenzar mi estudio →
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentStep = 0;
+let selectedGoals = [];
+let selectedPace = 2;
+let currentUser = null;
+
+const GOAL_LABELS = {
+  leer_biblia: 'Leer la Biblia completa',
+  estudio_profundo: 'Estudio profundo del texto original',
+  torah: 'Seguir el ciclo de Torah semanal',
+  devocional: 'Devocional diario',
+  memorizar: 'Memorizar versículos clave',
+  familia: 'Estudio familiar o congregacional',
+  conexiones: 'Descubrir conexiones mesiánicas',
+  predicacion: 'Preparar enseñanzas y predicaciones',
+};
+
+// Check auth
+sbClient.auth.getSession().then(({ data: { session } }) => {
+  if (!session) {
+    window.location.href = 'login.html';
+    return;
+  }
+  currentUser = session.user;
+  // Check if already onboarded
+  checkOnboarding();
+});
+
+async function checkOnboarding() {
+  const { data } = await sbClient
+    .from('user_profiles')
+    .select('onboarding_completed, display_name')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (data?.onboarding_completed) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // Pre-fill name from auth metadata
+  const authName = currentUser.user_metadata?.full_name || '';
+  if (authName) {
+    document.getElementById('displayName').value = authName.split(' ')[0];
+    updateGreeting();
+  }
+}
+
+/* ── Navigation ── */
+function goStep(n) {
+  if (n === 1) {
+    const name = document.getElementById('displayName').value.trim();
+    if (!name) {
+      showError('step0-error', 'Por favor escribe cómo quieres que te llamemos');
+      return;
+    }
+    hideError('step0-error');
+    // Update final welcome
+    document.getElementById('welcomeFinalName').textContent = `SHALOM, ${name.toUpperCase()}`;
+    updatePlanText();
+  }
+
+  // Animate out current
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  document.getElementById(`dot-${currentStep}`).classList.remove('active');
+  document.getElementById(`dot-${currentStep}`).classList.add('done');
+
+  currentStep = n;
+
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+  document.getElementById(`dot-${currentStep}`).classList.add('active');
+}
+
+/* ── Greeting ── */
+function updateGreeting() {
+  const name = document.getElementById('displayName').value.trim();
+  document.getElementById('greetName').textContent = name || 'hermano';
+}
+
+/* ── Goals ── */
+function toggleGoal(el) {
+  const goal = el.dataset.goal;
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!selectedGoals.includes(goal)) selectedGoals.push(goal);
+  } else {
+    selectedGoals = selectedGoals.filter(g => g !== goal);
+  }
+  updatePlanText();
+}
+
+/* ── Pace ── */
+function selectPace(el) {
+  document.querySelectorAll('.pace-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPace = parseInt(el.dataset.pace);
+  updateCompletionTime();
+}
+
+function updateCompletionTime() {
+  const totalChapters = 1189;
+  const days = Math.ceil(totalChapters / selectedPace);
+  const months = Math.round(days / 30);
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  let text = '';
+  if (years > 0) text += `${years} año${years > 1 ? 's' : ''}`;
+  if (remMonths > 0) text += ` y ${remMonths} mes${remMonths > 1 ? 'es' : ''}`;
+  if (!text) text = 'menos de 1 mes';
+  document.getElementById('completionTime').textContent = `~${text}`;
+}
+
+/* ── Plan text ── */
+function updatePlanText() {
+  const name = document.getElementById('displayName').value.trim() || 'tú';
+  let text = `Hola ${name} — `;
+
+  if (selectedGoals.length === 0) {
+    text += 'el asistente de estudio te acompañará en cada capítulo, explicando el contexto histórico y las conexiones mesiánicas del texto.';
+  } else {
+    const goalTexts = selectedGoals.map(g => GOAL_LABELS[g]).filter(Boolean);
+    if (goalTexts.length === 1) {
+      text += `tu objetivo de "${goalTexts[0]}" guiará las sugerencias del asistente bíblico.`;
+    } else {
+      text += `tus objetivos (${goalTexts.slice(0,-1).join(', ')} y ${goalTexts[goalTexts.length-1]}) guiarán tu experiencia personalizada.`;
+    }
+  }
+
+  const el = document.getElementById('welcomePlanText');
+  if (el) el.textContent = text;
+}
+
+/* ── Finish ── */
+async function finishOnboarding() {
+  const btn = document.getElementById('btnFinish');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const name = document.getElementById('displayName').value.trim();
+
+  try {
+    await sbClient.from('user_profiles').upsert({
+      id: currentUser.id,
+      display_name: name,
+      study_goals: selectedGoals,
+      reading_goal_chapters: selectedPace,
+      onboarding_completed: true,
+    }, { onConflict: 'id' });
+
+    // Also update auth metadata
+    await sbClient.auth.updateUser({
+      data: { display_name: name }
+    });
+
+    window.location.href = 'index.html';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Comenzar mi estudio →';
+    console.error(e);
+  }
+}
+
+/* ── Helpers ── */
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.classList.add('show'); }
+}
+function hideError(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
+
+// Init
+updateCompletionTime();
+</script>
+</body>
+</html>

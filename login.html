@@ -324,15 +324,33 @@ const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // If already logged in, redirect to app
 sbClient.auth.getSession().then(({ data: { session } }) => {
-  if (session) window.location.href = 'index.html';
+  if (session) checkAndRedirect(session.user);
 });
 
 // Listen for auth changes (e.g. OAuth redirect)
 sbClient.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
-    window.location.href = 'index.html';
+    checkAndRedirect(session.user);
   }
 });
+
+async function checkAndRedirect(user) {
+  try {
+    const { data } = await sbClient
+      .from('user_profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single();
+    if (data?.onboarding_completed) {
+      window.location.href = 'index.html';
+    } else {
+      window.location.href = 'onboarding.html';
+    }
+  } catch(e) {
+    // No profile yet — send to onboarding
+    window.location.href = 'onboarding.html';
+  }
+}
 
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));

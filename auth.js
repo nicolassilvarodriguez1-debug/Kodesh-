@@ -38,27 +38,42 @@ async function initAuth() {
   });
 }
 
+let userProfile = null;
+
+async function loadUserProfile(userId) {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const { data } = await sb
+      .from('user_profiles')
+      .select('display_name, study_goals, reading_goal_chapters, onboarding_completed')
+      .eq('id', userId)
+      .single();
+    userProfile = data;
+    return data;
+  } catch(e) { return null; }
+}
+
 /* ── USER LOGGED IN ── */
 async function onUserLoggedIn(user) {
   // Check if this is a different user than before
   const lastUserId = localStorage.getItem('kodesh_last_user');
   if (lastUserId && lastUserId !== user.id) {
-    // Different user — clear all local data
     localStorage.removeItem('kodesh_read');
     localStorage.removeItem('kodesh_bookmarks');
-    // Clear all notes
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('note:')) keysToRemove.push(key);
     }
     keysToRemove.forEach(k => localStorage.removeItem(k));
-    // Reset state
     state.readChapters = {};
     state.bookmarks = {};
   }
-  // Save current user id
   localStorage.setItem('kodesh_last_user', user.id);
+
+  // Load profile
+  await loadUserProfile(user.id);
 
   updateUserUI(user);
   await syncProgressFromCloud();
@@ -80,7 +95,12 @@ function updateUserUI(user) {
   if (!userBtn) return;
 
   if (user) {
-    const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+    // Use display_name from profile if available
+    const name = userProfile?.display_name
+      || user.user_metadata?.display_name
+      || user.user_metadata?.full_name
+      || user.email?.split('@')[0]
+      || 'Usuario';
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     userBtn.innerHTML = `
       <div class="user-avatar">${initials}</div>

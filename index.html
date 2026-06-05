@@ -2725,7 +2725,11 @@ function openProfile() {
   const user = currentUser;
   if (!user) { window.location.href = 'login.html'; return; }
 
-  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+  const name = (typeof userProfile !== 'undefined' && userProfile?.display_name)
+    || user.user_metadata?.display_name
+    || user.user_metadata?.full_name
+    || user.email?.split('@')[0]
+    || 'Usuario';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('profileAvatarBig').textContent = initials;
   document.getElementById('profileName').textContent = name;
@@ -3343,6 +3347,8 @@ async function sendMessage() {
         history: assistantHistory,
         book: assistantBook,
         chapter: assistantChapter,
+        userName: (typeof userProfile !== 'undefined' && userProfile?.display_name) || null,
+        userGoals: (typeof userProfile !== 'undefined' && userProfile?.study_goals) || [],
       })
     });
 
