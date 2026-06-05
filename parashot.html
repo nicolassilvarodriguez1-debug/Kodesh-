@@ -82,6 +82,39 @@ html.light .btn-gold{background:linear-gradient(135deg,#c8960a,#a07008);color:#f
 .btn-study{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:6px;border:1px solid var(--gold-dim);color:var(--gold);background:transparent;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
 .btn-study:hover{background:var(--gold-glow);}
 
+/* ── INTRO SECTION ── */
+.intro-section{margin:0 40px 8px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg2);}
+.intro-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;transition:background 0.2s;user-select:none;}
+.intro-toggle:hover{background:var(--bg3);}
+.intro-toggle-left{display:flex;align-items:center;gap:10px;}
+.intro-toggle-icon{font-size:1.1rem;}
+.intro-toggle-title{font-family:'Cinzel',serif;font-size:0.75rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
+.intro-toggle-arrow{font-size:0.7rem;color:var(--gold-dim);transition:transform 0.3s;}
+.intro-toggle-arrow.open{transform:rotate(180deg);}
+.intro-content{display:none;padding:0 20px 20px;border-top:1px solid var(--border);}
+.intro-content.open{display:block;}
+.intro-highlight{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#0a0800,#140e02);border:1px solid var(--gold-dim);border-radius:10px;padding:16px 18px;margin:16px 0;}
+html.light .intro-highlight{background:linear-gradient(135deg,#f5efe0,#ede4cc);}
+.intro-block-icon{font-size:1.5rem;flex-shrink:0;margin-top:2px;}
+.intro-block-title{font-family:'Cinzel',serif;font-size:0.78rem;font-weight:600;color:var(--gold);letter-spacing:1px;margin-bottom:6px;}
+.intro-block-text{font-size:0.95rem;color:var(--text-mid);line-height:1.7;}
+.intro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
+.intro-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color 0.2s;}
+.intro-card:hover{border-color:var(--gold-dim);}
+.intro-card-icon{font-size:1.3rem;margin-bottom:8px;display:block;}
+.intro-card-title{font-family:'Cinzel',serif;font-size:0.72rem;font-weight:600;letter-spacing:1px;color:var(--text);margin-bottom:8px;text-transform:uppercase;}
+.intro-card-text{font-size:0.9rem;color:var(--text-dim);line-height:1.65;}
+.intro-card-text strong{color:var(--gold);font-weight:600;}
+.intro-card-text em{color:var(--text-mid);font-style:italic;}
+.intro-quote{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:14px 18px;margin-top:4px;}
+.intro-quote-text{font-size:1.05rem;color:var(--text-mid);line-height:1.6;font-style:italic;margin-bottom:6px;}
+.intro-quote-ref{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);}
+@media(max-width:768px){
+  .intro-section{margin:0 16px 8px;}
+  .intro-grid{grid-template-columns:1fr;}
+  .intro-toggle-title{font-size:0.65rem;}
+}
+
 /* ── FILTER TABS ── */
 .filter-bar{padding:16px 40px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
 .filter-title{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-right:8px;}
@@ -275,7 +308,73 @@ html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9
     <div class="current-refs" id="currentRefs"></div>
   </div>
   <div class="current-heb" id="currentHeb"></div>
-  <button class="btn-study" id="btnCurrentStudy">Estudiar →</button>
+  <button class="btn-study" id="btnCurrentStudy">Leer en Biblia →</button>
+</div>
+
+<!-- ══ INTRO EDUCATIVA ══ -->
+<div class="intro-section" id="introSection">
+  <div class="intro-toggle" onclick="toggleIntro()">
+    <div class="intro-toggle-left">
+      <span class="intro-toggle-icon">📜</span>
+      <span class="intro-toggle-title">¿Qué es el Ciclo de Estudio de la Torah?</span>
+    </div>
+    <span class="intro-toggle-arrow" id="introArrow">▼</span>
+  </div>
+
+  <div class="intro-content" id="introContent">
+
+    <div class="intro-block intro-highlight">
+      <div class="intro-block-icon">✡️</div>
+      <div>
+        <div class="intro-block-title">Una tradición de más de 2,500 años</div>
+        <div class="intro-block-text">Desde el tiempo de Esdras y Nehemías (siglo V a.C.), el pueblo de Dios ha leído la Torah de manera sistemática, semana a semana, a lo largo de todo un año. Esta práctica ha unido a comunidades de creyentes en todo el mundo — leyendo exactamente el mismo pasaje, en la misma semana, durante más de dos milenios.</div>
+      </div>
+    </div>
+
+    <div class="intro-grid">
+      <div class="intro-card">
+        <div class="intro-card-icon">📖</div>
+        <div class="intro-card-title">¿Qué es la Torah?</div>
+        <div class="intro-card-text">Torah (תּוֹרָה) significa <em>instrucción</em> o <em>enseñanza</em> — no simplemente "ley". Son los cinco primeros libros de la Biblia escritos por Moisés: Génesis, Éxodo, Levítico, Números y Deuteronomio. Contienen la historia de la creación, la caída, los patriarcas, el éxodo de Egipto y las instrucciones de vida que Dios dio a su pueblo.</div>
+      </div>
+
+      <div class="intro-card">
+        <div class="intro-card-icon">🗓️</div>
+        <div class="intro-card-title">¿Cómo funciona el ciclo?</div>
+        <div class="intro-card-text">Los cinco libros de Moisés se dividen en <strong>52 porciones semanales</strong> — una por cada semana del año. El ciclo comienza en otoño con Bereshit ("En el principio" — Génesis 1) y termina 52 semanas después con Vezot HaBerakhá ("Esta es la bendición" — Deuteronomio 33-34). Luego comienza de nuevo.</div>
+      </div>
+
+      <div class="intro-card">
+        <div class="intro-card-icon">🏷️</div>
+        <div class="intro-card-title">¿Por qué tienen nombres hebreos?</div>
+        <div class="intro-card-text">Cada porción recibe el nombre de las primeras palabras significativas del texto hebreo original. Por ejemplo, la primera porción se llama <strong>Bereshit</strong> porque comienza con "Bereshit bara Elohim" — "En el principio creó Dios". Este sistema facilita referirse a la porción sin necesitar citar capítulos y versículos.</div>
+      </div>
+
+      <div class="intro-card">
+        <div class="intro-card-icon">🔗</div>
+        <div class="intro-card-title">Las tres lecturas de cada semana</div>
+        <div class="intro-card-text">Cada semana incluye tres lecturas conectadas: la <strong>Torah</strong> (porción de Moisés), la <strong>Haftarah</strong> (un pasaje de los Profetas que conecta temáticamente con la Torah), y la <strong>lectura del Nuevo Pacto</strong> — donde vemos cómo Yeshúa y los apóstoles cumplieron y profundizaron lo que la Torah enseñó.</div>
+      </div>
+
+      <div class="intro-card">
+        <div class="intro-card-icon">🌍</div>
+        <div class="intro-card-title">Una práctica global</div>
+        <div class="intro-card-text">Hoy mismo, millones de creyentes en todo el mundo — desde Jerusalén hasta São Paulo, desde Nueva York hasta Lagos — están leyendo la misma porción semanal. Al seguir este ciclo, te unes a una cadena ininterrumpida de estudio que atraviesa culturas, siglos y continentes.</div>
+      </div>
+
+      <div class="intro-card">
+        <div class="intro-card-icon">💡</div>
+        <div class="intro-card-title">¿Cómo estudiar cada porción?</div>
+        <div class="intro-card-text">1. <strong>Lee</strong> los capítulos de la Torah indicados. 2. <strong>Observa</strong> los temas, personajes y mandamientos. 3. <strong>Lee la Haftarah</strong> y busca la conexión con la Torah. 4. <strong>Lee el Nuevo Pacto</strong> y descubre cómo Yeshúa cumple o profundiza la porción. 5. <strong>Aplica</strong> a tu vida lo que el Espíritu te muestra.</div>
+      </div>
+    </div>
+
+    <div class="intro-quote">
+      <div class="intro-quote-text">"Este libro de la Torah no se apartará de tu boca, sino que de día y de noche meditarás en él..."</div>
+      <div class="intro-quote-ref">Josué 1:8</div>
+    </div>
+
+  </div>
 </div>
 
 <!-- FILTER BAR -->
@@ -563,6 +662,25 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+/* ── INTRO TOGGLE ── */
+function toggleIntro() {
+  const content = document.getElementById('introContent');
+  const arrow = document.getElementById('introArrow');
+  const isOpen = content.classList.toggle('open');
+  arrow.classList.toggle('open', isOpen);
+  // Save preference
+  localStorage.setItem('kodesh_intro_open', isOpen ? '1' : '0');
+}
+
+function initIntro() {
+  // Open by default on first visit
+  const saved = localStorage.getItem('kodesh_intro_open');
+  if (saved === null || saved === '1') {
+    document.getElementById('introContent').classList.add('open');
+    document.getElementById('introArrow').classList.add('open');
+  }
+}
+
 /* ── THEME ── */
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
@@ -578,6 +696,7 @@ function initTheme() {
 
 /* ── INIT ── */
 initTheme();
+initIntro();
 loadData();
 </script>
 </body>
