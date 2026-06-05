@@ -2,7 +2,7 @@
 // Include this before the closing </body> tag in index.html
 
 const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_iTWMlWH6y7Utw3_xpiaQtA_Wv9fbxVL';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 
 let _supabase = null;
 let currentUser = null;
