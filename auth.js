@@ -41,10 +41,12 @@ async function initAuth() {
 /* ── USER LOGGED IN ── */
 async function onUserLoggedIn(user) {
   updateUserUI(user);
-  // Load cloud progress and merge with local
   await syncProgressFromCloud();
+  await syncBookmarksFromCloud();
+  await syncNotesFromCloud();
   updateProgress();
   updateBookList();
+  renderBookmarkList();
 }
 
 /* ── USER LOGGED OUT ── */
@@ -64,7 +66,7 @@ function updateUserUI(user) {
       <div class="user-avatar">${initials}</div>
       <span class="user-name">${name.split(' ')[0]}</span>
     `;
-    userBtn.onclick = showUserMenu;
+    userBtn.onclick = openProfile;
   } else {
     userBtn.innerHTML = `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px">Entrar</span>`;
     userBtn.onclick = () => window.location.href = 'login.html';
