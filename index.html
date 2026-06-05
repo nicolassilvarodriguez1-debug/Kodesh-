@@ -836,24 +836,195 @@ body::before {
 .bm-count { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--gold); }
 
 @media (max-width: 768px) {
+  /* ── Layout ── */
   .app {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "topbar"
-      "main";
+    grid-template-areas: "topbar" "main";
   }
+
+  /* ── Topbar mobile ── */
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+    height: 56px;
+  }
+  .logo-sep { display: none; }
+  .logo-txt { font-size: 0.9rem; letter-spacing: 2px; }
+  .logo-heb { font-size: 1.1rem; }
+  .topbar-center { display: none; } /* Hide progress bar on mobile */
+  .version-select { display: none; } /* Hide version selector on mobile */
+  .btn-premium { display: none; } /* Hide Berith on mobile topbar */
+  .user-name { display: none; } /* Show only avatar */
+  .btn-search-open span { display: none; } /* Show only icon */
+  .btn-search-open { padding: 6px 8px; }
+
+  /* ── Sidebar as bottom sheet ── */
   .sidebar {
     position: fixed;
-    left: -280px;
-    top: 64px;
-    height: calc(100vh - 64px);
+    bottom: 0; left: 0; right: 0;
+    top: auto;
+    height: 75vh;
+    width: 100%;
+    border-right: none;
+    border-top: 1px solid var(--gold-dim);
+    border-radius: 16px 16px 0 0;
     z-index: 200;
-    transition: left 0.3s ease;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
   }
-  .sidebar.open { left: 0; }
+  .sidebar.open { transform: translateY(0); left: 0; }
   .sidebar-toggle { display: flex; }
-  .main { padding: 24px 20px; }
-  .chapter-title { font-size: 1.4rem; }
+
+  /* ── Main content ── */
+  .main {
+    padding: 16px 16px 100px; /* bottom padding for nav bar */
+    margin: 0;
+    max-width: 100%;
+  }
+
+  /* ── Chapter header ── */
+  .chapter-header { margin-bottom: 20px; padding-bottom: 16px; }
+  .chapter-title { font-size: 1.5rem; }
+  .chapter-meta {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .chapter-badge { font-size: 0.65rem; }
+  .btn-study-chapter, .btn-notes-chapter, .btn-read-toggle {
+    font-size: 0.58rem;
+    padding: 6px 10px;
+    letter-spacing: 1px;
+  }
+
+  /* ── Bible text ── */
+  .bible-text { font-size: 1.05rem; line-height: 1.85; }
+
+  /* ── Parasha banner ── */
+  .parasha-banner {
+    padding: 10px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .parasha-banner-heb { font-size: 1.2rem; }
+  .parasha-banner-name { font-size: 0.8rem; }
+  .parasha-chap-dots { max-width: 100px; }
+  .parasha-banner-link { font-size: 0.55rem; padding: 4px 8px; }
+
+  /* ── Chapter nav ── */
+  .chapter-nav { margin-top: 32px; }
+  .btn-nav { font-size: 0.6rem; padding: 8px 12px; }
+
+  /* ── Lexicon popup ── */
+  .lexicon-popup {
+    width: calc(100vw - 24px);
+    left: 12px !important;
+    bottom: 80px;
+    top: auto !important;
+    position: fixed;
+  }
+
+  /* ── Search modal ── */
+  .search-overlay { padding: 0; align-items: flex-end; }
+  .search-modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 85vh;
+    border-bottom: none;
+  }
+  .search-examples { display: none; } /* Hide on mobile for space */
+
+  /* ── Assistant panel ── */
+  .assistant-overlay { justify-content: flex-end; align-items: flex-end; }
+  .assistant-panel {
+    width: 100%;
+    height: 85vh;
+    border-left: none;
+    border-top: 1px solid var(--gold-dim);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+  }
+  .assistant-overlay.open .assistant-panel { transform: translateY(0); }
+
+  /* ── Notes panel ── */
+  .notes-overlay { justify-content: flex-end; align-items: flex-end; }
+  .notes-panel {
+    width: 100%;
+    height: 85vh;
+    border-left: none;
+    border-top: 1px solid var(--gold-dim);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+  }
+  .notes-overlay.open .notes-panel { transform: translateY(0); }
+
+  /* ── Profile panel ── */
+  .profile-overlay { padding: 0; align-items: flex-end; }
+  .profile-panel {
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+    border-bottom: none;
+  }
+
+  /* ── Bookmark menu ── */
+  .bookmark-menu {
+    width: calc(100vw - 24px);
+    left: 12px !important;
+    bottom: 80px;
+    top: auto !important;
+    position: fixed;
+  }
+}
+
+/* ── Bottom navigation bar for mobile ── */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 64px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 300;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+}
+@media (max-width: 768px) {
+  .mobile-nav { display: flex; }
+}
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
+  flex: 1;
+}
+.mobile-nav-btn:hover, .mobile-nav-btn.active {
+  background: var(--gold-glow);
+}
+.mobile-nav-icon { font-size: 1.2rem; line-height: 1; }
+.mobile-nav-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.mobile-nav-btn.active .mobile-nav-label { color: var(--gold); }
+.mobile-nav-progress {
+  position: absolute;
+  top: -2px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  transform-origin: left;
+  transition: transform 0.5s ease;
 }
 
 /* ════════════════════════════════════════
@@ -1403,6 +1574,31 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
     <button class="lex-close" onclick="closeLexicon()">Cerrar</button>
   </div>
 </div>
+
+<!-- ══ MOBILE BOTTOM NAV ══ -->
+<nav class="mobile-nav" id="mobileNav">
+  <div class="mobile-nav-progress" id="mobileNavProgress" style="transform:scaleX(0)"></div>
+  <button class="mobile-nav-btn active" id="mnav-biblia" onclick="mobileNavTo('biblia')">
+    <span class="mobile-nav-icon">📖</span>
+    <span class="mobile-nav-label">Biblia</span>
+  </button>
+  <button class="mobile-nav-btn" id="mnav-buscar" onclick="openSearch()">
+    <span class="mobile-nav-icon">🔍</span>
+    <span class="mobile-nav-label">Buscar</span>
+  </button>
+  <button class="mobile-nav-btn" id="mnav-parashot" onclick="window.location.href='parashot.html'">
+    <span class="mobile-nav-icon">🕍</span>
+    <span class="mobile-nav-label">Parashot</span>
+  </button>
+  <button class="mobile-nav-btn" id="mnav-marcadores" onclick="mobileNavTo('marcadores')">
+    <span class="mobile-nav-icon">🔖</span>
+    <span class="mobile-nav-label">Marcadores</span>
+  </button>
+  <button class="mobile-nav-btn" id="mnav-perfil" onclick="openProfile()">
+    <span class="mobile-nav-icon">👤</span>
+    <span class="mobile-nav-label">Perfil</span>
+  </button>
+</nav>
 
 <!-- ══ CHAPTER NOTES PANEL ══ -->
 <div class="notes-overlay" id="notesOverlay" onclick="closeNotesOutside(event)">
@@ -1998,6 +2194,7 @@ function updateProgress() {
   const pct = (readCount / TOTAL_CHAPTERS * 100).toFixed(1);
   document.getElementById('globalProgressBar').style.width = pct + '%';
   document.getElementById('globalProgressPct').textContent = pct + '%';
+  updateMobileProgress();
 }
 
 /* ════════════════════════════════════
@@ -2153,7 +2350,20 @@ document.addEventListener('click', (e) => {
    SIDEBAR TOGGLE (mobile)
 ════════════════════════════════════ */
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const sidebar = document.getElementById('sidebar');
+  const isOpen = sidebar.classList.toggle('open');
+  // On mobile add/remove overlay backdrop
+  if (window.innerWidth <= 768) {
+    if (isOpen) {
+      const backdrop = document.createElement('div');
+      backdrop.id = 'sidebarBackdrop';
+      backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199';
+      backdrop.onclick = () => { sidebar.classList.remove('open'); backdrop.remove(); };
+      document.body.appendChild(backdrop);
+    } else {
+      document.getElementById('sidebarBackdrop')?.remove();
+    }
+  }
 }
 
 /* ════════════════════════════════════
@@ -2166,6 +2376,35 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ════════════════════════════════════
+   MOBILE NAV
+════════════════════════════════════ */
+function mobileNavTo(tab) {
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById(`mnav-${tab}`);
+  if (btn) btn.classList.add('active');
+
+  if (tab === 'biblia') {
+    // Already on bible — just close sidebar if open
+    document.getElementById('sidebar').classList.remove('open');
+  } else if (tab === 'marcadores') {
+    // Open sidebar and scroll to bookmarks
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.add('open');
+    setTimeout(() => {
+      const bms = document.getElementById('bookmarksSection');
+      if (bms) bms.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+}
+
+function updateMobileProgress() {
+  const bar = document.getElementById('mobileNavProgress');
+  if (!bar) return;
+  const pct = Object.keys(state.readChapters).length / TOTAL_CHAPTERS;
+  bar.style.transform = `scaleX(${pct})`;
 }
 
 /* ════════════════════════════════════
