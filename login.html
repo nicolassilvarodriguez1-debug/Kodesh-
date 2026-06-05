@@ -320,15 +320,15 @@ body::before {
 <script>
 const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // If already logged in, redirect to app
-supabase.auth.getSession().then(({ data: { session } }) => {
+sbClient.auth.getSession().then(({ data: { session } }) => {
   if (session) window.location.href = 'index.html';
 });
 
 // Listen for auth changes (e.g. OAuth redirect)
-supabase.auth.onAuthStateChange((event, session) => {
+sbClient.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
     window.location.href = 'index.html';
   }
@@ -357,7 +357,7 @@ async function login() {
   btn.disabled = true;
   btn.textContent = 'Entrando...';
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await sbClient.auth.signInWithPassword({ email, password });
 
   if (error) {
     btn.disabled = false;
@@ -380,7 +380,7 @@ async function register() {
   btn.disabled = true;
   btn.textContent = 'Creando cuenta...';
 
-  const { error } = await supabase.auth.signUp({
+  const { error } = await sbClient.auth.signUp({
     email,
     password,
     options: { data: { full_name: name } }
@@ -397,7 +397,7 @@ async function register() {
 }
 
 async function loginGoogle() {
-  await supabase.auth.signInWithOAuth({
+  await sbClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin + '/index.html' }
   });
@@ -407,7 +407,7 @@ async function forgotPassword() {
   const email = document.getElementById('login-email').value.trim();
   if (!email) return showMsg('login-msg', 'error', 'Escribe tu correo primero');
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await sbClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + '/index.html'
   });
 
