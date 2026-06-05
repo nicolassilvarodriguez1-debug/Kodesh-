@@ -74,6 +74,7 @@ async function onUserLoggedIn(user) {
 
   // Load profile
   await loadUserProfile(user.id);
+  await loadStreak();
 
   updateUserUI(user);
   await syncProgressFromCloud();
@@ -82,6 +83,8 @@ async function onUserLoggedIn(user) {
   updateProgress();
   updateBookList();
   renderBookmarkList();
+  renderStreakBadge();
+  renderDailyPlan();
 }
 
 /* ── USER LOGGED OUT ── */
@@ -228,4 +231,170 @@ async function removeChapterFromCloud(bookId, chapter) {
   } catch (e) {
     console.warn('Remove error:', e.message);
   }
+}
+
+/* ════════════════════════════════════
+   READING STREAK SYSTEM
+════════════════════════════════════ */
+let userStreak = {
+  current: 0,
+  longest: 0,
+  lastReadDate: null,
+  totalDays: 0,
+};
+
+async function loadStreak() {
+  const sb = getSupabase();
+  if (!sb || !currentUser) return;
+  try {
+    const { data } = await sb
+      .from('reading_streaks')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single();
+    if (data) {
+      userStreak = {
+        current: data.current_streak || 0,
+        longest: data.longest_streak || 0,
+        lastReadDate: data.last_read_date,
+        totalDays: data.total_days_read || 0,
+      };
+    }
+  } catch(e) { /* no streak yet */ }
+}
+
+async function updateStreak() {
+  const sb = getSupabase();
+  if (!sb || !currentUser) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const last = userStreak.lastReadDate;
+
+  if (last === today) return; // Already recorded today
+
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  let newCurrent;
+
+  if (last === yesterday) {
+    // Consecutive day — extend streak
+    newCurrent = userStreak.current + 1;
+  } else if (!last || last < yesterday) {
+    // Streak broken or new
+    newCurrent = 1;
+  } else {
+    return;
+  }
+
+  const newLongest = Math.max(newCurrent, userStreak.longest);
+  const newTotal = userStreak.totalDays + 1;
+
+  userStreak = {
+    current: newCurrent,
+    longest: newLongest,
+    lastReadDate: today,
+    totalDays: newTotal,
+  };
+
+  try {
+    await sb.from('reading_streaks').upsert({
+      user_id: currentUser.id,
+      current_streak: newCurrent,
+      longest_streak: newLongest,
+      last_read_date: today,
+      total_days_read: newTotal,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+
+    // Show streak toast
+    if (newCurrent > 1) {
+      showToast(`🔥 ¡${newCurrent} días seguidos leyendo!`);
+    } else {
+      showToast('✨ ¡Nuevo día de lectura!');
+    }
+    // Update streak display
+    renderStreakBadge();
+  } catch(e) { console.warn('Streak update error:', e); }
+}
+
+function renderStreakBadge() {
+  const badge = document.getElementById('streakBadge');
+  if (!badge) return;
+  if (userStreak.current > 0) {
+    badge.textContent = `🔥 ${userStreak.current}`;
+    badge.style.display = 'flex';
+  }
+}
+
+/* ════════════════════════════════════
+   DAILY READING PLAN
+════════════════════════════════════ */
+const BIBLE_ORDER = [
+  'GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA',
+  '1KI','2KI','1CH','2CH','EZR','NEH','EST','JOB','PSA','PRO',
+  'ECC','SNG','ISA','JER','LAM','EZK','DAN','HOS','JOL','AMO',
+  'OBA','JON','MIC','NAM','HAB','ZEP','HAG','ZEC','MAL',
+  'MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH',
+  'PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS',
+  '1PE','2PE','1JN','2JN','3JN','JUD','REV'
+];
+
+const CHAPTER_COUNTS = {
+  GEN:50,EXO:40,LEV:27,NUM:36,DEU:34,JOS:24,JDG:21,RUT:4,
+  '1SA':31,'2SA':24,'1KI':22,'2KI':25,'1CH':29,'2CH':36,
+  EZR:10,NEH:13,EST:10,JOB:42,PSA:150,PRO:31,ECC:12,SNG:8,
+  ISA:66,JER:52,LAM:5,EZK:48,DAN:12,HOS:14,JOL:3,AMO:9,
+  OBA:1,JON:4,MIC:7,NAM:3,HAB:3,ZEP:3,HAG:2,ZEC:14,MAL:4,
+  MAT:28,MRK:16,LUK:24,JHN:21,ACT:28,ROM:16,'1CO':16,'2CO':13,
+  GAL:6,EPH:6,PHP:4,COL:4,'1TH':5,'2TH':3,'1TI':6,'2TI':4,
+  TIT:3,PHM:1,HEB:13,JAS:5,'1PE':5,'2PE':3,'1JN':5,'2JN':1,
+  '3JN':1,JUD:1,REV:22
+};
+
+const BOOK_NAMES_MAP = {
+  GEN:'Génesis',EXO:'Éxodo',LEV:'Levítico',NUM:'Números',DEU:'Deuteronomio',
+  JOS:'Josué',JDG:'Jueces',RUT:'Rut','1SA':'1 Samuel','2SA':'2 Samuel',
+  '1KI':'1 Reyes','2KI':'2 Reyes','1CH':'1 Crónicas','2CH':'2 Crónicas',
+  EZR:'Esdras',NEH:'Nehemías',EST:'Ester',JOB:'Job',PSA:'Salmos',
+  PRO:'Proverbios',ECC:'Eclesiastés',SNG:'Cantares',ISA:'Isaías',
+  JER:'Jeremías',LAM:'Lamentaciones',EZK:'Ezequiel',DAN:'Daniel',
+  HOS:'Oseas',JOL:'Joel',AMO:'Amós',OBA:'Abdías',JON:'Jonás',
+  MIC:'Miqueas',NAM:'Nahúm',HAB:'Habacuc',ZEP:'Sofonías',HAG:'Hageo',
+  ZEC:'Zacarías',MAL:'Malaquías',MAT:'Mateo',MRK:'Marcos',LUK:'Lucas',
+  JHN:'Juan',ACT:'Hechos',ROM:'Romanos','1CO':'1 Corintios','2CO':'2 Corintios',
+  GAL:'Gálatas',EPH:'Efesios',PHP:'Filipenses',COL:'Colosenses',
+  '1TH':'1 Tesalonicenses','2TH':'2 Tesalonicenses','1TI':'1 Timoteo',
+  '2TI':'2 Timoteo',TIT:'Tito',PHM:'Filemón',HEB:'Hebreos',JAS:'Santiago',
+  '1PE':'1 Pedro','2PE':'2 Pedro','1JN':'1 Juan','2JN':'2 Juan',
+  '3JN':'3 Juan',JUD:'Judas',REV:'Apocalipsis'
+};
+
+function getNextChaptersToRead(count = 1) {
+  // Find first unread chapters in Bible order
+  const suggestions = [];
+  for (const bookId of BIBLE_ORDER) {
+    if (suggestions.length >= count) break;
+    const total = CHAPTER_COUNTS[bookId];
+    for (let ch = 1; ch <= total; ch++) {
+      if (suggestions.length >= count) break;
+      const key = `${bookId}:${ch}`;
+      if (!state.readChapters[key]) {
+        suggestions.push({ bookId, chapter: ch, bookName: BOOK_NAMES_MAP[bookId] });
+      }
+    }
+  }
+  return suggestions;
+}
+
+function getTodayProgress() {
+  // Check how many chapters marked today (using localStorage timestamp)
+  const todayKey = 'kodesh_today_' + new Date().toISOString().split('T')[0];
+  return parseInt(localStorage.getItem(todayKey) || '0');
+}
+
+function recordTodayChapter() {
+  const todayKey = 'kodesh_today_' + new Date().toISOString().split('T')[0];
+  const current = parseInt(localStorage.getItem(todayKey) || '0');
+  localStorage.setItem(todayKey, current + 1);
+  updateStreak();
+  renderDailyPlan();
 }

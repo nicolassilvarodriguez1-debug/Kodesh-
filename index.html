@@ -1131,6 +1131,25 @@ html.light .lex-header {
 }
 html.light body::before { opacity: 0.06; }
 
+/* ── Streak badge ── */
+.streak-badge {
+  background: linear-gradient(135deg, #3a1a00, #5a2a00);
+  border: 1px solid #c97a2a;
+  color: #f0a040;
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.streak-badge:hover { box-shadow: 0 0 12px rgba(201, 120, 40, 0.3); }
+
 /* ── User button ── */
 .user-btn {
   background: var(--bg3);
@@ -1906,6 +1925,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
         <option value="KJV">KJV</option>
       </select>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+      <div class="streak-badge" id="streakBadge" style="display:none"></div>
       <button class="user-btn" id="userBtn" onclick="window.location.href='login.html'">
         <span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px">Entrar</span>
       </button>
@@ -2292,6 +2312,7 @@ function toggleRead() {
     state.readChapters[key] = true;
     showToast('✓ Capítulo marcado como leído');
     saveChapterToCloud(state.currentBook, state.currentChapter);
+    recordTodayChapter(); // Update streak
   }
   localStorage.setItem('kodesh_read', JSON.stringify(state.readChapters));
   updateProgress();
@@ -2760,39 +2781,119 @@ function switchProfileTab(tab) {
   if (tab === 'notes') renderProfileNotes();
 }
 
-/* ── Stats ── */
+/* ════════════════════════════════════
+   DAILY PLAN RENDER
+════════════════════════════════════ */
+function renderDailyPlan() {
+  // Update profile stats if open
+  const statsEl = document.getElementById('statsGrid');
+  if (statsEl && document.getElementById('pcontent-stats')?.classList.contains('active')) {
+    renderProfileStats();
+  }
+}
+
+/* ── Profile Stats ── */
 function renderProfileStats() {
   const readCount = Object.keys(state.readChapters).length;
   const pct = (readCount / TOTAL_CHAPTERS * 100).toFixed(1);
   const bmCount = Object.keys(state.bookmarks).length;
 
-  // Books completed
   const allBooks = getAllBooks();
   const booksCompleted = allBooks.filter(b =>
     Array.from({length: b.chapters}, (_,i) => isChapterRead(b.id, i+1)).every(Boolean)
   ).length;
 
-  // Notes count
   let notesCount = 0;
   for (let i = 0; i < localStorage.length; i++) {
-    if (localStorage.key(i).startsWith('note:')) notesCount++;
+    if (localStorage.key(i)?.startsWith('note:')) notesCount++;
   }
 
-  // Bookmarks by category
+  const goalChapters = userProfile?.reading_goal_chapters || 2;
+  const todayRead = getTodayProgress();
+  const todayPct = Math.min(100, Math.round((todayRead / goalChapters) * 100));
+
+  // Next chapters to read
+  const nextChapters = (typeof getNextChaptersToRead === 'function')
+    ? getNextChaptersToRead(goalChapters)
+    : [];
+
   const bmByCategory = {};
   Object.values(state.bookmarks).forEach(bm => {
     bmByCategory[bm.color] = (bmByCategory[bm.color] || 0) + 1;
   });
 
   const grid = document.getElementById('statsGrid');
+  if (!grid) return;
+
+  // Streak section
+  const streakCurrent = (typeof userStreak !== 'undefined') ? userStreak.current : 0;
+  const streakLongest = (typeof userStreak !== 'undefined') ? userStreak.longest : 0;
+  const streakTotal = (typeof userStreak !== 'undefined') ? userStreak.totalDays : 0;
+
+  // Today's plan
+  const todayPlanHtml = nextChapters.length > 0 ? `
+    <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+      <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">
+        📅 Plan de hoy — ${todayRead}/${goalChapters} cap. leídos
+      </div>
+      <div style="background:var(--bg2);border-radius:6px;height:6px;margin-bottom:12px;overflow:hidden">
+        <div style="height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));width:${todayPct}%;border-radius:6px;transition:width 0.5s"></div>
+      </div>
+      ${nextChapters.map(ch => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border)">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--text)">${ch.bookName} ${ch.chapter}</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">Próximo capítulo a leer</div>
+          </div>
+          <button onclick="goToBookmark('${ch.bookId}',${ch.chapter},1);closeProfile()" 
+            style="background:var(--gold-glow);border:1px solid var(--gold-dim);color:var(--gold);
+            font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:1px;text-transform:uppercase;
+            padding:6px 10px;border-radius:6px;cursor:pointer">
+            Leer →
+          </button>
+        </div>
+      `).join('')}
+    </div>
+  ` : `
+    <div style="grid-column:span 2;background:var(--green-dim);border:1px solid var(--green);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:6px">🎉</div>
+      <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--green)">¡Biblia completa leída!</div>
+    </div>
+  `;
+
   grid.innerHTML = `
+    ${todayPlanHtml}
+
+    <div style="grid-column:span 2;margin-top:4px">
+      <div class="stat-section-title" style="padding:8px 0 10px;border-top:1px solid var(--border)">🔥 Racha de lectura</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num" style="color:#f0a040">${streakCurrent}</div>
+      <div class="stat-card-label">Días seguidos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num" style="color:#f0a040">${streakLongest}</div>
+      <div class="stat-card-label">Mejor racha</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num">${streakTotal}</div>
+      <div class="stat-card-label">Días leídos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num">${goalChapters}</div>
+      <div class="stat-card-label">Meta diaria</div>
+    </div>
+
+    <div style="grid-column:span 2">
+      <div class="stat-section-title" style="padding:8px 0 10px;border-top:1px solid var(--border)">📖 Progreso general</div>
+    </div>
     <div class="stat-card">
       <div class="stat-card-num">${pct}%</div>
       <div class="stat-card-label">Biblia leída</div>
     </div>
     <div class="stat-card">
       <div class="stat-card-num">${readCount}</div>
-      <div class="stat-card-label">Capítulos leídos</div>
+      <div class="stat-card-label">Caps. leídos</div>
     </div>
     <div class="stat-card">
       <div class="stat-card-num">${booksCompleted}</div>
@@ -2806,22 +2907,21 @@ function renderProfileStats() {
       <div class="stat-card-num">${notesCount}</div>
       <div class="stat-card-label">Notas de estudio</div>
     </div>
-  `;
 
-  // Bookmarks breakdown
-  if (Object.keys(bmByCategory).length > 0) {
-    grid.innerHTML += `<div style="grid-column:span 2"><div class="stat-section-title">Marcadores por categoría</div></div>`;
-    Object.entries(bmByCategory).forEach(([color, count]) => {
-      const cat = BOOKMARK_CATEGORIES[color];
-      grid.innerHTML += `
-        <div class="stat-bm-row" style="grid-column:span 2">
+    ${Object.keys(bmByCategory).length > 0 ? `
+      <div style="grid-column:span 2">
+        <div class="stat-section-title" style="padding:8px 0 6px;border-top:1px solid var(--border)">Marcadores por categoría</div>
+      </div>
+      ${Object.entries(bmByCategory).map(([color, count]) => {
+        const cat = BOOKMARK_CATEGORIES[color];
+        return `<div class="stat-bm-row" style="grid-column:span 2">
           <div class="stat-bm-dot" style="background:${cat.color}"></div>
           <div class="stat-bm-name">${cat.emoji} ${cat.name}</div>
           <div class="stat-bm-num">${count}</div>
-        </div>
-      `;
-    });
-  }
+        </div>`;
+      }).join('')}
+    ` : ''}
+  `;
 }
 
 /* ── Profile Bookmarks ── */
