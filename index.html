@@ -1437,7 +1437,10 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
         <div class="profile-name" id="profileName">—</div>
         <div class="profile-email" id="profileEmail">—</div>
       </div>
-      <button class="profile-close" onclick="closeProfile()">✕</button>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <button class="profile-close" onclick="closeProfile()">✕</button>
+        <button onclick="signOut()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all 0.15s;white-space:nowrap" onmouseover="this.style.background='rgba(224,90,90,0.1)'" onmouseout="this.style.background='none'">Salir</button>
+      </div>
     </div>
 
     <!-- Tabs -->

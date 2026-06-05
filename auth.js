@@ -121,7 +121,9 @@ function closeUserMenu(e) {
 async function signOut() {
   const sb = getSupabase();
   if (sb) await sb.auth.signOut();
-  document.getElementById('userMenu')?.remove();
+  document.getElementById('profileOverlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+  window.location.href = 'login.html';
 }
 
 /* ── PROGRESS SYNC ── */
