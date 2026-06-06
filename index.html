@@ -4140,9 +4140,35 @@ function init() {
   // Handle Stripe return
   const params = new URLSearchParams(window.location.search);
   if (params.get('upgrade') === 'success') {
-    showToast('🎉 ¡Bienvenido a KODESH Premium!');
+    const sessionId = params.get('session_id');
     window.history.replaceState({}, '', '/index.html');
-    setTimeout(() => loadUsage(), 2000);
+    // Confirm and activate premium
+    if (currentUser || sessionId) {
+      setTimeout(async () => {
+        try {
+          const res = await fetch('/api/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser?.id,
+              sessionId: sessionId,
+            })
+          });
+          const data = await res.json();
+          if (data.plan === 'premium') {
+            showToast('🎉 ¡Bienvenido a KODESH Premium!');
+            await loadUsage();
+          } else {
+            showToast('✦ Pago recibido — activando tu cuenta...');
+            setTimeout(() => loadUsage(), 3000);
+          }
+        } catch(e) {
+          showToast('✦ Pago recibido — actualiza la página en un momento');
+        }
+      }, 1000);
+    } else {
+      showToast('🎉 ¡Bienvenido a KODESH Premium!');
+    }
   } else if (params.get('upgrade') === 'canceled') {
     showToast('Pago cancelado — puedes intentarlo de nuevo cuando quieras');
     window.history.replaceState({}, '', '/index.html');
