@@ -1156,7 +1156,32 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
     border-bottom: none;
   }
 
-  /* ── Bookmark menu ── */
+  .bm-interpret-area {
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--border2);
+  margin-top: 4px;
+}
+.bm-btn-interpret {
+  width: 100%;
+  background: linear-gradient(135deg, #0a0800, #1a1200);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.bm-btn-interpret:hover {
+  background: linear-gradient(135deg, #1a1000, #2a1e00);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+/* ── Bookmark menu ── */
   .bookmark-menu {
     width: calc(100vw - 24px);
     left: 12px !important;
@@ -1891,7 +1916,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 
 <!-- ══ BOOKMARK MENU ══ -->
 <div class="bookmark-menu" id="bookmarkMenu" style="display:none">
-  <div class="bm-menu-title">Marcar versículo · <span id="bmMenuRef" class="bm-menu-ref"></span></div>
+  <div class="bm-menu-title">Versículo · <span id="bmMenuRef" class="bm-menu-ref"></span></div>
   <div class="bm-color-grid" id="bmColorGrid"></div>
   <div class="bm-note-area">
     <textarea class="bm-note-input" id="bmNoteInput" placeholder="Añadir nota opcional..." rows="2"></textarea>
@@ -1900,6 +1925,11 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
     <button class="bm-btn bm-btn-save" onclick="saveBookmark()">Guardar</button>
     <button class="bm-btn bm-btn-remove" onclick="removeBookmark()">Quitar</button>
     <button class="bm-btn bm-btn-cancel" onclick="closeBookmarkMenu()">✕</button>
+  </div>
+  <div class="bm-interpret-area">
+    <button class="bm-btn-interpret" onclick="interpretVerse()">
+      ✦ Interpretar versículo
+    </button>
   </div>
 </div>
 
@@ -3684,6 +3714,30 @@ function closeBookmarkOutside(e) {
 
 function closeBookmarkMenu() {
   document.getElementById('bookmarkMenu').style.display = 'none';
+}
+
+/* ── Interpret verse ── */
+async function interpretVerse() {
+  const book = bmState.book;
+  const chapter = bmState.chapter;
+  const verse = bmState.verse;
+
+  // Get verse text
+  const verseEl = document.getElementById(`v-${verse}`);
+  const verseText = verseEl ? verseEl.textContent.trim() : '';
+  const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+  const ref = `${bookName} ${chapter}:${verse}`;
+
+  closeBookmarkMenu();
+
+  // Open assistant with the interpretation query
+  openAssistant();
+
+  // Wait for assistant to open then send the interpretation request
+  setTimeout(async () => {
+    const query = `Interpreta exegéticamente este versículo desde una perspectiva Hebreo-Mesiánica:\n\n"${verseText}"\n— ${ref}\n\nQuiero:\n1. Contexto histórico y literario\n2. Análisis del idioma original (hebreo/griego)\n3. Conexiones con Torah, Profetas y Brit Hadashá\n4. Cumplimiento mesiánico en Yeshúa\n5. Aplicación para el creyente hoy`;
+    await sendMessage(query);
+  }, 300);
 }
 
 /* ── Touch support (long press) ── */
