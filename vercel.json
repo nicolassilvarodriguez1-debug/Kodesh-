@@ -2,7 +2,6 @@
   "functions": {
     "api/search.js": { "memory": 256, "maxDuration": 30 },
     "api/assistant.js": { "memory": 256, "maxDuration": 30 },
-    "api/usage.js": { "memory": 128, "maxDuration": 10 },
-    "api/webhook.js": { "memory": 256, "maxDuration": 30 }
+    "api/usage.js": { "memory": 128, "maxDuration": 10 }
   }
 }
