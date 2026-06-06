@@ -2792,9 +2792,44 @@ function closeLimitModal(e) {
   }
 }
 
-function goToPremium() {
+async function goToPremium() {
   document.getElementById('limitOverlay').classList.remove('open');
-  showToast('✦ Próximamente — Sistema de pagos en construcción');
+
+  if (!currentUser) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  showToast('✦ Preparando tu suscripción...');
+
+  try {
+    const name = userProfile?.display_name || currentUser.email?.split('@')[0] || '';
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        userName: name,
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error === 'already_subscribed') {
+      showToast('✦ Ya tienes KODESH Premium activo');
+      return;
+    }
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error(data.error || 'Error al crear sesión de pago');
+    }
+  } catch(err) {
+    showToast('Error al procesar — intenta de nuevo');
+    console.error('Checkout error:', err);
+  }
 }
 
 function goToBerith() { goToPremium(); }
@@ -4102,7 +4137,17 @@ function init() {
   updateBmCount();
   renderBookmarkList();
 
+  // Handle Stripe return
   const params = new URLSearchParams(window.location.search);
+  if (params.get('upgrade') === 'success') {
+    showToast('🎉 ¡Bienvenido a KODESH Premium!');
+    window.history.replaceState({}, '', '/index.html');
+    setTimeout(() => loadUsage(), 2000);
+  } else if (params.get('upgrade') === 'canceled') {
+    showToast('Pago cancelado — puedes intentarlo de nuevo cuando quieras');
+    window.history.replaceState({}, '', '/index.html');
+  }
+
   const book = params.get('book') || 'GEN';
   const chapter = parseInt(params.get('chapter')) || 1;
 
