@@ -39,7 +39,7 @@ export default async function handler(req, res) {
           error: 'limit_reached',
           plan, used, limit,
           message: plan === 'free'
-            ? `Alcanzaste tu límite de ${limit} búsquedas este mes. Actualiza a Berith para continuar.`
+            ? `Alcanzaste tu límite de ${limit} búsquedas este mes. Actualiza a Premium para continuar.`
             : `Alcanzaste tu límite de ${limit} búsquedas este mes.`,
         });
       }

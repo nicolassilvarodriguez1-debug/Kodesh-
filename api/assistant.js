@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         return res.status(429).json({
           error: 'limit_reached', plan, used, limit,
           message: plan === 'free'
-            ? `Alcanzaste tu límite de ${limit} consultas al asistente este mes. Actualiza a Berith para continuar estudiando.`
+            ? `Alcanzaste tu límite de ${limit} consultas al asistente este mes. Actualiza a Premium para continuar estudiando sin límites.`
             : `Alcanzaste tu límite de ${limit} consultas este mes.`,
         });
       }
