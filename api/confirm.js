@@ -1,4 +1,3 @@
-// Called after successful Stripe payment to confirm and activate plan
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -21,65 +20,89 @@ export default async function handler(req, res) {
   };
 
   try {
-    let subscriptionActive = false;
-    let customerId = null;
     let subscriptionId = null;
+    let customerId = null;
     let periodEnd = null;
+    let subscriptionActive = false;
 
-    // If we have a session ID, verify it with Stripe
     if (sessionId) {
-      const sessionRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}?expand[]=subscription`, {
-        headers: { 'Authorization': `Bearer ${STRIPE_KEY}` }
-      });
+      // Verify checkout session with Stripe
+      const sessionRes = await fetch(
+        `https://api.stripe.com/v1/checkout/sessions/${sessionId}`,
+        { headers: { 'Authorization': `Bearer ${STRIPE_KEY}` } }
+      );
       const session = await sessionRes.json();
+      console.log('Session status:', session.payment_status, 'Sub:', session.subscription);
 
       if (session.payment_status === 'paid' && session.subscription) {
-        subscriptionActive = true;
         customerId = session.customer;
-        subscriptionId = typeof session.subscription === 'string'
-          ? session.subscription
-          : session.subscription.id;
-        periodEnd = typeof session.subscription === 'object'
-          ? session.subscription.current_period_end
-          : null;
+        subscriptionId = session.subscription;
+
+        // Get subscription details
+        const subRes = await fetch(
+          `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
+          { headers: { 'Authorization': `Bearer ${STRIPE_KEY}` } }
+        );
+        const sub = await subRes.json();
+        console.log('Sub status:', sub.status);
+
+        if (sub.status === 'active' || sub.status === 'trialing') {
+          subscriptionActive = true;
+          periodEnd = sub.current_period_end;
+        }
       }
-    } else {
-      // Check existing customer subscriptions
+    }
+
+    if (!subscriptionActive) {
+      // Fallback: check by customer ID
       const planRes = await fetch(
         `${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}&select=stripe_customer_id&limit=1`,
         { headers: sbHeaders }
       );
       const planData = await planRes.json();
-      customerId = planData?.[0]?.stripe_customer_id;
+      const cid = planData?.[0]?.stripe_customer_id;
 
-      if (customerId) {
+      if (cid) {
         const subsRes = await fetch(
-          `https://api.stripe.com/v1/subscriptions?customer=${customerId}&status=active&limit=1`,
+          `https://api.stripe.com/v1/subscriptions?customer=${cid}&status=active&limit=1`,
           { headers: { 'Authorization': `Bearer ${STRIPE_KEY}` } }
         );
         const subs = await subsRes.json();
         if (subs.data?.length > 0) {
           subscriptionActive = true;
           subscriptionId = subs.data[0].id;
+          customerId = cid;
           periodEnd = subs.data[0].current_period_end;
         }
       }
     }
 
     if (subscriptionActive) {
-      // Update plan to premium
-      await fetch(`${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}`, {
-        method: 'PATCH',
-        headers: sbHeaders,
-        body: JSON.stringify({
-          plan: 'premium',
-          subscription_status: 'active',
-          stripe_subscription_id: subscriptionId,
-          stripe_customer_id: customerId,
-          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-          updated_at: new Date().toISOString(),
-        })
-      });
+      const updateBody = {
+        plan: 'premium',
+        subscription_status: 'active',
+        stripe_subscription_id: subscriptionId,
+        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (customerId) updateBody.stripe_customer_id = customerId;
+
+      // Try PATCH first
+      const patchRes = await fetch(
+        `${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}`,
+        { method: 'PATCH', headers: sbHeaders, body: JSON.stringify(updateBody) }
+      );
+
+      // If no rows updated, INSERT
+      if (patchRes.status === 204 || patchRes.ok) {
+        console.log('Plan updated to premium for user:', userId);
+      } else {
+        await fetch(`${SB_URL}/rest/v1/user_plans`, {
+          method: 'POST',
+          headers: sbHeaders,
+          body: JSON.stringify({ user_id: userId, ...updateBody })
+        });
+      }
 
       return res.status(200).json({ success: true, plan: 'premium' });
     }
