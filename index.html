@@ -2312,7 +2312,8 @@ function toggleRead() {
     state.readChapters[key] = true;
     showToast('✓ Capítulo marcado como leído');
     saveChapterToCloud(state.currentBook, state.currentChapter);
-    recordTodayChapter(); // Update streak
+    const bName = getAllBooks().find(b => b.id === state.currentBook)?.name || state.currentBook;
+    recordTodayChapter(state.currentBook, bName, state.currentChapter);
   }
   localStorage.setItem('kodesh_read', JSON.stringify(state.readChapters));
   updateProgress();
@@ -2793,13 +2794,12 @@ function renderDailyPlan() {
 }
 
 function buildReadingCalendar() {
-  // Build 5 weeks (35 days) ending today
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
 
-  // Find the Sunday of 5 weeks ago
+  // Start from Sunday 4 weeks back
   const startDay = new Date(today);
-  startDay.setDate(today.getDate() - (today.getDay()) - 28); // 4 full weeks back to start Sunday
+  startDay.setDate(today.getDate() - today.getDay() - 28);
 
   const weeks = [];
   let currentWeek = [];
@@ -2807,13 +2807,11 @@ function buildReadingCalendar() {
 
   for (let i = 0; i < 35; i++) {
     const dateStr = cursor.toISOString().split('T')[0];
-    const chapKey = 'kodesh_today_' + dateStr;
-    const chapCount = parseInt(localStorage.getItem(chapKey) || '0');
+    const dayData = getDayData(dateStr);
     const isToday = dateStr === todayStr;
     const isFuture = dateStr > todayStr;
-    const hasReading = chapCount > 0;
 
-    currentWeek.push({ dateStr, chapCount, isToday, isFuture, hasReading });
+    currentWeek.push({ dateStr, dayData, isToday, isFuture });
 
     if (currentWeek.length === 7) {
       weeks.push(currentWeek);
@@ -2824,45 +2822,105 @@ function buildReadingCalendar() {
   if (currentWeek.length) weeks.push(currentWeek);
 
   const goalChapters = userProfile?.reading_goal_chapters || 2;
+  const dayNum = d => new Date(d.dateStr + 'T12:00:00').getDate();
 
   return weeks.map(week => `
     <div style="display:flex;gap:4px;margin-bottom:4px;">
       ${week.map(day => {
-        let bg = 'var(--bg2)';
+        const count = day.dayData.count || 0;
+        const isFuture = day.isFuture;
+        let bg = 'transparent';
         let border = 'var(--border)';
         let textColor = 'var(--text-dim)';
-        let opacity = '1';
+        let opacity = isFuture ? '0.25' : '1';
 
-        if (day.isFuture) {
-          opacity = '0.3';
-        } else if (day.hasReading) {
-          const intensity = Math.min(1, day.chapCount / goalChapters);
-          if (intensity >= 1) {
-            bg = 'var(--gold)'; border = 'var(--gold)'; textColor = '#000';
-          } else if (intensity >= 0.5) {
+        if (!isFuture && count > 0) {
+          const ratio = count / goalChapters;
+          if (ratio >= 1) {
+            bg = 'var(--gold)'; border = 'var(--gold)'; textColor = '#1a0e00';
+          } else if (ratio >= 0.5) {
             bg = 'var(--gold-dim)'; border = 'var(--gold)'; textColor = 'var(--gold-bright)';
           } else {
             bg = '#2a1e04'; border = 'var(--gold-dim)'; textColor = 'var(--gold)';
           }
         }
 
-        const dayNum = new Date(day.dateStr).getDate();
-        const todayRing = day.isToday ? `outline:2px solid var(--gold);outline-offset:1px;` : '';
-        const tooltip = day.hasReading ? `${day.chapCount} cap.` : '';
+        const todayStyle = day.isToday ? 'outline:2px solid var(--gold);outline-offset:2px;' : '';
+        const clickable = (!isFuture && count > 0) ? `onclick="showDayDetail('${day.dateStr}')" style="cursor:pointer;"` : '';
 
-        return `<div style="flex:1;aspect-ratio:1;border-radius:5px;background:${bg};border:1px solid ${border};
-          display:flex;align-items:center;justify-content:center;
-          font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:${textColor};
-          opacity:${opacity};${todayRing}cursor:${day.hasReading ? 'pointer' : 'default'};
-          position:relative;transition:transform 0.1s;"
-          ${tooltip ? `title="${day.dateStr}: ${tooltip}"` : ''}
-          onmouseover="this.style.transform='scale(1.2)'"
+        return `<div ${clickable} style="flex:1;aspect-ratio:1;border-radius:6px;
+          background:${bg};border:1px solid ${border};
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+          opacity:${opacity};${todayStyle}transition:transform 0.1s;"
+          onmouseover="if(!${isFuture})this.style.transform='scale(1.15)'"
           onmouseout="this.style.transform='scale(1)'">
-          ${day.chapCount > 0 ? day.chapCount : dayNum}
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;color:${textColor};line-height:1">${dayNum(day)}</span>
+          ${count > 0 ? `<span style="font-size:0.45rem;color:${textColor};opacity:0.8;line-height:1">${count}cap</span>` : ''}
         </div>`;
       }).join('')}
     </div>
   `).join('');
+}
+
+function showDayDetail(dateStr) {
+  const data = getDayData(dateStr);
+  const date = new Date(dateStr + 'T12:00:00');
+  const dateLabel = date.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+
+  // Remove existing popup
+  document.getElementById('dayDetailPopup')?.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'dayDetailPopup';
+  popup.style.cssText = `
+    position:fixed; inset:0; background:rgba(0,0,0,0.6);
+    z-index:800; display:flex; align-items:center; justify-content:center; padding:20px;
+  `;
+
+  const chapList = data.chapters.length > 0
+    ? data.chapters.map(c => `
+        <div onclick="navGoToChapter('${c.bookId}',${c.chapter},'${c.bookId && ['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV'].includes(c.bookId)?'NT':'AT'}')" 
+          style="display:flex;align-items:center;justify-content:space-between;
+          padding:10px 14px;border-radius:8px;border:1px solid var(--border2);
+          background:var(--bg3);cursor:pointer;transition:border-color 0.15s;margin-bottom:6px;"
+          onmouseover="this.style.borderColor='var(--gold-dim)'"
+          onmouseout="this.style.borderColor='var(--border2)'">
+          <span style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--text)">${c.bookName} ${c.chapter}</span>
+          <span style="font-size:0.75rem;color:var(--gold)">Ir →</span>
+        </div>
+      `).join('')
+    : `<div style="text-align:center;padding:20px;color:var(--text-dim);font-style:italic">Sin detalle de capítulos guardado para este día</div>`;
+
+  popup.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--gold-dim);border-radius:14px;
+      width:100%;max-width:380px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+      <div style="background:linear-gradient(135deg,#0a0800,#140e02);padding:16px 18px;
+        border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:3px">Lectura del día</div>
+          <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);text-transform:capitalize">${dateLabel}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--gold);line-height:1">${data.count}</div>
+          <div style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim)">cap. leídos</div>
+        </div>
+      </div>
+      <div style="padding:14px;max-height:280px;overflow-y:auto;">
+        ${chapList}
+      </div>
+      <div style="padding:12px 14px;border-top:1px solid var(--border);">
+        <button onclick="document.getElementById('dayDetailPopup').remove()" 
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);
+          color:var(--text-dim);font-family:'Cinzel',serif;font-size:0.62rem;
+          letter-spacing:1.5px;text-transform:uppercase;padding:10px;border-radius:8px;cursor:pointer;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  `;
+
+  popup.onclick = (e) => { if (e.target === popup) popup.remove(); };
+  document.body.appendChild(popup);
 }
 
 /* ── Profile Stats ── */

@@ -386,15 +386,32 @@ function getNextChaptersToRead(count = 1) {
 }
 
 function getTodayProgress() {
-  // Check how many chapters marked today (using localStorage timestamp)
   const todayKey = 'kodesh_today_' + new Date().toISOString().split('T')[0];
-  return parseInt(localStorage.getItem(todayKey) || '0');
+  const data = JSON.parse(localStorage.getItem(todayKey) || '{"count":0,"chapters":[]}');
+  return typeof data === 'number' ? data : (data.count || 0);
 }
 
-function recordTodayChapter() {
+function getDayData(dateStr) {
+  const key = 'kodesh_today_' + dateStr;
+  const raw = localStorage.getItem(key);
+  if (!raw) return { count: 0, chapters: [] };
+  try {
+    const data = JSON.parse(raw);
+    if (typeof data === 'number') return { count: data, chapters: [] };
+    return data;
+  } catch(e) { return { count: 0, chapters: [] }; }
+}
+
+function recordTodayChapter(bookId, bookName, chapter) {
   const todayKey = 'kodesh_today_' + new Date().toISOString().split('T')[0];
-  const current = parseInt(localStorage.getItem(todayKey) || '0');
-  localStorage.setItem(todayKey, current + 1);
+  const data = getDayData(new Date().toISOString().split('T')[0]);
+  // Add chapter if not already recorded today
+  const alreadyRecorded = data.chapters.some(c => c.bookId === bookId && c.chapter === chapter);
+  if (!alreadyRecorded) {
+    data.chapters.push({ bookId, bookName, chapter });
+  }
+  data.count = data.chapters.length;
+  localStorage.setItem(todayKey, JSON.stringify(data));
   updateStreak();
   renderDailyPlan();
 }
