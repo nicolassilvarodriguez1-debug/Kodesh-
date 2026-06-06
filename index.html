@@ -1987,30 +1987,21 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
     <div class="limit-icon">✦</div>
     <div class="limit-title" id="limitTitle">Límite alcanzado</div>
     <div class="limit-msg" id="limitMsg"></div>
-    <div class="limit-plans">
+    <div class="limit-plans" style="grid-template-columns:1fr">
       <div class="limit-plan-card limit-plan-highlight">
-        <div class="limit-plan-name">Berith · בְּרִית</div>
-        <div class="limit-plan-price">$7.99<span>/mes</span></div>
+        <div class="limit-plan-name">✦ KODESH PREMIUM</div>
+        <div class="limit-plan-price">$5.99<span>/mes</span></div>
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:#f0a040;margin-bottom:12px">🔥 Precio de lanzamiento</div>
         <div class="limit-plan-features">
           <div>✓ 80 búsquedas IA / mes</div>
-          <div>✓ 150 consultas asistente / mes</div>
-          <div>✓ Lexicón hebreo completo</div>
-          <div>✓ Versiones adicionales</div>
+          <div>✓ 70 consultas al asistente / mes</div>
+          <div>✓ Lexicón hebreo/griego completo</div>
+          <div>✓ Versiones adicionales de la Biblia</div>
           <div>✓ Marcadores y notas ilimitados</div>
+          <div>✓ Ciclo de Estudio completo</div>
+          <div>✓ Soporte prioritario</div>
         </div>
-        <button class="limit-btn-upgrade" onclick="goToBerith()">Actualizar a Berith →</button>
-      </div>
-      <div class="limit-plan-card">
-        <div class="limit-plan-name">Kodesh Pro</div>
-        <div class="limit-plan-price">$14.99<span>/mes</span></div>
-        <div class="limit-plan-features">
-          <div>✓ 300 búsquedas IA / mes</div>
-          <div>✓ 400 consultas asistente / mes</div>
-          <div>✓ Todo Berith incluido</div>
-          <div>✓ Hasta 5 cuentas familiares</div>
-          <div>✓ Exportar notas a PDF</div>
-        </div>
-        <button class="limit-btn-pro" onclick="goToPro()">Ver Kodesh Pro →</button>
+        <button class="limit-btn-upgrade" onclick="goToPremium()">Actualizar a Premium →</button>
       </div>
     </div>
     <button class="limit-btn-close" onclick="document.getElementById('limitOverlay').classList.remove('open')">Continuar con plan gratuito</button>
@@ -2081,7 +2072,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
       <button class="user-btn" id="userBtn" onclick="window.location.href='login.html'">
         <span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px">Entrar</span>
       </button>
-      <button class="btn-premium" onclick="showToast('✦ Próximamente — Plan Berith')">✦ Berith</button>
+      <button class="btn-premium" onclick="goToPremium()">✦ Premium</button>
     </div>
   </header>
 
@@ -2774,24 +2765,17 @@ async function loadUsage() {
 
 function updateUsageDisplay() {
   if (!userUsage) return;
-  // Update plan badge in topbar
   const badge = document.getElementById('planBadge');
   if (!badge) return;
-
   const plan = userUsage.plan;
-  if (plan === 'free') {
-    badge.textContent = 'GRATIS';
-    badge.style.display = 'flex';
-  } else if (plan === 'berith') {
-    badge.textContent = '✦ BERITH';
+  if (plan === 'premium') {
+    badge.textContent = '✦ PREMIUM';
     badge.style.display = 'flex';
     badge.style.color = 'var(--gold)';
     badge.style.borderColor = 'var(--gold-dim)';
-  } else if (plan === 'pro') {
-    badge.textContent = '✦ PRO';
-    badge.style.display = 'flex';
-    badge.style.color = '#a0f0c0';
-    badge.style.borderColor = '#206040';
+    badge.style.background = 'var(--gold-glow)';
+  } else {
+    badge.style.display = 'none';
   }
 }
 
@@ -2808,15 +2792,13 @@ function closeLimitModal(e) {
   }
 }
 
-function goToBerith() {
+function goToPremium() {
   document.getElementById('limitOverlay').classList.remove('open');
   showToast('✦ Próximamente — Sistema de pagos en construcción');
 }
 
-function goToPro() {
-  document.getElementById('limitOverlay').classList.remove('open');
-  showToast('✦ Próximamente — Sistema de pagos en construcción');
-}
+function goToBerith() { goToPremium(); }
+function goToPro() { goToPremium(); }
 
 /* ════════════════════════════════════
    BOOK/CHAPTER NAV MODAL
