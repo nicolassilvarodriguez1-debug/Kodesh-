@@ -789,56 +789,60 @@ body::before {
   text-align: center;
   box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px var(--gold-glow);
 }
-.limit-icon { font-size: 2rem; margin-bottom: 12px; }
+.limit-icon { font-size: 2rem; margin-bottom: 12px; color: var(--gold); }
 .limit-title {
-  font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700;
+  font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700;
   color: var(--gold); margin-bottom: 8px; letter-spacing: 2px; text-transform: uppercase;
 }
 .limit-msg {
-  font-size: 0.95rem; color: var(--text-mid); line-height: 1.6;
-  margin-bottom: 20px;
+  font-size: 0.95rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 20px;
 }
 .limit-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 @media(max-width: 480px) { .limit-plans { grid-template-columns: 1fr; } }
+
 .limit-plan-card {
-  background: var(--bg3); border: 1px solid var(--border);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
   border-radius: 12px; padding: 16px; text-align: left;
 }
 .limit-plan-highlight {
-  border-color: var(--gold-dim);
-  background: linear-gradient(135deg, #0a0800, #140e02);
+  border-color: var(--gold);
+  background: var(--bg3);
 }
 .limit-plan-name {
-  font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 700;
-  color: var(--gold); letter-spacing: 1px; margin-bottom: 4px;
+  font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 700;
+  color: var(--gold); letter-spacing: 1px; margin-bottom: 6px;
 }
 .limit-plan-price {
-  font-family: 'Cinzel', serif; font-size: 1.6rem; font-weight: 900;
+  font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900;
   color: var(--text); line-height: 1; margin-bottom: 12px;
 }
-.limit-plan-price span { font-size: 0.75rem; color: var(--text-dim); }
-.limit-plan-features { font-size: 0.78rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 14px; }
+.limit-plan-price span { font-size: 0.75rem; color: var(--text-dim); font-weight: 400; }
+.limit-plan-features {
+  font-size: 0.78rem; color: var(--text-mid); line-height: 2; margin-bottom: 14px;
+}
 .limit-btn-upgrade {
   width: 100%;
-  background: linear-gradient(135deg, var(--gold-dim), #3a2a08);
-  border: 1px solid var(--gold-dim); color: var(--gold-bright);
-  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
-  text-transform: uppercase; padding: 10px; border-radius: 8px; cursor: pointer;
-  transition: all 0.2s;
+  background: var(--gold);
+  border: none; color: #1a0e00;
+  font-family: 'Cinzel', serif; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
 }
-.limit-btn-upgrade:hover { box-shadow: 0 0 16px var(--gold-glow); }
+.limit-btn-upgrade:hover { opacity: 0.9; transform: translateY(-1px); }
 .limit-btn-pro {
   width: 100%;
-  background: var(--bg2); border: 1px solid var(--border2); color: var(--text-mid);
-  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
-  text-transform: uppercase; padding: 10px; border-radius: 8px; cursor: pointer;
-  transition: all 0.2s;
+  background: transparent;
+  border: 1px solid var(--border2); color: var(--text-mid);
+  font-family: 'Cinzel', serif; font-size: 0.62rem;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
 }
 .limit-btn-pro:hover { border-color: var(--gold-dim); color: var(--gold); }
 .limit-btn-close {
   background: none; border: none; color: var(--text-dim);
-  font-size: 0.82rem; font-style: italic; cursor: pointer; transition: color 0.2s;
-  padding: 8px;
+  font-size: 0.85rem; font-style: italic; cursor: pointer;
+  transition: color 0.2s; padding: 8px; text-decoration: underline;
 }
 .limit-btn-close:hover { color: var(--text-mid); }
 
