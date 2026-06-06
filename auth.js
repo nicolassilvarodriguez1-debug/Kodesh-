@@ -85,6 +85,8 @@ async function onUserLoggedIn(user) {
   renderBookmarkList();
   renderStreakBadge();
   renderDailyPlan();
+  // Load usage/plan info
+  if (typeof loadUsage === 'function') loadUsage();
 }
 
 /* ── USER LOGGED OUT ── */
