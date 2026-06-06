@@ -2794,15 +2794,16 @@ function renderDailyPlan() {
 }
 
 function buildReadingCalendar() {
-  const today = new Date();
-  const todayStr = getLocalDateStr();
+  // Get local date string safely
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   // Start from Sunday 4 weeks back (local time)
-  const startDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() - 28);
+  const startDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 28);
 
   const weeks = [];
   let currentWeek = [];
-  const cursor = new Date(startDay);
+  const cursor = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate());
 
   for (let i = 0; i < 35; i++) {
     const y = cursor.getFullYear();
@@ -2865,7 +2866,8 @@ function buildReadingCalendar() {
 
 function showDayDetail(dateStr) {
   const data = getDayData(dateStr);
-  const date = new Date(dateStr + 'T12:00:00');
+  const parts = dateStr.split('-');
+  const date = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
   const dateLabel = date.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
 
   // Remove existing popup
