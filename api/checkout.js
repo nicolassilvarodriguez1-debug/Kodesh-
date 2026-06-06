@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const SB_URL = process.env.SUPABASE_URL;
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
   const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
-  const PRICE_ID = 'price_1TfMXpJEr2qnbhygbuMWM6Q4';
+  const PRICE_ID = 'price_1TfNp1JI47QT5dnmur1bIDnQ';
 
   const sbHeaders = {
     'apikey': SB_KEY,
