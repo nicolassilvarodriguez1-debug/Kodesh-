@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KODESH · קֹדֶשׁ</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KODESH">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Plataforma bíblica Hebreo-Mesiánica con estudio profundo, marcadores, notas y asistente IA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
@@ -3932,8 +3941,15 @@ window.__STRONGS_INLINE__ = {"bereshit":{"h":"בְּרֵאשִׁית","t":"bər�
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./auth.js"></script>
 <script>
-  // Init auth after page loads
-  window.addEventListener('load', () => initAuth());
+  window.addEventListener('load', () => {
+    initAuth();
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('KODESH SW registered'))
+        .catch(err => console.log('SW error:', err));
+    }
+  });
 </script>
 </body>
 </html>
