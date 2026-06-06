@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const SB_URL = process.env.SUPABASE_URL;
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-  const LIMITS = { free: 10, berith: 80, pro: 300 };
+  const LIMITS = { free: 10, premium: 80 };
   const month = new Date().toISOString().slice(0, 7);
 
   // Check limits if user is logged in
