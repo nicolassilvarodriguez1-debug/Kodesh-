@@ -267,19 +267,20 @@ async function updateStreak() {
   const sb = getSupabase();
   if (!sb || !currentUser) return;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateStr();
   const last = userStreak.lastReadDate;
 
-  if (last === today) return; // Already recorded today
+  if (last === today) return;
 
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  // Calculate yesterday in local time
+  const now = new Date();
+  const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const yesterday = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth()+1).padStart(2,'0')}-${String(yesterdayDate.getDate()).padStart(2,'0')}`;
+
   let newCurrent;
-
   if (last === yesterday) {
-    // Consecutive day — extend streak
     newCurrent = userStreak.current + 1;
   } else if (!last || last < yesterday) {
-    // Streak broken or new
     newCurrent = 1;
   } else {
     return;
@@ -385,8 +386,16 @@ function getNextChaptersToRead(count = 1) {
   return suggestions;
 }
 
+function getLocalDateStr() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getTodayProgress() {
-  const todayKey = 'kodesh_today_' + new Date().toISOString().split('T')[0];
+  const todayKey = 'kodesh_today_' + getLocalDateStr();
   const data = JSON.parse(localStorage.getItem(todayKey) || '{"count":0,"chapters":[]}');
   return typeof data === 'number' ? data : (data.count || 0);
 }
@@ -403,9 +412,8 @@ function getDayData(dateStr) {
 }
 
 function recordTodayChapter(bookId, bookName, chapter) {
-  const todayKey = 'kodesh_today_' + new Date().toISOString().split('T')[0];
-  const data = getDayData(new Date().toISOString().split('T')[0]);
-  // Add chapter if not already recorded today
+  const todayKey = 'kodesh_today_' + getLocalDateStr();
+  const data = getDayData(getLocalDateStr());
   const alreadyRecorded = data.chapters.some(c => c.bookId === bookId && c.chapter === chapter);
   if (!alreadyRecorded) {
     data.chapters.push({ bookId, bookName, chapter });

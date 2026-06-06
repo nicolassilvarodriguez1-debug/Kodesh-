@@ -2795,18 +2795,20 @@ function renderDailyPlan() {
 
 function buildReadingCalendar() {
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
 
-  // Start from Sunday 4 weeks back
-  const startDay = new Date(today);
-  startDay.setDate(today.getDate() - today.getDay() - 28);
+  // Start from Sunday 4 weeks back (local time)
+  const startDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() - 28);
 
   const weeks = [];
   let currentWeek = [];
   const cursor = new Date(startDay);
 
   for (let i = 0; i < 35; i++) {
-    const dateStr = cursor.toISOString().split('T')[0];
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth()+1).padStart(2,'0');
+    const d = String(cursor.getDate()).padStart(2,'0');
+    const dateStr = `${y}-${m}-${d}`;
     const dayData = getDayData(dateStr);
     const isToday = dateStr === todayStr;
     const isFuture = dateStr > todayStr;
@@ -2822,7 +2824,7 @@ function buildReadingCalendar() {
   if (currentWeek.length) weeks.push(currentWeek);
 
   const goalChapters = userProfile?.reading_goal_chapters || 2;
-  const dayNum = d => new Date(d.dateStr + 'T12:00:00').getDate();
+  const dayNum = d => parseInt(d.dateStr.split('-')[2]);
 
   return weeks.map(week => `
     <div style="display:flex;gap:4px;margin-bottom:4px;">
