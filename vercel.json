@@ -10,6 +10,7 @@
     "api/usage.js":     { "memory": 128, "maxDuration": 10 },
     "api/checkout.js":  { "memory": 128, "maxDuration": 15 },
     "api/webhook.js":   { "memory": 128, "maxDuration": 30 },
-    "api/confirm.js":   { "memory": 128, "maxDuration": 15 }
+    "api/confirm.js":   { "memory": 128, "maxDuration": 15 },
+    "api/lexicon.js":   { "memory": 512, "maxDuration": 10 }
   }
 }

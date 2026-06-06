@@ -2200,7 +2200,7 @@ const BIBLE_BOOKS = {
 const TOTAL_CHAPTERS = [...BIBLE_BOOKS.AT, ...BIBLE_BOOKS.NT].reduce((s, b) => s + b.chapters, 0);
 
 /* ════════════════════════════════════
-   LEXICÓN — Strong's inline
+   LEXICÓN — Strong's Hebreo/Griego
 ════════════════════════════════════ */
 let STRONGS_DATA = null;
 
@@ -2211,7 +2211,6 @@ async function loadStrongs() {
     if (!res.ok) throw new Error('fetch failed');
     STRONGS_DATA = await res.json();
   } catch(e) {
-    // Fallback: use inline data
     STRONGS_DATA = window.__STRONGS_INLINE__ || {};
   }
   return STRONGS_DATA;
@@ -2574,19 +2573,51 @@ async function lookupWord(event, cleanWord, rawWord) {
   document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
   event.target.classList.add('highlighted');
 
-  const strongs = await loadStrongs();
-  const raw = cleanWord.toLowerCase();
-  // Strip accents for fallback matching
-  const noAccent = raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-záéíóúüñ]/g,'');
-  const noAccentClean = noAccent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
-
-  // Try: exact → no-accent → no-accent-clean
-  const entry = strongs[raw] || strongs[noAccent] || strongs[noAccentClean];
-
   const popup = document.getElementById('lexiconPopup');
 
+  // Try API first (full Strong's with AT/NT detection)
+  try {
+    const apiRes = await fetch('/api/lexicon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        word: cleanWord,
+        bookId: state.currentBook,
+      })
+    });
+
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      if (data.found) {
+        document.getElementById('lexOriginal').textContent = data.lemma;
+        document.getElementById('lexOriginal').className = `lex-original ${data.language === 'griego' ? 'greek' : ''}`;
+        document.getElementById('lexTranslit').textContent = data.transliteration || '';
+        document.getElementById('lexStrongs').textContent = `${data.strongs} · ${data.pronunciation || ''}`;
+
+        const badge = document.getElementById('lexLangBadge');
+        badge.textContent = data.language === 'hebreo' ? 'Hebreo' : 'Griego';
+        badge.className = `lex-lang-badge ${data.language === 'hebreo' ? 'hebrew' : 'greek'}`;
+
+        document.getElementById('lexDef').textContent = data.definition;
+        document.getElementById('lexUsage').innerHTML = '';
+
+        positionAndShowPopup(popup, event);
+        return;
+      }
+    }
+  } catch(e) {
+    // Fall through to local data
+  }
+
+  // Fallback to local strongs.json
+  const strongs = await loadStrongs();
+  const raw = cleanWord.toLowerCase();
+  const noAccent = raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-záéíóúüñ]/g,'');
+  const noAccentClean = noAccent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
+  const entry = strongs[raw] || strongs[noAccent] || strongs[noAccentClean];
+
   if (!entry) {
-    document.getElementById('lexiconPopup').classList.remove('visible');
+    popup.classList.remove('visible');
     document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
     return;
   }
@@ -2605,17 +2636,19 @@ async function lookupWord(event, cleanWord, rawWord) {
     `<span class="lex-usage-tag">${u}</span>`
   ).join('');
 
+  positionAndShowPopup(popup, event);
+}
+
+function positionAndShowPopup(popup, event) {
   const rect = event.target.getBoundingClientRect();
   const popupW = 320;
   const popupH = 280;
   let left = rect.left + window.scrollX;
   let top = rect.bottom + window.scrollY + 8;
-
   if (left + popupW > window.innerWidth - 16) left = window.innerWidth - popupW - 16;
   if (top + popupH > window.innerHeight + window.scrollY - 16) {
     top = rect.top + window.scrollY - popupH - 8;
   }
-
   popup.style.left = left + 'px';
   popup.style.top = top + 'px';
   popup.classList.add('visible');
