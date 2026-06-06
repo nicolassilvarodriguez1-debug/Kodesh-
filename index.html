@@ -2850,12 +2850,11 @@ function buildReadingCalendar() {
 
         return `<div ${clickable} style="flex:1;aspect-ratio:1;border-radius:6px;
           background:${bg};border:1px solid ${border};
-          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+          display:flex;align-items:center;justify-content:center;
           opacity:${opacity};${todayStyle}transition:transform 0.1s;"
-          onmouseover="if(!${isFuture})this.style.transform='scale(1.15)'"
+          onmouseover="if(${!isFuture})this.style.transform='scale(1.15)'"
           onmouseout="this.style.transform='scale(1)'">
           <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;color:${textColor};line-height:1">${dayNum(day)}</span>
-          ${count > 0 ? `<span style="font-size:0.45rem;color:${textColor};opacity:0.8;line-height:1">${count}cap</span>` : ''}
         </div>`;
       }).join('')}
     </div>
