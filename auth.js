@@ -109,6 +109,12 @@ async function onUserLoggedIn(user) {
 
 /* ── USER LOGGED OUT ── */
 function onUserLoggedOut() {
+  // Mandatory login — redirect to login page
+  const isLoginPage = window.location.pathname.includes('login') ||
+                      window.location.pathname.includes('onboarding');
+  if (!isLoginPage) {
+    window.location.href = '/login.html';
+  }
   updateUserUI(null);
 }
 
