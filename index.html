@@ -557,8 +557,10 @@ body::before {
 ════════════════════════════════════════ */
 .lexicon-popup {
   position: fixed;
-  z-index: 1000;
+  z-index: 9999;
   width: 320px;
+  max-height: 85vh;
+  overflow-y: auto;
   background: var(--bg2);
   border: 1px solid var(--gold-dim);
   border-radius: 12px;
@@ -2647,15 +2649,29 @@ async function lookupWord(event, cleanWord, rawWord) {
 function positionAndShowPopup(popup, event) {
   const rect = event.target.getBoundingClientRect();
   const popupW = 320;
-  const popupH = 280;
-  let left = rect.left + window.scrollX;
-  let top = rect.bottom + window.scrollY + 8;
-  if (left + popupW > window.innerWidth - 16) left = window.innerWidth - popupW - 16;
-  if (top + popupH > window.innerHeight + window.scrollY - 16) {
-    top = rect.top + window.scrollY - popupH - 8;
+  const popupH = 300;
+  const margin = 12;
+  const viewW = window.innerWidth;
+  const viewH = window.innerHeight;
+
+  // Horizontal: prefer left-aligned, shift left if overflows
+  let left = rect.left;
+  if (left + popupW > viewW - margin) left = viewW - popupW - margin;
+  if (left < margin) left = margin;
+
+  // Vertical: prefer below word, flip above if no space below
+  let top = rect.bottom + margin;
+  if (top + popupH > viewH - margin) {
+    top = rect.top - popupH - margin;
   }
+  // If still off screen above, just pin to top
+  if (top < margin) top = margin;
+
+  // Use fixed positioning so it's always relative to viewport
+  popup.style.position = 'fixed';
   popup.style.left = left + 'px';
   popup.style.top = top + 'px';
+  popup.style.zIndex = '9999';
   popup.classList.add('visible');
 }
 
