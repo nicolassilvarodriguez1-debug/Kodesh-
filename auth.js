@@ -46,7 +46,7 @@ async function loadUserProfile(userId) {
   try {
     const { data } = await sb
       .from('user_profiles')
-      .select('display_name, study_goals, reading_goal_chapters, onboarding_completed')
+      .select('display_name, study_goals, reading_goal_chapters, onboarding_completed, avatar_url')
       .eq('id', userId)
       .single();
     userProfile = data;
@@ -98,15 +98,20 @@ function updateUserUI(user) {
   if (!userBtn) return;
 
   if (user) {
-    // Use display_name from profile if available
     const name = userProfile?.display_name
       || user.user_metadata?.display_name
       || user.user_metadata?.full_name
       || user.email?.split('@')[0]
       || 'Usuario';
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarUrl = userProfile?.avatar_url || null;
+
     userBtn.innerHTML = `
-      <div class="user-avatar">${initials}</div>
+      <div class="user-avatar" id="topbarAvatar">
+        ${avatarUrl
+          ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+          : initials}
+      </div>
       <span class="user-name">${name.split(' ')[0]}</span>
     `;
     userBtn.onclick = openProfile;
