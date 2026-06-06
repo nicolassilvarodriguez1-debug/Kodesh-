@@ -1292,24 +1292,13 @@ html.light .notes-header { background: linear-gradient(135deg, #f5efe0, #ede4cc)
 }
 html.light .profile-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); }
 .profile-avatar-big {
-  width: 56px; height: 56px; border-radius: 50%;
+  width: 52px; height: 52px; border-radius: 50%;
   background: linear-gradient(135deg, var(--gold-dim), #3a2a08);
   border: 2px solid var(--gold-dim);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: 700;
   color: var(--gold-bright); flex-shrink: 0;
-  position: relative; cursor: pointer; overflow: hidden;
-  transition: border-color 0.2s;
 }
-.profile-avatar-big:hover { border-color: var(--gold); }
-.profile-avatar-big:hover .avatar-overlay { opacity: 1; }
-.avatar-overlay {
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem; opacity: 0; transition: opacity 0.2s; border-radius: 50%;
-}
-@keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
 .profile-info { flex: 1; }
 .profile-name { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--text); }
 .profile-email { font-size: 0.8rem; color: var(--text-dim); margin-top: 3px; }
@@ -1747,12 +1736,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 <div class="profile-overlay" id="profileOverlay" onclick="closeProfileOutside(event)">
   <div class="profile-panel" id="profilePanel">
     <div class="profile-header">
-      <div class="profile-avatar-big" id="profileAvatarBig" onclick="triggerAvatarUpload()" title="Cambiar foto">
-        <span id="profileAvatarInitials">?</span>
-        <img id="profileAvatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
-        <div class="avatar-overlay">📷</div>
-      </div>
-      <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatar(event)">
+      <div class="profile-avatar-big" id="profileAvatarBig">?</div>
       <div class="profile-info">
         <div class="profile-name" id="profileName">—</div>
         <div class="profile-email" id="profileEmail">—</div>
@@ -2540,83 +2524,6 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════
-   AVATAR UPLOAD
-════════════════════════════════════ */
-function triggerAvatarUpload() {
-  document.getElementById('avatarFileInput').click();
-}
-
-async function uploadAvatar(event) {
-  const file = event.target.files[0];
-  if (!file || !currentUser) return;
-
-  // Validate
-  if (!file.type.startsWith('image/')) {
-    showToast('Solo se permiten imágenes');
-    return;
-  }
-  if (file.size > 2 * 1024 * 1024) {
-    showToast('La imagen debe ser menor a 2MB');
-    return;
-  }
-
-  // Show loading
-  const avatarEl = document.getElementById('profileAvatarBig');
-  const loadingDiv = document.createElement('div');
-  loadingDiv.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:1.2rem;animation:pulse 1s infinite';
-  loadingDiv.textContent = '⏳';
-  avatarEl.appendChild(loadingDiv);
-
-  try {
-    const sb = getSupabase();
-    const ext = file.name.split('.').pop();
-    const path = `${currentUser.id}/avatar.${ext}`;
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await sb.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true, contentType: file.type });
-
-    if (uploadError) throw uploadError;
-
-    // Get public URL
-    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
-    const avatarUrl = urlData.publicUrl + '?t=' + Date.now(); // cache bust
-
-    // Save to user_profiles
-    await sb.from('user_profiles').upsert({
-      id: currentUser.id,
-      avatar_url: avatarUrl,
-    }, { onConflict: 'id' });
-
-    // Update local profile
-    if (userProfile) userProfile.avatar_url = avatarUrl;
-
-    // Update UI
-    setAvatarUI(avatarUrl);
-    updateUserUI(currentUser);
-    showToast('✓ Foto actualizada');
-
-  } catch(e) {
-    console.error('Avatar upload error:', e);
-    showToast('Error al subir la foto — intenta de nuevo');
-  } finally {
-    loadingDiv.remove();
-    event.target.value = '';
-  }
-}
-
-function setAvatarUI(url) {
-  const img = document.getElementById('profileAvatarImg');
-  const initials = document.getElementById('profileAvatarInitials');
-  if (img && url) {
-    img.src = url;
-    img.style.display = 'block';
-    if (initials) initials.style.display = 'none';
-  }
-}
-
-/* ════════════════════════════════════
    BOOK/CHAPTER NAV MODAL
 ════════════════════════════════════ */
 let navTestament = 'AT';
@@ -2846,21 +2753,7 @@ function openProfile() {
     || user.email?.split('@')[0]
     || 'Usuario';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
-  const avatarUrl = userProfile?.avatar_url || null;
-
-  // Set initials
-  const initialsEl = document.getElementById('profileAvatarInitials');
-  if (initialsEl) initialsEl.textContent = initials;
-
-  // Set photo if exists
-  if (avatarUrl) {
-    setAvatarUI(avatarUrl);
-  } else {
-    const img = document.getElementById('profileAvatarImg');
-    if (img) img.style.display = 'none';
-    if (initialsEl) initialsEl.style.display = 'block';
-  }
-
+  document.getElementById('profileAvatarBig').textContent = initials;
   document.getElementById('profileName').textContent = name;
   document.getElementById('profileEmail').textContent = user.email;
 
