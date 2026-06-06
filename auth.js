@@ -101,7 +101,7 @@ async function onUserLoggedIn(user) {
       const data = await res.json();
       if (data.plan === 'premium') {
         if (typeof showToast === 'function') showToast('🎉 ¡Bienvenido a KODESH Premium!');
-        if (typeof loadUsage === 'function') await loadUsage();
+        setTimeout(() => window.location.reload(), 1500);
       }
     } catch(e) { console.warn('Confirm error:', e.message); }
   }
