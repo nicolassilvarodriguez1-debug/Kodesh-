@@ -1,58 +1,86 @@
-// KODESH — Plan limits and usage tracking
-// Shared module for all API functions
-
-import { createClient } from '@supabase/supabase-js';
+// KODESH — Plan limits using Supabase REST API directly (no npm)
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-// Plan limits per month
 export const PLAN_LIMITS = {
   free:   { searches: 10,  assistant: 15  },
   berith: { searches: 80,  assistant: 150 },
   pro:    { searches: 300, assistant: 400 },
 };
 
-export function getSupabaseAdmin() {
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-}
-
 export function getCurrentMonth() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Get user plan and current usage
+async function sbGet(table, filters) {
+  const params = new URLSearchParams(filters);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}&limit=1`, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    }
+  });
+  const data = await res.json();
+  return Array.isArray(data) ? data[0] : null;
+}
+
+async function sbUpsert(table, body, onConflict) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
+async function sbPatch(table, filters, body) {
+  const params = new URLSearchParams(filters);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
 export async function getUserPlanAndUsage(userId) {
-  const sb = getSupabaseAdmin();
   const month = getCurrentMonth();
 
   // Get plan
-  const { data: planData } = await sb
-    .from('user_plans')
-    .select('plan, subscription_status, current_period_end')
-    .eq('user_id', userId)
-    .single();
+  const planData = await sbGet('user_plans', {
+    'user_id': `eq.${userId}`,
+    'select': 'plan,subscription_status,current_period_end'
+  });
 
   let plan = 'free';
   if (planData?.plan && planData?.subscription_status === 'active') {
-    // Check subscription hasn't expired
     if (!planData.current_period_end || new Date(planData.current_period_end) > new Date()) {
       plan = planData.plan;
     }
   }
 
   // Get usage
-  const { data: usageData } = await sb
-    .from('ai_usage')
-    .select('searches_used, assistant_used')
-    .eq('user_id', userId)
-    .eq('month', month)
-    .single();
+  const usageData = await sbGet('ai_usage', {
+    'user_id': `eq.${userId}`,
+    'month': `eq.${month}`,
+    'select': 'searches_used,assistant_used'
+  });
 
   return {
     plan,
-    limits: PLAN_LIMITS[plan],
+    limits: PLAN_LIMITS[plan] || PLAN_LIMITS.free,
     usage: {
       searches: usageData?.searches_used || 0,
       assistant: usageData?.assistant_used || 0,
@@ -61,49 +89,41 @@ export async function getUserPlanAndUsage(userId) {
   };
 }
 
-// Increment usage counter
 export async function incrementUsage(userId, type, month) {
-  const sb = getSupabaseAdmin();
   const field = type === 'search' ? 'searches_used' : 'assistant_used';
 
-  // Upsert — create if not exists, increment if exists
-  const { data: existing } = await sb
-    .from('ai_usage')
-    .select(field)
-    .eq('user_id', userId)
-    .eq('month', month)
-    .single();
+  const existing = await sbGet('ai_usage', {
+    'user_id': `eq.${userId}`,
+    'month': `eq.${month}`,
+    'select': field
+  });
 
   if (existing) {
-    await sb.from('ai_usage')
-      .update({
-        [field]: (existing[field] || 0) + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId)
-      .eq('month', month);
+    const newVal = (existing[field] || 0) + 1;
+    await sbPatch('ai_usage',
+      { 'user_id': `eq.${userId}`, 'month': `eq.${month}` },
+      { [field]: newVal, updated_at: new Date().toISOString() }
+    );
   } else {
-    await sb.from('ai_usage').insert({
+    await sbUpsert('ai_usage', {
       user_id: userId,
       month,
       searches_used: type === 'search' ? 1 : 0,
       assistant_used: type === 'assistant' ? 1 : 0,
-    });
+    }, 'user_id,month');
   }
 }
 
-// Check if user can make a request
 export async function checkLimit(userId, type) {
   const { plan, limits, usage, month } = await getUserPlanAndUsage(userId);
   const used = type === 'search' ? usage.searches : usage.assistant;
   const limit = type === 'search' ? limits.searches : limits.assistant;
-  const remaining = Math.max(0, limit - used);
 
   return {
     allowed: used < limit,
     used,
     limit,
-    remaining,
+    remaining: Math.max(0, limit - used),
     plan,
     month,
   };
