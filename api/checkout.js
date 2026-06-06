@@ -77,7 +77,7 @@ export default async function handler(req, res) {
     const sessionBody = new URLSearchParams({
       customer: customerId,
       mode: 'subscription',
-      success_url: `https://kodesh-sandy.vercel.app/index.html?upgrade=success`,
+      success_url: `https://kodesh-sandy.vercel.app/index.html?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `https://kodesh-sandy.vercel.app/index.html?upgrade=canceled`,
       locale: 'es',
     });
