@@ -2575,14 +2575,19 @@ async function lookupWord(event, cleanWord, rawWord) {
 
   const popup = document.getElementById('lexiconPopup');
 
-  // Try API first (full Strong's with AT/NT detection)
+  // Try API first (AI-powered with AT/NT detection)
   try {
+    // Get verse context for better lookup
+    const verseEl = event.target.closest('.verse');
+    const verseContext = verseEl ? verseEl.textContent.slice(0, 100) : '';
+
     const apiRes = await fetch('/api/lexicon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         word: cleanWord,
         bookId: state.currentBook,
+        verseContext,
       })
     });
 
