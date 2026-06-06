@@ -87,6 +87,24 @@ async function onUserLoggedIn(user) {
   renderDailyPlan();
   // Load usage/plan info
   if (typeof loadUsage === 'function') loadUsage();
+
+  // Check for pending Stripe session
+  const pendingSession = localStorage.getItem('kodesh_pending_session');
+  if (pendingSession) {
+    localStorage.removeItem('kodesh_pending_session');
+    try {
+      const res = await fetch('/api/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, sessionId: pendingSession })
+      });
+      const data = await res.json();
+      if (data.plan === 'premium') {
+        if (typeof showToast === 'function') showToast('🎉 ¡Bienvenido a KODESH Premium!');
+        if (typeof loadUsage === 'function') await loadUsage();
+      }
+    } catch(e) { console.warn('Confirm error:', e.message); }
+  }
 }
 
 /* ── USER LOGGED OUT ── */

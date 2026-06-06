@@ -4142,32 +4142,10 @@ function init() {
   if (params.get('upgrade') === 'success') {
     const sessionId = params.get('session_id');
     window.history.replaceState({}, '', '/index.html');
-    // Confirm and activate premium
-    if (currentUser || sessionId) {
-      setTimeout(async () => {
-        try {
-          const res = await fetch('/api/confirm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: currentUser?.id,
-              sessionId: sessionId,
-            })
-          });
-          const data = await res.json();
-          if (data.plan === 'premium') {
-            showToast('🎉 ¡Bienvenido a KODESH Premium!');
-            await loadUsage();
-          } else {
-            showToast('✦ Pago recibido — activando tu cuenta...');
-            setTimeout(() => loadUsage(), 3000);
-          }
-        } catch(e) {
-          showToast('✦ Pago recibido — actualiza la página en un momento');
-        }
-      }, 1000);
-    } else {
-      showToast('🎉 ¡Bienvenido a KODESH Premium!');
+    showToast('✦ Verificando tu suscripción...');
+    // Store session ID to confirm after auth loads
+    if (sessionId) {
+      localStorage.setItem('kodesh_pending_session', sessionId);
     }
   } else if (params.get('upgrade') === 'canceled') {
     showToast('Pago cancelado — puedes intentarlo de nuevo cuando quieras');
