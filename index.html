@@ -2590,11 +2590,16 @@ async function lookupWord(event, cleanWord, rawWord) {
         word: cleanWord,
         bookId: state.currentBook,
         verseContext,
+        userId: currentUser?.id || null,
       })
     });
 
     if (apiRes.ok) {
       const data = await apiRes.json();
+      if (data.error === 'limit_reached') {
+        showLimitModal('lexicon', data);
+        return;
+      }
       if (data.found) {
         document.getElementById('lexOriginal').textContent = data.lemma;
         document.getElementById('lexOriginal').className = `lex-original ${data.language === 'griego' ? 'greek' : ''}`;
