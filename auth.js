@@ -88,6 +88,9 @@ async function onUserLoggedIn(user) {
   // Load usage/plan info
   if (typeof loadUsage === 'function') loadUsage();
 
+  // Show daily promise card
+  if (typeof showDailyPromise === 'function') setTimeout(() => showDailyPromise(), 500);
+
   // Check for pending Stripe session
   const pendingSession = localStorage.getItem('kodesh_pending_session');
   if (pendingSession) {
