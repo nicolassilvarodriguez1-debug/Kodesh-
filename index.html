@@ -3733,11 +3733,15 @@ async function interpretVerse() {
   // Open assistant with the interpretation query
   openAssistant();
 
-  // Wait for assistant to open then send the interpretation request
-  setTimeout(async () => {
-    const query = `Interpreta exegéticamente este versículo desde una perspectiva Hebreo-Mesiánica:\n\n"${verseText}"\n— ${ref}\n\nQuiero:\n1. Contexto histórico y literario\n2. Análisis del idioma original (hebreo/griego)\n3. Conexiones con Torah, Profetas y Brit Hadashá\n4. Cumplimiento mesiánico en Yeshúa\n5. Aplicación para el creyente hoy`;
-    await sendMessage(query);
-  }, 300);
+  // Wait for assistant panel to be fully open, then send
+  setTimeout(() => {
+    const query = `Interpreta exegéticamente este versículo desde una perspectiva Hebreo-Mesiánica:\n\n"${verseText}"\n— ${ref}\n\nIncluye: contexto histórico, análisis del idioma original (hebreo/griego), conexiones Torah→Profetas→Brit Hadashá, cumplimiento mesiánico en Yeshúa, y aplicación práctica.`;
+    const input = document.getElementById('assistantInput');
+    if (input) {
+      input.value = query;
+      sendMessage();
+    }
+  }, 600);
 }
 
 /* ── Touch support (long press) ── */
