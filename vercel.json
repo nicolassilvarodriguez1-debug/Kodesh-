@@ -1,8 +1,10 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/", "destination": "/landing.html", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
     { "source": "/app", "destination": "/index.html" }
   ],
   "functions": {
