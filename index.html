@@ -817,6 +817,15 @@ body::before {
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
 }
+.limit-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 900;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
 .limit-overlay.open { opacity: 1; pointer-events: auto; }
 .limit-modal {
   background: var(--bg2);
