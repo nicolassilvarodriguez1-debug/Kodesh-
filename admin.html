@@ -8,181 +8,130 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --gold: #c9a84c;
-  --gold-dim: rgba(201,168,76,0.25);
-  --gold-glow: rgba(201,168,76,0.1);
-  --bg: #05050a;
-  --bg2: #0a0a12;
-  --bg3: #0f0f18;
-  --text: #e8e0cc;
-  --text-mid: #a09070;
-  --text-dim: #5a5040;
-  --border: rgba(255,255,255,0.06);
-  --border2: rgba(255,255,255,0.1);
-  --green: #4caf7d;
-  --red: #e05c5c;
+  --gold: #c9a84c; --gold-dim: rgba(201,168,76,0.25); --gold-glow: rgba(201,168,76,0.1);
+  --bg: #05050a; --bg2: #0a0a12; --bg3: #0f0f18;
+  --text: #e8e0cc; --text-mid: #a09070; --text-dim: #5a5040;
+  --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.1);
+  --green: #4caf7d; --red: #e05c5c;
 }
-
-html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; }
-
-/* Auth gate */
-#authGate {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; flex-direction: column; gap: 16px;
-}
-#authGate h2 { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 3px; font-size: 0.8rem; text-transform: uppercase; }
-#authGate p { color: var(--red); font-size: 0.8rem; }
-
-/* Layout */
-#adminPanel { display: none; }
-.topbar {
-  background: var(--bg2); border-bottom: 1px solid var(--gold-dim);
-  padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
-}
-.topbar-brand { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 4px; color: var(--gold); text-transform: uppercase; }
-.topbar-sub { font-size: 0.65rem; color: var(--text-dim); }
-
-.main { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
-
-/* Stats cards */
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-@media(max-width: 800px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-
-.stat-card {
-  background: var(--bg2); border: 1px solid var(--border2);
-  border-radius: 10px; padding: 20px;
-}
-.stat-label { font-size: 0.58rem; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
-.stat-value { font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 700; color: var(--text); }
-.stat-value.gold { color: var(--gold); }
-.stat-value.green { color: var(--green); }
-.stat-sub { font-size: 0.62rem; color: var(--text-dim); margin-top: 4px; }
-
-/* Table */
-.section-title {
-  font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 3px;
-  color: var(--text-dim); text-transform: uppercase; margin-bottom: 16px;
-  padding-bottom: 8px; border-bottom: 1px solid var(--border);
-}
-
-.table-wrap { background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; overflow: hidden; margin-bottom: 32px; overflow-x: auto; }
-
-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-th {
-  background: var(--bg3); padding: 12px 16px; text-align: left;
-  font-size: 0.58rem; letter-spacing: 2px; color: var(--text-dim);
-  text-transform: uppercase; border-bottom: 1px solid var(--border2); white-space: nowrap;
-}
-td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-mid); vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.02); }
-
-.badge {
-  display: inline-block; padding: 2px 8px; border-radius: 4px;
-  font-size: 0.58rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;
-}
-.badge-premium { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid var(--gold-dim); }
-.badge-free { background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px solid var(--border); }
-
-.cost-cell { color: var(--green); font-weight: 600; }
-.usage-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; min-width: 60px; }
-.usage-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width 0.3s; }
-
-/* Loading */
-.loading { text-align: center; padding: 40px; color: var(--text-dim); font-size: 0.75rem; }
-
-/* Refresh btn */
-.btn-refresh {
-  font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 2px;
-  text-transform: uppercase; background: none; border: 1px solid var(--gold-dim);
-  color: var(--gold); padding: 8px 16px; border-radius: 6px; cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-refresh:hover { background: var(--gold-glow); }
+html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+#authGate { display:flex; align-items:center; justify-content:center; min-height:100vh; flex-direction:column; gap:16px; }
+#authGate h2 { font-family:'Cinzel',serif; color:var(--gold); letter-spacing:3px; font-size:0.8rem; text-transform:uppercase; }
+#authGate p { color:var(--red); font-size:0.8rem; }
+#adminPanel { display:none; }
+.topbar { background:var(--bg2); border-bottom:1px solid var(--gold-dim); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+.topbar-brand { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; }
+.topbar-sub { font-size:0.62rem; color:var(--text-dim); margin-top:2px; }
+.main { max-width:1300px; margin:0 auto; padding:32px 24px; }
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+@media(max-width:800px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
+.stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:20px; }
+.stat-label { font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
+.stat-value { font-family:'Cinzel',serif; font-size:1.8rem; font-weight:700; color:var(--text); line-height:1; }
+.stat-value.gold { color:var(--gold); }
+.stat-value.green { color:var(--green); }
+.stat-sub { font-size:0.6rem; color:var(--text-dim); margin-top:6px; }
+.section-title { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.table-wrap { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; overflow:hidden; margin-bottom:32px; overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { background:var(--bg3); padding:10px 14px; text-align:left; font-size:0.57rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; border-bottom:1px solid var(--border2); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text-mid); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.57rem; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
+.badge-premium { background:rgba(201,168,76,0.15); color:var(--gold); border:1px solid var(--gold-dim); }
+.badge-free { background:rgba(255,255,255,0.04); color:var(--text-dim); border:1px solid var(--border); }
+.badge-google { background:rgba(66,133,244,0.1); color:#4285f4; border:1px solid rgba(66,133,244,0.2); }
+.cost-cell { color:var(--green); font-weight:600; }
+.usage-bar { height:3px; background:var(--border); border-radius:2px; margin-top:4px; min-width:50px; }
+.usage-fill { height:100%; border-radius:2px; background:var(--gold); }
+.usage-fill.danger { background:var(--red); }
+.loading { text-align:center; padding:32px; color:var(--text-dim); }
+.btn-refresh { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:8px 16px; border-radius:6px; cursor:pointer; transition:all 0.2s; }
+.btn-refresh:hover { background:var(--gold-glow); }
+.name-cell { color:var(--text); font-weight:600; }
+.email-cell { font-size:0.68rem; }
+.date-cell { font-size:0.65rem; }
 </style>
 </head>
 <body>
 
-<!-- AUTH GATE -->
 <div id="authGate">
   <h2>✦ KODESH Admin</h2>
   <p id="authMsg">Verificando acceso...</p>
 </div>
 
-<!-- ADMIN PANEL -->
 <div id="adminPanel">
   <div class="topbar">
     <div>
-      <div class="topbar-brand">✦ KODESH Admin</div>
+      <div class="topbar-brand">✦ KODESH · Panel de Administración</div>
       <div class="topbar-sub" id="lastUpdated">—</div>
     </div>
-    <button class="btn-refresh" onclick="loadData()">↺ Actualizar</button>
+    <button class="btn-refresh" onclick="loadData()">↺ Actualizar datos</button>
   </div>
 
   <div class="main">
-    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-label">Total usuarios</div>
         <div class="stat-value" id="statUsers">—</div>
-        <div class="stat-sub">registrados</div>
+        <div class="stat-sub" id="statGoogle">— via Google</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Suscriptores Premium</div>
         <div class="stat-value green" id="statPremium">—</div>
-        <div class="stat-sub" id="statRevenue">$0.00 MRR</div>
+        <div class="stat-sub" id="statMRR">$0.00 MRR estimado</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Tokens este mes</div>
-        <div class="stat-value gold" id="statTokens">—</div>
-        <div class="stat-sub">búsquedas + asistente + lexicón</div>
+        <div class="stat-label">Consultas IA este mes</div>
+        <div class="stat-value gold" id="statConsultas">—</div>
+        <div class="stat-sub" id="statConsultasSub">búsquedas + asistente + lexicón</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Costo estimado IA</div>
-        <div class="stat-value" id="statCost">—</div>
-        <div class="stat-sub">Haiku: $0.80/M input, $4/M output</div>
+        <div class="stat-value" id="statCosto">—</div>
+        <div class="stat-sub">Haiku pricing</div>
       </div>
     </div>
 
-    <!-- Users table -->
-    <div class="section-title">Usuarios y consumo — <span id="currentMonth"></span></div>
+    <div class="section-title">Usuarios registrados — <span id="currentMonth"></span></div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Usuario</th>
+            <th>#</th>
+            <th>Nombre</th>
             <th>Email</th>
             <th>Plan</th>
+            <th>Proveedor</th>
             <th>Búsquedas</th>
             <th>Asistente</th>
             <th>Lexicón</th>
-            <th>Total consultas</th>
+            <th>Total</th>
             <th>Costo est.</th>
-            <th>Registrado</th>
+            <th>Último acceso</th>
           </tr>
         </thead>
         <tbody id="usersTable">
-          <tr><td colspan="9" class="loading">Cargando usuarios...</td></tr>
+          <tr><td colspan="11" class="loading">Cargando usuarios...</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Cache stats -->
     <div class="section-title">Cache del Lexicón</div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Palabras cacheadas</th>
-            <th>AT (Hebreo)</th>
-            <th>NT (Griego)</th>
-            <th>Ahorro estimado</th>
+            <th>Total palabras</th>
+            <th>AT · Hebreo</th>
+            <th>NT · Griego</th>
+            <th>Ahorro acumulado</th>
           </tr>
         </thead>
         <tbody id="cacheTable">
-          <tr><td colspan="4" class="loading">Cargando cache...</td></tr>
+          <tr><td colspan="4" class="loading">Cargando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -190,146 +139,106 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 </div>
 
 <script>
-const ADMIN_USER_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
+const ADMIN_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
 const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
-
 const sb = supabase.createClient(SB_URL, SB_ANON);
 
-// Token cost estimates (Haiku)
-const COST_PER_SEARCH = 0.0005;     // ~350 tokens avg
-const COST_PER_ASSISTANT = 0.003;   // ~1500 tokens avg
-const COST_PER_LEXICON = 0.0004;    // ~300 tokens avg (non-cached)
+const COST = { search: 0.0005, assistant: 0.003, lexicon: 0.0004 };
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
-
-  if (!session) {
-    document.getElementById('authMsg').textContent = 'No hay sesión activa. Acceso denegado.';
-    return;
-  }
-
-  if (session.user.id !== ADMIN_USER_ID) {
-    document.getElementById('authMsg').textContent = '⛔ Acceso denegado — Solo el administrador puede entrar.';
-    return;
-  }
-
+  if (!session) { document.getElementById('authMsg').textContent = 'No hay sesión. Inicia sesión primero.'; return; }
+  if (session.user.id !== ADMIN_ID) { document.getElementById('authMsg').textContent = '⛔ Acceso denegado.'; return; }
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('adminPanel').style.display = 'block';
   await loadData();
 }
 
 async function loadData() {
-  const month = new Date().toISOString().slice(0, 7);
-  document.getElementById('currentMonth').textContent = month;
-  document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
-
-  await Promise.all([loadUsers(month), loadCache()]);
-}
-
-async function loadUsers(month) {
+  document.getElementById('lastUpdated').textContent = `Actualizando...`;
   try {
-    // Get profiles
-    const { data: profiles } = await sb.from('user_profiles').select('id, display_name');
-    // Get plans
-    const { data: plans } = await sb.from('user_plans').select('user_id, plan, subscription_status');
-    // Get usage this month
-    const { data: usage } = await sb.from('ai_usage').select('user_id, searches_used, assistant_used, lexicon_used').eq('month', month);
-
-    const profileMap = {};
-    (profiles || []).forEach(p => profileMap[p.id] = p.display_name);
-
-    const planMap = {};
-    (plans || []).forEach(p => planMap[p.user_id] = p);
-
-    const usageMap = {};
-    (usage || []).forEach(u => usageMap[u.user_id] = u);
-
-    // Get all unique user IDs
-    const allIds = new Set([
-      ...Object.keys(profileMap),
-      ...Object.keys(planMap),
-      ...Object.keys(usageMap),
-    ]);
-
-    let totalSearches = 0, totalAssistant = 0, totalLexicon = 0;
-    let premiumCount = 0;
-    let rows = '';
-
-    allIds.forEach(uid => {
-      const name = profileMap[uid] || '—';
-      const plan = planMap[uid];
-      const u = usageMap[uid] || {};
-      const searches = u.searches_used || 0;
-      const assistant = u.assistant_used || 0;
-      const lexicon = u.lexicon_used || 0;
-      const total = searches + assistant + lexicon;
-      const cost = (searches * COST_PER_SEARCH) + (assistant * COST_PER_ASSISTANT) + (lexicon * COST_PER_LEXICON);
-
-      totalSearches += searches;
-      totalAssistant += assistant;
-      totalLexicon += lexicon;
-
-      const isPremium = plan?.plan === 'premium' && plan?.subscription_status === 'active';
-      if (isPremium) premiumCount++;
-
-      const searchLimit = isPremium ? 80 : 10;
-      const assistantLimit = isPremium ? 70 : 15;
-
-      rows += `<tr>
-        <td style="color:var(--text)">${name}</td>
-        <td style="font-size:0.68rem">${uid.slice(0,8)}...</td>
-        <td><span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? 'Premium' : 'Free'}</span></td>
-        <td>
-          ${searches}/${searchLimit}
-          <div class="usage-bar"><div class="usage-fill" style="width:${Math.min(100, searches/searchLimit*100)}%"></div></div>
-        </td>
-        <td>
-          ${assistant}/${assistantLimit}
-          <div class="usage-bar"><div class="usage-fill" style="width:${Math.min(100, assistant/assistantLimit*100)}%"></div></div>
-        </td>
-        <td>${lexicon}</td>
-        <td style="color:var(--text)">${total}</td>
-        <td class="cost-cell">$${cost.toFixed(4)}</td>
-        <td style="font-size:0.65rem">—</td>
-      </tr>`;
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: session.user.id })
     });
-
-    document.getElementById('usersTable').innerHTML = rows || '<tr><td colspan="9" class="loading">Sin datos este mes</td></tr>';
-
-    // Update stats
-    const totalCost = (totalSearches * COST_PER_SEARCH) + (totalAssistant * COST_PER_ASSISTANT) + (totalLexicon * COST_PER_LEXICON);
-    const totalConsultas = totalSearches + totalAssistant + totalLexicon;
-    const mrr = premiumCount * 5.99;
-
-    document.getElementById('statUsers').textContent = allIds.size;
-    document.getElementById('statPremium').textContent = premiumCount;
-    document.getElementById('statRevenue').textContent = `$${mrr.toFixed(2)} MRR`;
-    document.getElementById('statTokens').textContent = totalConsultas.toLocaleString();
-    document.getElementById('statCost').textContent = `$${totalCost.toFixed(4)}`;
-
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    renderData(data);
+    document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
   } catch(e) {
-    console.error('Error loading users:', e);
+    console.error(e);
+    document.getElementById('lastUpdated').textContent = 'Error al cargar datos';
   }
 }
 
-async function loadCache() {
-  try {
-    const { data: cache, count } = await sb.from('lexicon_cache').select('testament', { count: 'exact' });
-    const at = (cache || []).filter(c => c.testament === 'AT').length;
-    const nt = (cache || []).filter(c => c.testament === 'NT').length;
-    const total = at + nt;
-    const savings = `$${(total * COST_PER_LEXICON).toFixed(4)} por uso`;
+function renderData({ users, month, cache }) {
+  document.getElementById('currentMonth').textContent = month;
 
-    document.getElementById('cacheTable').innerHTML = `<tr>
-      <td style="color:var(--text)">${total} palabras</td>
-      <td>${at} palabras hebreas</td>
-      <td>${nt} palabras griegas</td>
-      <td class="cost-cell">${savings}</td>
+  const premiumUsers = users.filter(u => u.plan === 'premium');
+  const googleUsers = users.filter(u => u.provider === 'google');
+  const totalSearches = users.reduce((s, u) => s + u.searches, 0);
+  const totalAssistant = users.reduce((s, u) => s + u.assistant, 0);
+  const totalLexicon = users.reduce((s, u) => s + u.lexicon, 0);
+  const totalConsultas = totalSearches + totalAssistant + totalLexicon;
+  const totalCost = (totalSearches * COST.search) + (totalAssistant * COST.assistant) + (totalLexicon * COST.lexicon);
+  const mrr = premiumUsers.length * 5.99;
+
+  document.getElementById('statUsers').textContent = users.length;
+  document.getElementById('statGoogle').textContent = `${googleUsers.length} via Google · ${users.length - googleUsers.length} via Email`;
+  document.getElementById('statPremium').textContent = premiumUsers.length;
+  document.getElementById('statMRR').textContent = `$${mrr.toFixed(2)} MRR estimado`;
+  document.getElementById('statConsultas').textContent = totalConsultas.toLocaleString();
+  document.getElementById('statCosto').textContent = `$${totalCost.toFixed(4)}`;
+
+  // Sort by total usage desc
+  users.sort((a, b) => (b.searches + b.assistant + b.lexicon) - (a.searches + a.assistant + a.lexicon));
+
+  let rows = '';
+  users.forEach((u, i) => {
+    const total = u.searches + u.assistant + u.lexicon;
+    const cost = (u.searches * COST.search) + (u.assistant * COST.assistant) + (u.lexicon * COST.lexicon);
+    const isPremium = u.plan === 'premium';
+    const searchLimit = isPremium ? 80 : 10;
+    const assistantLimit = isPremium ? 70 : 15;
+    const searchPct = Math.min(100, u.searches / searchLimit * 100);
+    const assistantPct = Math.min(100, u.assistant / assistantLimit * 100);
+    const lastSeen = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
+    const isMe = u.id === ADMIN_ID;
+
+    rows += `<tr${isMe ? ' style="background:rgba(201,168,76,0.04)"' : ''}>
+      <td style="color:var(--text-dim)">${i+1}</td>
+      <td class="name-cell">${u.name}${isMe ? ' 👑' : ''}</td>
+      <td class="email-cell">${u.email || '—'}</td>
+      <td><span class="badge badge-${u.plan}">${u.plan}</span></td>
+      <td><span class="badge ${u.provider === 'google' ? 'badge-google' : 'badge-free'}">${u.provider}</span></td>
+      <td>
+        ${u.searches}/${searchLimit}
+        <div class="usage-bar"><div class="usage-fill ${searchPct >= 90 ? 'danger' : ''}" style="width:${searchPct}%"></div></div>
+      </td>
+      <td>
+        ${u.assistant}/${assistantLimit}
+        <div class="usage-bar"><div class="usage-fill ${assistantPct >= 90 ? 'danger' : ''}" style="width:${assistantPct}%"></div></div>
+      </td>
+      <td>${u.lexicon}</td>
+      <td style="color:var(--text);font-weight:600">${total}</td>
+      <td class="cost-cell">$${cost.toFixed(4)}</td>
+      <td class="date-cell">${lastSeen}</td>
     </tr>`;
-  } catch(e) {
-    document.getElementById('cacheTable').innerHTML = '<tr><td colspan="4" class="loading">Error cargando cache</td></tr>';
-  }
+  });
+
+  document.getElementById('usersTable').innerHTML = rows || '<tr><td colspan="11" class="loading">Sin usuarios</td></tr>';
+
+  // Cache
+  const cacheSavings = (cache.total * COST.lexicon).toFixed(4);
+  document.getElementById('cacheTable').innerHTML = `<tr>
+    <td style="color:var(--text);font-weight:600">${cache.total} palabras</td>
+    <td>${cache.at} palabras</td>
+    <td>${cache.nt} palabras</td>
+    <td class="cost-cell">$${cacheSavings} ahorrado por uso futuro</td>
+  </tr>`;
 }
 
 init();
