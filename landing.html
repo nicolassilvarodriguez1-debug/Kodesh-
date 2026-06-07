@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KODESH · קֹדֶשׁ — Biblia Hebreo-Mesiánica</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KODESH">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="description" content="Plataforma bíblica Hebreo-Mesiánica con estudio profundo, lexicón hebreo/griego, asistente IA y más.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: rgba(201,168,76,0.3);
+    --gold-glow: rgba(201,168,76,0.12);
+    --bg: #05050a;
+    --bg2: #09090f;
+    --text: #e8e0cc;
+    --text-mid: #a09070;
+    --text-dim: #5a5040;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Text', Georgia, serif;
+    overflow-x: hidden;
+  }
+
+  /* ── Background texture ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,168,76,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(201,168,76,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 80% 20%, rgba(201,168,76,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Animated grain ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── Main container ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Nav ── */
+  nav {
+    width: 100%;
+    padding: 24px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .nav-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .nav-link {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-link:hover { color: var(--gold); }
+
+  .nav-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--gold);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.2s;
+    font-weight: 700;
+  }
+
+  .nav-btn:hover { opacity: 0.85; }
+
+  /* ── Hero ── */
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 24px 40px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ── Logo ── */
+  .logo-wrap {
+    margin-bottom: 40px;
+    animation: fadeDown 1s ease both;
+  }
+
+  .logo-img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 40px rgba(201,168,76,0.3));
+  }
+
+  /* ── Tagline ── */
+  .tagline-hebrew {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    animation: fadeUp 1s ease 0.2s both;
+  }
+
+  .hero-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 20px;
+    animation: fadeUp 1s ease 0.3s both;
+  }
+
+  .hero-title span {
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--text-mid);
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 0 auto 40px;
+    animation: fadeUp 1s ease 0.4s both;
+  }
+
+  /* ── CTA buttons ── */
+  .cta-group {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 1s ease 0.5s both;
+    margin-bottom: 60px;
+  }
+
+  .cta-primary {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--gold);
+    border: none;
+    padding: 16px 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.25s;
+    display: inline-block;
+  }
+
+  .cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(201,168,76,0.4);
+  }
+
+  .cta-secondary {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    padding: 16px 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.25s;
+    display: inline-block;
+  }
+
+  .cta-secondary:hover {
+    border-color: var(--gold);
+    background: var(--gold-glow);
+    transform: translateY(-2px);
+  }
+
+  /* ── Verse of the day ── */
+  .verse-banner {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto 80px;
+    padding: 32px 40px;
+    border: 1px solid var(--gold-dim);
+    border-radius: 12px;
+    background: rgba(201,168,76,0.03);
+    text-align: center;
+    animation: fadeUp 1s ease 0.6s both;
+    position: relative;
+  }
+
+  .verse-banner::before {
+    content: '❝';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    color: var(--gold);
+    background: var(--bg);
+    padding: 0 12px;
+    line-height: 1;
+  }
+
+  .verse-text {
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .verse-ref {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  /* ── Features ── */
+  .features {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  .features-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeUp 1s ease 0.7s both;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    animation: fadeUp 1s ease 0.8s both;
+  }
+
+  @media(max-width: 700px) {
+    .features-grid { grid-template-columns: 1fr; }
+    nav { padding: 20px 20px; }
+    .nav-links { gap: 16px; }
+    .hero { padding: 40px 20px 20px; }
+    .logo-img { width: 140px; height: 140px; }
+    .verse-banner { padding: 28px 24px; }
+  }
+
+  .feature-card {
+    background: rgba(201,168,76,0.03);
+    border: 1px solid rgba(201,168,76,0.1);
+    border-radius: 10px;
+    padding: 28px 24px;
+    transition: all 0.25s;
+  }
+
+  .feature-card:hover {
+    border-color: var(--gold-dim);
+    background: rgba(201,168,76,0.06);
+    transform: translateY(-3px);
+  }
+
+  .feature-icon {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  .feature-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .feature-desc {
+    font-size: 0.95rem;
+    color: var(--text-mid);
+    line-height: 1.6;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    width: 60px;
+    height: 1px;
+    background: var(--gold-dim);
+    margin: 0 auto 80px;
+  }
+
+  /* ── Premium banner ── */
+  .premium-banner {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto 80px;
+    padding: 48px 40px;
+    border: 1px solid var(--gold-dim);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.05), rgba(201,168,76,0.02));
+    text-align: center;
+    animation: fadeUp 1s ease 0.9s both;
+  }
+
+  .premium-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .premium-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .premium-price {
+    font-family: 'Cinzel', serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .premium-price span {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  .premium-note {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+
+  .premium-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .premium-tag {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    letter-spacing: 1px;
+    color: var(--text-mid);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 4px;
+    padding: 4px 10px;
+    text-transform: uppercase;
+  }
+
+  /* ── Footer ── */
+  footer {
+    width: 100%;
+    padding: 32px 40px;
+    border-top: 1px solid rgba(201,168,76,0.08);
+    text-align: center;
+  }
+
+  .footer-text {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-brand">קֹדֶשׁ · KODESH</div>
+    <div class="nav-links">
+      <a href="#funciones" class="nav-link">Funciones</a>
+      <a href="#premium" class="nav-link">Premium</a>
+      <a href="/login.html" class="nav-link">Entrar</a>
+      <a href="/login.html" class="nav-btn">Comenzar →</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="logo-wrap">
+      <img src="/logo.png" alt="KODESH Logo" class="logo-img">
+    </div>
+
+    <div class="tagline-hebrew">קֹדֶשׁ · Santidad · Estudio profundo</div>
+
+    <h1 class="hero-title">
+      La Biblia como<br><span>nunca la has estudiado</span>
+    </h1>
+
+    <p class="hero-sub">
+      Plataforma bíblica Hebreo-Mesiánica con lexicón hebreo y griego,
+      asistente de estudio con IA, ciclo de Torah, y mucho más —
+      todo desde una perspectiva centrada en Yeshúa y las Escrituras.
+    </p>
+
+    <div class="cta-group">
+      <a href="/login.html" class="cta-primary">Comenzar gratis →</a>
+      <a href="#funciones" class="cta-secondary">Ver funciones</a>
+    </div>
+
+    <!-- Verse of the day -->
+    <div class="verse-banner">
+      <p class="verse-text">
+        "No se aparte de tu boca este libro de la Torah, sino que de día y de noche meditarás en él,
+        para que guardes y hagas conforme a todo lo que en él está escrito."
+      </p>
+      <div class="verse-ref">Josué 1:8 · RVR60</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features" id="funciones">
+    <div class="features-title">Todo lo que incluye KODESH</div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <div class="feature-name">Biblia Completa</div>
+        <div class="feature-desc">66 libros RVR60 con nombres mesiánicos — YHWH, Yeshúa, Mashíaj — en cada versículo.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔤</div>
+        <div class="feature-name">Lexicón Hebreo/Griego</div>
+        <div class="feature-desc">Toca cualquier palabra para ver su raíz original. AT en hebreo, NT en griego — automático.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✦</div>
+        <div class="feature-name">Asistente con IA</div>
+        <div class="feature-desc">Estudia con un asistente que conoce las Escrituras desde una perspectiva mesiánica y defiende la Torah.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🕍</div>
+        <div class="feature-name">Ciclo de Torah</div>
+        <div class="feature-desc">52 porciones semanales con Haftarah mesiánica y sección educativa sobre el ciclo de estudio.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔖</div>
+        <div class="feature-name">Marcadores y Notas</div>
+        <div class="feature-desc">7 categorías de color para marcar versículos. Notas por capítulo sincronizadas en todos tus dispositivos.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+        <div class="feature-name">Racha de Lectura</div>
+        <div class="feature-desc">Plan de lectura personalizado, calendario de actividad y racha diaria para mantenerte en el estudio.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PREMIUM -->
+  <div class="premium-banner" id="premium">
+    <div class="premium-label">✦ Plan Premium</div>
+    <div class="premium-title">KODESH Premium</div>
+    <div class="premium-price">$5.99<span>/mes</span></div>
+    <div class="premium-note">🔥 Precio de lanzamiento — por tiempo limitado</div>
+    <div class="premium-features">
+      <span class="premium-tag">80 búsquedas IA / mes</span>
+      <span class="premium-tag">70 consultas asistente / mes</span>
+      <span class="premium-tag">Lexicón completo</span>
+      <span class="premium-tag">Marcadores ilimitados</span>
+      <span class="premium-tag">Soporte prioritario</span>
+    </div>
+    <a href="/login.html" class="cta-primary">Comenzar con Premium →</a>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-text">© 2026 KODESH · קֹדֶשׁ · kodeshbible.com · Iglesia Freedom</div>
+  </footer>
+
+</div>
+</body>
+</html>
