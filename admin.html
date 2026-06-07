@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,48 +8,107 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
+
+/* ── DARK THEME (default) ── */
+:root, [data-theme="dark"] {
   --gold: #c9a84c; --gold-dim: rgba(201,168,76,0.25); --gold-glow: rgba(201,168,76,0.1);
   --bg: #05050a; --bg2: #0a0a12; --bg3: #0f0f18;
   --text: #e8e0cc; --text-mid: #a09070; --text-dim: #5a5040;
   --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.1);
   --green: #4caf7d; --red: #e05c5c;
+  --shadow: rgba(0,0,0,0.6);
+  --hover-row: rgba(255,255,255,0.02);
+  --th-bg: #0f0f18;
+  --toggle-bg: rgba(255,255,255,0.07);
+  --toggle-icon: '☀️';
 }
-html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+/* ── LIGHT THEME ── */
+[data-theme="light"] {
+  --gold: #9a6e1a; --gold-dim: rgba(154,110,26,0.2); --gold-glow: rgba(154,110,26,0.07);
+  --bg: #f5f0e8; --bg2: #ffffff; --bg3: #ede8de;
+  --text: #1a1410; --text-mid: #5a4a30; --text-dim: #9a8a70;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.12);
+  --green: #2e7d52; --red: #c0392b;
+  --shadow: rgba(0,0,0,0.12);
+  --hover-row: rgba(0,0,0,0.02);
+  --th-bg: #ede8de;
+  --toggle-bg: rgba(0,0,0,0.06);
+  --toggle-icon: '🌙';
+}
+
+html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; transition: background 0.3s, color 0.3s; }
+
+/* ── AUTH GATE ── */
 #authGate { display:flex; align-items:center; justify-content:center; min-height:100vh; flex-direction:column; gap:16px; }
 #authGate h2 { font-family:'Cinzel',serif; color:var(--gold); letter-spacing:3px; font-size:0.8rem; text-transform:uppercase; }
 #authGate p { color:var(--red); font-size:0.8rem; }
 #adminPanel { display:none; }
-.topbar { background:var(--bg2); border-bottom:1px solid var(--gold-dim); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+
+/* ── TOPBAR ── */
+.topbar { background:var(--bg2); border-bottom:1px solid var(--gold-dim); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; transition: background 0.3s, border-color 0.3s; }
 .topbar-brand { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; }
 .topbar-sub { font-size:0.62rem; color:var(--text-dim); margin-top:2px; }
+.topbar-actions { display:flex; align-items:center; gap:10px; }
+
+/* ── THEME TOGGLE ── */
+.btn-theme {
+  background: var(--toggle-bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-theme:hover { background: var(--gold-glow); border-color: var(--gold-dim); }
+.theme-icon { pointer-events: none; }
+
+/* ── REFRESH BUTTON ── */
+.btn-refresh { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:8px 16px; border-radius:6px; cursor:pointer; transition:all 0.2s; }
+.btn-refresh:hover { background:var(--gold-glow); }
+
+/* ── MAIN LAYOUT ── */
 .main { max-width:1300px; margin:0 auto; padding:32px 24px; }
+
+/* ── STATS GRID ── */
 .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
 @media(max-width:800px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
-.stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:20px; }
+.stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:20px; transition: background 0.3s, border-color 0.3s; }
 .stat-label { font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
 .stat-value { font-family:'Cinzel',serif; font-size:1.8rem; font-weight:700; color:var(--text); line-height:1; }
 .stat-value.gold { color:var(--gold); }
 .stat-value.green { color:var(--green); }
 .stat-sub { font-size:0.6rem; color:var(--text-dim); margin-top:6px; }
+
+/* ── SECTION TITLE ── */
 .section-title { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
-.table-wrap { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; overflow:hidden; margin-bottom:32px; overflow-x:auto; }
+
+/* ── TABLE ── */
+.table-wrap { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; overflow:hidden; margin-bottom:32px; overflow-x:auto; transition: background 0.3s, border-color 0.3s; box-shadow: 0 2px 12px var(--shadow); }
 table { width:100%; border-collapse:collapse; }
-th { background:var(--bg3); padding:10px 14px; text-align:left; font-size:0.57rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; border-bottom:1px solid var(--border2); white-space:nowrap; }
-td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text-mid); vertical-align:middle; }
+th { background:var(--th-bg); padding:10px 14px; text-align:left; font-size:0.57rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; border-bottom:1px solid var(--border2); white-space:nowrap; transition: background 0.3s; }
+td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text-mid); vertical-align:middle; transition: color 0.2s; }
 tr:last-child td { border-bottom:none; }
-tr:hover td { background:rgba(255,255,255,0.02); }
+tr:hover td { background: var(--hover-row); }
+
+/* ── BADGES ── */
 .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.57rem; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
 .badge-premium { background:rgba(201,168,76,0.15); color:var(--gold); border:1px solid var(--gold-dim); }
-.badge-free { background:rgba(255,255,255,0.04); color:var(--text-dim); border:1px solid var(--border); }
+[data-theme="light"] .badge-premium { background:rgba(154,110,26,0.1); }
+.badge-free { background:rgba(128,128,128,0.08); color:var(--text-dim); border:1px solid var(--border); }
 .badge-google { background:rgba(66,133,244,0.1); color:#4285f4; border:1px solid rgba(66,133,244,0.2); }
+
+/* ── USAGE BARS ── */
 .cost-cell { color:var(--green); font-weight:600; }
-.usage-bar { height:3px; background:var(--border); border-radius:2px; margin-top:4px; min-width:50px; }
+.usage-bar { height:3px; background:var(--border2); border-radius:2px; margin-top:4px; min-width:50px; }
 .usage-fill { height:100%; border-radius:2px; background:var(--gold); }
 .usage-fill.danger { background:var(--red); }
+
+/* ── MISC ── */
 .loading { text-align:center; padding:32px; color:var(--text-dim); }
-.btn-refresh { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:8px 16px; border-radius:6px; cursor:pointer; transition:all 0.2s; }
-.btn-refresh:hover { background:var(--gold-glow); }
 .name-cell { color:var(--text); font-weight:600; }
 .email-cell { font-size:0.68rem; }
 .date-cell { font-size:0.65rem; }
@@ -68,7 +127,12 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       <div class="topbar-brand">✦ KODESH · Panel de Administración</div>
       <div class="topbar-sub" id="lastUpdated">—</div>
     </div>
-    <button class="btn-refresh" onclick="loadData()">↺ Actualizar datos</button>
+    <div class="topbar-actions">
+      <button class="btn-theme" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
+        <span class="theme-icon" id="themeIcon">☀️</span>
+      </button>
+      <button class="btn-refresh" onclick="loadData()">↺ Actualizar datos</button>
+    </div>
   </div>
 
   <div class="main">
@@ -143,10 +207,28 @@ const ADMIN_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
 const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_ANON);
-
 const COST = { search: 0.0005, assistant: 0.003, lexicon: 0.0004 };
 
+/* ── THEME ── */
+function initTheme() {
+  const saved = localStorage.getItem('kodesh_admin_theme') || 'dark';
+  setTheme(saved, false);
+}
+
+function setTheme(theme, save = true) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeIcon').textContent = theme === 'dark' ? '☀️' : '🌙';
+  if (save) localStorage.setItem('kodesh_admin_theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+/* ── AUTH + DATA ── */
 async function init() {
+  initTheme();
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { document.getElementById('authMsg').textContent = 'No hay sesión. Inicia sesión primero.'; return; }
   if (session.user.id !== ADMIN_ID) { document.getElementById('authMsg').textContent = '⛔ Acceso denegado.'; return; }
@@ -156,7 +238,7 @@ async function init() {
 }
 
 async function loadData() {
-  document.getElementById('lastUpdated').textContent = `Actualizando...`;
+  document.getElementById('lastUpdated').textContent = 'Actualizando...';
   try {
     const { data: { session } } = await sb.auth.getSession();
     const res = await fetch('/api/admin', {
@@ -193,7 +275,6 @@ function renderData({ users, month, cache }) {
   document.getElementById('statConsultas').textContent = totalConsultas.toLocaleString();
   document.getElementById('statCosto').textContent = `$${totalCost.toFixed(4)}`;
 
-  // Sort by total usage desc
   users.sort((a, b) => (b.searches + b.assistant + b.lexicon) - (a.searches + a.assistant + a.lexicon));
 
   let rows = '';
@@ -208,7 +289,7 @@ function renderData({ users, month, cache }) {
     const lastSeen = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
     const isMe = u.id === ADMIN_ID;
 
-    rows += `<tr${isMe ? ' style="background:rgba(201,168,76,0.04)"' : ''}>
+    rows += `<tr${isMe ? ' style="background:var(--gold-glow)"' : ''}>
       <td style="color:var(--text-dim)">${i+1}</td>
       <td class="name-cell">${u.name}${isMe ? ' 👑' : ''}</td>
       <td class="email-cell">${u.email || '—'}</td>
@@ -231,7 +312,6 @@ function renderData({ users, month, cache }) {
 
   document.getElementById('usersTable').innerHTML = rows || '<tr><td colspan="11" class="loading">Sin usuarios</td></tr>';
 
-  // Cache
   const cacheSavings = (cache.total * COST.lexicon).toFixed(4);
   document.getElementById('cacheTable').innerHTML = `<tr>
     <td style="color:var(--text);font-weight:600">${cache.total} palabras</td>
