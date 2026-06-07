@@ -396,13 +396,48 @@ tr:hover td { background: var(--bg3); }
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ═══════════════════════════════════════════════
+   STUBS — evitar errores de funciones del index
+   que auth.js intenta llamar
+═══════════════════════════════════════════════ */
+// Estado mínimo para que auth.js no explote
+const state = { readChapters: {}, bookmarks: {} };
+
+// Funciones del index que auth.js llama — las dejamos vacías aquí
+function syncProgressFromCloud() {}
+function syncBookmarksFromCloud() {}
+function syncNotesFromCloud() {}
+function updateProgress() {}
+function updateBookList() {}
+function renderBookmarkList() {}
+function renderStreakBadge() {}
+function renderDailyPlan() {}
+function loadStrings() {}
+function loadUsage() {}
+function openProfile() {}
+
+// Sobrescribimos los callbacks de auth para el flujo admin
+function onUserLoggedIn(user) {
+  currentUser = user;
+  checkAdminAccess(user);
+}
+
+function onUserLoggedOut() {
+  window.location.href = '/login.html';
+}
+
+// updateUserUI puede ser llamada — la dejamos vacía
+function updateUserUI() {}
+</script>
+
 <script src="./auth.js"></script>
 
 <script>
 /* ═══════════════════════════════
    CONFIGURACIÓN
 ═══════════════════════════════ */
-// Tu email de admin — solo este email puede ver el panel
 const ADMIN_EMAIL = 'nicolassilvarodriguez1@gmail.com';
 
 // Precio del plan premium para calcular MRR
@@ -434,8 +469,7 @@ window.addEventListener('load', () => {
   initAuth();
 });
 
-// Esta función es llamada por auth.js cuando el usuario está listo
-function onAuthReady(user) {
+function checkAdminAccess(user) {
   if (!user) {
     window.location.href = '/login.html';
     return;
