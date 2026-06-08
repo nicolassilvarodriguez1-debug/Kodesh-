@@ -294,15 +294,19 @@ async function loadLexicon() {
   }
 }
 
+function normalizeFirstLetter(word) {
+  const first = word[0]?.toUpperCase() || '#';
+  return first.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 // ── ALPHABET BAR ──
 function buildAlphaBar() {
-  const letters = new Set(allWords.map(w => w.word[0]?.toUpperCase()).filter(Boolean));
+  const letters = new Set(allWords.map(w => normalizeFirstLetter(w.word)).filter(Boolean));
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const bar = document.getElementById('alphaBar');
   bar.innerHTML = `<button class="alpha-btn active" onclick="setLetter(null,this)">Todas</button>`;
   alphabet.forEach(l => {
-    const hasWords = letters.has(l);
-    if (hasWords) {
+    if (letters.has(l)) {
       bar.innerHTML += `<button class="alpha-btn has-words" onclick="setLetter('${l}',this)">${l}</button>`;
     }
   });
@@ -333,7 +337,7 @@ function getFilteredWords() {
     if (activeFilter === 'heb' && w.language !== 'hebreo') return false;
     if (activeFilter === 'grk' && w.language !== 'griego') return false;
     // Letter filter
-    if (activeLetter && w.word[0]?.toUpperCase() !== activeLetter) return false;
+    if (activeLetter && normalizeFirstLetter(w.word) !== activeLetter) return false;
     // Search filter
     if (query) {
       return w.word.includes(query) ||
@@ -363,7 +367,7 @@ function renderWords() {
   // Group by first letter
   const grouped = {};
   filtered.forEach(w => {
-    const letter = w.word[0]?.toUpperCase() || '#';
+    const letter = normalizeFirstLetter(w.word);
     if (!grouped[letter]) grouped[letter] = [];
     grouped[letter].push(w);
   });
