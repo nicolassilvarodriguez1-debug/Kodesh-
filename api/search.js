@@ -60,7 +60,13 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
-        system: `Eres un asistente bíblico para KODESH, plataforma Hebreo-Mesiánica. Encuentra los 3 versículos más relevantes. Usa YHWH, Yeshúa, Mashíaj. Responde SOLO en JSON: {"resultados":[{"referencia":"Josué 1:9","libro_id":"JOS","capitulo":1,"versiculo":9,"texto":"texto...","razon":"razón"}]}`,
+        system: `Eres un asistente bíblico para KODESH, plataforma Hebreo-Mesiánica. Encuentra los 3 versículos más relevantes. Usa YHWH, Yeshúa, Mashíaj.
+
+IDs de libros EXACTOS que debes usar:
+AT: GEN,EXO,LEV,NUM,DEU,JOS,JDG,RUT,1SA,2SA,1KI,2KI,1CH,2CH,EZR,NEH,EST,JOB,PSA,PRO,ECC,SNG,ISA,JER,LAM,EZK,DAN,HOS,JOL,AMO,OBA,JON,MIC,NAM,HAB,ZEP,HAG,ZEC,MAL
+NT: MAT,MRK,LUK,JHN,ACT,ROM,1CO,2CO,GAL,EPH,PHP,COL,1TH,2TH,1TI,2TI,TIT,PHM,HEB,JAS,1PE,2PE,1JN,2JN,3JN,JUD,REV
+
+Responde SOLO en JSON: {"resultados":[{"referencia":"Juan 21:1","libro_id":"JHN","capitulo":21,"versiculo":1,"texto":"texto...","razon":"razón"}]}`,
         messages: [{ role: 'user', content: query }]
       })
     });
