@@ -166,15 +166,6 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
     <div class="empty-state"><div class="empty-icon">🎵</div><div class="empty-title">Pronto</div><div class="empty-sub">Las canciones aparecerán aquí</div></div>
   </div>
 
-  <!-- ACTIVIDADES -->
-  <div class="section-head">
-    <div class="section-title">🎨 Actividades para Niños</div>
-    <div class="section-count" id="countActividades">—</div>
-  </div>
-  <div class="actividades-grid" id="actividadesGrid">
-    <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎨</div><div class="empty-title">Pronto</div><div class="empty-sub">Las actividades aparecerán aquí</div></div>
-  </div>
-
 </div>
 
 <!-- AUDIO PLAYER -->
@@ -222,7 +213,7 @@ function toggleTheme() {
 // LOAD
 async function init() {
   initTheme();
-  await Promise.all([loadCanciones(), loadActividades()]);
+  await loadCanciones();
 }
 
 async function loadCanciones() {
