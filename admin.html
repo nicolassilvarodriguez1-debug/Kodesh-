@@ -8,110 +8,110 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-/* ── DARK THEME (default) ── */
-:root, [data-theme="dark"] {
-  --gold: #c9a84c; --gold-dim: rgba(201,168,76,0.25); --gold-glow: rgba(201,168,76,0.1);
-  --bg: #05050a; --bg2: #0a0a12; --bg3: #0f0f18;
-  --text: #e8e0cc; --text-mid: #a09070; --text-dim: #5a5040;
-  --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.1);
-  --green: #4caf7d; --red: #e05c5c;
-  --shadow: rgba(0,0,0,0.6);
-  --hover-row: rgba(255,255,255,0.02);
-  --th-bg: #0f0f18;
-  --toggle-bg: rgba(255,255,255,0.07);
-  --toggle-icon: '☀️';
+:root {
+  --gold:#c9a84c; --gold-dim:rgba(201,168,76,0.25); --gold-glow:rgba(201,168,76,0.1);
+  --bg:#05050a; --bg2:#0a0a12; --bg3:#0f0f18;
+  --text:#e8e0cc; --text-mid:#a09070; --text-dim:#5a5040;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.1);
+  --green:#4caf7d; --red:#e05c5c;
 }
-
-/* ── LIGHT THEME ── */
-[data-theme="light"] {
-  --gold: #9a6e1a; --gold-dim: rgba(154,110,26,0.2); --gold-glow: rgba(154,110,26,0.07);
-  --bg: #f5f0e8; --bg2: #ffffff; --bg3: #ede8de;
-  --text: #1a1410; --text-mid: #5a4a30; --text-dim: #9a8a70;
-  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.12);
-  --green: #2e7d52; --red: #c0392b;
-  --shadow: rgba(0,0,0,0.12);
-  --hover-row: rgba(0,0,0,0.02);
-  --th-bg: #ede8de;
-  --toggle-bg: rgba(0,0,0,0.06);
-  --toggle-icon: '🌙';
+html[data-theme="light"] {
+  --bg:#faf8f3; --bg2:#f3efe4; --bg3:#ede8d8;
+  --text:#1a1408; --text-mid:#6b5a38; --text-dim:#b0a080;
+  --border:rgba(0,0,0,0.06); --border2:rgba(201,168,76,0.3);
 }
+html, body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; transition:background 0.3s,color 0.3s; }
 
-html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; transition: background 0.3s, color 0.3s; }
-
-/* ── AUTH GATE ── */
 #authGate { display:flex; align-items:center; justify-content:center; min-height:100vh; flex-direction:column; gap:16px; }
 #authGate h2 { font-family:'Cinzel',serif; color:var(--gold); letter-spacing:3px; font-size:0.8rem; text-transform:uppercase; }
 #authGate p { color:var(--red); font-size:0.8rem; }
 #adminPanel { display:none; }
 
-/* ── TOPBAR ── */
-.topbar { background:var(--bg2); border-bottom:1px solid var(--gold-dim); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; transition: background 0.3s, border-color 0.3s; }
-.topbar-brand { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; }
-.topbar-sub { font-size:0.62rem; color:var(--text-dim); margin-top:2px; }
-.topbar-actions { display:flex; align-items:center; gap:10px; }
+/* TOPBAR */
+.topbar { background:var(--bg2); border-bottom:1px solid var(--gold-dim); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.topbar-brand { font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; }
+.topbar-sub { font-size:0.6rem; color:var(--text-dim); margin-top:2px; }
+.topbar-right { display:flex; gap:10px; align-items:center; }
+.btn-sm { font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:2px; text-transform:uppercase; background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:6px 14px; border-radius:6px; cursor:pointer; transition:all 0.2s; }
+.btn-sm:hover { background:var(--gold-glow); }
 
-/* ── THEME TOGGLE ── */
-.btn-theme {
-  background: var(--toggle-bg);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  padding: 7px 10px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  line-height: 1;
-  transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center;
-}
-.btn-theme:hover { background: var(--gold-glow); border-color: var(--gold-dim); }
-.theme-icon { pointer-events: none; }
+/* TABS */
+.admin-tabs { display:flex; background:var(--bg2); border-bottom:1px solid var(--border2); padding:0 28px; gap:4px; }
+.admin-tab { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; padding:14px 18px; background:none; border:none; border-bottom:2px solid transparent; color:var(--text-dim); cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.admin-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.admin-tab:hover { color:var(--text-mid); }
 
-/* ── REFRESH BUTTON ── */
-.btn-refresh { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:8px 16px; border-radius:6px; cursor:pointer; transition:all 0.2s; }
-.btn-refresh:hover { background:var(--gold-glow); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
 
-/* ── MAIN LAYOUT ── */
-.main { max-width:1300px; margin:0 auto; padding:32px 24px; }
+/* MAIN */
+.main { max-width:1300px; margin:0 auto; padding:28px 24px; }
 
-/* ── STATS GRID ── */
-.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+/* STATS */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
 @media(max-width:800px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
-.stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:20px; transition: background 0.3s, border-color 0.3s; }
-.stat-label { font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
-.stat-value { font-family:'Cinzel',serif; font-size:1.8rem; font-weight:700; color:var(--text); line-height:1; }
+.stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:18px; }
+.stat-label { font-size:0.55rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px; }
+.stat-value { font-family:'Cinzel',serif; font-size:1.7rem; font-weight:700; color:var(--text); line-height:1; }
 .stat-value.gold { color:var(--gold); }
 .stat-value.green { color:var(--green); }
-.stat-sub { font-size:0.6rem; color:var(--text-dim); margin-top:6px; }
+.stat-sub { font-size:0.58rem; color:var(--text-dim); margin-top:5px; }
 
-/* ── SECTION TITLE ── */
-.section-title { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
-
-/* ── TABLE ── */
-.table-wrap { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; overflow:hidden; margin-bottom:32px; overflow-x:auto; transition: background 0.3s, border-color 0.3s; box-shadow: 0 2px 12px var(--shadow); }
+/* TABLE */
+.section-title { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.table-wrap { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; overflow:hidden; margin-bottom:28px; overflow-x:auto; }
 table { width:100%; border-collapse:collapse; }
-th { background:var(--th-bg); padding:10px 14px; text-align:left; font-size:0.57rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; border-bottom:1px solid var(--border2); white-space:nowrap; transition: background 0.3s; }
-td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text-mid); vertical-align:middle; transition: color 0.2s; }
+th { background:var(--bg3); padding:10px 14px; text-align:left; font-size:0.55rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; border-bottom:1px solid var(--border2); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text-mid); vertical-align:middle; }
 tr:last-child td { border-bottom:none; }
-tr:hover td { background: var(--hover-row); }
-
-/* ── BADGES ── */
-.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.57rem; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.55rem; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
 .badge-premium { background:rgba(201,168,76,0.15); color:var(--gold); border:1px solid var(--gold-dim); }
-[data-theme="light"] .badge-premium { background:rgba(154,110,26,0.1); }
-.badge-free { background:rgba(128,128,128,0.08); color:var(--text-dim); border:1px solid var(--border); }
+.badge-free { background:rgba(255,255,255,0.04); color:var(--text-dim); border:1px solid var(--border); }
 .badge-google { background:rgba(66,133,244,0.1); color:#4285f4; border:1px solid rgba(66,133,244,0.2); }
-
-/* ── USAGE BARS ── */
 .cost-cell { color:var(--green); font-weight:600; }
-.usage-bar { height:3px; background:var(--border2); border-radius:2px; margin-top:4px; min-width:50px; }
+.usage-bar { height:3px; background:var(--border); border-radius:2px; margin-top:4px; min-width:50px; }
 .usage-fill { height:100%; border-radius:2px; background:var(--gold); }
 .usage-fill.danger { background:var(--red); }
-
-/* ── MISC ── */
-.loading { text-align:center; padding:32px; color:var(--text-dim); }
+.loading { text-align:center; padding:28px; color:var(--text-dim); }
 .name-cell { color:var(--text); font-weight:600; }
-.email-cell { font-size:0.68rem; }
-.date-cell { font-size:0.65rem; }
+
+/* UPLOAD SECTION */
+.upload-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-bottom:28px; }
+.upload-card { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; padding:20px; }
+.upload-card-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:2px; color:var(--gold); text-transform:uppercase; margin-bottom:16px; }
+.form-group { margin-bottom:12px; }
+.form-label { font-size:0.55rem; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px; }
+.form-input {
+  width:100%; background:var(--bg3); border:1px solid var(--border2);
+  border-radius:6px; padding:8px 12px; color:var(--text);
+  font-family:'JetBrains Mono',monospace; font-size:0.8rem;
+  outline:none; transition:border-color 0.2s;
+}
+.form-input:focus { border-color:var(--gold); }
+.form-input::placeholder { color:var(--text-dim); }
+.form-select { width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:8px 12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.8rem; outline:none; cursor:pointer; }
+.btn-upload { width:100%; background:var(--gold); border:none; color:#1a0e00; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:2px; text-transform:uppercase; padding:10px; border-radius:8px; cursor:pointer; transition:opacity 0.2s; margin-top:4px; font-weight:700; }
+.btn-upload:hover { opacity:0.85; }
+.btn-upload:disabled { opacity:0.4; cursor:not-allowed; }
+.upload-msg { font-size:0.72rem; margin-top:8px; text-align:center; min-height:18px; }
+.upload-msg.ok { color:var(--green); }
+.upload-msg.err { color:var(--red); }
+
+/* CONTENT LIST */
+.content-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-bottom:28px; }
+.content-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+.content-card-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; color:var(--text); text-transform:uppercase; }
+.content-card-meta { font-size:0.7rem; color:var(--text-dim); }
+.content-card-actions { display:flex; gap:8px; margin-top:4px; }
+.btn-del { background:none; border:1px solid rgba(224,92,92,0.3); color:var(--red); font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:1px; text-transform:uppercase; padding:4px 10px; border-radius:5px; cursor:pointer; transition:all 0.2s; }
+.btn-del:hover { background:rgba(224,92,92,0.1); }
+.btn-view { background:none; border:1px solid var(--border2); color:var(--text-mid); font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:1px; text-transform:uppercase; padding:4px 10px; border-radius:5px; cursor:pointer; text-decoration:none; transition:all 0.2s; }
+.btn-view:hover { color:var(--gold); border-color:var(--gold-dim); }
+
+/* ROLES */
+.role-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border); }
+.role-row:last-child { border-bottom:none; }
 </style>
 </head>
 <body>
@@ -124,80 +124,169 @@ tr:hover td { background: var(--hover-row); }
 <div id="adminPanel">
   <div class="topbar">
     <div>
-      <div class="topbar-brand">✦ KODESH · Panel de Administración</div>
+      <div class="topbar-brand">✦ KODESH · Administración</div>
       <div class="topbar-sub" id="lastUpdated">—</div>
     </div>
-    <div class="topbar-actions">
-      <button class="btn-theme" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
-        <span class="theme-icon" id="themeIcon">☀️</span>
-      </button>
-      <button class="btn-refresh" onclick="loadData()">↺ Actualizar datos</button>
+    <div class="topbar-right">
+      <button class="btn-sm" onclick="toggleTheme()" id="themeBtn">☀️ Claro</button>
+      <button class="btn-sm" onclick="loadAll()">↺ Actualizar</button>
     </div>
   </div>
 
-  <div class="main">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total usuarios</div>
-        <div class="stat-value" id="statUsers">—</div>
-        <div class="stat-sub" id="statGoogle">— via Google</div>
+  <!-- TABS -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('usuarios',this)">👥 Usuarios</button>
+    <button class="admin-tab" onclick="switchTab('canciones',this)">🎵 Canciones</button>
+    <button class="admin-tab" onclick="switchTab('actividades',this)">🎨 Actividades</button>
+    <button class="admin-tab" id="tabRoles" onclick="switchTab('roles',this)" style="display:none">🔑 Editores</button>
+  </div>
+
+  <!-- TAB: USUARIOS (solo superadmin) -->
+  <div class="tab-content active" id="tab-usuarios">
+    <div class="main">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total usuarios</div>
+          <div class="stat-value" id="statUsers">—</div>
+          <div class="stat-sub" id="statGoogle">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Suscriptores Premium</div>
+          <div class="stat-value green" id="statPremium">—</div>
+          <div class="stat-sub" id="statMRR">$0.00 MRR</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Consultas IA este mes</div>
+          <div class="stat-value gold" id="statConsultas">—</div>
+          <div class="stat-sub">búsquedas + asistente + lexicón</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Costo estimado IA</div>
+          <div class="stat-value" id="statCosto">—</div>
+          <div class="stat-sub">Haiku pricing</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Suscriptores Premium</div>
-        <div class="stat-value green" id="statPremium">—</div>
-        <div class="stat-sub" id="statMRR">$0.00 MRR estimado</div>
+
+      <div class="section-title">Usuarios registrados — <span id="currentMonth"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Nombre</th><th>Email</th><th>Plan</th><th>Proveedor</th>
+              <th>Búsquedas</th><th>Asistente</th><th>Lexicón</th><th>Total</th><th>Costo est.</th><th>Último acceso</th>
+            </tr>
+          </thead>
+          <tbody id="usersTable"><tr><td colspan="11" class="loading">Cargando...</td></tr></tbody>
+        </table>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Consultas IA este mes</div>
-        <div class="stat-value gold" id="statConsultas">—</div>
-        <div class="stat-sub" id="statConsultasSub">búsquedas + asistente + lexicón</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Costo estimado IA</div>
-        <div class="stat-value" id="statCosto">—</div>
-        <div class="stat-sub">Haiku pricing</div>
+
+      <div class="section-title">Cache del Lexicón</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Total palabras</th><th>AT · Hebreo</th><th>NT · Griego</th><th>Ahorro por consulta</th></tr></thead>
+          <tbody id="cacheTable"><tr><td colspan="4" class="loading">Cargando...</td></tr></tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <div class="section-title">Usuarios registrados — <span id="currentMonth"></span></div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Plan</th>
-            <th>Proveedor</th>
-            <th>Búsquedas</th>
-            <th>Asistente</th>
-            <th>Lexicón</th>
-            <th>Total</th>
-            <th>Costo est.</th>
-            <th>Último acceso</th>
-          </tr>
-        </thead>
-        <tbody id="usersTable">
-          <tr><td colspan="11" class="loading">Cargando usuarios...</td></tr>
-        </tbody>
-      </table>
+  <!-- TAB: CANCIONES -->
+  <div class="tab-content" id="tab-canciones">
+    <div class="main">
+      <!-- UPLOAD FORM -->
+      <div class="section-title">Subir nueva canción</div>
+      <div class="upload-grid">
+        <div class="upload-card">
+          <div class="upload-card-title">🎵 Nueva Canción</div>
+          <div class="form-group">
+            <label class="form-label">Título</label>
+            <input class="form-input" id="cancionTitulo" placeholder="Ej: Salmo 23 — El Buen Pastor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Personaje / Serie</label>
+            <input class="form-input" id="cancionPersonaje" placeholder="Ej: David, Moisés, Crónicas del Rey">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input class="form-input" id="cancionDesc" placeholder="Breve descripción...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Archivo de audio (MP3)</label>
+            <input class="form-input" type="file" id="cancionAudio" accept="audio/*">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Imagen de portada (opcional)</label>
+            <input class="form-input" type="file" id="cancionImagen" accept="image/*">
+          </div>
+          <button class="btn-upload" onclick="subirCancion()" id="btnCancion">↑ Subir Canción</button>
+          <div class="upload-msg" id="msgCancion"></div>
+        </div>
+      </div>
+
+      <!-- LIST -->
+      <div class="section-title">Canciones publicadas — <span id="countCanciones">—</span></div>
+      <div class="content-grid" id="listCanciones"><div class="loading">Cargando...</div></div>
     </div>
+  </div>
 
-    <div class="section-title">Cache del Lexicón</div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Total palabras</th>
-            <th>AT · Hebreo</th>
-            <th>NT · Griego</th>
-            <th>Ahorro acumulado</th>
-          </tr>
-        </thead>
-        <tbody id="cacheTable">
-          <tr><td colspan="4" class="loading">Cargando...</td></tr>
-        </tbody>
-      </table>
+  <!-- TAB: ACTIVIDADES -->
+  <div class="tab-content" id="tab-actividades">
+    <div class="main">
+      <!-- UPLOAD FORM -->
+      <div class="section-title">Subir nueva actividad</div>
+      <div class="upload-grid">
+        <div class="upload-card">
+          <div class="upload-card-title">🎨 Nueva Actividad</div>
+          <div class="form-group">
+            <label class="form-label">Título</label>
+            <input class="form-input" id="actTitulo" placeholder="Ej: Colorea el Arca de Noé">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select class="form-select" id="actCategoria">
+              <option value="colorear">Hoja para colorear</option>
+              <option value="manualidad">Manualidad</option>
+              <option value="juego">Juego / Actividad</option>
+              <option value="leccion">Lección bíblica</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Edad recomendada</label>
+            <input class="form-input" id="actEdad" placeholder="Ej: 4-8 años">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Archivo (PDF o imagen)</label>
+            <input class="form-input" type="file" id="actArchivo" accept=".pdf,image/*">
+          </div>
+          <button class="btn-upload" onclick="subirActividad()" id="btnActividad">↑ Subir Actividad</button>
+          <div class="upload-msg" id="msgActividad"></div>
+        </div>
+      </div>
+
+      <!-- LIST -->
+      <div class="section-title">Actividades publicadas — <span id="countActividades">—</span></div>
+      <div class="content-grid" id="listActividades"><div class="loading">Cargando...</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: ROLES (solo superadmin) -->
+  <div class="tab-content" id="tab-roles">
+    <div class="main">
+      <div class="section-title">Editores con acceso para subir contenido</div>
+      <div class="table-wrap" id="rolesWrap">
+        <div class="loading">Cargando...</div>
+      </div>
+
+      <div class="section-title" style="margin-top:24px">Agregar editor por email</div>
+      <div class="upload-card" style="max-width:400px">
+        <div class="form-group">
+          <label class="form-label">Email del usuario</label>
+          <input class="form-input" id="editorEmail" placeholder="email@ejemplo.com">
+        </div>
+        <button class="btn-upload" onclick="agregarEditor()">+ Agregar Editor</button>
+        <div class="upload-msg" id="msgEditor"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -207,38 +296,72 @@ const ADMIN_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
 const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_ANON);
-const COST = { search: 0.0005, assistant: 0.003, lexicon: 0.0004 };
+const COST = { search:0.0005, assistant:0.003, lexicon:0.0004 };
 
-/* ── THEME ── */
+let currentUserId = null;
+let isSuperAdmin = false;
+
+// ── THEME ──
 function initTheme() {
-  const saved = localStorage.getItem('kodesh_admin_theme') || 'dark';
-  setTheme(saved, false);
+  const t = localStorage.getItem('kodesh_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
 }
-
-function setTheme(theme, save = true) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('themeIcon').textContent = theme === 'dark' ? '☀️' : '🌙';
-  if (save) localStorage.setItem('kodesh_admin_theme', theme);
-}
-
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  setTheme(current === 'dark' ? 'light' : 'dark');
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('kodesh_theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
 }
 
-/* ── AUTH + DATA ── */
+// ── TABS ──
+function switchTab(tab, btn) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ── INIT ──
 async function init() {
   initTheme();
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { document.getElementById('authMsg').textContent = 'No hay sesión. Inicia sesión primero.'; return; }
-  if (session.user.id !== ADMIN_ID) { document.getElementById('authMsg').textContent = '⛔ Acceso denegado.'; return; }
+
+  currentUserId = session.user.id;
+
+  // Check role
+  const { data: roleData } = await sb.from('admin_roles').select('role').eq('user_id', currentUserId).single();
+  const role = roleData?.role;
+
+  if (!role) { document.getElementById('authMsg').textContent = '⛔ Acceso denegado.'; return; }
+
+  isSuperAdmin = role === 'superadmin';
+
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('adminPanel').style.display = 'block';
-  await loadData();
+
+  // Show roles tab only for superadmin
+  if (isSuperAdmin) document.getElementById('tabRoles').style.display = 'block';
+  // Hide usuarios tab for editors
+  if (!isSuperAdmin) {
+    document.querySelector('[onclick="switchTab(\'usuarios\',this)"]').style.display = 'none';
+    switchTab('canciones', document.querySelector('[onclick="switchTab(\'canciones\',this)"]'));
+  }
+
+  await loadAll();
 }
 
-async function loadData() {
-  document.getElementById('lastUpdated').textContent = 'Actualizando...';
+async function loadAll() {
+  document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
+  const promises = [loadCanciones(), loadActividades()];
+  if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles());
+  await Promise.all(promises);
+}
+
+// ── USUARIOS (solo superadmin) ──
+async function loadUsuarios() {
   try {
     const { data: { session } } = await sb.auth.getSession();
     const res = await fetch('/api/admin', {
@@ -247,78 +370,261 @@ async function loadData() {
       body: JSON.stringify({ userId: session.user.id })
     });
     const data = await res.json();
-    if (data.error) { alert('Error: ' + data.error); return; }
-    renderData(data);
-    document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
-  } catch(e) {
-    console.error(e);
-    document.getElementById('lastUpdated').textContent = 'Error al cargar datos';
-  }
+    if (data.error) return;
+    renderUsuarios(data);
+  } catch(e) { console.error(e); }
 }
 
-function renderData({ users, month, cache }) {
+function renderUsuarios({ users, month, cache }) {
   document.getElementById('currentMonth').textContent = month;
-
   const premiumUsers = users.filter(u => u.plan === 'premium');
   const googleUsers = users.filter(u => u.provider === 'google');
-  const totalSearches = users.reduce((s, u) => s + u.searches, 0);
-  const totalAssistant = users.reduce((s, u) => s + u.assistant, 0);
-  const totalLexicon = users.reduce((s, u) => s + u.lexicon, 0);
+  const totalSearches = users.reduce((s,u) => s+u.searches, 0);
+  const totalAssistant = users.reduce((s,u) => s+u.assistant, 0);
+  const totalLexicon = users.reduce((s,u) => s+u.lexicon, 0);
   const totalConsultas = totalSearches + totalAssistant + totalLexicon;
-  const totalCost = (totalSearches * COST.search) + (totalAssistant * COST.assistant) + (totalLexicon * COST.lexicon);
+  const totalCost = (totalSearches*COST.search)+(totalAssistant*COST.assistant)+(totalLexicon*COST.lexicon);
   const mrr = premiumUsers.length * 5.99;
 
   document.getElementById('statUsers').textContent = users.length;
-  document.getElementById('statGoogle').textContent = `${googleUsers.length} via Google · ${users.length - googleUsers.length} via Email`;
+  document.getElementById('statGoogle').textContent = `${googleUsers.length} Google · ${users.length-googleUsers.length} Email`;
   document.getElementById('statPremium').textContent = premiumUsers.length;
-  document.getElementById('statMRR').textContent = `$${mrr.toFixed(2)} MRR estimado`;
+  document.getElementById('statMRR').textContent = `$${mrr.toFixed(2)} MRR`;
   document.getElementById('statConsultas').textContent = totalConsultas.toLocaleString();
   document.getElementById('statCosto').textContent = `$${totalCost.toFixed(4)}`;
 
-  users.sort((a, b) => (b.searches + b.assistant + b.lexicon) - (a.searches + a.assistant + a.lexicon));
-
+  users.sort((a,b) => (b.searches+b.assistant+b.lexicon)-(a.searches+a.assistant+a.lexicon));
   let rows = '';
-  users.forEach((u, i) => {
-    const total = u.searches + u.assistant + u.lexicon;
-    const cost = (u.searches * COST.search) + (u.assistant * COST.assistant) + (u.lexicon * COST.lexicon);
+  users.forEach((u,i) => {
+    const total = u.searches+u.assistant+u.lexicon;
+    const cost = (u.searches*COST.search)+(u.assistant*COST.assistant)+(u.lexicon*COST.lexicon);
     const isPremium = u.plan === 'premium';
-    const searchLimit = isPremium ? 80 : 10;
-    const assistantLimit = isPremium ? 70 : 15;
-    const searchPct = Math.min(100, u.searches / searchLimit * 100);
-    const assistantPct = Math.min(100, u.assistant / assistantLimit * 100);
-    const lastSeen = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
-    const isMe = u.id === ADMIN_ID;
-
-    rows += `<tr${isMe ? ' style="background:var(--gold-glow)"' : ''}>
+    const sl = isPremium?80:10, al = isPremium?70:15;
+    const sp = Math.min(100,u.searches/sl*100), ap = Math.min(100,u.assistant/al*100);
+    const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
+    rows += `<tr${u.id===ADMIN_ID?' style="background:rgba(201,168,76,0.04)"':''}>
       <td style="color:var(--text-dim)">${i+1}</td>
-      <td class="name-cell">${u.name}${isMe ? ' 👑' : ''}</td>
-      <td class="email-cell">${u.email || '—'}</td>
+      <td class="name-cell">${u.name}${u.id===ADMIN_ID?' 👑':''}</td>
+      <td style="font-size:0.68rem">${u.email||'—'}</td>
       <td><span class="badge badge-${u.plan}">${u.plan}</span></td>
-      <td><span class="badge ${u.provider === 'google' ? 'badge-google' : 'badge-free'}">${u.provider}</span></td>
-      <td>
-        ${u.searches}/${searchLimit}
-        <div class="usage-bar"><div class="usage-fill ${searchPct >= 90 ? 'danger' : ''}" style="width:${searchPct}%"></div></div>
-      </td>
-      <td>
-        ${u.assistant}/${assistantLimit}
-        <div class="usage-bar"><div class="usage-fill ${assistantPct >= 90 ? 'danger' : ''}" style="width:${assistantPct}%"></div></div>
-      </td>
+      <td><span class="badge ${u.provider==='google'?'badge-google':'badge-free'}">${u.provider}</span></td>
+      <td>${u.searches}/${sl}<div class="usage-bar"><div class="usage-fill ${sp>=90?'danger':''}" style="width:${sp}%"></div></div></td>
+      <td>${u.assistant}/${al}<div class="usage-bar"><div class="usage-fill ${ap>=90?'danger':''}" style="width:${ap}%"></div></div></td>
       <td>${u.lexicon}</td>
       <td style="color:var(--text);font-weight:600">${total}</td>
       <td class="cost-cell">$${cost.toFixed(4)}</td>
-      <td class="date-cell">${lastSeen}</td>
+      <td style="font-size:0.65rem">${last}</td>
     </tr>`;
   });
+  document.getElementById('usersTable').innerHTML = rows||'<tr><td colspan="11" class="loading">Sin usuarios</td></tr>';
 
-  document.getElementById('usersTable').innerHTML = rows || '<tr><td colspan="11" class="loading">Sin usuarios</td></tr>';
-
-  const cacheSavings = (cache.total * COST.lexicon).toFixed(4);
+  const cacheSavings = (cache.total*COST.lexicon).toFixed(4);
   document.getElementById('cacheTable').innerHTML = `<tr>
     <td style="color:var(--text);font-weight:600">${cache.total} palabras</td>
-    <td>${cache.at} palabras</td>
-    <td>${cache.nt} palabras</td>
+    <td>${cache.at}</td><td>${cache.nt}</td>
     <td class="cost-cell">$${cacheSavings} ahorro por consulta</td>
   </tr>`;
+}
+
+// ── CANCIONES ──
+async function loadCanciones() {
+  const { data } = await sb.from('canciones').select('*').order('created_at', { ascending: false });
+  const list = data || [];
+  document.getElementById('countCanciones').textContent = `${list.length} canciones`;
+  const container = document.getElementById('listCanciones');
+  if (!list.length) { container.innerHTML = '<div class="loading">No hay canciones aún.</div>'; return; }
+  container.innerHTML = list.map(c => `
+    <div class="content-card">
+      ${c.imagen_url ? `<img src="${c.imagen_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : ''}
+      <div class="content-card-title">${c.titulo}</div>
+      <div class="content-card-meta">${c.personaje||''} ${c.descripcion ? '· '+c.descripcion : ''}</div>
+      <div class="content-card-actions">
+        <a class="btn-view" href="${c.archivo_url}" target="_blank">▶ Escuchar</a>
+        <button class="btn-del" onclick="eliminarCancion('${c.id}','${c.archivo_url}','${c.imagen_url||''}')">✕ Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function subirCancion() {
+  const titulo = document.getElementById('cancionTitulo').value.trim();
+  const personaje = document.getElementById('cancionPersonaje').value.trim();
+  const desc = document.getElementById('cancionDesc').value.trim();
+  const audioFile = document.getElementById('cancionAudio').files[0];
+  const imgFile = document.getElementById('cancionImagen').files[0];
+  const btn = document.getElementById('btnCancion');
+  const msg = document.getElementById('msgCancion');
+
+  if (!titulo || !audioFile) { msg.textContent = 'Título y audio son requeridos.'; msg.className='upload-msg err'; return; }
+
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+  msg.textContent = ''; msg.className = 'upload-msg';
+
+  try {
+    // Upload audio
+    const audioExt = audioFile.name.split('.').pop();
+    const audioPath = `${Date.now()}_${titulo.replace(/\s+/g,'_')}.${audioExt}`;
+    const { error: audioErr } = await sb.storage.from('canciones').upload(audioPath, audioFile);
+    if (audioErr) throw audioErr;
+    const { data: { publicUrl: audioUrl } } = sb.storage.from('canciones').getPublicUrl(audioPath);
+
+    // Upload image if provided
+    let imgUrl = null;
+    if (imgFile) {
+      const imgExt = imgFile.name.split('.').pop();
+      const imgPath = `covers/${Date.now()}_cover.${imgExt}`;
+      const { error: imgErr } = await sb.storage.from('canciones').upload(imgPath, imgFile);
+      if (!imgErr) {
+        const { data: { publicUrl } } = sb.storage.from('canciones').getPublicUrl(imgPath);
+        imgUrl = publicUrl;
+      }
+    }
+
+    // Save to DB
+    const { error: dbErr } = await sb.from('canciones').insert({
+      titulo, personaje, descripcion: desc,
+      archivo_url: audioUrl, imagen_url: imgUrl,
+      uploaded_by: currentUserId
+    });
+    if (dbErr) throw dbErr;
+
+    msg.textContent = '✓ Canción subida exitosamente.'; msg.className = 'upload-msg ok';
+    document.getElementById('cancionTitulo').value = '';
+    document.getElementById('cancionPersonaje').value = '';
+    document.getElementById('cancionDesc').value = '';
+    document.getElementById('cancionAudio').value = '';
+    document.getElementById('cancionImagen').value = '';
+    await loadCanciones();
+  } catch(e) {
+    msg.textContent = 'Error: ' + e.message; msg.className = 'upload-msg err';
+  }
+  btn.disabled = false; btn.textContent = '↑ Subir Canción';
+}
+
+async function eliminarCancion(id, audioUrl, imgUrl) {
+  if (!confirm('¿Eliminar esta canción?')) return;
+  await sb.from('canciones').delete().eq('id', id);
+  // Delete from storage
+  const audioPath = audioUrl.split('/canciones/')[1];
+  if (audioPath) await sb.storage.from('canciones').remove([audioPath]);
+  if (imgUrl) {
+    const imgPath = imgUrl.split('/canciones/')[1];
+    if (imgPath) await sb.storage.from('canciones').remove([imgPath]);
+  }
+  await loadCanciones();
+}
+
+// ── ACTIVIDADES ──
+async function loadActividades() {
+  const { data } = await sb.from('actividades').select('*').order('created_at', { ascending: false });
+  const list = data || [];
+  document.getElementById('countActividades').textContent = `${list.length} actividades`;
+  const container = document.getElementById('listActividades');
+  if (!list.length) { container.innerHTML = '<div class="loading">No hay actividades aún.</div>'; return; }
+  container.innerHTML = list.map(a => `
+    <div class="content-card">
+      ${a.preview_url ? `<img src="${a.preview_url}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : ''}
+      <div class="content-card-title">${a.titulo}</div>
+      <div class="content-card-meta">${a.categoria||''} ${a.edad ? '· '+a.edad : ''} · ${a.tipo?.toUpperCase()||''}</div>
+      <div class="content-card-actions">
+        <a class="btn-view" href="${a.archivo_url}" target="_blank">⬇ Ver</a>
+        <button class="btn-del" onclick="eliminarActividad('${a.id}','${a.archivo_url}','${a.preview_url||''}')">✕ Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function subirActividad() {
+  const titulo = document.getElementById('actTitulo').value.trim();
+  const categoria = document.getElementById('actCategoria').value;
+  const edad = document.getElementById('actEdad').value.trim();
+  const archivo = document.getElementById('actArchivo').files[0];
+  const btn = document.getElementById('btnActividad');
+  const msg = document.getElementById('msgActividad');
+
+  if (!titulo || !archivo) { msg.textContent = 'Título y archivo son requeridos.'; msg.className='upload-msg err'; return; }
+
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+  msg.textContent = ''; msg.className = 'upload-msg';
+
+  try {
+    const ext = archivo.name.split('.').pop().toLowerCase();
+    const tipo = ext === 'pdf' ? 'pdf' : 'imagen';
+    const path = `${Date.now()}_${titulo.replace(/\s+/g,'_')}.${ext}`;
+
+    const { error: upErr } = await sb.storage.from('actividades').upload(path, archivo);
+    if (upErr) throw upErr;
+    const { data: { publicUrl } } = sb.storage.from('actividades').getPublicUrl(path);
+
+    const { error: dbErr } = await sb.from('actividades').insert({
+      titulo, categoria, edad, tipo,
+      archivo_url: publicUrl,
+      uploaded_by: currentUserId
+    });
+    if (dbErr) throw dbErr;
+
+    msg.textContent = '✓ Actividad subida exitosamente.'; msg.className = 'upload-msg ok';
+    document.getElementById('actTitulo').value = '';
+    document.getElementById('actEdad').value = '';
+    document.getElementById('actArchivo').value = '';
+    await loadActividades();
+  } catch(e) {
+    msg.textContent = 'Error: ' + e.message; msg.className = 'upload-msg err';
+  }
+  btn.disabled = false; btn.textContent = '↑ Subir Actividad';
+}
+
+async function eliminarActividad(id, archivoUrl, previewUrl) {
+  if (!confirm('¿Eliminar esta actividad?')) return;
+  await sb.from('actividades').delete().eq('id', id);
+  const path = archivoUrl.split('/actividades/')[1];
+  if (path) await sb.storage.from('actividades').remove([path]);
+  await loadActividades();
+}
+
+// ── ROLES ──
+async function loadRoles() {
+  const { data } = await sb.from('admin_roles').select('*');
+  const wrap = document.getElementById('rolesWrap');
+  if (!data?.length) { wrap.innerHTML = '<div class="loading">Sin editores.</div>'; return; }
+  wrap.innerHTML = `<table><thead><tr><th>User ID</th><th>Rol</th><th>Acción</th></tr></thead><tbody>
+    ${data.map(r => `<tr>
+      <td>${r.user_id === ADMIN_ID ? '👑 Tú (superadmin)' : r.user_id.slice(0,16)+'...'}</td>
+      <td><span class="badge badge-premium">${r.role}</span></td>
+      <td>${r.user_id !== ADMIN_ID ? `<button class="btn-del" onclick="revocarEditor('${r.user_id}')">Revocar</button>` : '—'}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+async function agregarEditor() {
+  const email = document.getElementById('editorEmail').value.trim();
+  const msg = document.getElementById('msgEditor');
+  if (!email) return;
+
+  try {
+    // Find user by email via admin API
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUserId, action: 'find_user', email })
+    });
+    const data = await res.json();
+    if (!data.foundUser) { msg.textContent = 'Usuario no encontrado.'; msg.className='upload-msg err'; return; }
+
+    const { error } = await sb.from('admin_roles').insert({
+      user_id: data.foundUser.id, role: 'editor', granted_by: currentUserId
+    });
+    if (error) throw error;
+    msg.textContent = '✓ Editor agregado.'; msg.className = 'upload-msg ok';
+    document.getElementById('editorEmail').value = '';
+    await loadRoles();
+  } catch(e) {
+    msg.textContent = 'Error: ' + e.message; msg.className = 'upload-msg err';
+  }
+}
+
+async function revocarEditor(userId) {
+  if (!confirm('¿Revocar acceso a este editor?')) return;
+  await sb.from('admin_roles').delete().eq('user_id', userId);
+  await loadRoles();
 }
 
 init();
