@@ -348,7 +348,7 @@ async function checkAndRedirect(user) {
       .eq('id', user.id)
       .single();
     if (data?.onboarding_completed) {
-      window.location.href = 'index.html';
+      window.location.href = '/app';
     } else {
       window.location.href = 'onboarding.html';
     }
@@ -423,7 +423,7 @@ async function register() {
 async function loginGoogle() {
   await sbClient.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin + '/index.html' }
+    options: { redirectTo: window.location.origin + '/app' }
   });
 }
 
@@ -432,7 +432,7 @@ async function forgotPassword() {
   if (!email) return showMsg('login-msg', 'error', 'Escribe tu correo primero');
 
   const { error } = await sbClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/index.html'
+    redirectTo: window.location.origin + '/app'
   });
 
   if (error) {
