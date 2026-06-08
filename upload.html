@@ -335,7 +335,7 @@ async function subirActividad() {
 
   try {
     const ext = archivo.name.split('.').pop().toLowerCase();
-    const tipo = ext === 'pdf' ? 'pdf' : 'imagen';
+    const tipo = ['pdf'].includes(ext) ? 'pdf' : 'imagen';
     const path = `${Date.now()}_${titulo.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}.${ext}`;
     const { error: upErr } = await sb.storage.from('actividades').upload(path, archivo, { cacheControl:'3600', upsert:false });
     if (upErr) throw upErr;
@@ -353,12 +353,13 @@ async function subirActividad() {
         const { data: { publicUrl: pUrl } } = sb.storage.from('actividades').getPublicUrl(prevPath);
         previewUrl = pUrl;
       }
-    } else if (tipo === 'imagen') {
-      // If the file itself is an image, use it as preview too
+    }
+    // If no preview uploaded and file is an image, use the file itself as preview
+    if (!previewUrl && tipo === 'imagen') {
       previewUrl = publicUrl;
     }
 
-    msg.textContent = 'Guardando...';
+    msg.textContent = `Guardando... (preview: ${previewUrl ? 'sí' : 'no'})`;
     const { error: dbErr } = await sb.from('actividades').insert({
       titulo, tipo,
       categoria: document.getElementById('aCategoria').value,
