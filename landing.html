@@ -1,14 +1,20 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KODESH — קֹדֶשׁ</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KODESH">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── DARK MODE (default) ── */
 :root {
   --gold: #c9a84c;
   --gold-bright: #e8c46a;
@@ -22,6 +28,20 @@
   --text-dim: #4a4030;
   --border: rgba(255,255,255,0.05);
   --border2: rgba(201,168,76,0.15);
+  --card-bg: #0b0b16;
+}
+
+/* ── LIGHT MODE ── */
+html[data-theme="light"] {
+  --bg: #faf8f3;
+  --bg2: #f3efe4;
+  --bg3: #ede8d8;
+  --text: #1a1408;
+  --text-mid: #6b5a38;
+  --text-dim: #b0a080;
+  --border: rgba(0,0,0,0.06);
+  --border2: rgba(201,168,76,0.3);
+  --card-bg: #f3efe4;
 }
 
 html, body {
@@ -30,6 +50,7 @@ html, body {
   color: var(--text);
   font-family: 'EB Garamond', Georgia, serif;
   overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* ── BACKGROUND ── */
@@ -38,20 +59,7 @@ html, body {
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.07) 0%, transparent 70%),
     radial-gradient(ellipse 40% 40% at 80% 80%, rgba(201,168,76,0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 30% 30% at 20% 60%, rgba(100,80,200,0.04) 0%, transparent 60%);
-}
-.bg-stars {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 15% 20%, rgba(201,168,76,0.4) 0%, transparent 100%),
-    radial-gradient(1px 1px at 35% 70%, rgba(201,168,76,0.3) 0%, transparent 100%),
-    radial-gradient(1px 1px at 60% 15%, rgba(201,168,76,0.3) 0%, transparent 100%),
-    radial-gradient(1px 1px at 75% 55%, rgba(201,168,76,0.25) 0%, transparent 100%),
-    radial-gradient(1px 1px at 90% 30%, rgba(201,168,76,0.35) 0%, transparent 100%),
-    radial-gradient(1px 1px at 8%  85%, rgba(201,168,76,0.2) 0%, transparent 100%),
-    radial-gradient(1px 1px at 50% 90%, rgba(201,168,76,0.2) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 28% 40%, rgba(255,240,180,0.5) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 70% 75%, rgba(255,240,180,0.4) 0%, transparent 100%);
+    radial-gradient(ellipse 30% 30% at 20% 60%, rgba(100,80,200,0.03) 0%, transparent 60%);
 }
 
 /* ── PAGE ── */
@@ -67,314 +75,200 @@ html, body {
 .topbar {
   width: 100%; max-width: 900px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 28px 0 0;
+  padding: 24px 0 0;
   animation: fadeDown 0.6s ease both;
 }
 .topbar-brand {
   display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
 }
 .topbar-hebrew {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 1.1rem;
-  color: var(--gold);
-  letter-spacing: 2px;
+  font-size: 1.1rem; color: var(--gold); letter-spacing: 2px;
 }
 .topbar-name {
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 5px;
-  color: var(--text-mid);
-  text-transform: uppercase;
+  font-size: 0.62rem; letter-spacing: 5px;
+  color: var(--text-mid); text-transform: uppercase;
 }
-.topbar-sep { width: 1px; height: 28px; background: var(--border2); }
-.topbar-user {
-  display: flex; align-items: center; gap: 10px;
+.topbar-sep { width: 1px; height: 24px; background: var(--border2); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+/* Theme toggle */
+.theme-toggle {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 0.75rem; cursor: pointer;
+  color: var(--text-mid); transition: all 0.2s;
+  display: flex; align-items: center; gap: 5px;
 }
+.theme-toggle:hover { border-color: var(--gold); color: var(--gold); }
+
 .user-pill {
   display: flex; align-items: center; gap: 8px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 20px;
-  padding: 6px 14px 6px 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 5px 14px 5px 7px;
+  cursor: pointer; transition: all 0.2s; text-decoration: none;
 }
 .user-pill:hover { border-color: var(--gold); background: var(--gold-glow); }
 .user-avatar {
-  width: 26px; height: 26px; border-radius: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
   background: var(--gold-dim);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Cinzel', serif; font-size: 0.55rem;
-  color: var(--gold); font-weight: 700;
-  overflow: hidden;
+  font-family: 'Cinzel', serif; font-size: 0.5rem;
+  color: var(--gold); font-weight: 700; overflow: hidden;
 }
 .user-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-.user-name-pill { font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 1px; color: var(--text-mid); }
+.user-name-pill { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:1px; color:var(--text-mid); }
 
 /* ── HERO ── */
 .hero {
   display: flex; flex-direction: column; align-items: center;
-  text-align: center;
-  padding: 60px 0 40px;
+  text-align: center; padding: 52px 0 32px;
   animation: fadeUp 0.8s ease 0.1s both;
 }
+.hero-logo {
+  width: 120px; height: 120px; object-fit: contain;
+  filter: drop-shadow(0 0 30px rgba(201,168,76,0.3));
+  margin-bottom: 24px;
+}
 .hero-eyebrow {
-  font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
-  letter-spacing: 5px;
-  color: var(--gold);
-  text-transform: uppercase;
-  margin-bottom: 20px;
-  opacity: 0.8;
+  font-family: 'Cinzel', serif; font-size: 0.52rem;
+  letter-spacing: 5px; color: var(--gold);
+  text-transform: uppercase; margin-bottom: 16px; opacity: 0.8;
 }
 .hero-title {
   font-family: 'Cinzel Decorative', serif;
-  font-size: clamp(2.8rem, 8vw, 5rem);
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1;
-  letter-spacing: 4px;
-  text-shadow: 0 0 60px rgba(201,168,76,0.2);
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
+  font-weight: 700; color: var(--text);
+  line-height: 1; letter-spacing: 4px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.15);
 }
 .hero-title span { color: var(--gold); }
 .hero-subtitle {
-  margin-top: 18px;
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
-  font-style: italic;
-  color: var(--text-mid);
-  letter-spacing: 0.5px;
-  max-width: 420px;
-  line-height: 1.6;
-}
-.hero-verse {
-  margin-top: 28px;
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  font-style: italic;
-  letter-spacing: 0.3px;
-}
-
-/* ── PROMISE OF THE DAY ── */
-.promise-card {
-  width: 100%; max-width: 680px;
-  background: linear-gradient(135deg, rgba(201,168,76,0.07) 0%, rgba(201,168,76,0.03) 100%);
-  border: 1px solid var(--border2);
-  border-radius: 16px;
-  padding: 28px 32px;
-  margin-bottom: 48px;
-  position: relative;
-  overflow: hidden;
-  animation: fadeUp 0.8s ease 0.25s both;
-}
-.promise-card::before {
-  content: '❝';
-  position: absolute; top: 12px; left: 18px;
-  font-size: 3rem; color: var(--gold-dim);
-  font-family: Georgia, serif; line-height: 1;
-  pointer-events: none;
-}
-.promise-label {
-  font-family: 'Cinzel', serif;
-  font-size: 0.52rem;
-  letter-spacing: 4px;
-  color: var(--gold);
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  opacity: 0.7;
-}
-.promise-text {
-  font-size: clamp(1rem, 2.5vw, 1.18rem);
-  font-style: italic;
-  color: var(--text);
-  line-height: 1.75;
-  padding: 0 10px;
-}
-.promise-ref {
-  margin-top: 14px;
-  text-align: right;
-  font-family: 'Cinzel', serif;
-  font-size: 0.6rem;
-  letter-spacing: 2px;
-  color: var(--gold);
-  opacity: 0.7;
-}
-.promise-loading {
-  color: var(--text-dim);
-  font-style: italic;
-  font-size: 0.9rem;
-  text-align: center;
-  padding: 8px 0;
-}
-
-/* ── NAV GRID ── */
-.nav-section {
-  width: 100%; max-width: 780px;
-  animation: fadeUp 0.8s ease 0.35s both;
-}
-.nav-label {
-  font-family: 'Cinzel', serif;
-  font-size: 0.52rem;
-  letter-spacing: 4px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 20px;
-}
-.nav-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-@media(max-width: 500px) {
-  .nav-grid { grid-template-columns: 1fr; }
-}
-
-.nav-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 26px 24px;
-  cursor: pointer;
-  text-decoration: none;
-  display: flex; flex-direction: column;
-  gap: 10px;
-  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-  position: relative;
-  overflow: hidden;
-  group: true;
-}
-.nav-card::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--gold-glow), transparent);
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-}
-.nav-card:hover {
-  border-color: var(--border2);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,168,76,0.1);
-}
-.nav-card:hover::after { opacity: 1; }
-.nav-card:active { transform: translateY(-1px); }
-
-.nav-card-icon {
-  font-size: 1.6rem;
-  line-height: 1;
-}
-.nav-card-content { flex: 1; }
-.nav-card-title {
-  font-family: 'Cinzel', serif;
-  font-size: 0.72rem;
-  letter-spacing: 3px;
-  color: var(--text);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.nav-card-desc {
-  font-size: 0.82rem;
-  color: var(--text-mid);
-  line-height: 1.5;
-  font-style: italic;
-}
-.nav-card-arrow {
-  align-self: flex-end;
-  font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
-  letter-spacing: 2px;
-  color: var(--gold);
-  opacity: 0;
-  transition: opacity 0.2s, transform 0.2s;
-  text-transform: uppercase;
-}
-.nav-card:hover .nav-card-arrow {
-  opacity: 0.7;
-  transform: translateX(3px);
-}
-
-/* featured card */
-.nav-card.featured {
-  border-color: var(--border2);
-  background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, var(--bg2) 100%);
-}
-.nav-card.featured .nav-card-title { color: var(--gold-bright); }
-
-/* ── FOOTER ── */
-.footer {
-  margin-top: 60px;
-  padding: 28px 0 32px;
-  text-align: center;
-  animation: fadeUp 0.8s ease 0.5s both;
-}
-.footer-sep {
-  width: 60px; height: 1px;
-  background: var(--border2);
-  margin: 0 auto 20px;
-}
-.footer-links {
-  display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.footer-link {
-  font-family: 'Cinzel', serif;
-  font-size: 0.52rem;
-  letter-spacing: 2px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-link:hover { color: var(--gold); }
-.footer-copy {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  font-style: italic;
-}
-
-/* ── PREMIUM BADGE ── */
-.premium-pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(201,168,76,0.12);
-  border: 1px solid var(--gold-dim);
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
-  letter-spacing: 2px;
-  color: var(--gold);
-  text-transform: uppercase;
+  margin-top: 14px; font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+  font-style: italic; color: var(--text-mid);
+  max-width: 400px; line-height: 1.6;
 }
 
 /* ── GREETING ── */
 .greeting-bar {
-  width: 100%; max-width: 680px;
+  width: 100%; max-width: 660px;
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   animation: fadeUp 0.8s ease 0.15s both;
 }
-.greeting-text {
-  font-size: 0.85rem;
-  color: var(--text-mid);
-  font-style: italic;
-}
+.greeting-text { font-size: 0.85rem; color: var(--text-mid); font-style: italic; }
 .greeting-text strong { color: var(--text); font-style: normal; }
-.streak-badge {
-  display: flex; align-items: center; gap: 5px;
-  font-family: 'Cinzel', serif;
-  font-size: 0.58rem;
-  letter-spacing: 1px;
-  color: var(--text-mid);
+.streak-text { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:1px; color:var(--text-mid); }
+.premium-pill {
+  display:inline-flex; align-items:center;
+  background:rgba(201,168,76,0.12); border:1px solid var(--gold-dim);
+  border-radius:20px; padding:2px 8px;
+  font-family:'Cinzel',serif; font-size:0.48rem; letter-spacing:2px;
+  color:var(--gold); text-transform:uppercase;
 }
+
+/* ── PROMISE CARD ── */
+.promise-card {
+  width: 100%; max-width: 660px;
+  background: linear-gradient(135deg, rgba(201,168,76,0.07) 0%, rgba(201,168,76,0.02) 100%);
+  border: 1px solid var(--border2); border-radius: 14px;
+  padding: 24px 28px; margin-bottom: 40px; position: relative; overflow: hidden;
+  animation: fadeUp 0.8s ease 0.25s both;
+}
+.promise-card::before {
+  content: '❝'; position: absolute; top: 10px; left: 16px;
+  font-size: 2.5rem; color: var(--gold-dim);
+  font-family: Georgia, serif; line-height: 1; pointer-events: none;
+}
+.promise-label {
+  font-family: 'Cinzel', serif; font-size: 0.5rem;
+  letter-spacing: 4px; color: var(--gold);
+  text-transform: uppercase; margin-bottom: 12px; opacity: 0.7;
+}
+.promise-text {
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem); font-style: italic;
+  color: var(--text); line-height: 1.75; padding: 0 8px;
+}
+.promise-ref {
+  margin-top: 12px; text-align: right;
+  font-family: 'Cinzel', serif; font-size: 0.58rem;
+  letter-spacing: 2px; color: var(--gold); opacity: 0.7;
+}
+
+/* ── NAV GRID ── */
+.nav-section {
+  width: 100%; max-width: 760px;
+  animation: fadeUp 0.8s ease 0.35s both;
+  margin-bottom: 48px;
+}
+.nav-label {
+  font-family: 'Cinzel', serif; font-size: 0.5rem;
+  letter-spacing: 4px; color: var(--text-dim);
+  text-transform: uppercase; text-align: center; margin-bottom: 18px;
+}
+.nav-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+}
+@media(max-width: 500px) { .nav-grid { grid-template-columns: 1fr; } }
+
+.nav-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px 20px;
+  cursor: pointer; text-decoration: none;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: all 0.25s; position: relative; overflow: hidden;
+}
+.nav-card:hover {
+  border-color: var(--border2); transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2), 0 0 0 1px rgba(201,168,76,0.08);
+}
+.nav-card.featured {
+  border-color: var(--border2);
+  background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, var(--card-bg) 100%);
+}
+.nav-card-icon { font-size: 1.5rem; line-height: 1; }
+.nav-card-title {
+  font-family: 'Cinzel', serif; font-size: 0.68rem;
+  letter-spacing: 2.5px; color: var(--text);
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.nav-card.featured .nav-card-title { color: var(--gold-bright); }
+.nav-card-desc { font-size: 0.8rem; color: var(--text-mid); line-height: 1.5; font-style: italic; }
+.nav-card-arrow {
+  align-self: flex-end; font-family: 'Cinzel', serif;
+  font-size: 0.52rem; letter-spacing: 2px; color: var(--gold);
+  opacity: 0; transition: opacity 0.2s, transform 0.2s; text-transform: uppercase;
+}
+.nav-card:hover .nav-card-arrow { opacity: 0.7; transform: translateX(2px); }
+
+/* ── FOOTER ── */
+.footer {
+  width: 100%; max-width: 760px;
+  padding: 24px 0 32px; text-align: center;
+  animation: fadeUp 0.8s ease 0.5s both;
+  border-top: 1px solid var(--border);
+}
+.footer-links {
+  display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.footer-link {
+  font-family: 'Cinzel', serif; font-size: 0.5rem;
+  letter-spacing: 2px; color: var(--text-dim);
+  text-transform: uppercase; text-decoration: none; transition: color 0.2s;
+}
+.footer-link:hover { color: var(--gold); }
+.footer-copy { font-size: 0.7rem; color: var(--text-dim); font-style: italic; }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-12px); }
+  from { opacity: 0; transform: translateY(-10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 </style>
@@ -382,41 +276,40 @@ html, body {
 <body>
 
 <div class="bg-canvas"></div>
-<div class="bg-stars"></div>
 
 <div class="page">
 
   <!-- TOPBAR -->
   <nav class="topbar">
-    <div class="topbar-brand">
+    <a class="topbar-brand" href="/landing.html">
       <span class="topbar-hebrew">קֹדֶשׁ</span>
       <div class="topbar-sep"></div>
       <span class="topbar-name">Kodesh</span>
-    </div>
-    <div class="topbar-user" id="topbarUser">
-      <!-- filled by JS -->
+    </a>
+    <div class="topbar-right">
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Oscuro</button>
+      <div id="topbarUser"></div>
     </div>
   </nav>
 
   <!-- HERO -->
   <header class="hero">
+    <img src="/logo.png" alt="KODESH" class="hero-logo" onerror="this.style.display='none'">
     <div class="hero-eyebrow">✦ Plataforma Hebreo-Mesiánica</div>
     <h1 class="hero-title">KO<span>DE</span>SH</h1>
     <p class="hero-subtitle">La Palabra viva, en su lengua original</p>
   </header>
 
-  <!-- GREETING -->
+  <!-- GREETING (shown when logged in) -->
   <div class="greeting-bar" id="greetingBar" style="display:none">
     <div class="greeting-text" id="greetingText"></div>
-    <div class="streak-badge" id="streakBadge"></div>
+    <div class="streak-text" id="streakText"></div>
   </div>
 
   <!-- PROMISE OF THE DAY -->
   <div class="promise-card">
     <div class="promise-label">✦ Promesa del día</div>
-    <div class="promise-text" id="promiseText">
-      <span class="promise-loading">Recibiendo palabra...</span>
-    </div>
+    <div class="promise-text" id="promiseText" style="color:var(--text-dim);font-style:italic">Cargando...</div>
     <div class="promise-ref" id="promiseRef"></div>
   </div>
 
@@ -425,90 +318,55 @@ html, body {
     <div class="nav-label">¿Qué deseas hacer hoy?</div>
     <div class="nav-grid">
 
-      <a href="/app" class="nav-card featured">
+      <a href="/index.html" class="nav-card featured">
         <div class="nav-card-icon">📖</div>
         <div class="nav-card-content">
           <div class="nav-card-title">Leer la Biblia</div>
-          <div class="nav-card-desc">66 libros completos RVR60 con nombres mesiánicos — YHWH, Yeshúa, Mashíaj</div>
+          <div class="nav-card-desc">66 libros RVR60 con nombres mesiánicos — YHWH, Yeshúa, Mashíaj</div>
         </div>
         <div class="nav-card-arrow">Abrir →</div>
       </a>
 
-      <a href="/app#ciclo" class="nav-card">
+      <a href="/parashot.html" class="nav-card">
         <div class="nav-card-icon">🕍</div>
         <div class="nav-card-content">
           <div class="nav-card-title">Ciclo de Estudio</div>
-          <div class="nav-card-desc">52 porciones de la Torá con Haftarah mesiánica y el calendario hebreo 5786</div>
+          <div class="nav-card-desc">52 porciones de la Torá con Haftarah mesiánica y calendario hebreo 5786</div>
         </div>
         <div class="nav-card-arrow">Abrir →</div>
       </a>
 
-      <a href="/app#lexicon" class="nav-card">
-        <div class="nav-card-icon">𝔄</div>
+      <a href="/index.html" class="nav-card">
+        <div class="nav-card-icon">🔤</div>
         <div class="nav-card-content">
           <div class="nav-card-title">Lexicón</div>
-          <div class="nav-card-desc">Hebreo y griego bíblico con Strong's — toca cualquier palabra para estudiarla</div>
+          <div class="nav-card-desc">Hebreo y griego bíblico — toca cualquier palabra en la Biblia para estudiarla</div>
         </div>
         <div class="nav-card-arrow">Abrir →</div>
       </a>
 
-      <div class="nav-card" onclick="openPromises()">
-        <div class="nav-card-icon">✨</div>
+      <a href="/index.html#perfil" class="nav-card" id="profileCard">
+        <div class="nav-card-icon">👤</div>
         <div class="nav-card-content">
-          <div class="nav-card-title">Promesas</div>
-          <div class="nav-card-desc">Versículos de aliento, promesa y esperanza para meditar cada día</div>
+          <div class="nav-card-title">Mi Perfil</div>
+          <div class="nav-card-desc">Estadísticas, racha de lectura, marcadores y plan diario personalizado</div>
         </div>
-        <div class="nav-card-arrow">Ver más →</div>
-      </div>
+        <div class="nav-card-arrow">Abrir →</div>
+      </a>
 
     </div>
   </div>
 
   <!-- FOOTER -->
   <footer class="footer">
-    <div class="footer-sep"></div>
     <div class="footer-links">
-      <a href="/app" class="footer-link">Lector bíblico</a>
+      <a href="/index.html" class="footer-link">Lector bíblico</a>
+      <a href="/parashot.html" class="footer-link">Ciclo de Estudio</a>
       <a href="/login.html" class="footer-link" id="footerAuthLink">Iniciar sesión</a>
-      <a href="/app#premium" class="footer-link">Premium</a>
     </div>
-    <div class="footer-copy">KODESH · קֹדֶשׁ · La Palabra es luz</div>
+    <div class="footer-copy">KODESH · קֹדֶשׁ · kodeshbible.com · © 2026</div>
   </footer>
 
-</div>
-
-<!-- PROMISES MODAL -->
-<div id="promisesModal" style="
-  display:none; position:fixed; inset:0; z-index:200;
-  background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
-  align-items:center; justify-content:center; padding:20px;
-">
-  <div style="
-    background:var(--bg2); border:1px solid var(--border2);
-    border-radius:18px; max-width:560px; width:100%;
-    padding:36px 32px; position:relative; max-height:85vh; overflow-y:auto;
-  ">
-    <button onclick="closePromises()" style="
-      position:absolute; top:16px; right:16px;
-      background:none; border:none; color:var(--text-dim);
-      font-size:1.2rem; cursor:pointer; line-height:1;
-    ">✕</button>
-    <div style="font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; margin-bottom:24px;">
-      ✦ Promesas de YHWH
-    </div>
-    <div id="promisesList" style="display:flex; flex-direction:column; gap:18px;">
-      <div style="color:var(--text-dim); font-style:italic; text-align:center; padding:20px;">Cargando promesas...</div>
-    </div>
-    <div style="margin-top:24px; text-align:center;">
-      <button onclick="loadMorePromises()" id="btnMorePromises" style="
-        font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:2px;
-        text-transform:uppercase; background:none; border:1px solid var(--border2);
-        color:var(--gold); padding:10px 20px; border-radius:8px; cursor:pointer; transition:all 0.2s;
-      " onmouseover="this.style.background='var(--gold-glow)'" onmouseout="this.style.background='none'">
-        ↺ Más promesas
-      </button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -516,50 +374,79 @@ const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── PROMISES DATA ──
+// ── THEME ──
+function initTheme() {
+  const saved = localStorage.getItem('kodesh_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.getElementById('themeBtn').textContent = saved === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('kodesh_theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+}
+
+// ── PROMISES ──
 const PROMISES = [
-  { text: "Porque yo sé los pensamientos que tengo acerca de vosotros, dice YHWH, pensamientos de paz, y no de mal, para daros el fin que esperáis.", ref: "Jeremías 29:11" },
+  { text: "Porque yo sé los pensamientos que tengo acerca de vosotros, dice YHWH, pensamientos de paz, y no de mal.", ref: "Jeremías 29:11" },
   { text: "Todo lo puedo en Yeshúa que me fortalece.", ref: "Filipenses 4:13" },
   { text: "YHWH es mi pastor; nada me faltará.", ref: "Salmos 23:1" },
   { text: "Fíate de YHWH de todo tu corazón, y no te apoyes en tu propia prudencia.", ref: "Proverbios 3:5" },
   { text: "Mas los que esperan en YHWH tendrán nuevas fuerzas; levantarán alas como las águilas.", ref: "Isaías 40:31" },
-  { text: "Porque de tal manera amó Elohim al mundo, que ha dado a su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.", ref: "Juan 3:16" },
-  { text: "No temas, porque yo estoy contigo; no desmayes, porque yo soy tu Elohim que te esfuerzo.", ref: "Isaías 41:10" },
-  { text: "Encomienda a YHWH tus obras, y tus pensamientos serán afirmados.", ref: "Proverbios 16:3" },
-  { text: "El amor nunca deja de ser; pero las profecías se acabarán, y cesarán las lenguas, y la ciencia acabará.", ref: "1 Corintios 13:8" },
-  { text: "Bienaventurados los de limpio corazón, porque ellos verán a Elohim.", ref: "Mateo 5:8" },
-  { text: "Jehová es mi luz y mi salvación; ¿de quién temeré? YHWH es la fortaleza de mi vida; ¿de quién me he de atemorizar?", ref: "Salmos 27:1" },
+  { text: "Porque de tal manera amó Elohim al mundo, que ha dado a su Hijo unigénito.", ref: "Juan 3:16" },
+  { text: "No temas, porque yo estoy contigo; no desmayes, porque yo soy tu Elohim.", ref: "Isaías 41:10" },
   { text: "Y sabemos que a los que aman a Elohim, todas las cosas les ayudan a bien.", ref: "Romanos 8:28" },
   { text: "La palabra de YHWH es lámpara a mis pies, y lumbrera a mi camino.", ref: "Salmos 119:105" },
   { text: "Venid a mí todos los que estáis trabajados y cargados, y yo os haré descansar.", ref: "Mateo 11:28" },
-  { text: "Porque les daré entendimiento y sabiduría para que les sirvan.", ref: "Lucas 21:15" },
+  { text: "Esfuérzate y sé valiente; no temas ni desmayes, porque YHWH tu Dios estará contigo.", ref: "Josué 1:9" },
+  { text: "YHWH peleará por vosotros, y vosotros estaréis tranquilos.", ref: "Éxodo 14:14" },
+  { text: "El que habita al abrigo del Altísimo morará bajo la sombra del Omnipotente.", ref: "Salmos 91:1" },
+  { text: "Encomienda a YHWH tu camino, y confía en él; y él hará.", ref: "Salmos 37:5" },
+  { text: "Mi Dios proveerá a todas vuestras necesidades conforme a sus riquezas en gloria en Yeshúa.", ref: "Filipenses 4:19" },
+  { text: "Cuando pases por las aguas, yo estaré contigo; y si por los ríos, no te anegarán.", ref: "Isaías 43:2" },
 ];
 
-// Pick daily promise based on date
-function getDailyPromise() {
-  const day = new Date().getDate() + new Date().getMonth() * 31;
-  return PROMISES[day % PROMISES.length];
+function loadDailyPromise(userId) {
+  let index;
+  if (userId) {
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+      hash |= 0;
+    }
+    const offset = Math.abs(hash) % PROMISES.length;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const day = Math.floor((now - start) / 86400000);
+    index = (day + offset) % PROMISES.length;
+  } else {
+    const day = new Date().getDate() + new Date().getMonth() * 31;
+    index = day % PROMISES.length;
+  }
+  const p = PROMISES[index];
+  document.getElementById('promiseText').textContent = p.text;
+  document.getElementById('promiseRef').textContent = '— ' + p.ref;
 }
 
-// ── INIT ──
+// ── AUTH ──
 async function init() {
-  loadDailyPromise();
+  initTheme();
+  loadDailyPromise(null);
 
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
+    loadDailyPromise(session.user.id);
     renderUserUI(session.user);
     await loadUserContext(session.user.id);
-    document.getElementById('footerAuthLink').textContent = 'Mi perfil';
-    document.getElementById('footerAuthLink').href = '/app#perfil';
+    document.getElementById('footerAuthLink').textContent = 'Cerrar sesión';
+    document.getElementById('footerAuthLink').href = '#';
+    document.getElementById('footerAuthLink').onclick = () => sb.auth.signOut().then(() => location.reload());
   } else {
     renderGuestUI();
   }
-}
-
-function loadDailyPromise() {
-  const p = getDailyPromise();
-  document.getElementById('promiseText').textContent = p.text;
-  document.getElementById('promiseRef').textContent = '— ' + p.ref;
 }
 
 async function loadUserContext(userId) {
@@ -571,37 +458,36 @@ async function loadUserContext(userId) {
     const name = profile?.display_name || '';
     const isPremium = plan?.plan === 'premium' && plan?.subscription_status === 'active';
 
-    // Update pill
-    const pill = document.getElementById('userPill');
-    if (pill && name) {
-      document.getElementById('pillName').textContent = name.split(' ')[0];
-      if (profile?.avatar_url) {
-        document.getElementById('pillAvatar').innerHTML = `<img src="${profile.avatar_url}" />`;
-      } else {
-        document.getElementById('pillAvatar').textContent = name[0].toUpperCase();
+    if (name) {
+      const pill = document.getElementById('userPill');
+      if (pill) {
+        document.getElementById('pillName').textContent = name.split(' ')[0];
+        if (profile?.avatar_url) {
+          document.getElementById('pillAvatar').innerHTML = `<img src="${profile.avatar_url}" />`;
+        } else {
+          document.getElementById('pillAvatar').textContent = name[0].toUpperCase();
+        }
       }
+
+      const hour = new Date().getHours();
+      const saludo = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+      const greetingBar = document.getElementById('greetingBar');
+      greetingBar.style.display = 'flex';
+      document.getElementById('greetingText').innerHTML =
+        `${saludo}, <strong>${name.split(' ')[0]}</strong>${isPremium ? ' <span class="premium-pill">✦ Premium</span>' : ''}`;
     }
 
-    // Greeting
-    const hour = new Date().getHours();
-    const saludo = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
-    const greetingBar = document.getElementById('greetingBar');
-    const greetingText = document.getElementById('greetingText');
-    greetingBar.style.display = 'flex';
-    greetingText.innerHTML = `${saludo}, <strong>${name.split(' ')[0] || 'hermano/a'}</strong>${isPremium ? ' <span class="premium-pill">✦ Premium</span>' : ''}`;
-
-    // Streak
     if (streak?.current_streak > 0) {
-      document.getElementById('streakBadge').textContent = `🔥 ${streak.current_streak} días`;
+      document.getElementById('streakText').textContent = `🔥 ${streak.current_streak} días`;
     }
-  } catch(e) { /* silent */ }
+  } catch(e) {}
 }
 
 function renderUserUI(user) {
   const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('topbarUser').innerHTML = `
-    <a href="/app" class="user-pill" id="userPill">
+    <a href="/index.html" class="user-pill" id="userPill">
       <div class="user-avatar" id="pillAvatar">${initials}</div>
       <span class="user-name-pill" id="pillName">${name.split(' ')[0]}</span>
     </a>
@@ -616,60 +502,6 @@ function renderGuestUI() {
     </a>
   `;
 }
-
-// ── PROMISES MODAL ──
-let shownPromises = new Set();
-
-function openPromises() {
-  document.getElementById('promisesModal').style.display = 'flex';
-  renderPromisesList();
-}
-
-function closePromises() {
-  document.getElementById('promisesModal').style.display = 'none';
-}
-
-function renderPromisesList() {
-  const container = document.getElementById('promisesList');
-  const toShow = PROMISES.slice(0, 6);
-  container.innerHTML = toShow.map(p => `
-    <div style="
-      background:var(--bg3); border:1px solid var(--border);
-      border-radius:10px; padding:18px 20px;
-    ">
-      <p style="font-style:italic; color:var(--text); line-height:1.7; font-size:0.95rem; margin-bottom:10px;">${p.text}</p>
-      <div style="font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:2px; color:var(--gold); opacity:0.7;">— ${p.ref}</div>
-    </div>
-  `).join('');
-  shownPromises = new Set([...toShow.map(p => p.ref)]);
-}
-
-let promisePage = 1;
-function loadMorePromises() {
-  const container = document.getElementById('promisesList');
-  const start = promisePage * 6;
-  const next = PROMISES.slice(start, start + 6);
-  if (next.length === 0) {
-    promisePage = 0;
-    renderPromisesList();
-    return;
-  }
-  next.forEach(p => {
-    const div = document.createElement('div');
-    div.style.cssText = 'background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:18px 20px;';
-    div.innerHTML = `
-      <p style="font-style:italic; color:var(--text); line-height:1.7; font-size:0.95rem; margin-bottom:10px;">${p.text}</p>
-      <div style="font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:2px; color:var(--gold); opacity:0.7;">— ${p.ref}</div>
-    `;
-    container.appendChild(div);
-  });
-  promisePage++;
-}
-
-// Close modal on backdrop click
-document.getElementById('promisesModal').addEventListener('click', function(e) {
-  if (e.target === this) closePromises();
-});
 
 init();
 </script>
