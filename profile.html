@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KODESH · Mi Perfil</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold:#c9a84c; --gold-bright:#e8c46a; --gold-dim:rgba(201,168,76,0.2); --gold-glow:rgba(201,168,76,0.08);
+  --bg:#06060e; --bg2:#0b0b16; --bg3:#10101e;
+  --text:#ede5d0; --text-mid:#a89878; --text-dim:#4a4030;
+  --border:rgba(255,255,255,0.05); --border2:rgba(201,168,76,0.15);
+  --green:#4caf7d; --red:#e05c5c;
+}
+html[data-theme="light"] {
+  --bg:#faf8f3; --bg2:#f3efe4; --bg3:#ede8d8;
+  --text:#1a1408; --text-mid:#6b5a38; --text-dim:#b0a080;
+  --border:rgba(0,0,0,0.06); --border2:rgba(201,168,76,0.3);
+}
+html, body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'EB Garamond',Georgia,serif; transition:background 0.3s,color 0.3s; }
+
+/* TOPBAR */
+.topbar { background:var(--bg2); border-bottom:1px solid var(--border2); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.topbar-left { display:flex; align-items:center; gap:16px; }
+.back-btn { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-decoration:none; text-transform:uppercase; transition:color 0.2s; }
+.back-btn:hover { color:var(--gold); }
+.topbar-title { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; }
+.theme-toggle { background:none; border:1px solid var(--border2); border-radius:20px; padding:4px 12px; font-size:0.7rem; cursor:pointer; color:var(--text-mid); transition:all 0.2s; }
+.theme-toggle:hover { border-color:var(--gold); color:var(--gold); }
+
+/* MAIN */
+.main { max-width:860px; margin:0 auto; padding:32px 20px 80px; }
+
+/* HERO PROFILE */
+.profile-hero {
+  display:flex; align-items:center; gap:24px;
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:16px; padding:28px; margin-bottom:28px;
+  position:relative; overflow:hidden;
+}
+.profile-hero::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.profile-avatar {
+  width:80px; height:80px; border-radius:50%;
+  background:var(--gold-dim); border:2px solid var(--gold-dim);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Cinzel',serif; font-size:1.6rem; color:var(--gold);
+  font-weight:700; flex-shrink:0; overflow:hidden;
+}
+.profile-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.profile-info { flex:1; }
+.profile-name { font-family:'Cinzel',serif; font-size:1.2rem; font-weight:700; color:var(--text); letter-spacing:2px; margin-bottom:4px; }
+.profile-email { font-size:0.85rem; color:var(--text-dim); margin-bottom:10px; }
+.profile-badges { display:flex; gap:8px; flex-wrap:wrap; }
+.badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 10px; border-radius:12px;
+  font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:1.5px; text-transform:uppercase;
+}
+.badge-premium { background:rgba(201,168,76,0.12); color:var(--gold); border:1px solid var(--gold-dim); }
+.badge-free { background:rgba(255,255,255,0.05); color:var(--text-dim); border:1px solid var(--border); }
+.badge-streak { background:rgba(255,140,0,0.1); color:#ff8c00; border:1px solid rgba(255,140,0,0.2); }
+.badge-google { background:rgba(66,133,244,0.1); color:#4285f4; border:1px solid rgba(66,133,244,0.2); }
+
+.profile-actions { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+.btn-read { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; background:var(--gold); border:none; color:#1a0e00; padding:10px 18px; border-radius:8px; cursor:pointer; text-decoration:none; transition:opacity 0.2s; }
+.btn-read:hover { opacity:0.85; }
+.btn-logout { font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:8px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+.btn-logout:hover { border-color:var(--red); color:var(--red); }
+
+/* STATS GRID */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
+@media(max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } }
+.stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; padding:18px; text-align:center; }
+.stat-number { font-family:'Cinzel',serif; font-size:1.6rem; font-weight:700; color:var(--gold); line-height:1; margin-bottom:4px; }
+.stat-label { font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
+
+/* SECTION */
+.section { background:var(--bg2); border:1px solid var(--border2); border-radius:14px; margin-bottom:20px; overflow:hidden; }
+.section-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.section-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:3px; color:var(--gold); text-transform:uppercase; }
+.section-body { padding:20px; }
+
+/* USAGE BARS */
+.usage-row { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.usage-row:last-child { margin-bottom:0; }
+.usage-label { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:1px; color:var(--text-mid); text-transform:uppercase; width:100px; flex-shrink:0; }
+.usage-bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; }
+.usage-bar-fill { height:100%; border-radius:3px; background:var(--gold); transition:width 0.6s ease; }
+.usage-bar-fill.danger { background:var(--red); }
+.usage-count { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--text-mid); width:60px; text-align:right; flex-shrink:0; }
+
+/* GOALS */
+.goals-list { display:flex; flex-wrap:wrap; gap:8px; }
+.goal-tag { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:6px 14px; font-size:0.82rem; color:var(--text-mid); font-style:italic; }
+
+/* READING CALENDAR */
+.calendar-grid { display:flex; flex-direction:column; gap:4px; }
+.cal-week { display:flex; gap:4px; }
+.cal-day {
+  flex:1; aspect-ratio:1; border-radius:5px;
+  border:1px solid var(--border); background:transparent;
+  display:flex; align-items:center; justify-content:center;
+}
+.cal-day.read-full { background:var(--gold); border-color:var(--gold); }
+.cal-day.read-partial { background:var(--gold-dim); border-color:var(--gold); }
+.cal-day.read-little { background:rgba(201,168,76,0.08); border-color:var(--gold-dim); }
+.cal-day.today { outline:2px solid var(--gold); outline-offset:2px; }
+.cal-day.future { opacity:0.2; }
+.cal-day span { font-family:'JetBrains Mono',monospace; font-size:0.58rem; color:var(--text-dim); }
+.cal-day.read-full span, .cal-day.read-partial span { color:var(--gold); }
+.cal-day.read-full span { color:#1a0e00; }
+
+/* BOOKMARKS */
+.bookmark-list { display:flex; flex-direction:column; gap:8px; }
+.bookmark-item {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; padding:12px 16px;
+  display:flex; align-items:center; gap:12px;
+  cursor:pointer; transition:border-color 0.2s; text-decoration:none;
+}
+.bookmark-item:hover { border-color:var(--border2); }
+.bookmark-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.bookmark-ref { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; white-space:nowrap; }
+.bookmark-text { font-size:0.9rem; color:var(--text-mid); font-style:italic; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bookmark-empty { text-align:center; padding:24px; color:var(--text-dim); font-style:italic; }
+
+/* NOTES */
+.note-item { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:8px; }
+.note-ref { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; margin-bottom:6px; }
+.note-text { font-size:0.9rem; color:var(--text-mid); line-height:1.5; }
+.note-empty { text-align:center; padding:24px; color:var(--text-dim); font-style:italic; }
+
+/* TABS */
+.profile-tabs { display:flex; border-bottom:1px solid var(--border); }
+.profile-tab { flex:1; padding:12px; background:none; border:none; border-bottom:2px solid transparent; font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
+.profile-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.tab-panel { display:none; padding:20px; }
+.tab-panel.active { display:block; }
+
+/* PROGRESS BAR */
+.progress-row { margin-bottom:16px; }
+.progress-label-row { display:flex; justify-content:space-between; margin-bottom:6px; }
+.progress-name { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; color:var(--text-mid); text-transform:uppercase; }
+.progress-pct { font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--gold); }
+.progress-bar { height:5px; background:var(--border); border-radius:3px; }
+.progress-fill { height:100%; border-radius:3px; background:var(--gold); transition:width 0.6s; }
+
+.loading-msg { text-align:center; padding:40px; color:var(--text-dim); font-style:italic; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/landing.html" class="back-btn">← Inicio</a>
+    <div class="topbar-title">✦ Mi Perfil</div>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀️</button>
+</div>
+
+<div class="main" id="mainContent">
+  <div class="loading-msg">Cargando perfil...</div>
+</div>
+
+<script>
+const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const BOOK_NAMES = {
+  GEN:'Génesis',EXO:'Éxodo',LEV:'Levítico',NUM:'Números',DEU:'Deuteronomio',
+  JOS:'Josué',JDG:'Jueces',RUT:'Rut','1SA':'1 Samuel','2SA':'2 Samuel',
+  '1KI':'1 Reyes','2KI':'2 Reyes','1CH':'1 Crónicas','2CH':'2 Crónicas',
+  EZR:'Esdras',NEH:'Nehemías',EST:'Ester',JOB:'Job',PSA:'Salmos',
+  PRO:'Proverbios',ECC:'Eclesiastés',SNG:'Cantares',ISA:'Isaías',
+  JER:'Jeremías',LAM:'Lamentaciones',EZK:'Ezequiel',DAN:'Daniel',
+  HOS:'Oseas',JOL:'Joel',AMO:'Amós',OBA:'Abdías',JON:'Jonás',
+  MIC:'Miqueas',NAM:'Nahúm',HAB:'Habacuc',ZEP:'Sofonías',HAG:'Hageo',
+  ZEC:'Zacarías',MAL:'Malaquías',MAT:'Mateo',MRK:'Marcos',LUK:'Lucas',
+  JHN:'Juan',ACT:'Hechos',ROM:'Romanos','1CO':'1 Corintios','2CO':'2 Corintios',
+  GAL:'Gálatas',EPH:'Efesios',PHP:'Filipenses',COL:'Colosenses',
+  '1TH':'1 Tesalonicenses','2TH':'2 Tesalonicenses','1TI':'1 Timoteo',
+  '2TI':'2 Timoteo',TIT:'Tito',PHM:'Filemón',HEB:'Hebreos',JAS:'Santiago',
+  '1PE':'1 Pedro','2PE':'2 Pedro','1JN':'1 Juan','2JN':'2 Juan',
+  '3JN':'3 Juan',JUD:'Judas',REV:'Apocalipsis'
+};
+
+const TOTAL_CHAPTERS = 1189;
+const BOOKMARK_COLORS = {
+  blue:'#4a9eff', green:'#4caf7d', purple:'#9b59b6',
+  red:'#e05c5c', gold:'#c9a84c', orange:'#e8943a', white:'#e8e0cc'
+};
+
+// ── THEME ──
+function initTheme() {
+  const t = localStorage.getItem('kodesh_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('kodesh_theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+// ── INIT ──
+async function init() {
+  initTheme();
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) {
+    window.location.href = '/login.html';
+    return;
+  }
+  await loadProfile(session.user);
+}
+
+async function loadProfile(user) {
+  const month = new Date().toISOString().slice(0, 7);
+  const [profileRes, planRes, streakRes, usageRes, bookmarksRes, notesRes, progressRes] = await Promise.all([
+    sb.from('user_profiles').select('*').eq('id', user.id).single(),
+    sb.from('user_plans').select('*').eq('user_id', user.id).single(),
+    sb.from('reading_streaks').select('*').eq('user_id', user.id).single(),
+    sb.from('ai_usage').select('*').eq('user_id', user.id).eq('month', month).single(),
+    sb.from('bookmarks').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    sb.from('chapter_notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
+    sb.from('reading_progress').select('book_id, chapter').eq('user_id', user.id),
+  ]);
+
+  const profile = profileRes.data || {};
+  const plan = planRes.data || {};
+  const streak = streakRes.data || {};
+  const usage = usageRes.data || {};
+  const bookmarks = bookmarksRes.data || [];
+  const notes = notesRes.data || [];
+  const progress = progressRes.data || [];
+
+  const isPremium = plan.plan === 'premium' && plan.subscription_status === 'active';
+  const name = profile.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const chaptersRead = progress.length;
+  const readPct = Math.round((chaptersRead / TOTAL_CHAPTERS) * 100 * 10) / 10;
+  const provider = user.app_metadata?.provider || 'email';
+
+  // Search limit
+  const searchLimit = isPremium ? 80 : 10;
+  const assistantLimit = isPremium ? 70 : 15;
+  const lexiconLimit = isPremium ? 999 : 30;
+
+  const searchUsed = usage.searches_used || 0;
+  const assistantUsed = usage.assistant_used || 0;
+  const lexiconUsed = usage.lexicon_used || 0;
+
+  // Calendar (last 5 weeks)
+  const calendarHtml = buildCalendar(profile.reading_goal_chapters || 2);
+
+  // Reading progress by testament
+  const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
+  const ntRead = progress.filter(p => NT_BOOKS.has(p.book_id)).length;
+  const atRead = progress.length - ntRead;
+  const NT_TOTAL = 260, AT_TOTAL = 929;
+
+  document.getElementById('mainContent').innerHTML = `
+    <!-- HERO -->
+    <div class="profile-hero">
+      <div class="profile-avatar">
+        ${profile.avatar_url
+          ? `<img src="${profile.avatar_url}" />`
+          : initials}
+      </div>
+      <div class="profile-info">
+        <div class="profile-name">${name}</div>
+        <div class="profile-email">${user.email || ''}</div>
+        <div class="profile-badges">
+          <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? '✦ Premium' : 'Plan Gratuito'}</span>
+          ${streak.current_streak > 0 ? `<span class="badge badge-streak">🔥 ${streak.current_streak} días</span>` : ''}
+          ${provider === 'google' ? `<span class="badge badge-google">G Google</span>` : ''}
+        </div>
+      </div>
+      <div class="profile-actions">
+        <a href="/index.html" class="btn-read">📖 Abrir Biblia</a>
+        <button class="btn-logout" onclick="signOut()">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">${chaptersRead}</div>
+        <div class="stat-label">Capítulos leídos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${readPct}%</div>
+        <div class="stat-label">Biblia completada</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${streak.current_streak || 0}</div>
+        <div class="stat-label">Racha actual</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${streak.longest_streak || 0}</div>
+        <div class="stat-label">Racha máxima</div>
+      </div>
+    </div>
+
+    <!-- PROGRESO -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">📊 Progreso de Lectura</div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim)">${streak.total_days_read || 0} días totales</span>
+      </div>
+      <div class="section-body">
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-name">Biblia Completa</span>
+            <span class="progress-pct">${chaptersRead} / ${TOTAL_CHAPTERS}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${readPct}%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-name">Antiguo Testamento</span>
+            <span class="progress-pct">${atRead} / ${AT_TOTAL}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(atRead/AT_TOTAL*100)}%"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-name">Nuevo Testamento</span>
+            <span class="progress-pct">${ntRead} / ${NT_TOTAL}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(ntRead/NT_TOTAL*100)}%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">📅 Calendario de Lectura</div>
+        <span style="font-size:0.7rem;color:var(--text-dim);font-style:italic">Últimas 5 semanas</span>
+      </div>
+      <div class="section-body">
+        <div class="calendar-grid">${calendarHtml}</div>
+      </div>
+    </div>
+
+    <!-- USO IA -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🤖 Uso de IA — ${month}</div>
+        <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? '✦ Premium' : 'Gratuito'}</span>
+      </div>
+      <div class="section-body">
+        <div class="usage-row">
+          <span class="usage-label">Búsquedas</span>
+          <div class="usage-bar-wrap"><div class="usage-bar-fill ${searchUsed/searchLimit >= 0.9 ? 'danger' : ''}" style="width:${Math.min(100, searchUsed/searchLimit*100)}%"></div></div>
+          <span class="usage-count">${searchUsed}/${searchLimit}</span>
+        </div>
+        <div class="usage-row">
+          <span class="usage-label">Asistente</span>
+          <div class="usage-bar-wrap"><div class="usage-bar-fill ${assistantUsed/assistantLimit >= 0.9 ? 'danger' : ''}" style="width:${Math.min(100, assistantUsed/assistantLimit*100)}%"></div></div>
+          <span class="usage-count">${assistantUsed}/${assistantLimit}</span>
+        </div>
+        <div class="usage-row">
+          <span class="usage-label">Lexicón</span>
+          <div class="usage-bar-wrap"><div class="usage-bar-fill" style="width:${isPremium ? 0 : Math.min(100, lexiconUsed/lexiconLimit*100)}%"></div></div>
+          <span class="usage-count">${lexiconUsed}${isPremium ? '' : '/'+lexiconLimit}</span>
+        </div>
+        ${!isPremium ? `
+        <div style="margin-top:16px;padding:14px 16px;background:rgba(201,168,76,0.05);border:1px solid var(--gold-dim);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium</div>
+            <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
+          </div>
+          <a href="/index.html" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;text-decoration:none;white-space:nowrap;font-weight:700;">$5.99/mes →</a>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <!-- OBJETIVOS -->
+    ${profile.study_goals?.length ? `
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🎯 Objetivos de Estudio</div>
+      </div>
+      <div class="section-body">
+        <div class="goals-list">
+          ${profile.study_goals.map(g => `<span class="goal-tag">${g}</span>`).join('')}
+        </div>
+        <div style="margin-top:12px;font-size:0.82rem;color:var(--text-dim);font-style:italic">Meta diaria: ${profile.reading_goal_chapters || 2} capítulos</div>
+      </div>
+    </div>` : ''}
+
+    <!-- TABS: MARCADORES + NOTAS -->
+    <div class="section">
+      <div class="profile-tabs">
+        <button class="profile-tab active" onclick="switchTab('bookmarks',this)">🔖 Marcadores (${bookmarks.length})</button>
+        <button class="profile-tab" onclick="switchTab('notes',this)">📝 Notas (${notes.length})</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-bookmarks">
+        ${bookmarks.length > 0
+          ? `<div class="bookmark-list">${bookmarks.slice(0,20).map(b => `
+            <a href="/index.html" class="bookmark-item">
+              <div class="bookmark-dot" style="background:${BOOKMARK_COLORS[b.color] || BOOKMARK_COLORS.gold}"></div>
+              <span class="bookmark-ref">${BOOK_NAMES[b.book_id] || b.book_id} ${b.chapter}:${b.verse}</span>
+              <span class="bookmark-text">${b.verse_text || ''}</span>
+            </a>`).join('')}
+            ${bookmarks.length > 20 ? `<div style="text-align:center;padding:12px;color:var(--text-dim);font-size:0.82rem;font-style:italic">+${bookmarks.length - 20} más en el lector</div>` : ''}
+          </div>`
+          : '<div class="bookmark-empty">Aún no tienes marcadores.<br>Toca cualquier versículo en la Biblia para agregar uno.</div>'
+        }
+      </div>
+
+      <div class="tab-panel" id="tab-notes">
+        ${notes.length > 0
+          ? notes.slice(0, 10).map(n => `
+            <div class="note-item">
+              <div class="note-ref">${BOOK_NAMES[n.book_id] || n.book_id} — Capítulo ${n.chapter}</div>
+              <div class="note-text">${n.note_text?.slice(0, 200) || ''}${n.note_text?.length > 200 ? '...' : ''}</div>
+            </div>`).join('')
+          : '<div class="note-empty">Aún no tienes notas.<br>Puedes agregar notas por capítulo desde el lector.</div>'
+        }
+      </div>
+    </div>
+  `;
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function buildCalendar(goalChapters) {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  
+  // Build 5 weeks back
+  const days = [];
+  for (let i = 34; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const str = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const raw = localStorage.getItem('kodesh_today_' + str);
+    let count = 0;
+    try { const parsed = JSON.parse(raw); count = typeof parsed === 'number' ? parsed : (parsed?.count || 0); } catch(e) {}
+    days.push({ str, day: d.getDate(), count, isToday: str === todayStr });
+  }
+
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+
+  return weeks.map(week => `
+    <div class="cal-week">
+      ${week.map(d => {
+        const ratio = d.count / goalChapters;
+        let cls = '';
+        if (d.count > 0) {
+          if (ratio >= 1) cls = 'read-full';
+          else if (ratio >= 0.5) cls = 'read-partial';
+          else cls = 'read-little';
+        }
+        if (d.isToday) cls += ' today';
+        return `<div class="cal-day ${cls}"><span>${d.day}</span></div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = '/login.html';
+}
+
+init();
+</script>
+</body>
+</html>
