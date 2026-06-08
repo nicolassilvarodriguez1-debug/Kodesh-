@@ -2649,9 +2649,10 @@ async function lookupWord(event, cleanWord, rawWord) {
 
   // Try API first (AI-powered with AT/NT detection)
   try {
-    // Get verse context for better lookup
+    // Get verse context and verse number for precise lookup
     const verseEl = event.target.closest('.verse');
-    const verseContext = verseEl ? verseEl.textContent.slice(0, 100) : '';
+    const verseContext = verseEl ? verseEl.textContent.slice(0, 150) : '';
+    const verseNum = verseEl ? verseEl.id?.replace('v-', '') : null;
 
     const apiRes = await fetch('/api/lexicon', {
       method: 'POST',
@@ -2659,6 +2660,8 @@ async function lookupWord(event, cleanWord, rawWord) {
       body: JSON.stringify({
         word: cleanWord,
         bookId: state.currentBook,
+        chapter: state.currentChapter,
+        verse: verseNum,
         verseContext,
         userId: currentUser?.id || null,
       })
