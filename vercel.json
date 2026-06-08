@@ -1,9 +1,9 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "routes": [
-    { "src": "/app", "dest": "/index.html" },
-    { "src": "/", "dest": "/landing.html" }
+  "rewrites": [
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/", "destination": "/landing.html" }
   ],
   "functions": {
     "api/search.js":    { "memory": 256, "maxDuration": 30 },
