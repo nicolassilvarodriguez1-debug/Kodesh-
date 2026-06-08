@@ -2154,7 +2154,7 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
       <button class="user-btn" id="userBtn" onclick="window.location.href='login.html'">
         <span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px">Entrar</span>
       </button>
-      <button class="btn-premium" onclick="goToPremium()">✦ Premium</button>
+      <button class="btn-premium" id="btnPremium" onclick="goToPremium()">✦ Premium</button>
     </div>
   </header>
 
@@ -2908,6 +2908,7 @@ async function loadUsage() {
 function updateUsageDisplay() {
   if (!userUsage) return;
   const badge = document.getElementById('planBadge');
+  const btnPremium = document.getElementById('btnPremium');
   if (!badge) return;
   const plan = userUsage.plan;
   if (plan === 'premium') {
@@ -2916,8 +2917,10 @@ function updateUsageDisplay() {
     badge.style.color = 'var(--gold)';
     badge.style.borderColor = 'var(--gold-dim)';
     badge.style.background = 'var(--gold-glow)';
+    if (btnPremium) btnPremium.style.display = 'none';
   } else {
     badge.style.display = 'none';
+    if (btnPremium) btnPremium.style.display = '';
   }
 }
 
