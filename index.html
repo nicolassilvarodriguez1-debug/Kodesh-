@@ -2651,7 +2651,7 @@ async function lookupWord(event, cleanWord, rawWord) {
   try {
     // Get verse context and verse number for precise lookup
     const verseEl = event.target.closest('.verse');
-    const verseContext = verseEl ? verseEl.textContent.slice(0, 150) : '';
+    const verseContext = verseEl ? verseEl.textContent.slice(0, 300) : '';
     const verseNum = verseEl ? verseEl.id?.replace('v-', '') : null;
 
     const apiRes = await fetch('/api/lexicon', {
