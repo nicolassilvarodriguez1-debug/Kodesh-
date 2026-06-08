@@ -158,6 +158,11 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
           <label class="form-label">Archivo (PDF o imagen) *</label>
           <input class="form-input" type="file" id="aArchivo" accept=".pdf,image/*">
         </div>
+        <div class="form-group">
+          <label class="form-label">Imagen de vista previa (recomendado)</label>
+          <div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:6px;font-style:italic">Si el archivo es PDF, sube una captura de pantalla para mostrar la vista previa</div>
+          <input class="form-input" type="file" id="aPreview" accept="image/*">
+        </div>
         <button class="btn-upload" onclick="subirActividad()" id="btnA">↑ Subir Actividad</button>
         <div class="upload-msg" id="msgA"></div>
       </div>
@@ -336,18 +341,36 @@ async function subirActividad() {
     if (upErr) throw upErr;
     const { data: { publicUrl } } = sb.storage.from('actividades').getPublicUrl(path);
 
+    // Upload preview image if provided
+    let previewUrl = null;
+    const previewFile = document.getElementById('aPreview').files[0];
+    if (previewFile) {
+      msg.textContent = 'Subiendo vista previa...';
+      const prevExt = previewFile.name.split('.').pop().toLowerCase();
+      const prevPath = `previews/${Date.now()}_preview.${prevExt}`;
+      const { error: prevErr } = await sb.storage.from('actividades').upload(prevPath, previewFile, { cacheControl:'3600', upsert:false });
+      if (!prevErr) {
+        const { data: { publicUrl: pUrl } } = sb.storage.from('actividades').getPublicUrl(prevPath);
+        previewUrl = pUrl;
+      }
+    } else if (tipo === 'imagen') {
+      // If the file itself is an image, use it as preview too
+      previewUrl = publicUrl;
+    }
+
     msg.textContent = 'Guardando...';
     const { error: dbErr } = await sb.from('actividades').insert({
       titulo, tipo,
       categoria: document.getElementById('aCategoria').value,
       edad: document.getElementById('aEdad').value.trim() || null,
       archivo_url: publicUrl,
+      preview_url: previewUrl,
       uploaded_by: currentUserId
     });
     if (dbErr) throw dbErr;
 
     msg.textContent = '✓ Actividad subida exitosamente.'; msg.className = 'upload-msg ok';
-    ['aTitulo','aEdad','aArchivo'].forEach(id => document.getElementById(id).value = '');
+    ['aTitulo','aEdad','aArchivo','aPreview'].forEach(id => document.getElementById(id).value = '');
     await loadActividades();
   } catch(e) {
     msg.textContent = 'Error: ' + (e.message || JSON.stringify(e)); msg.className = 'upload-msg err';
