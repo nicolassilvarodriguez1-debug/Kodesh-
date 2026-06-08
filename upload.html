@@ -339,7 +339,8 @@ async function subirActividad() {
     const path = `${Date.now()}_${titulo.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}.${ext}`;
     const { error: upErr } = await sb.storage.from('actividades').upload(path, archivo, { cacheControl:'3600', upsert:false });
     if (upErr) throw upErr;
-    const { data: { publicUrl } } = sb.storage.from('actividades').getPublicUrl(path);
+    const pubResult = sb.storage.from('actividades').getPublicUrl(path);
+    const publicUrl = pubResult.data.publicUrl;
 
     // Upload preview image if provided
     let previewUrl = null;
@@ -350,11 +351,10 @@ async function subirActividad() {
       const prevPath = `previews/${Date.now()}_preview.${prevExt}`;
       const { error: prevErr } = await sb.storage.from('actividades').upload(prevPath, previewFile, { cacheControl:'3600', upsert:false });
       if (!prevErr) {
-        const { data: { publicUrl: pUrl } } = sb.storage.from('actividades').getPublicUrl(prevPath);
-        previewUrl = pUrl;
+        const prevResult = sb.storage.from('actividades').getPublicUrl(prevPath);
+        previewUrl = prevResult.data.publicUrl;
       }
     }
-    // If no preview uploaded and file is an image, use the file itself as preview
     if (!previewUrl && tipo === 'imagen') {
       previewUrl = publicUrl;
     }
