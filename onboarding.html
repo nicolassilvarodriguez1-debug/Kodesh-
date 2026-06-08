@@ -438,7 +438,7 @@ async function checkOnboarding() {
     .single();
 
   if (data?.onboarding_completed) {
-    window.location.href = '/app';
+    window.location.href = 'index.html';
     return;
   }
 
@@ -556,7 +556,7 @@ async function finishOnboarding() {
       data: { display_name: name }
     });
 
-    window.location.href = '/app';
+    window.location.href = 'index.html';
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'Comenzar mi estudio →';
