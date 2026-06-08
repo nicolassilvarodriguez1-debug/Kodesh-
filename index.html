@@ -4320,6 +4320,18 @@ async function runSearch() {
 }
 
 function goToVerse(bookId, chapter, verse) {
+  // Fix common wrong book IDs from AI
+  const BOOK_FIX = {
+    'JN':'JHN','JO':'JHN','MK':'MRK','MT':'MAT','LK':'LUK','LC':'LUK',
+    'AC':'ACT','RO':'ROM','1COR':'1CO','2COR':'2CO','EF':'EPH','FIL':'PHP',
+    'STG':'JAS','SANT':'JAS','1PET':'1PE','2PET':'2PE','AP':'REV','APO':'REV',
+    'GN':'GEN','EX':'EXO','LV':'LEV','NM':'NUM','DT':'DEU','JS':'JOS',
+    'JG':'JDG','RT':'RUT','PS':'PSA','SAL':'PSA','PR':'PRO','IS':'ISA',
+    'JR':'JER','EZ':'EZK','DN':'DAN','JL':'JOL','AM':'AMO','OB':'OBA',
+    'NA':'NAM','ZEP':'ZEP','ZEC':'ZEC','HEBR':'HEB',
+  };
+  bookId = BOOK_FIX[bookId?.toUpperCase()] || bookId;
+
   closeSearch();
   // Switch testament if needed
   const isNT = BIBLE_BOOKS.NT.some(b => b.id === bookId);
