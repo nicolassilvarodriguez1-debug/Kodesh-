@@ -86,7 +86,7 @@ html.light {
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   font-family: 'Crimson Pro', Georgia, serif;
@@ -1075,20 +1075,27 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
 
   /* ── Topbar mobile ── */
   .topbar {
-    padding: 0 12px;
-    gap: 8px;
-    height: 56px;
+    padding: 0 10px;
+    gap: 6px;
+    height: 52px;
+    overflow: hidden;
   }
   .logo-sep { display: none; }
-  .logo-txt { font-size: 0.9rem; letter-spacing: 2px; }
-  .logo-heb { font-size: 1.1rem; }
-  .topbar-center { display: none; } /* Hide progress bar on mobile */
-  .version-select { display: none; } /* Hide version selector on mobile */
-  .btn-premium { display: none; } /* Hide Berith on mobile topbar */
-  .user-name { display: none; } /* Show only avatar */
-  .btn-search-open span { display: none; } /* Show only icon */
-  .btn-search-open { padding: 6px 8px; }
-  .topbar-ciclo { display: none; } /* Hide Ciclo link on mobile */
+  .logo-text { font-size: 0.85rem; letter-spacing: 2px; }
+  .logo-hebrew { font-size: 1rem; }
+  .topbar-center { display: none; }
+  .version-select { display: none; }
+  .btn-premium { display: none; }
+  .user-name { display: none; }
+  .btn-search-open span { display: none; }
+  .btn-search-open { padding: 6px 8px; min-width: auto; }
+  .topbar-ciclo { display: none; }
+  .streak-badge { display: none !important; }
+  .usage-indicator { display: none !important; }
+  .topbar-right { gap: 6px; }
+  .theme-toggle { width: 32px; height: 32px; padding: 0; font-size: 0.85rem; }
+  .user-btn { padding: 4px 8px; min-width: auto; }
+  .sidebar-toggle { padding: 6px 8px; font-size: 1rem; }
 
   /* ── Sidebar as bottom sheet ── */
   .sidebar {
