@@ -250,7 +250,8 @@ async function subirCancion() {
 
   try {
     const audioExt = audioFile.name.split('.').pop();
-    const audioPath = `${Date.now()}_${titulo.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}.${audioExt}`;
+    const safeName = titulo.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_]/g,'_');
+    const audioPath = `${Date.now()}_${safeName}.${audioExt}`;
     const { error: audioErr } = await sb.storage.from('canciones').upload(audioPath, audioFile, { cacheControl:'3600', upsert:false });
     if (audioErr) throw audioErr;
     const audioUrl = `${SB_URL}/storage/v1/object/public/canciones/${audioPath}`;
@@ -335,7 +336,8 @@ async function subirActividad() {
   try {
     const ext = archivo.name.split('.').pop().toLowerCase();
     const tipo = ['pdf'].includes(ext) ? 'pdf' : 'imagen';
-    const path = `${Date.now()}_${titulo.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}.${ext}`;
+    const safeName = titulo.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_]/g,'_');
+    const path = `${Date.now()}_${safeName}.${ext}`;
     const { error: upErr } = await sb.storage.from('actividades').upload(path, archivo, { cacheControl:'3600', upsert:false });
     if (upErr) throw upErr;
     const publicUrl = `${SB_URL}/storage/v1/object/public/actividades/${path}`;
