@@ -253,7 +253,7 @@ async function subirCancion() {
     const audioPath = `${Date.now()}_${titulo.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}.${audioExt}`;
     const { error: audioErr } = await sb.storage.from('canciones').upload(audioPath, audioFile, { cacheControl:'3600', upsert:false });
     if (audioErr) throw audioErr;
-    const { data: { publicUrl: audioUrl } } = sb.storage.from('canciones').getPublicUrl(audioPath);
+    const audioUrl = `${SB_URL}/storage/v1/object/public/canciones/${audioPath}`;
 
     let imgUrl = null;
     if (imgFile) {
@@ -262,8 +262,7 @@ async function subirCancion() {
       const imgPath = `covers/${Date.now()}_cover.${imgExt}`;
       const { error: imgErr } = await sb.storage.from('canciones').upload(imgPath, imgFile, { cacheControl:'3600', upsert:false });
       if (!imgErr) {
-        const { data: { publicUrl } } = sb.storage.from('canciones').getPublicUrl(imgPath);
-        imgUrl = publicUrl;
+        imgUrl = `${SB_URL}/storage/v1/object/public/canciones/${imgPath}`;
       }
     }
 
@@ -339,8 +338,7 @@ async function subirActividad() {
     const path = `${Date.now()}_${titulo.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}.${ext}`;
     const { error: upErr } = await sb.storage.from('actividades').upload(path, archivo, { cacheControl:'3600', upsert:false });
     if (upErr) throw upErr;
-    const pubResult = sb.storage.from('actividades').getPublicUrl(path);
-    const publicUrl = pubResult.data.publicUrl;
+    const publicUrl = `${SB_URL}/storage/v1/object/public/actividades/${path}`;
 
     // Upload preview image if provided
     let previewUrl = null;
@@ -351,8 +349,7 @@ async function subirActividad() {
       const prevPath = `previews/${Date.now()}_preview.${prevExt}`;
       const { error: prevErr } = await sb.storage.from('actividades').upload(prevPath, previewFile, { cacheControl:'3600', upsert:false });
       if (!prevErr) {
-        const prevResult = sb.storage.from('actividades').getPublicUrl(prevPath);
-        previewUrl = prevResult.data.publicUrl;
+        previewUrl = `${SB_URL}/storage/v1/object/public/actividades/${prevPath}`;
       }
     }
     if (!previewUrl && tipo === 'imagen') {
