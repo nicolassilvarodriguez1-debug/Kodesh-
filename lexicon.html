@@ -33,7 +33,10 @@ html, body {
 /* ── TOPBAR ── */
 .topbar {
   background: var(--bg2); border-bottom: 1px solid var(--border2);
-  padding: 14px 24px; display: flex; align-items: center;
+  padding-left: 24px; padding-right: 24px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  padding-bottom: 14px;
+  display: flex; align-items: center;
   justify-content: space-between; position: sticky; top: 0; z-index: 100;
 }
 .topbar-left { display: flex; align-items: center; gap: 16px; }
