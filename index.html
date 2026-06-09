@@ -2670,7 +2670,7 @@ async function lookupWord(event, cleanWord, rawWord) {
     const verseContext = verseEl ? verseEl.textContent.slice(0, 300) : '';
     const verseNum = verseEl ? verseEl.id?.replace('v-', '') : null;
 
-    const apiRes = await fetch('/api/lexicon', {
+    const apiRes = await fetch('https://kodeshbible.com/api/lexicon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2899,7 +2899,7 @@ let userUsage = null;
 async function loadUsage() {
   if (!currentUser) return;
   try {
-    const res = await fetch('/api/usage', {
+    const res = await fetch('https://kodeshbible.com/api/usage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id })
@@ -2955,7 +2955,7 @@ async function goToPremium() {
 
   try {
     const name = userProfile?.display_name || currentUser.email?.split('@')[0] || '';
-    const res = await fetch('/api/checkout', {
+    const res = await fetch('https://kodeshbible.com/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4178,7 +4178,7 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const response = await fetch('/api/assistant', {
+    const response = await fetch('https://kodeshbible.com/api/assistant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4298,7 +4298,7 @@ async function runSearch() {
   `;
 
   try {
-    const response = await fetch('/api/search', {
+    const response = await fetch('https://kodeshbible.com/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, userId: currentUser?.id || null })
