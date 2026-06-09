@@ -139,9 +139,11 @@ body::before {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: env(safe-area-inset-top) 24px 0;
-  padding-top: env(safe-area-inset-top);
-  min-height: calc(60px + env(safe-area-inset-top));
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-top: max(env(safe-area-inset-top), 44px);
+  padding-bottom: 8px;
+  min-height: calc(60px + max(env(safe-area-inset-top), 44px));
   gap: 20px;
   position: sticky;
   top: 0;
