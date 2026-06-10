@@ -88,33 +88,6 @@ html.light {
 
 html { scroll-behavior: smooth; overflow-x: hidden; }
 
-/* ── Capacitor HTTP helper ── */
-async function kapiFetch(url, options = {}) {
-  // Use native HTTP on Capacitor iOS to bypass CORS
-  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-    try {
-      const { CapacitorHttp } = window.Capacitor.Plugins;
-      if (CapacitorHttp) {
-        const body = options.body ? JSON.parse(options.body) : undefined;
-        const result = await CapacitorHttp.request({
-          method: options.method || 'GET',
-          url: url,
-          headers: options.headers || { 'Content-Type': 'application/json' },
-          data: body,
-        });
-        return {
-          ok: result.status >= 200 && result.status < 300,
-          status: result.status,
-          json: async () => result.data,
-        };
-      }
-    } catch(e) {
-      console.warn('CapacitorHttp failed, falling back to fetch:', e);
-    }
-  }
-  return fetch(url, options);
-}
-
 body {
   font-family: 'Crimson Pro', Georgia, serif;
   background: var(--bg);
@@ -2235,6 +2208,31 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 
 <!-- ══ SCRIPT ══ -->
 <script>
+/* ── HTTP helper: usa fetch normal; en app nativa Capacitor con
+   CapacitorHttp habilitado, fetch ya viene parcheado nativamente ── */
+async function kapiFetch(url, options = {}) {
+  try {
+    const cap = window.Capacitor;
+    if (cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.CapacitorHttp) {
+      const body = options.body ? JSON.parse(options.body) : undefined;
+      const result = await cap.Plugins.CapacitorHttp.request({
+        method: options.method || 'GET',
+        url,
+        headers: options.headers || { 'Content-Type': 'application/json' },
+        data: body,
+      });
+      return {
+        ok: result.status >= 200 && result.status < 300,
+        status: result.status,
+        json: async () => result.data,
+      };
+    }
+  } catch(e) {
+    console.warn('CapacitorHttp falló, usando fetch:', e);
+  }
+  return fetch(url, options);
+}
+
 /* ════════════════════════════════════
    DATA — Bible structure
 ════════════════════════════════════ */
