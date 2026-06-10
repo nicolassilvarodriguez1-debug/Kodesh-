@@ -2208,29 +2208,35 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 
 <!-- ══ SCRIPT ══ -->
 <script>
-/* ── HTTP helper: usa fetch normal; en app nativa Capacitor con
-   CapacitorHttp habilitado, fetch ya viene parcheado nativamente ── */
+/* ── HTTP helper ──
+   Web: usa URL relativa (mismo origen, sin CORS).
+   App nativa Capacitor: antepone el dominio y usa HTTP nativo. */
+const KAPI_BASE = 'https://kodeshbible.com';
 async function kapiFetch(url, options = {}) {
-  try {
-    const cap = window.Capacitor;
-    if (cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.CapacitorHttp) {
-      const body = options.body ? JSON.parse(options.body) : undefined;
-      const result = await cap.Plugins.CapacitorHttp.request({
-        method: options.method || 'GET',
-        url,
-        headers: options.headers || { 'Content-Type': 'application/json' },
-        data: body,
-      });
-      return {
-        ok: result.status >= 200 && result.status < 300,
-        status: result.status,
-        json: async () => result.data,
-      };
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  const fullUrl = (url.startsWith('/') && isNative) ? KAPI_BASE + url : url;
+  if (isNative) {
+    try {
+      const http = window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+      if (http) {
+        const body = options.body ? JSON.parse(options.body) : undefined;
+        const result = await http.request({
+          method: options.method || 'GET',
+          url: fullUrl,
+          headers: options.headers || { 'Content-Type': 'application/json' },
+          data: body,
+        });
+        return {
+          ok: result.status >= 200 && result.status < 300,
+          status: result.status,
+          json: async () => result.data,
+        };
+      }
+    } catch(e) {
+      console.warn('CapacitorHttp falló, usando fetch:', e);
     }
-  } catch(e) {
-    console.warn('CapacitorHttp falló, usando fetch:', e);
   }
-  return fetch(url, options);
+  return fetch(fullUrl, options);
 }
 
 /* ════════════════════════════════════
@@ -2695,7 +2701,7 @@ async function lookupWord(event, cleanWord, rawWord) {
     const verseContext = verseEl ? verseEl.textContent.slice(0, 300) : '';
     const verseNum = verseEl ? verseEl.id?.replace('v-', '') : null;
 
-    const apiRes = await kapiFetch('https://kodeshbible.com/api/lexicon', {
+    const apiRes = await kapiFetch('/api/lexicon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2924,7 +2930,7 @@ let userUsage = null;
 async function loadUsage() {
   if (!currentUser) return;
   try {
-    const res = await kapiFetch('https://kodeshbible.com/api/usage', {
+    const res = await kapiFetch('/api/usage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id })
@@ -2980,7 +2986,7 @@ async function goToPremium() {
 
   try {
     const name = userProfile?.display_name || currentUser.email?.split('@')[0] || '';
-    const res = await kapiFetch('https://kodeshbible.com/api/checkout', {
+    const res = await kapiFetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4203,7 +4209,7 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const response = await kapiFetch('https://kodeshbible.com/api/assistant', {
+    const response = await kapiFetch('/api/assistant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4323,7 +4329,7 @@ async function runSearch() {
   `;
 
   try {
-    const response = await kapiFetch('https://kodeshbible.com/api/search', {
+    const response = await kapiFetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, userId: currentUser?.id || null })
