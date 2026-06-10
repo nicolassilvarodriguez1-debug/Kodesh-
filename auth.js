@@ -96,7 +96,8 @@ async function onUserLoggedIn(user) {
   if (pendingSession) {
     localStorage.removeItem('kodesh_pending_session');
     try {
-      const res = await fetch('https://kodeshbible.com/api/confirm', {
+      const kapiF = (typeof kapiFetch !== 'undefined') ? kapiFetch : fetch;
+      const res = await kapiF('https://kodeshbible.com/api/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, sessionId: pendingSession })
