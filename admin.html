@@ -75,6 +75,10 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 .usage-fill.danger { background:var(--red); }
 .loading { text-align:center; padding:28px; color:var(--text-dim); }
 .name-cell { color:var(--text); font-weight:600; }
+.btn-plan { font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--gold-dim); color:var(--gold); padding:3px 8px; border-radius:5px; cursor:pointer; transition:all 0.2s; margin-top:4px; white-space:nowrap; }
+.btn-plan:hover { background:var(--gold-glow); }
+.btn-plan.down { border-color:rgba(224,92,92,0.3); color:var(--red); }
+.btn-plan.down:hover { background:rgba(224,92,92,0.1); }
 
 /* UPLOAD SECTION */
 .upload-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-bottom:28px; }
@@ -403,11 +407,13 @@ function renderUsuarios({ users, month, cache }) {
     const sl = isPremium?80:10, al = isPremium?70:3;
     const sp = Math.min(100,u.searches/sl*100), ap = Math.min(100,u.assistant/al*100);
     const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
+    const planBtn = u.id===ADMIN_ID ? '' :
+      `<br><button class="btn-plan${isPremium?' down':''}" onclick="cambiarPlan('${u.id}','${isPremium?'free':'premium'}')">${isPremium?'↓ Bajar a free':'↑ Subir a premium'}</button>`;
     rows += `<tr${u.id===ADMIN_ID?' style="background:rgba(201,168,76,0.04)"':''}>
       <td style="color:var(--text-dim)">${i+1}</td>
       <td class="name-cell">${u.name}${u.id===ADMIN_ID?' 👑':''}</td>
       <td style="font-size:0.68rem">${u.email||'—'}</td>
-      <td><span class="badge badge-${u.plan}">${u.plan}</span></td>
+      <td><span class="badge badge-${u.plan}">${u.plan}</span>${planBtn}</td>
       <td><span class="badge ${u.provider==='google'?'badge-google':'badge-free'}">${u.provider}</span></td>
       <td>${u.searches}/${sl}<div class="usage-bar"><div class="usage-fill ${sp>=90?'danger':''}" style="width:${sp}%"></div></div></td>
       <td>${u.assistant}/${al}<div class="usage-bar"><div class="usage-fill ${ap>=90?'danger':''}" style="width:${ap}%"></div></div></td>
@@ -425,6 +431,23 @@ function renderUsuarios({ users, month, cache }) {
     <td>${cache.at}</td><td>${cache.nt}</td>
     <td class="cost-cell">$${cacheSavings} ahorro por consulta</td>
   </tr>`;
+}
+
+async function cambiarPlan(targetUserId, newPlan) {
+  const label = newPlan === 'premium' ? 'PREMIUM' : 'FREE';
+  if (!confirm(`¿Cambiar este usuario al plan ${label}?`)) return;
+  try {
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUserId, action: 'set_plan', targetUserId, plan: newPlan })
+    });
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    await loadUsuarios();
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
 }
 
 // ── CANCIONES ──
