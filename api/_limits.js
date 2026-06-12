@@ -4,9 +4,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 export const PLAN_LIMITS = {
-  free:   { searches: 10,  assistant: 3,  lexicon: 15 },
-  berith: { searches: 80,  assistant: 150, lexicon: 999999 },
-  pro:    { searches: 300, assistant: 400, lexicon: 999999 },
+  free:    { searches: 10, assistant: 3,  lexicon: 15 },
+  premium: { searches: 80, assistant: 70, lexicon: 999999 },
 };
 
 export function getCurrentMonth() {
