@@ -400,7 +400,7 @@ function renderUsuarios({ users, month, cache }) {
     const total = u.searches+u.assistant+u.lexicon;
     const cost = (u.searches*COST.search)+(u.assistant*COST.assistant)+(u.lexicon*COST.lexicon);
     const isPremium = u.plan === 'premium';
-    const sl = isPremium?80:10, al = isPremium?70:15;
+    const sl = isPremium?80:10, al = isPremium?70:3;
     const sp = Math.min(100,u.searches/sl*100), ap = Math.min(100,u.assistant/al*100);
     const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
     rows += `<tr${u.id===ADMIN_ID?' style="background:rgba(201,168,76,0.04)"':''}>
