@@ -1079,9 +1079,9 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
 
   /* ── Topbar mobile ── */
   .topbar {
-    padding: 0 10px;
+    padding: max(env(safe-area-inset-top), 12px) 10px 0 10px;
     gap: 6px;
-    height: 52px;
+    min-height: calc(52px + max(env(safe-area-inset-top), 12px));
     overflow: hidden;
   }
   .logo-sep { display: none; }
