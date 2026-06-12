@@ -1,3 +1,5 @@
+import { checkLimit, incrementUsage, getCurrentMonth } from './_limits.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -8,23 +10,13 @@ export default async function handler(req, res) {
   const { message, history, book, chapter, verse, userName, userGoals, userId } = req.body;
   if (!message) return res.status(400).json({ error: 'Mensaje requerido' });
 
-  const SB_URL = process.env.SUPABASE_URL;
-  const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-  const LIMITS = { free: 15, premium: 70 };
-  const month = new Date().toISOString().slice(0, 7);
-
   // Check limits
-  if (userId && SB_URL && SB_KEY) {
+  let month;
+  if (userId) {
     try {
-      const headers = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
-      const planRes = await fetch(`${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}&select=plan,subscription_status&limit=1`, { headers });
-      const planData = await planRes.json();
-      const plan = planData?.[0]?.subscription_status === 'active' ? (planData[0].plan || 'free') : 'free';
-      const limit = LIMITS[plan] || LIMITS.free;
-      const usageRes = await fetch(`${SB_URL}/rest/v1/ai_usage?user_id=eq.${userId}&month=eq.${month}&select=assistant_used&limit=1`, { headers });
-      const usageData = await usageRes.json();
-      const used = usageData?.[0]?.assistant_used || 0;
-      if (used >= limit) {
+      const { allowed, used, limit, plan, month: m } = await checkLimit(userId, 'assistant');
+      month = m;
+      if (!allowed) {
         return res.status(429).json({
           error: 'limit_reached', plan, used, limit,
           message: plan === 'free'
@@ -32,7 +24,7 @@ export default async function handler(req, res) {
             : `Alcanzaste tu límite de ${limit} consultas este mes.`,
         });
       }
-    } catch(e) { console.warn('Limit check error:', e.message); }
+    } catch(e) { console.warn('Limit check error:', e.message); month = getCurrentMonth(); }
   }
 
   const context = book ? `El usuario lee: ${book} capítulo ${chapter}${verse ? ', versículo ' + verse : ''}.` : '';
@@ -62,17 +54,9 @@ FORMATO: español, máximo 4 párrafos, estructura: contexto → texto → conex
     const reply = data.content?.[0]?.text || '';
 
     // Increment usage
-    if (userId && SB_URL && SB_KEY) {
+    if (userId) {
       try {
-        const headers = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
-        const usageRes = await fetch(`${SB_URL}/rest/v1/ai_usage?user_id=eq.${userId}&month=eq.${month}&select=assistant_used&limit=1`, { headers });
-        const usageData = await usageRes.json();
-        const current = usageData?.[0]?.assistant_used || 0;
-        if (usageData?.[0]) {
-          await fetch(`${SB_URL}/rest/v1/ai_usage?user_id=eq.${userId}&month=eq.${month}`, { method: 'PATCH', headers, body: JSON.stringify({ assistant_used: current + 1 }) });
-        } else {
-          await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers, body: JSON.stringify({ user_id: userId, month, searches_used: 0, assistant_used: 1 }) });
-        }
+        await incrementUsage(userId, 'assistant', month || getCurrentMonth());
       } catch(e) { console.warn('Usage increment error:', e.message); }
     }
 

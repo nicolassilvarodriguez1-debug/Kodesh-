@@ -1,12 +1,21 @@
-// KODESH Lexicon API — AI-powered with cache + limits
+// KODESH Lexicon API — AI-powered with verse-precise lookup + cache
 
 const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH',
   'PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
 
+// Words that have DIFFERENT meanings depending on verse context
+// These should NOT be cached globally — look them up every time
+const CONTEXT_SENSITIVE = new Set([
+  'ama','amor','amar','amó','amaba','amamos','aman',
+  'señor','dios','espíritu','palabra','fe','vida',
+  'salvación','gracia','paz','gloria','santo','santa',
+]);
+
+import { PLAN_LIMITS } from './_limits.js';
+
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-const LEXICON_LIMITS = { free: 30, premium: 999999 };
+const LEXICON_LIMITS = { free: PLAN_LIMITS.free.lexicon, premium: 999999 };
 
 async function sbFetch(path, options = {}) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -62,23 +71,44 @@ async function incrementLexiconUsage(userId) {
   } catch(e) {}
 }
 
-async function getCached(word, testament) {
+async function getCached(word, testament, bookId, chapter, verse) {
+  // For context-sensitive words, use verse-specific cache key
+  const isContextSensitive = CONTEXT_SENSITIVE.has(word.toLowerCase());
+  
   try {
+    let query;
+    if (isContextSensitive && bookId && chapter && verse) {
+      // Look for verse-specific entry first
+      const verseKey = `${word.toLowerCase()}_${bookId}_${chapter}_${verse}`;
+      const w = encodeURIComponent(verseKey);
+      const res = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
+      const data = await res.json();
+      if (data?.[0]?.strongs) return data[0];
+      // Fall through to general cache
+    }
+    
     const w = encodeURIComponent(word.toLowerCase());
     const res = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
     const data = await res.json();
-    if (data?.[0]?.strongs) return data[0];
+    if (data?.[0]?.strongs && !isContextSensitive) return data[0];
   } catch(e) {}
   return null;
 }
 
-async function saveCache(word, testament, entry) {
+async function saveCache(word, testament, entry, bookId, chapter, verse) {
+  const isContextSensitive = CONTEXT_SENSITIVE.has(word.toLowerCase());
+  
+  // For context-sensitive words, save with verse-specific key
+  const cacheWord = (isContextSensitive && bookId && chapter && verse)
+    ? `${word.toLowerCase()}_${bookId}_${chapter}_${verse}`
+    : word.toLowerCase();
+
   try {
     await sbFetch('lexicon_cache', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({
-        word: word.toLowerCase(),
+        word: cacheWord,
         testament,
         strongs: entry.strongs,
         lemma: entry.lemma,
@@ -98,39 +128,53 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { word, bookId, verseContext, userId } = req.body;
+  const { word, bookId, chapter, verse, verseContext, userId } = req.body;
   if (!word) return res.status(400).json({ error: 'word required' });
 
   const isNT = NT_BOOKS.has(bookId);
   const testament = isNT ? 'NT' : 'AT';
-  const lang = isNT ? 'griego' : 'hebreo';
   const wordClean = word.toLowerCase().trim();
+  const isContextSensitive = CONTEXT_SENSITIVE.has(wordClean);
 
-  // 1 — Check cache first (free, no tokens)
-  const cached = await getCached(wordClean, testament);
-  if (cached) {
-    return res.status(200).json({
-      found: true,
-      strongs: cached.strongs,
-      lemma: cached.lemma,
-      transliteration: cached.transliteration,
-      pronunciation: cached.pronunciation,
-      definition: cached.definition,
-      language: cached.language,
-      fromCache: true,
-    });
+  // 1 — Check cache (skip for context-sensitive words in NT where verse matters)
+  if (!isContextSensitive) {
+    const cached = await getCached(wordClean, testament, bookId, chapter, verse);
+    if (cached) {
+      return res.status(200).json({
+        found: true,
+        strongs: cached.strongs,
+        lemma: cached.lemma,
+        transliteration: cached.transliteration,
+        pronunciation: cached.pronunciation,
+        definition: cached.definition,
+        language: cached.language,
+        fromCache: true,
+      });
+    }
+  } else if (bookId && chapter && verse) {
+    // For context-sensitive, check verse-specific cache
+    const cached = await getCached(wordClean, testament, bookId, chapter, verse);
+    if (cached) {
+      return res.status(200).json({
+        found: true,
+        strongs: cached.strongs,
+        lemma: cached.lemma,
+        transliteration: cached.transliteration,
+        pronunciation: cached.pronunciation,
+        definition: cached.definition,
+        language: cached.language,
+        fromCache: true,
+      });
+    }
   }
 
-  // 2 — Check user limits (only for non-cached)
+  // 2 — Check user limits
   if (userId) {
     const [plan, used] = await Promise.all([getUserPlan(userId), getLexiconUsage(userId)]);
     const limit = LEXICON_LIMITS[plan] || LEXICON_LIMITS.free;
     if (used >= limit) {
       return res.status(429).json({
-        error: 'limit_reached',
-        plan,
-        used,
-        limit,
+        error: 'limit_reached', plan, used, limit,
         message: plan === 'free'
           ? `Alcanzaste tu límite de ${limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
           : `Alcanzaste tu límite de consultas este mes.`,
@@ -138,7 +182,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3 — Call AI
+  // 3 — Call AI with verse-precise context
+  const lang = isNT ? 'griego' : 'hebreo';
+  const testament_label = isNT ? 'Nuevo Testamento' : 'Antiguo Testamento';
+  const verseRef = (bookId && chapter && verse) ? `${bookId} ${chapter}:${verse}` : '';
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -149,21 +197,35 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 350,
+        max_tokens: 400,
         system: `Eres un experto en léxico bíblico hebreo y griego para KODESH (plataforma Hebreo-Mesiánica).
-Reglas ESTRICTAS:
-- Antiguo Testamento → SIEMPRE hebreo (Strong's H####)
-- Nuevo Testamento → SIEMPRE griego (Strong's G####)
+
+MISIÓN: Identificar la palabra EXACTA del idioma original (hebreo/griego) usada en ESE versículo específico.
+
+REGLAS CRÍTICAS:
+- AT → siempre hebreo (H####), NT → siempre griego (G####)
+- Analiza el contexto del versículo para determinar la palabra EXACTA
+- En Juan 21:15-17: Yeshúa usa ἀγαπάω (agapao/agape, G25) y Pedro responde con φιλέω (phileo, G5368) — son DIFERENTES
+- No asumas — lee el contexto. Si Yeshúa pregunta = agape. Si Pedro responde = fileo.
 - Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj
-- Responde SOLO JSON sin texto extra ni backticks
 
-Formato:
-{"found":true,"strongs":"G5495","lemma":"χείρ","transliteration":"cheir","pronunciation":"khire","definition":"mano. En el NT representa poder, acción y sanidad. Yeshúa extendió su mano para sanar (Mc 3:5).","language":"griego"}
+EJEMPLOS CRÍTICOS:
+- "¿Me amas?" preguntado por Yeshúa en Juan 21 → ἀγαπάω G25
+- "Te amo" respondido por Pedro en Juan 21 → φιλέω G5368
+- "amor" en Juan 3:16 → ἀγαπάω G25
+- "amor" en Juan 11:36 (llorando Jesús) → φιλέω G5368
 
-Si la palabra no tiene entrada Strong's: {"found":false}`,
+Responde SOLO JSON:
+{"found":true,"strongs":"G5368","lemma":"φιλέω","transliteration":"phileo","pronunciation":"fil-eh-o","definition":"Amar con afecto fraternal e íntimo. Amor de amistad personal. En Juan 21:15-17, Pedro usa esta palabra al responder a Yeshúa — no el agape divino incondicional sino el amor fraternal que sí puede afirmar.","language":"griego"}
+
+Si no tiene entrada Strong's: {"found":false}`,
         messages: [{
           role: 'user',
-          content: `Palabra: "${word}" | Libro: ${bookId} | Testamento: ${testament}${verseContext ? ` | Contexto: "${verseContext.slice(0,80)}"` : ''}`
+          content: `Palabra en español: "${word}"
+Libro: ${bookId} | Testamento: ${testament_label}${verseRef ? ` | Referencia exacta: ${verseRef}` : ''}
+${verseContext ? `Texto del versículo: "${verseContext.slice(0, 300)}"` : ''}
+
+Identifica la palabra ${lang} EXACTA usada en este versículo específico. Si hay múltiples palabras posibles para esta traducción en español (como agape/fileo para "amor"), determina cuál fue usada en ESTE versículo por el hablante o texto.`
         }]
       })
     });
@@ -177,9 +239,8 @@ Si la palabra no tiene entrada Strong's: {"found":false}`,
     catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { found: false }; }
 
     if (parsed.found) {
-      // Save to cache and increment usage in parallel
       await Promise.all([
-        saveCache(wordClean, testament, parsed),
+        saveCache(wordClean, testament, parsed, bookId, chapter, verse),
         userId ? incrementLexiconUsage(userId) : Promise.resolve(),
       ]);
     }

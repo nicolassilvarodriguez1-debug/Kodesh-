@@ -4,9 +4,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 export const PLAN_LIMITS = {
-  free:   { searches: 10,  assistant: 15  },
-  berith: { searches: 80,  assistant: 150 },
-  pro:    { searches: 300, assistant: 400 },
+  free:   { searches: 10,  assistant: 3,  lexicon: 15 },
+  berith: { searches: 80,  assistant: 150, lexicon: 999999 },
+  pro:    { searches: 300, assistant: 400, lexicon: 999999 },
 };
 
 export function getCurrentMonth() {
@@ -75,7 +75,7 @@ export async function getUserPlanAndUsage(userId) {
   const usageData = await sbGet('ai_usage', {
     'user_id': `eq.${userId}`,
     'month': `eq.${month}`,
-    'select': 'searches_used,assistant_used'
+    'select': 'searches_used,assistant_used,lexicon_used'
   });
 
   return {
@@ -84,13 +84,14 @@ export async function getUserPlanAndUsage(userId) {
     usage: {
       searches: usageData?.searches_used || 0,
       assistant: usageData?.assistant_used || 0,
+      lexicon: usageData?.lexicon_used || 0,
     },
     month,
   };
 }
 
 export async function incrementUsage(userId, type, month) {
-  const field = type === 'search' ? 'searches_used' : 'assistant_used';
+  const field = type === 'search' ? 'searches_used' : type === 'lexicon' ? 'lexicon_used' : 'assistant_used';
 
   const existing = await sbGet('ai_usage', {
     'user_id': `eq.${userId}`,
@@ -110,14 +111,15 @@ export async function incrementUsage(userId, type, month) {
       month,
       searches_used: type === 'search' ? 1 : 0,
       assistant_used: type === 'assistant' ? 1 : 0,
+      lexicon_used: type === 'lexicon' ? 1 : 0,
     }, 'user_id,month');
   }
 }
 
 export async function checkLimit(userId, type) {
   const { plan, limits, usage, month } = await getUserPlanAndUsage(userId);
-  const used = type === 'search' ? usage.searches : usage.assistant;
-  const limit = type === 'search' ? limits.searches : limits.assistant;
+  const used = type === 'search' ? usage.searches : type === 'lexicon' ? usage.lexicon : usage.assistant;
+  const limit = type === 'search' ? limits.searches : type === 'lexicon' ? limits.lexicon : limits.assistant;
 
   return {
     allowed: used < limit,
