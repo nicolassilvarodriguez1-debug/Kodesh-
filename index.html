@@ -262,8 +262,8 @@ body::before {
   border-right: 1px solid var(--border);
   overflow-y: auto;
   position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
+  top: calc(54px + max(env(safe-area-inset-top), 59px) + 1px);
+  height: calc(100vh - (54px + max(env(safe-area-inset-top), 59px) + 1px));
 }
 
 .sidebar-section {
