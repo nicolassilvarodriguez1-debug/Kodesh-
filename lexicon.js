@@ -11,9 +11,11 @@ const CONTEXT_SENSITIVE = new Set([
   'salvación','gracia','paz','gloria','santo','santa',
 ]);
 
+import { PLAN_LIMITS } from './_limits.js';
+
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const LEXICON_LIMITS = { free: 30, premium: 999999 };
+const LEXICON_LIMITS = { free: PLAN_LIMITS.free.lexicon, premium: 999999 };
 
 async function sbFetch(path, options = {}) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
