@@ -3256,9 +3256,10 @@ function renderInterlinear(data) {
       <div class="interlinear-verse-num">Versículo ${vnum}</div>
       <div class="interlinear-words">`;
     words.forEach(w => {
+      const cleanText = (w.text || '').replace(/\//g, '');
       html += `<div class="interlinear-word">
-        <div class="interlinear-strongs">${w.strongs || ''}</div>
-        <div class="interlinear-hebrew">${w.text}</div>
+        <div class="interlinear-strongs" ${w.strongs ? `onclick="lookupStrongs(event,'${w.strongs}')" style="cursor:pointer;text-decoration:underline dotted"` : ''}>${w.strongs || ''}</div>
+        <div class="interlinear-hebrew">${cleanText}</div>
         <div class="interlinear-morph">${w.morph || ''}</div>
         <div class="interlinear-gloss">${w.gloss || ''}</div>
       </div>`;
@@ -3271,6 +3272,51 @@ function renderInterlinear(data) {
 
 function closeInterlinear() {
   document.getElementById('interlinearOverlay').classList.remove('open');
+}
+
+async function lookupStrongs(event, strongsCode) {
+  event.stopPropagation();
+  const popup = document.getElementById('lexiconPopup');
+
+  document.getElementById('lexOriginal').textContent = '...';
+  document.getElementById('lexTranslit').textContent = '';
+  document.getElementById('lexStrongs').textContent = strongsCode;
+  document.getElementById('lexDef').textContent = 'Cargando...';
+  document.getElementById('lexUsage').innerHTML = '';
+  positionAndShowPopup(popup, event);
+
+  try {
+    const apiRes = await kapiFetch('/api/lexicon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ strongsCode, bookId: state.currentBook, userId: currentUser?.id || null })
+    });
+    const data = await apiRes.json();
+
+    if (data.error === 'limit_reached') {
+      popup.classList.remove('visible');
+      showLimitModal('lexicon', data);
+      return;
+    }
+
+    if (data.found) {
+      document.getElementById('lexOriginal').textContent = data.lemma;
+      document.getElementById('lexOriginal').className = `lex-original ${data.language === 'griego' ? 'greek' : ''}`;
+      document.getElementById('lexTranslit').textContent = data.transliteration || '';
+      document.getElementById('lexStrongs').textContent = `${data.strongs} · ${data.pronunciation || ''}`;
+
+      const badge = document.getElementById('lexLangBadge');
+      badge.textContent = data.language === 'hebreo' ? 'Hebreo' : 'Griego';
+      badge.className = `lex-lang-badge ${data.language === 'hebreo' ? 'hebrew' : 'greek'}`;
+
+      document.getElementById('lexDef').textContent = data.definition;
+      document.getElementById('lexUsage').innerHTML = '';
+    } else {
+      document.getElementById('lexDef').textContent = 'No se encontró información para este Strong\'s.';
+    }
+  } catch(e) {
+    document.getElementById('lexDef').textContent = 'Error al cargar la definición.';
+  }
 }
 
 async function goToPremium() {
