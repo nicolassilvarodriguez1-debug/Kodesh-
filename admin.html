@@ -104,6 +104,26 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 
 /* CONTENT LIST */
 .content-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-bottom:28px; }
+
+/* INTERLINEAR COVERAGE */
+.book-row { background:var(--bg2); border:1px solid var(--border2); border-radius:8px; margin-bottom:6px; overflow:hidden; }
+.book-row-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; cursor:pointer; transition:background 0.15s; }
+.book-row-head:hover { background:rgba(255,255,255,0.02); }
+.book-row-name { color:var(--text); font-weight:600; font-size:0.8rem; }
+.book-row-stats { display:flex; align-items:center; gap:10px; }
+.book-row-frac { font-size:0.7rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.book-row-bar { width:80px; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.book-row-bar-fill { height:100%; background:var(--gold); }
+.book-row-arrow { color:var(--text-dim); font-size:0.7rem; transition:transform 0.2s; }
+.book-row.open .book-row-arrow { transform:rotate(90deg); }
+.book-row-chapters { display:none; flex-wrap:wrap; gap:6px; padding:12px 14px; border-top:1px solid var(--border); }
+.book-row.open .book-row-chapters { display:flex; }
+.chapter-chip {
+  width:34px; height:28px; display:flex; align-items:center; justify-content:center;
+  border-radius:5px; font-size:0.65rem; font-family:'JetBrains Mono',monospace;
+  border:1px solid var(--border2); color:var(--text-dim);
+}
+.chapter-chip.cached { background:var(--gold-glow); border-color:var(--gold-dim); color:var(--gold); font-weight:600; }
 .content-card { background:var(--bg2); border:1px solid var(--border2); border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
 .content-card-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; color:var(--text); text-transform:uppercase; }
 .content-card-meta { font-size:0.7rem; color:var(--text-dim); }
@@ -143,6 +163,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     <button class="admin-tab active" onclick="switchTab('usuarios',this)">👥 Usuarios</button>
     <button class="admin-tab" onclick="switchTab('canciones',this)">🎵 Canciones</button>
     <button class="admin-tab" onclick="switchTab('actividades',this)">🎨 Actividades</button>
+    <button class="admin-tab" onclick="switchTab('interlineal',this)">📜 Interlineal</button>
     <button class="admin-tab" id="tabRoles" onclick="switchTab('roles',this)" style="display:none">🔑 Editores</button>
   </div>
 
@@ -275,6 +296,28 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     </div>
   </div>
 
+  <!-- TAB: INTERLINEAL (cobertura del cache) -->
+  <div class="tab-content" id="tab-interlineal">
+    <div class="main">
+      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="stat-card">
+          <div class="stat-label">Capítulos cacheados</div>
+          <div class="stat-value gold" id="interlinearCachedCount">—</div>
+          <div class="stat-sub" id="interlinearTotalCount">de — capítulos totales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cobertura</div>
+          <div class="stat-value green" id="interlinearPct">—</div>
+          <div class="stat-sub">% de la Biblia con interlineal generado</div>
+        </div>
+      </div>
+
+      <div class="section-title">Cobertura por libro</div>
+      <div id="interlinearBooks"><div class="loading">Cargando...</div></div>
+    </div>
+  </div>
+
+
   <!-- TAB: ROLES (solo superadmin) -->
   <div class="tab-content" id="tab-roles">
     <div class="main">
@@ -360,9 +403,54 @@ async function init() {
 
 async function loadAll() {
   document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
-  const promises = [loadCanciones(), loadActividades()];
+  const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage()];
   if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles());
   await Promise.all(promises);
+}
+
+// ── INTERLINEAR COVERAGE ──
+async function loadInterlinearCoverage() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: session.user.id, action: 'interlinear_coverage' })
+    });
+    const data = await res.json();
+    if (data.error) return;
+    renderInterlinearCoverage(data);
+  } catch(e) { console.error(e); }
+}
+
+function renderInterlinearCoverage({ totalCached, totalChapters, books }) {
+  document.getElementById('interlinearCachedCount').textContent = totalCached.toLocaleString();
+  document.getElementById('interlinearTotalCount').textContent = `de ${totalChapters.toLocaleString()} capítulos totales`;
+  const pct = totalChapters ? ((totalCached / totalChapters) * 100).toFixed(1) : '0.0';
+  document.getElementById('interlinearPct').textContent = `${pct}%`;
+
+  const container = document.getElementById('interlinearBooks');
+  container.innerHTML = books.map((b, i) => {
+    const bookPct = b.total ? (b.cached / b.total) * 100 : 0;
+    const chips = b.chapters.map(c =>
+      `<div class="chapter-chip ${c.cached ? 'cached' : ''}" title="Capítulo ${c.chapter}${c.cached ? ' · cacheado' : ' · no cacheado'}">${c.chapter}</div>`
+    ).join('');
+    return `<div class="book-row" id="book-row-${i}">
+      <div class="book-row-head" onclick="toggleBookRow(${i})">
+        <div class="book-row-name">${b.name}</div>
+        <div class="book-row-stats">
+          <div class="book-row-frac">${b.cached}/${b.total}</div>
+          <div class="book-row-bar"><div class="book-row-bar-fill" style="width:${bookPct}%"></div></div>
+          <div class="book-row-arrow">▶</div>
+        </div>
+      </div>
+      <div class="book-row-chapters">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBookRow(i) {
+  document.getElementById(`book-row-${i}`).classList.toggle('open');
 }
 
 // ── USUARIOS (solo superadmin) ──
