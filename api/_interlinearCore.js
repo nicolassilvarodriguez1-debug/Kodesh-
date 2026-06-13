@@ -58,23 +58,14 @@ export async function generateVerseData(words, language, verseRef) {
   const lang = language === 'griego' ? 'griego' : 'hebreo';
   const wordsList = words.map((w, i) => `${i + 1}. "${w.original_text}" (Strong's: ${w.strongs || '?'})`).join('\n');
 
-  const system = `Eres un experto en ${lang} bíblico para KODESH, plataforma de estudio bíblico Hebreo-Mesiánica.
+  const system = `Léxico ${lang} bíblico, KODESH (Hebreo-Mesiánico). Para cada palabra da:
+1. "gloss": traducción breve al español en contexto (1-4 palabras)
+2. "translit": transliteración fonética latina (ej: bereshit, logos, agape)
+Usa: YHWH, Yeshúa, Mashíaj.
+SOLO array JSON, sin texto extra: [{"gloss":"...","translit":"..."}]
+Mismo número de elementos que palabras, mismo orden.`;
 
-Para cada palabra del versículo, da DOS cosas:
-1. "gloss": traducción breve al español de ESA palabra específica en SU contexto en este versículo (1-4 palabras, estilo interlineal)
-2. "translit": transliteración fonética al español/latino estándar (sin signos diacríticos raros), ej:
-   - בְּרֵאשִׁית -> "bereshit"
-   - λόγος -> "logos"
-   - ἀγάπη -> "agape"
-
-Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj.
-
-Responde SOLO con un array JSON, sin texto adicional, sin markdown:
-[{"gloss":"...","translit":"..."}, ...]
-El array debe tener EXACTAMENTE el mismo número de elementos que palabras recibidas, en el mismo orden.`;
-
-  const user = `Versículo: ${verseRef}
-Palabras en orden (${language === 'griego' ? 'izquierda a derecha' : 'derecha a izquierda, como aparecen en hebreo'}):
+  const user = `${verseRef}:
 ${wordsList}`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -86,7 +77,7 @@ ${wordsList}`;
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: 800,
       system,
       messages: [{ role: 'user', content: user }],
     }),
