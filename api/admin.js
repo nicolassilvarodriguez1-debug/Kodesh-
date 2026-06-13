@@ -15,6 +15,23 @@ async function sbGet(path) {
   return res.json();
 }
 
+// Fetch ALL rows for a query, paginating past Supabase's default 1000-row limit.
+async function sbGetAll(path) {
+  const PAGE = 1000;
+  let all = [];
+  let offset = 0;
+  while (true) {
+    const sep = path.includes('?') ? '&' : '?';
+    const pageUrl = `${path}${sep}limit=${PAGE}&offset=${offset}`;
+    const rows = await sbGet(pageUrl);
+    if (!Array.isArray(rows) || rows.length === 0) break;
+    all = all.concat(rows);
+    if (rows.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all;
+}
+
 async function sbUpsert(table, body, onConflict) {
   const res = await fetch(`${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
     method: 'POST',
@@ -112,7 +129,7 @@ export default async function handler(req, res) {
 
     try {
       // Fetch distinct (book, chapter) pairs that have cached data
-      const cached = await sbGet('interlinear_cache?select=book,chapter');
+      const cached = await sbGetAll('interlinear_cache?select=book,chapter');
       const cachedSet = new Set((cached || []).map(r => `${r.book}:${r.chapter}`));
 
       let totalCached = 0;
