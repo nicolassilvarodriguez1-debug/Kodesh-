@@ -1383,6 +1383,168 @@ html.light body::before { opacity: 0.06; }
 .btn-notes-chapter:hover { border-color: var(--gold-dim); color: var(--gold); }
 .btn-notes-chapter.has-note { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
 
+/* ── Interlinear button & panel ── */
+.btn-interlinear {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-interlinear:hover { border-color: var(--gold-dim); color: var(--gold); }
+.btn-interlinear.locked { opacity: 0.7; }
+.btn-interlinear .lock-icon { font-size: 0.65rem; margin-right: 2px; }
+
+.interlinear-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+  padding: 20px;
+}
+.interlinear-overlay.open { opacity: 1; pointer-events: auto; }
+.interlinear-panel {
+  background: var(--bg2);
+  border: 1px solid var(--gold-dim);
+  border-radius: 14px;
+  width: 100%; max-width: 900px;
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 30px var(--gold-glow);
+}
+.interlinear-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gold-dim);
+  background: linear-gradient(135deg, #0e0b04, #1a1206);
+}
+.interlinear-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.interlinear-close {
+  background: none; border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+}
+.interlinear-close:hover { border-color: var(--red); color: var(--red); }
+.interlinear-body {
+  padding: 20px; overflow-y: auto; flex: 1;
+}
+.interlinear-verse {
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.interlinear-verse:last-child { border-bottom: none; }
+.interlinear-verse-num {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.interlinear-words {
+  display: flex; flex-wrap: wrap; gap: 18px 14px;
+  direction: rtl;
+}
+.interlinear-word {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  min-width: 60px;
+}
+.interlinear-strongs {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--blue);
+  margin-bottom: 4px;
+}
+.interlinear-hebrew {
+  font-family: serif;
+  font-size: 1.5rem;
+  color: var(--gold-bright);
+  line-height: 1.3;
+  direction: rtl;
+}
+.interlinear-morph {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+  color: var(--gold);
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.interlinear-gloss {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-mid);
+  margin-top: 6px;
+  max-width: 90px;
+}
+.interlinear-locked {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-mid);
+}
+.interlinear-locked .lock-big { font-size: 2rem; margin-bottom: 12px; }
+.interlinear-locked .btn-go-premium {
+  display: inline-block; margin-top: 16px;
+  background: var(--gold); border: none; color: #1a0e00;
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase;
+  padding: 10px 22px; border-radius: 8px; cursor: pointer; font-weight: 700;
+  text-decoration: none;
+}
+
+/* ── Settings toggle for interlinear ── */
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.settings-row-label {
+  font-size: 0.75rem; color: var(--text);
+}
+.settings-row-desc {
+  font-size: 0.6rem; color: var(--text-dim); margin-top: 2px;
+}
+.toggle-switch {
+  position: relative; width: 40px; height: 22px;
+  background: var(--border2); border-radius: 12px;
+  cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--gold); }
+.toggle-switch-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bg2); transition: transform 0.2s;
+}
+.toggle-switch.on .toggle-switch-knob { transform: translateX(18px); background: #1a0e00; }
+
+@media (max-width: 700px) {
+  .interlinear-words { gap: 14px 10px; }
+  .interlinear-hebrew { font-size: 1.2rem; }
+  .interlinear-word { min-width: 50px; }
+  .interlinear-gloss { font-size: 0.6rem; max-width: 70px; }
+}
+
 /* ── Notes panel ── */
 .notes-overlay {
   position: fixed; inset: 0;
@@ -1876,6 +2038,22 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
   </div>
 </div>
 
+<!-- ══ INTERLINEAR OVERLAY ══ -->
+<div class="interlinear-overlay" id="interlinearOverlay">
+  <div class="interlinear-panel">
+    <div class="interlinear-head">
+      <div class="interlinear-title" id="interlinearTitle">Modo Interlineal</div>
+      <button class="interlinear-close" onclick="closeInterlinear()">✕ Cerrar</button>
+    </div>
+    <div class="interlinear-body" id="interlinearBody">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Cargando interlineal</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MOBILE BOTTOM NAV ══ -->
 <nav class="mobile-nav" id="mobileNav">
   <div class="mobile-nav-progress" id="mobileNavProgress" style="transform:scaleX(0)"></div>
@@ -1954,6 +2132,15 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 
     <!-- Stats -->
     <div class="profile-content active" id="pcontent-stats">
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">📜 Modo Interlineal automático</div>
+          <div class="settings-row-desc">Abrir el análisis hebreo/griego al tocar "Interlineal" en cada capítulo</div>
+        </div>
+        <div class="toggle-switch" id="interlinearToggle" onclick="toggleInterlinearPref()">
+          <div class="toggle-switch-knob"></div>
+        </div>
+      </div>
       <div class="stats-grid" id="statsGrid"></div>
     </div>
 
@@ -2457,6 +2644,9 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
         <button class="btn-study-chapter" onclick="openAssistant('${bookName}', ${chapterNum})">✦ Estudiar</button>
         <button class="btn-notes-chapter" onclick="openChapterNotes('${state.currentBook}','${bookName}',${chapterNum})" id="notesBtn">
           📝 <span id="notesBtnLabel">Notas</span>
+        </button>
+        <button class="btn-interlinear" onclick="openInterlinear('${state.currentBook}', ${chapterNum})">
+          📜 Interlineal
         </button>
         <button class="btn-read-toggle ${isRead ? 'done' : ''}" id="readToggleBtn" onclick="toggleRead()">
           <span class="check-icon">${isRead ? '✓' : '○'}</span>
@@ -2974,6 +3164,115 @@ function closeLimitModal(e) {
   }
 }
 
+/* ════════════════════════════════════
+   INTERLINEAR MODE (Premium)
+════════════════════════════════════ */
+function toggleInterlinearPref() {
+  const t = document.getElementById('interlinearToggle');
+  const isOn = t.classList.toggle('on');
+  localStorage.setItem('kodesh_interlinear_pref', isOn ? '1' : '0');
+}
+
+function initInterlinearPref() {
+  const pref = localStorage.getItem('kodesh_interlinear_pref') === '1';
+  const t = document.getElementById('interlinearToggle');
+  if (t) t.classList.toggle('on', pref);
+}
+
+async function openInterlinear(bookId, chapterNum) {
+  const overlay = document.getElementById('interlinearOverlay');
+  const body = document.getElementById('interlinearBody');
+  const title = document.getElementById('interlinearTitle');
+  const bookData = getAllBooks().find(b => b.id === bookId);
+  const bookName = bookData ? bookData.name : bookId;
+
+  title.textContent = `Interlineal · ${bookName} ${chapterNum}`;
+  overlay.classList.add('open');
+  body.innerHTML = `
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Cargando interlineal</div>
+    </div>
+  `;
+
+  // Check premium
+  if (!userUsage || userUsage.plan !== 'premium') {
+    body.innerHTML = `
+      <div class="interlinear-locked">
+        <div class="lock-big">🔒</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">
+          Función Premium
+        </div>
+        <div style="font-size:0.8rem;line-height:1.6">
+          El Modo Interlineal te muestra el texto hebreo original de cada versículo,
+          palabra por palabra, con su número Strong's, análisis morfológico y traducción.
+        </div>
+        <button class="btn-go-premium" onclick="closeInterlinear(); goToPremium();">✦ Conocer Premium</button>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const res = await kapiFetch('/api/interlinear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ book: bookId, chapter: chapterNum, userId: currentUser?.id || null })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.error === 'not_available') {
+        body.innerHTML = `
+          <div class="interlinear-locked">
+            <div class="lock-big">📜</div>
+            <div style="font-size:0.85rem;line-height:1.6">
+              ${data.message || 'El Modo Interlineal aún no está disponible para este capítulo.'}
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-top:14px">
+              Por ahora disponible en: Génesis 1
+            </div>
+          </div>
+        `;
+        return;
+      }
+      throw new Error(data.message || data.error || 'Error al cargar interlineal');
+    }
+
+    renderInterlinear(data);
+  } catch(e) {
+    body.innerHTML = `<div class="interlinear-locked">⚠️ ${e.message}</div>`;
+  }
+}
+
+function renderInterlinear(data) {
+  const body = document.getElementById('interlinearBody');
+  const verseNums = Object.keys(data.verses).map(Number).sort((a,b) => a-b);
+
+  let html = '';
+  verseNums.forEach(vnum => {
+    const words = data.verses[vnum];
+    html += `<div class="interlinear-verse">
+      <div class="interlinear-verse-num">Versículo ${vnum}</div>
+      <div class="interlinear-words">`;
+    words.forEach(w => {
+      html += `<div class="interlinear-word">
+        <div class="interlinear-strongs">${w.strongs || ''}</div>
+        <div class="interlinear-hebrew">${w.text}</div>
+        <div class="interlinear-morph">${w.morph || ''}</div>
+        <div class="interlinear-gloss">${w.gloss || ''}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  body.innerHTML = html || '<div class="interlinear-locked">Sin datos para mostrar.</div>';
+}
+
+function closeInterlinear() {
+  document.getElementById('interlinearOverlay').classList.remove('open');
+}
+
 async function goToPremium() {
   document.getElementById('limitOverlay').classList.remove('open');
 
@@ -3357,6 +3656,7 @@ function openProfile() {
   document.getElementById('profileEmail').textContent = user.email;
 
   switchProfileTab('stats');
+  initInterlinearPref();
   document.getElementById('profileOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
