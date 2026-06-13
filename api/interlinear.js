@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
   try {
     const data = await sbGet(
-      `interlinear_cache?book=eq.${book.toUpperCase()}&chapter=eq.${chapter}&select=verse,word_order,original_text,strongs,morph_code,morph_label,gloss,language&order=verse.asc,word_order.asc`
+      `interlinear_cache?book=eq.${book.toUpperCase()}&chapter=eq.${chapter}&select=verse,word_order,original_text,strongs,transliteration,gloss,language&order=verse.asc,word_order.asc`
     );
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       verses[row.verse].push({
         text: row.original_text,
         strongs: row.strongs,
-        morph: row.morph_label,
+        translit: row.transliteration,
         gloss: row.gloss,
         language: row.language,
       });
