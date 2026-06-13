@@ -1483,8 +1483,9 @@ html.light body::before { opacity: 0.06; }
 }
 .interlinear-morph {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.5px;
+  font-size: 0.62rem;
+  font-style: italic;
+  letter-spacing: 0.3px;
   color: var(--gold);
   margin-top: 4px;
   white-space: nowrap;
@@ -3260,7 +3261,7 @@ function renderInterlinear(data) {
       html += `<div class="interlinear-word">
         <div class="interlinear-strongs" ${w.strongs ? `onclick="lookupStrongs(event,'${w.strongs}')" style="cursor:pointer;text-decoration:underline dotted"` : ''}>${w.strongs || ''}</div>
         <div class="interlinear-hebrew">${cleanText}</div>
-        <div class="interlinear-morph">${w.morph || ''}</div>
+        <div class="interlinear-morph">${w.translit || ''}</div>
         <div class="interlinear-gloss">${w.gloss || ''}</div>
       </div>`;
     });
