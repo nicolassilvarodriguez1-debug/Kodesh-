@@ -11,11 +11,9 @@ const CONTEXT_SENSITIVE = new Set([
   'salvación','gracia','paz','gloria','santo','santa',
 ]);
 
-import { PLAN_LIMITS } from './_limits.js';
-
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const LEXICON_LIMITS = { free: PLAN_LIMITS.free.lexicon, premium: 999999 };
+const LEXICON_LIMITS = { free: 30, premium: 999999 };
 
 async function sbFetch(path, options = {}) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -95,6 +93,16 @@ async function getCached(word, testament, bookId, chapter, verse) {
   return null;
 }
 
+async function getCachedByStrongs(strongsCode, testament) {
+  try {
+    const w = encodeURIComponent(`strongs_${strongsCode.toLowerCase()}`);
+    const res = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
+    const data = await res.json();
+    if (data?.[0]?.strongs) return data[0];
+  } catch(e) {}
+  return null;
+}
+
 async function saveCache(word, testament, entry, bookId, chapter, verse) {
   const isContextSensitive = CONTEXT_SENSITIVE.has(word.toLowerCase());
   
@@ -128,7 +136,92 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { word, bookId, chapter, verse, verseContext, userId } = req.body;
+  const { word, bookId, chapter, verse, verseContext, userId, strongsCode } = req.body;
+
+  // ── MODE: direct Strong's lookup (from Interlinear) ──
+  if (strongsCode && !word) {
+    const isNT = strongsCode.toUpperCase().startsWith('G');
+    const testament = isNT ? 'NT' : 'AT';
+
+    const cached = await getCachedByStrongs(strongsCode, testament);
+    if (cached) {
+      return res.status(200).json({
+        found: true,
+        strongs: cached.strongs,
+        lemma: cached.lemma,
+        transliteration: cached.transliteration,
+        pronunciation: cached.pronunciation,
+        definition: cached.definition,
+        language: cached.language,
+        fromCache: true,
+      });
+    }
+
+    // Check user limits
+    if (userId) {
+      const [plan, used] = await Promise.all([getUserPlan(userId), getLexiconUsage(userId)]);
+      const limit = LEXICON_LIMITS[plan] || LEXICON_LIMITS.free;
+      if (used >= limit) {
+        return res.status(429).json({
+          error: 'limit_reached', plan, used, limit,
+          message: plan === 'free'
+            ? `Alcanzaste tu límite de ${limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
+            : `Alcanzaste tu límite de consultas este mes.`,
+        });
+      }
+    }
+
+    const lang = isNT ? 'griego' : 'hebreo';
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 400,
+          system: `Eres un experto en léxico bíblico hebreo y griego para KODESH (plataforma Hebreo-Mesiánica).
+
+MISIÓN: Dado un número Strong's exacto, da la entrada completa del lexicón para esa palabra.
+
+Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj.
+
+Responde SOLO JSON:
+{"found":true,"strongs":"H7225","lemma":"רֵאשִׁית","transliteration":"reshit","pronunciation":"re-SHEET","definition":"Sustantivo femenino: principio, comienzo, primicia. Usado en Génesis 1:1 para 'en el principio' — el inicio absoluto de la creación por YHWH.","language":"hebreo"}
+
+Si el número no existe: {"found":false}`,
+          messages: [{
+            role: 'user',
+            content: `Número Strong's: "${strongsCode}" (${lang})\n\nDame la entrada completa del lexicón para este número Strong's.`
+          }]
+        })
+      });
+
+      if (!response.ok) throw new Error(`API error ${response.status}`);
+      const data = await response.json();
+      const text = data.content?.[0]?.text || '';
+
+      let parsed;
+      try { parsed = JSON.parse(text.trim()); }
+      catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { found: false }; }
+
+      if (parsed.found) {
+        await Promise.all([
+          saveCache(`strongs_${strongsCode.toLowerCase()}`, testament, parsed, null, null, null),
+          userId ? incrementLexiconUsage(userId) : Promise.resolve(),
+        ]);
+      }
+
+      return res.status(200).json(parsed);
+    } catch(err) {
+      console.error('Lexicon strongs lookup error:', err.message);
+      return res.status(500).json({ found: false, error: err.message });
+    }
+  }
+
   if (!word) return res.status(400).json({ error: 'word required' });
 
   const isNT = NT_BOOKS.has(bookId);
