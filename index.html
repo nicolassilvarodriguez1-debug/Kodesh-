@@ -2720,6 +2720,7 @@ async function loadChapter(bookId, chapterNum) {
     ]);
     const verses = parseLocalChapter(chapterObj);
     renderBibleText(verses, bookName, chapterNum, parasha);
+    warmInterlinearCache(bookId, chapterNum);
   } catch (err) {
     main.innerHTML = `
       <div class="loading">
@@ -3168,6 +3169,20 @@ function closeLimitModal(e) {
 /* ════════════════════════════════════
    INTERLINEAR MODE (Premium)
 ════════════════════════════════════ */
+// Silently pre-generate the interlinear cache for this chapter, for ALL
+// users (free included). Fire-and-forget — no UI feedback, no blocking,
+// no plan check. Helps the cache grow organically with normal traffic so
+// premium users get instant results.
+function warmInterlinearCache(bookId, chapterNum) {
+  try {
+    kapiFetch('/api/interlinear-warm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ book: bookId, chapter: chapterNum })
+    }).catch(() => {});
+  } catch(e) {}
+}
+
 function toggleInterlinearPref() {
   const t = document.getElementById('interlinearToggle');
   const isOn = t.classList.toggle('on');
