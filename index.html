@@ -3023,6 +3023,9 @@ async function lookupWord(event, cleanWord, rawWord) {
   document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
   event.target.classList.add('highlighted');
 
+  if (lexiconLoading) return;
+  lexiconLoading = true;
+
   const popup = document.getElementById('lexiconPopup');
 
   // Try API first (AI-powered with AT/NT detection)
@@ -3053,27 +3056,18 @@ async function lookupWord(event, cleanWord, rawWord) {
       }
       if (data.found) {
         populateLexiconPopup(data, event);
+        lexiconLoading = false;
         return;
       }
     }
   } catch(e) {
-    // Fall through to local data
+    // Fall through
   }
 
-  // Fallback to local strongs.json
-  const strongs = await loadStrongs();
-  const raw = cleanWord.toLowerCase();
-  const noAccent = raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-záéíóúüñ]/g,'');
-  const noAccentClean = noAccent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
-  const entry = strongs[raw] || strongs[noAccent] || strongs[noAccentClean];
-
-  if (!entry) {
-    popup.classList.remove('visible');
-    document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
-    return;
-  }
-
-  populateLexiconPopup({ ...entry, lemma: entry.h, transliteration: entry.t, strongs: entry.s, language: entry.l, definition: entry.d }, event);
+  // Si la API no respondió con datos, no mostrar nada
+  popup.classList.remove('visible');
+  document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
+  lexiconLoading = false;
 }
 
 function positionAndShowPopup(popup, event) {
@@ -3234,6 +3228,7 @@ function closeLexicon() {
 // Close popup on outside click
 document.addEventListener('click', (e) => {
   const popup = document.getElementById('lexiconPopup');
+  if (!popup.classList.contains('visible')) return;
   if (!popup.contains(e.target) && !e.target.classList.contains('word')) {
     closeLexicon();
   }
@@ -4398,6 +4393,7 @@ let bmState = {
 let touchTimer = null;
 let lastTapTime = 0;
 let lastTapVerse = null;
+let lexiconLoading = false;
 
 // Build color grid in menu
 function buildColorGrid() {
