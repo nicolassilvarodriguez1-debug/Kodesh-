@@ -4166,6 +4166,8 @@ let bmState = {
   filter: 'all',
 };
 let touchTimer = null;
+let lastTapTime = 0;
+let lastTapVerse = null;
 
 // Build color grid in menu
 function buildColorGrid() {
@@ -4292,12 +4294,29 @@ async function interpretVerse() {
 
 /* ── Touch support (long press) ── */
 function handleTouchStart(e, book, chapter, verse) {
-  touchTimer = setTimeout(() => {
+  const now = Date.now();
+  const DOUBLE_TAP_DELAY = 300; // ms between taps to count as double tap
+
+  if (lastTapVerse === `${book}:${chapter}:${verse}` && now - lastTapTime < DOUBLE_TAP_DELAY) {
+    // Double tap detected on same verse
+    e.preventDefault();
     const touch = e.touches[0];
-    const fakeEvent = { preventDefault:()=>{}, stopPropagation:()=>{}, clientX: touch.clientX, clientY: touch.clientY };
+    const fakeEvent = {
+      preventDefault: () => {},
+      stopPropagation: () => {},
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+    };
     openBookmarkMenu(fakeEvent, book, chapter, verse);
-  }, 600);
+    lastTapTime = 0;
+    lastTapVerse = null;
+  } else {
+    // First tap — record time and verse
+    lastTapTime = now;
+    lastTapVerse = `${book}:${chapter}:${verse}`;
+  }
 }
+
 function handleTouchEnd() {
   clearTimeout(touchTimer);
 }
@@ -4877,6 +4896,5 @@ window.__STRONGS_INLINE__ = {"bereshit":{"h":"בְּרֵאשִׁית","t":"bər�
     }
   });
 </script>
-   <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
