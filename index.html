@@ -95,6 +95,9 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   max-width: 100vw;
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  box-sizing: border-box;
 }
 
 /* scrollbar */
@@ -262,8 +265,8 @@ body::before {
   border-right: 1px solid var(--border);
   overflow-y: auto;
   position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
+  top: calc(54px + max(env(safe-area-inset-top), 59px) + 1px);
+  height: calc(100vh - (54px + max(env(safe-area-inset-top), 59px) + 1px));
 }
 
 .sidebar-section {
@@ -558,22 +561,21 @@ body::before {
 }
 
 /* ════════════════════════════════════════
-   LEXICON POPUP
+   LEXICON POPUP — EXPANDED
 ════════════════════════════════════════ */
 .lexicon-popup {
   position: fixed;
   z-index: 9999;
-  width: 320px;
-  max-height: 85vh;
+  width: 340px;
+  max-height: 88vh;
   overflow-y: auto;
   background: var(--bg2);
   border: 1px solid var(--gold-dim);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow:
     0 0 0 1px rgba(201,168,76,0.05),
     0 20px 60px rgba(0,0,0,0.8),
     0 0 30px var(--gold-glow);
-  overflow: hidden;
   opacity: 0;
   transform: translateY(8px) scale(0.97);
   transition: opacity 0.2s, transform 0.2s;
@@ -589,30 +591,71 @@ body::before {
   background: linear-gradient(135deg, #0e0b04, #1a1206);
   padding: 14px 16px 12px;
   border-bottom: 1px solid var(--gold-dim);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
+.lex-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.lex-header-actions {
+  display: flex;
+  gap: 4px;
+}
+.lex-action-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.lex-action-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.lex-action-close:hover { border-color: var(--red); color: var(--red); }
+
 .lex-original {
   font-family: serif;
-  font-size: 1.8rem;
+  font-size: 2rem;
   color: var(--gold-bright);
   line-height: 1;
   direction: rtl;
+  margin-bottom: 6px;
 }
 .lex-original.greek { direction: ltr; font-style: italic; }
-.lex-header-right { flex: 1; }
 .lex-transliteration {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--gold);
-  margin-bottom: 3px;
+  margin-bottom: 6px;
+}
+.lex-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .lex-strongs {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.65rem;
   color: var(--text-dim);
+  background: var(--bg3);
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+}
+.lex-occurrences {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  font-style: italic;
 }
 .lex-lang-badge {
   font-family: 'Cinzel', serif;
@@ -621,7 +664,6 @@ body::before {
   text-transform: uppercase;
   padding: 3px 8px;
   border-radius: 20px;
-  align-self: flex-start;
 }
 .lex-lang-badge.hebrew { background: #1a1000; color: var(--gold); border: 1px solid var(--gold-dim); }
 .lex-lang-badge.greek  { background: #001020; color: var(--blue); border: 1px solid #1a3060; }
@@ -630,8 +672,19 @@ body::before {
 .lex-definition {
   font-size: 0.95rem;
   color: var(--text);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+.lex-key-verse-quote {
+  background: linear-gradient(135deg, #0a0800, #140e02);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--text-mid);
   line-height: 1.6;
-  margin-bottom: 12px;
 }
 .lex-section-title {
   font-family: 'Cinzel', serif;
@@ -640,44 +693,61 @@ body::before {
   text-transform: uppercase;
   color: var(--text-dim);
   margin-bottom: 6px;
+  margin-top: 14px;
 }
-.lex-usage {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-.lex-usage-tag {
-  font-size: 0.72rem;
+.lex-section-text {
+  font-size: 0.88rem;
   color: var(--text-mid);
+  line-height: 1.65;
+  margin-bottom: 4px;
+}
+.lex-did-you-know, .lex-apply-it {
+  display: flex;
+  gap: 10px;
   background: var(--bg3);
   border: 1px solid var(--border2);
-  padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
 }
-.lex-footer {
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
+.lex-apply-it { border-color: rgba(92,204,104,0.2); }
+.lex-dyk-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+.lex-related-words {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
 }
-.lex-premium-hint {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  font-style: italic;
-}
-.lex-close {
-  background: none;
-  border: 1px solid var(--border2);
-  color: var(--text-dim);
-  font-size: 0.7rem;
+.lex-related-tag {
+  font-size: 0.75rem;
+  color: var(--blue);
+  background: rgba(90,156,240,0.08);
+  border: 1px solid rgba(90,156,240,0.2);
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: 20px;
   cursor: pointer;
   transition: all 0.15s;
 }
-.lex-close:hover { border-color: var(--red); color: var(--red); }
+.lex-related-tag:hover { background: rgba(90,156,240,0.15); }
+.lex-key-verses { margin-top: 4px; }
+.lex-verse-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lex-verse-row:last-child { border-bottom: none; }
+.lex-verse-row:hover .lex-verse-ref { color: var(--gold); }
+.lex-verse-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  color: var(--text-mid);
+  transition: color 0.15s;
+}
+.lex-verse-arrow { font-size: 0.7rem; color: var(--text-dim); }
 
 /* ── Parasha banner in reader ── */
 .parasha-banner {
@@ -775,7 +845,129 @@ body::before {
   font-size: 1rem;
 }
 
-/* ════ PROMESA DEL DÍA ════ */
+/* ════ VERSE ACTION BOTTOM SHEET ════ */
+.verse-sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 750;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.verse-sheet-overlay.open { opacity: 1; pointer-events: auto; }
+.verse-sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--gold-dim);
+  border-radius: 20px 20px 0 0;
+  z-index: 751;
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.6), 0 0 20px var(--gold-glow);
+}
+.verse-sheet-overlay.open .verse-sheet { transform: translateY(0); }
+
+.verse-sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border2); border-radius: 2px;
+  margin: 12px auto 0;
+}
+.verse-sheet-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gold); text-align: center;
+  padding: 10px 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.verse-sheet-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.verse-sheet-btn {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 12px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.verse-sheet-btn:hover, .verse-sheet-btn:active {
+  border-color: var(--gold-dim);
+  background: var(--gold-glow);
+}
+.verse-sheet-btn-icon { font-size: 1.3rem; line-height: 1; }
+.verse-sheet-btn-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem; letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* Color picker section */
+.verse-sheet-colors {
+  padding: 14px 16px 16px;
+}
+.verse-sheet-colors-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.verse-sheet-color-row {
+  display: flex; justify-content: center; gap: 10px;
+  margin-bottom: 12px;
+}
+.verse-sheet-color-dot {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0;
+}
+.verse-sheet-color-dot.active {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+.verse-sheet-note-area {
+  margin-bottom: 12px;
+}
+.verse-sheet-note-input {
+  width: 100%; background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text); font-family: 'Crimson Pro', serif; font-size: 0.9rem;
+  padding: 10px 12px; border-radius: 8px; outline: none; resize: none;
+  transition: border 0.2s;
+}
+.verse-sheet-note-input:focus { border-color: var(--gold-dim); }
+.verse-sheet-note-input::placeholder { color: var(--text-dim); font-style: italic; }
+.verse-sheet-save-row {
+  display: flex; gap: 8px;
+}
+.verse-sheet-btn-save {
+  flex: 2;
+  background: linear-gradient(135deg, var(--gold-dim), #3a2a08);
+  border: 1px solid var(--gold-dim); color: var(--gold-bright);
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 12px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
+}
+.verse-sheet-btn-remove {
+  flex: 1;
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--red);
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1px;
+  text-transform: uppercase; padding: 12px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
+}
 .promise-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.75);
@@ -1075,29 +1267,41 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
   .app {
     grid-template-columns: 1fr;
     grid-template-areas: "topbar" "main";
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   /* ── Topbar mobile ── */
+  /* Con contentInset:always, Capacitor empuja el contenido
+     bajo la Dynamic Island automáticamente — no necesitamos padding-top */
   .topbar {
-    padding: 0 10px;
+    padding-top: 0px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 6px;
     gap: 6px;
-    height: 52px;
-    overflow: hidden;
+    min-height: 52px;
+    overflow: visible;
+    flex-wrap: nowrap;
+    align-items: center;
   }
   .logo-sep { display: none; }
-  .logo-text { font-size: 0.85rem; letter-spacing: 2px; }
+  .logo-text { font-size: 0.85rem; letter-spacing: 2px; flex-shrink: 0; }
   .logo-hebrew { font-size: 1rem; }
+  .logo { flex-shrink: 0; }
   .topbar-center { display: none; }
   .version-select { display: none; }
   .btn-premium { display: none; }
   .user-name { display: none; }
   .btn-search-open span { display: none; }
-  .btn-search-open { padding: 6px 8px; min-width: auto; }
+  .btn-search-open { padding: 6px 8px; min-width: auto; flex-shrink: 0; }
   .topbar-ciclo { display: none; }
+  .sidebar-toggle { flex-shrink: 0; }
   .streak-badge { display: flex !important; font-size: 0.6rem; padding: 3px 6px; }
   .usage-indicator { display: none !important; }
-  .btn-premium { display: flex !important; font-size: 0.5rem; padding: 4px 8px; letter-spacing: 1px; }
-  .topbar-right { gap: 6px; }
+  .btn-premium { display: flex !important; align-items: center; font-size: 0.48rem; padding: 4px 7px; letter-spacing: 0.8px; flex-shrink: 0; white-space: nowrap; }
+  .topbar-right { gap: 5px; flex-shrink: 0; }
   .theme-toggle { width: 32px; height: 32px; padding: 0; font-size: 0.85rem; }
   .user-btn { padding: 4px 8px; min-width: auto; }
   .sidebar-toggle { padding: 6px 8px; font-size: 1rem; }
@@ -1122,9 +1326,12 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
 
   /* ── Main content ── */
   .main {
-    padding: 16px 16px 100px; /* bottom padding for nav bar */
+    padding: 16px 16px 100px 16px;
     margin: 0;
     max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   /* ── Chapter header ── */
@@ -1134,16 +1341,17 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 10px;
+    width: 100%;
   }
   .chapter-badge { font-size: 0.65rem; }
+  .bible-text { font-size: 1.05rem; line-height: 1.85; overflow-wrap: break-word; word-break: break-word; }
   .btn-study-chapter, .btn-notes-chapter, .btn-read-toggle {
     font-size: 0.58rem;
     padding: 6px 10px;
     letter-spacing: 1px;
   }
 
-  /* ── Bible text ── */
-  .bible-text { font-size: 1.05rem; line-height: 1.85; }
+  /* ── Bible text ──
 
   /* ── Parasha banner ── */
   .parasha-banner {
@@ -1382,6 +1590,169 @@ html.light body::before { opacity: 0.06; }
 }
 .btn-notes-chapter:hover { border-color: var(--gold-dim); color: var(--gold); }
 .btn-notes-chapter.has-note { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+
+/* ── Interlinear button & panel ── */
+.btn-interlinear {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-interlinear:hover { border-color: var(--gold-dim); color: var(--gold); }
+.btn-interlinear.locked { opacity: 0.7; }
+.btn-interlinear .lock-icon { font-size: 0.65rem; margin-right: 2px; }
+
+.interlinear-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+  padding: 20px;
+}
+.interlinear-overlay.open { opacity: 1; pointer-events: auto; }
+.interlinear-panel {
+  background: var(--bg2);
+  border: 1px solid var(--gold-dim);
+  border-radius: 14px;
+  width: 100%; max-width: 900px;
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 30px var(--gold-glow);
+}
+.interlinear-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gold-dim);
+  background: linear-gradient(135deg, #0e0b04, #1a1206);
+}
+.interlinear-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.interlinear-close {
+  background: none; border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+}
+.interlinear-close:hover { border-color: var(--red); color: var(--red); }
+.interlinear-body {
+  padding: 20px; overflow-y: auto; flex: 1;
+}
+.interlinear-verse {
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.interlinear-verse:last-child { border-bottom: none; }
+.interlinear-verse-num {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.interlinear-words {
+  display: flex; flex-wrap: wrap; gap: 18px 14px;
+  direction: rtl;
+}
+.interlinear-word {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  min-width: 60px;
+}
+.interlinear-strongs {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--blue);
+  margin-bottom: 4px;
+}
+.interlinear-hebrew {
+  font-family: serif;
+  font-size: 1.5rem;
+  color: var(--gold-bright);
+  line-height: 1.3;
+  direction: rtl;
+}
+.interlinear-morph {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-style: italic;
+  letter-spacing: 0.3px;
+  color: var(--gold);
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.interlinear-gloss {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-mid);
+  margin-top: 6px;
+  max-width: 90px;
+}
+.interlinear-locked {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-mid);
+}
+.interlinear-locked .lock-big { font-size: 2rem; margin-bottom: 12px; }
+.interlinear-locked .btn-go-premium {
+  display: inline-block; margin-top: 16px;
+  background: var(--gold); border: none; color: #1a0e00;
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase;
+  padding: 10px 22px; border-radius: 8px; cursor: pointer; font-weight: 700;
+  text-decoration: none;
+}
+
+/* ── Settings toggle for interlinear ── */
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.settings-row-label {
+  font-size: 0.75rem; color: var(--text);
+}
+.settings-row-desc {
+  font-size: 0.6rem; color: var(--text-dim); margin-top: 2px;
+}
+.toggle-switch {
+  position: relative; width: 40px; height: 22px;
+  background: var(--border2); border-radius: 12px;
+  cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--gold); }
+.toggle-switch-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bg2); transition: transform 0.2s;
+}
+.toggle-switch.on .toggle-switch-knob { transform: translateX(18px); background: #1a0e00; }
+
+@media (max-width: 700px) {
+  .interlinear-words { gap: 14px 10px; }
+  .interlinear-hebrew { font-size: 1.2rem; }
+  .interlinear-word { min-width: 50px; }
+  .interlinear-gloss { font-size: 0.6rem; max-width: 70px; }
+}
 
 /* ── Notes panel ── */
 .notes-overlay {
@@ -1858,21 +2229,90 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 <!-- ══ LEXICON POPUP ══ -->
 <div class="lexicon-popup" id="lexiconPopup">
   <div class="lex-header">
-    <div id="lexOriginal" class="lex-original"></div>
-    <div class="lex-header-right">
-      <div id="lexTranslit" class="lex-transliteration"></div>
-      <div id="lexStrongs" class="lex-strongs"></div>
+    <div class="lex-header-top">
+      <span id="lexLangBadge" class="lex-lang-badge hebrew">Hebreo</span>
+      <div class="lex-header-actions">
+        <button class="lex-action-btn" onclick="copyLexicon()" title="Copiar">⎘</button>
+        <button class="lex-action-btn" onclick="shareLexicon()" title="Compartir">↗</button>
+        <button class="lex-action-btn lex-action-close" onclick="closeLexicon()">✕</button>
+      </div>
     </div>
-    <span id="lexLangBadge" class="lex-lang-badge hebrew">Hebreo</span>
+    <div id="lexOriginal" class="lex-original"></div>
+    <div id="lexTranslit" class="lex-transliteration"></div>
+    <div class="lex-meta-row">
+      <span id="lexStrongs" class="lex-strongs"></span>
+      <span id="lexOccurrences" class="lex-occurrences"></span>
+    </div>
   </div>
-  <div class="lex-body">
+
+  <div class="lex-body" id="lexBody">
+    <!-- Definition -->
     <div id="lexDef" class="lex-definition"></div>
-    <div class="lex-section-title">Usos en la Escritura</div>
-    <div id="lexUsage" class="lex-usage"></div>
+
+    <!-- Key verse quote -->
+    <div id="lexKeyVerseQuote" class="lex-key-verse-quote" style="display:none"></div>
+
+    <!-- Theological meaning -->
+    <div id="lexTheologicalWrap" style="display:none">
+      <div class="lex-section-title">⛪ Significado Bíblico</div>
+      <div id="lexTheological" class="lex-section-text"></div>
+    </div>
+
+    <!-- Word origin -->
+    <div id="lexOriginWrap" style="display:none">
+      <div class="lex-section-title">📜 Origen de la Palabra</div>
+      <div id="lexOrigin" class="lex-section-text"></div>
+    </div>
+
+    <!-- Did you know -->
+    <div id="lexDidYouKnowWrap" style="display:none">
+      <div class="lex-did-you-know">
+        <span class="lex-dyk-icon">💡</span>
+        <div>
+          <div class="lex-section-title" style="margin-bottom:4px">¿Sabías que?</div>
+          <div id="lexDidYouKnow" class="lex-section-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Apply it -->
+    <div id="lexApplyWrap" style="display:none">
+      <div class="lex-apply-it">
+        <span class="lex-dyk-icon">❤️</span>
+        <div>
+          <div class="lex-section-title" style="margin-bottom:4px">Aplícalo</div>
+          <div id="lexApply" class="lex-section-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related words -->
+    <div id="lexRelatedWrap" style="display:none">
+      <div class="lex-section-title">Palabras Relacionadas</div>
+      <div id="lexRelated" class="lex-related-words"></div>
+    </div>
+
+    <!-- Key verses -->
+    <div id="lexVersesWrap" style="display:none">
+      <div class="lex-section-title">Explorar en la Escritura</div>
+      <div id="lexVerses" class="lex-key-verses"></div>
+    </div>
   </div>
-  <div class="lex-footer">
-    <span class="lex-premium-hint">✦ Análisis completo en Premium</span>
-    <button class="lex-close" onclick="closeLexicon()">Cerrar</button>
+</div>
+
+<!-- ══ INTERLINEAR OVERLAY ══ -->
+<div class="interlinear-overlay" id="interlinearOverlay">
+  <div class="interlinear-panel">
+    <div class="interlinear-head">
+      <div class="interlinear-title" id="interlinearTitle">Modo Interlineal</div>
+      <button class="interlinear-close" onclick="closeInterlinear()">✕ Cerrar</button>
+    </div>
+    <div class="interlinear-body" id="interlinearBody">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Cargando interlineal</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1954,6 +2394,15 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
 
     <!-- Stats -->
     <div class="profile-content active" id="pcontent-stats">
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">📜 Modo Interlineal automático</div>
+          <div class="settings-row-desc">Abrir el análisis hebreo/griego al tocar "Interlineal" en cada capítulo</div>
+        </div>
+        <div class="toggle-switch" id="interlinearToggle" onclick="toggleInterlinearPref()">
+          <div class="toggle-switch-knob"></div>
+        </div>
+      </div>
       <div class="stats-grid" id="statsGrid"></div>
     </div>
 
@@ -1986,6 +2435,56 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
     <button class="bm-btn-interpret" onclick="interpretVerse()">
       ✦ Interpretar versículo
     </button>
+  </div>
+</div>
+
+<!-- ══ VERSE ACTION BOTTOM SHEET ══ -->
+<div class="verse-sheet-overlay" id="verseSheetOverlay" onclick="closeVerseSheetOutside(event)">
+  <div class="verse-sheet" id="verseSheet">
+    <div class="verse-sheet-handle"></div>
+    <div class="verse-sheet-ref" id="verseSheetRef">Génesis 1:1</div>
+
+    <!-- Action buttons -->
+    <div class="verse-sheet-actions">
+      <button class="verse-sheet-btn" onclick="verseSheetAction('explain')">
+        <span class="verse-sheet-btn-icon">✦</span>
+        <span class="verse-sheet-btn-label">Explicar</span>
+      </button>
+      <button class="verse-sheet-btn" onclick="verseSheetAction('interlinear')">
+        <span class="verse-sheet-btn-icon">📜</span>
+        <span class="verse-sheet-btn-label">Interlineal</span>
+      </button>
+      <button class="verse-sheet-btn" onclick="verseSheetAction('deep')">
+        <span class="verse-sheet-btn-icon">📖</span>
+        <span class="verse-sheet-btn-label">Estudio profundo</span>
+      </button>
+      <button class="verse-sheet-btn" onclick="verseSheetAction('note')">
+        <span class="verse-sheet-btn-icon">📝</span>
+        <span class="verse-sheet-btn-label">Nota</span>
+      </button>
+      <button class="verse-sheet-btn" onclick="verseSheetAction('share')">
+        <span class="verse-sheet-btn-icon">↗</span>
+        <span class="verse-sheet-btn-label">Compartir</span>
+      </button>
+      <button class="verse-sheet-btn" onclick="verseSheetAction('copy')">
+        <span class="verse-sheet-btn-icon">⎘</span>
+        <span class="verse-sheet-btn-label">Copiar</span>
+      </button>
+    </div>
+
+    <!-- Color picker -->
+    <div class="verse-sheet-colors">
+      <div class="verse-sheet-colors-title">Resaltar versículo</div>
+      <div class="verse-sheet-color-row" id="verseSheetColorRow"></div>
+      <div class="verse-sheet-note-area">
+        <textarea class="verse-sheet-note-input" id="verseSheetNote"
+          placeholder="Añadir nota al marcador (opcional)..." rows="2"></textarea>
+      </div>
+      <div class="verse-sheet-save-row">
+        <button class="verse-sheet-btn-save" onclick="verseSheetSave()">✓ Guardar marcador</button>
+        <button class="verse-sheet-btn-remove" onclick="verseSheetRemove()">Quitar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2458,6 +2957,9 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
         <button class="btn-notes-chapter" onclick="openChapterNotes('${state.currentBook}','${bookName}',${chapterNum})" id="notesBtn">
           📝 <span id="notesBtnLabel">Notas</span>
         </button>
+        <button class="btn-interlinear" onclick="openInterlinear('${state.currentBook}', ${chapterNum})">
+          📜 Interlineal
+        </button>
         <button class="btn-read-toggle ${isRead ? 'done' : ''}" id="readToggleBtn" onclick="toggleRead()">
           <span class="check-icon">${isRead ? '✓' : '○'}</span>
           ${isRead ? 'Leído' : 'Marcar leído'}
@@ -2476,7 +2978,7 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
     const bmDot = bm ? `<span class="bookmark-dot bm-${bm.color}" title="${BOOKMARK_CATEGORIES[bm.color]?.name || ''}"></span>` : '';
     html += `<span class="verse ${bmClass}" id="v-${v.num}" 
       data-verse="${v.num}"
-      oncontextmenu="openBookmarkMenu(event,'${state.currentBook}',${chapterNum},${v.num})"
+      oncontextmenu="openVerseSheetDesktop(event,'${state.currentBook}',${chapterNum},${v.num})"
       ontouchstart="handleTouchStart(event,'${state.currentBook}',${chapterNum},${v.num})"
       ontouchend="handleTouchEnd()"
     >${bmDot}<sup class="verse-num">${v.num}</sup>${clickable} </span>`;
@@ -2529,6 +3031,7 @@ async function loadChapter(bookId, chapterNum) {
     ]);
     const verses = parseLocalChapter(chapterObj);
     renderBibleText(verses, bookName, chapterNum, parasha);
+    warmInterlinearCache(bookId, chapterNum);
   } catch (err) {
     main.innerHTML = `
       <div class="loading">
@@ -2692,6 +3195,9 @@ async function lookupWord(event, cleanWord, rawWord) {
   document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
   event.target.classList.add('highlighted');
 
+  if (lexiconLoading) return;
+  lexiconLoading = true;
+
   const popup = document.getElementById('lexiconPopup');
 
   // Try API first (AI-powered with AT/NT detection)
@@ -2721,54 +3227,19 @@ async function lookupWord(event, cleanWord, rawWord) {
         return;
       }
       if (data.found) {
-        document.getElementById('lexOriginal').textContent = data.lemma;
-        document.getElementById('lexOriginal').className = `lex-original ${data.language === 'griego' ? 'greek' : ''}`;
-        document.getElementById('lexTranslit').textContent = data.transliteration || '';
-        document.getElementById('lexStrongs').textContent = `${data.strongs} · ${data.pronunciation || ''}`;
-
-        const badge = document.getElementById('lexLangBadge');
-        badge.textContent = data.language === 'hebreo' ? 'Hebreo' : 'Griego';
-        badge.className = `lex-lang-badge ${data.language === 'hebreo' ? 'hebrew' : 'greek'}`;
-
-        document.getElementById('lexDef').textContent = data.definition;
-        document.getElementById('lexUsage').innerHTML = '';
-
-        positionAndShowPopup(popup, event);
+        populateLexiconPopup(data, event);
+        lexiconLoading = false;
         return;
       }
     }
   } catch(e) {
-    // Fall through to local data
+    // Fall through
   }
 
-  // Fallback to local strongs.json
-  const strongs = await loadStrongs();
-  const raw = cleanWord.toLowerCase();
-  const noAccent = raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-záéíóúüñ]/g,'');
-  const noAccentClean = noAccent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
-  const entry = strongs[raw] || strongs[noAccent] || strongs[noAccentClean];
-
-  if (!entry) {
-    popup.classList.remove('visible');
-    document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
-    return;
-  }
-
-  document.getElementById('lexOriginal').textContent = entry.h;
-  document.getElementById('lexOriginal').className = `lex-original ${entry.l === 'griego' ? 'greek' : ''}`;
-  document.getElementById('lexTranslit').textContent = entry.t;
-  document.getElementById('lexStrongs').textContent = entry.s;
-
-  const badge = document.getElementById('lexLangBadge');
-  badge.textContent = entry.l === 'hebreo' ? 'Hebreo' : 'Griego';
-  badge.className = `lex-lang-badge ${entry.l === 'hebreo' ? 'hebrew' : 'greek'}`;
-
-  document.getElementById('lexDef').textContent = entry.d;
-  document.getElementById('lexUsage').innerHTML = entry.u.map(u =>
-    `<span class="lex-usage-tag">${u}</span>`
-  ).join('');
-
-  positionAndShowPopup(popup, event);
+  // Si la API no respondió con datos, no mostrar nada
+  popup.classList.remove('visible');
+  document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
+  lexiconLoading = false;
 }
 
 function positionAndShowPopup(popup, event) {
@@ -2800,6 +3271,127 @@ function positionAndShowPopup(popup, event) {
   popup.classList.add('visible');
 }
 
+function populateLexiconPopup(data, event) {
+  const popup = document.getElementById('lexiconPopup');
+
+  // Header
+  document.getElementById('lexOriginal').textContent = data.lemma || data.h || '';
+  document.getElementById('lexOriginal').className = `lex-original ${data.language === 'griego' ? 'greek' : ''}`;
+  document.getElementById('lexTranslit').textContent = data.transliteration || data.t || '';
+
+  const strongs = data.strongs || data.s || '';
+  const pronunciation = data.pronunciation || '';
+  document.getElementById('lexStrongs').textContent = strongs;
+  document.getElementById('lexOccurrences').textContent = data.occurrences || '';
+
+  const badge = document.getElementById('lexLangBadge');
+  const lang = data.language || data.l || 'hebreo';
+  badge.textContent = lang === 'hebreo' ? 'Hebreo' : 'Griego';
+  badge.className = `lex-lang-badge ${lang === 'hebreo' ? 'hebrew' : 'greek'}`;
+
+  // Definition
+  const def = data.definition || data.d || '';
+  const pronNote = pronunciation ? ` (${pronunciation})` : '';
+  document.getElementById('lexDef').textContent = def + (pronNote && !def.includes(pronunciation) ? '' : '');
+
+  // Theological meaning
+  const theolWrap = document.getElementById('lexTheologicalWrap');
+  const theol = data.theological_meaning;
+  if (theol) {
+    document.getElementById('lexTheological').textContent = theol;
+    theolWrap.style.display = '';
+  } else theolWrap.style.display = 'none';
+
+  // Word origin
+  const originWrap = document.getElementById('lexOriginWrap');
+  const origin = data.word_origin;
+  if (origin) {
+    document.getElementById('lexOrigin').textContent = origin;
+    originWrap.style.display = '';
+  } else originWrap.style.display = 'none';
+
+  // Did you know
+  const dykWrap = document.getElementById('lexDidYouKnowWrap');
+  const dyk = data.did_you_know;
+  if (dyk) {
+    document.getElementById('lexDidYouKnow').textContent = dyk;
+    dykWrap.style.display = '';
+  } else dykWrap.style.display = 'none';
+
+  // Apply it
+  const applyWrap = document.getElementById('lexApplyWrap');
+  const apply = data.apply_it;
+  if (apply) {
+    document.getElementById('lexApply').textContent = apply;
+    applyWrap.style.display = '';
+  } else applyWrap.style.display = 'none';
+
+  // Related words
+  const relWrap = document.getElementById('lexRelatedWrap');
+  const related = data.related_words;
+  if (related && related.length > 0) {
+    document.getElementById('lexRelated').innerHTML = related.map(w =>
+      `<span class="lex-related-tag" onclick="lookupStrongs(event,'${w.strongs}')">${w.word} — ${w.translation}</span>`
+    ).join('');
+    relWrap.style.display = '';
+  } else relWrap.style.display = 'none';
+
+  // Key verses
+  const versesWrap = document.getElementById('lexVersesWrap');
+  const verses = data.key_verses;
+  if (verses && verses.length > 0) {
+    document.getElementById('lexVerses').innerHTML = verses.map(v =>
+      `<div class="lex-verse-row" onclick="closeLexicon(); goToVerse('${v.bookId}',${v.chapter},${v.verse})">
+        <span class="lex-verse-ref">${v.ref}</span>
+        <span class="lex-verse-arrow">📖</span>
+      </div>`
+    ).join('');
+    versesWrap.style.display = '';
+  } else versesWrap.style.display = 'none';
+
+  // Key verse quote (first key verse as pull quote) — only if no theological meaning to avoid too much
+  const quoteEl = document.getElementById('lexKeyVerseQuote');
+  quoteEl.style.display = 'none';
+
+  // Usage tags (legacy local data)
+  if (data.u && data.u.length > 0) {
+    // If we have old-style usage tags, show them as related
+    if (!related || related.length === 0) {
+      document.getElementById('lexRelated').innerHTML = data.u.map(u =>
+        `<span class="lex-related-tag">${u}</span>`
+      ).join('');
+      relWrap.style.display = '';
+    }
+  }
+
+  if (event) positionAndShowPopup(popup, event);
+  else popup.classList.add('visible');
+}
+
+// Copy lexicon content to clipboard
+function copyLexicon() {
+  const lemma = document.getElementById('lexOriginal').textContent;
+  const translit = document.getElementById('lexTranslit').textContent;
+  const strongs = document.getElementById('lexStrongs').textContent;
+  const def = document.getElementById('lexDef').textContent;
+  const text = `${lemma} (${translit}) — ${strongs}\n${def}`;
+  navigator.clipboard?.writeText(text).then(() => showToast('✓ Copiado al portapapeles'));
+}
+
+// Share lexicon
+function shareLexicon() {
+  const lemma = document.getElementById('lexOriginal').textContent;
+  const translit = document.getElementById('lexTranslit').textContent;
+  const strongs = document.getElementById('lexStrongs').textContent;
+  const def = document.getElementById('lexDef').textContent;
+  const text = `${lemma} (${translit}) — ${strongs}\n${def}\n\nEstudiado en KODESH · kodeshbible.com`;
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(text).then(() => showToast('✓ Copiado para compartir'));
+  }
+}
+
 function closeLexicon() {
   document.getElementById('lexiconPopup').classList.remove('visible');
   document.querySelectorAll('.word.highlighted').forEach(w => w.classList.remove('highlighted'));
@@ -2808,6 +3400,7 @@ function closeLexicon() {
 // Close popup on outside click
 document.addEventListener('click', (e) => {
   const popup = document.getElementById('lexiconPopup');
+  if (!popup.classList.contains('visible')) return;
   if (!popup.contains(e.target) && !e.target.classList.contains('word')) {
     closeLexicon();
   }
@@ -2971,6 +3564,171 @@ function showLimitModal(type, err) {
 function closeLimitModal(e) {
   if (e.target === document.getElementById('limitOverlay')) {
     document.getElementById('limitOverlay').classList.remove('open');
+  }
+}
+
+/* ════════════════════════════════════
+   INTERLINEAR MODE (Premium)
+════════════════════════════════════ */
+// Silently pre-generate the interlinear cache for this chapter, for ALL
+// users (free included). Fire-and-forget — no UI feedback, no blocking,
+// no plan check. Helps the cache grow organically with normal traffic so
+// premium users get instant results.
+function warmInterlinearCache(bookId, chapterNum) {
+  try {
+    kapiFetch('/api/interlinear-warm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ book: bookId, chapter: chapterNum })
+    }).catch(() => {});
+  } catch(e) {}
+}
+
+function toggleInterlinearPref() {
+  const t = document.getElementById('interlinearToggle');
+  const isOn = t.classList.toggle('on');
+  localStorage.setItem('kodesh_interlinear_pref', isOn ? '1' : '0');
+}
+
+function initInterlinearPref() {
+  const pref = localStorage.getItem('kodesh_interlinear_pref') === '1';
+  const t = document.getElementById('interlinearToggle');
+  if (t) t.classList.toggle('on', pref);
+}
+
+async function openInterlinear(bookId, chapterNum) {
+  const overlay = document.getElementById('interlinearOverlay');
+  const body = document.getElementById('interlinearBody');
+  const title = document.getElementById('interlinearTitle');
+  const bookData = getAllBooks().find(b => b.id === bookId);
+  const bookName = bookData ? bookData.name : bookId;
+
+  title.textContent = `Interlineal · ${bookName} ${chapterNum}`;
+  overlay.classList.add('open');
+  body.innerHTML = `
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Cargando interlineal</div>
+    </div>
+  `;
+
+  // Check premium
+  if (!userUsage || userUsage.plan !== 'premium') {
+    body.innerHTML = `
+      <div class="interlinear-locked">
+        <div class="lock-big">🔒</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">
+          Función Premium
+        </div>
+        <div style="font-size:0.8rem;line-height:1.6">
+          El Modo Interlineal te muestra el texto hebreo original de cada versículo,
+          palabra por palabra, con su número Strong's, análisis morfológico y traducción.
+        </div>
+        <button class="btn-go-premium" onclick="closeInterlinear(); goToPremium();">✦ Conocer Premium</button>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const res = await kapiFetch('/api/interlinear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ book: bookId, chapter: chapterNum, userId: currentUser?.id || null })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.error === 'not_available') {
+        body.innerHTML = `
+          <div class="interlinear-locked">
+            <div class="lock-big">📜</div>
+            <div style="font-size:0.85rem;line-height:1.6">
+              ${data.message || 'El Modo Interlineal aún no está disponible para este capítulo.'}
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-top:14px">
+              Por ahora disponible en: Génesis 1
+            </div>
+          </div>
+        `;
+        return;
+      }
+      throw new Error(data.message || data.error || 'Error al cargar interlineal');
+    }
+
+    renderInterlinear(data);
+  } catch(e) {
+    body.innerHTML = `<div class="interlinear-locked">⚠️ ${e.message}</div>`;
+  }
+}
+
+function renderInterlinear(data) {
+  const body = document.getElementById('interlinearBody');
+  const verseNums = Object.keys(data.verses).map(Number).sort((a,b) => a-b);
+
+  let html = '';
+  verseNums.forEach(vnum => {
+    const words = data.verses[vnum];
+    html += `<div class="interlinear-verse">
+      <div class="interlinear-verse-num">Versículo ${vnum}</div>
+      <div class="interlinear-words">`;
+    words.forEach(w => {
+      const cleanText = (w.text || '').replace(/\//g, '');
+      html += `<div class="interlinear-word">
+        <div class="interlinear-strongs" ${w.strongs ? `onclick="lookupStrongs(event,'${w.strongs}')" style="cursor:pointer;text-decoration:underline dotted"` : ''}>${w.strongs || ''}</div>
+        <div class="interlinear-hebrew">${cleanText}</div>
+        <div class="interlinear-morph">${w.translit || ''}</div>
+        <div class="interlinear-gloss">${w.gloss || ''}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  body.innerHTML = html || '<div class="interlinear-locked">Sin datos para mostrar.</div>';
+}
+
+function closeInterlinear() {
+  document.getElementById('interlinearOverlay').classList.remove('open');
+}
+
+async function lookupStrongs(event, strongsCode) {
+  event.stopPropagation();
+  const popup = document.getElementById('lexiconPopup');
+
+  document.getElementById('lexOriginal').textContent = '...';
+  document.getElementById('lexTranslit').textContent = '';
+  document.getElementById('lexStrongs').textContent = strongsCode;
+  document.getElementById('lexOccurrences').textContent = '';
+  document.getElementById('lexDef').textContent = 'Cargando...';
+  document.getElementById('lexTheologicalWrap').style.display = 'none';
+  document.getElementById('lexOriginWrap').style.display = 'none';
+  document.getElementById('lexDidYouKnowWrap').style.display = 'none';
+  document.getElementById('lexApplyWrap').style.display = 'none';
+  document.getElementById('lexRelatedWrap').style.display = 'none';
+  document.getElementById('lexVersesWrap').style.display = 'none';
+  positionAndShowPopup(popup, event);
+
+  try {
+    const apiRes = await kapiFetch('/api/lexicon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ strongsCode, bookId: state.currentBook, userId: currentUser?.id || null })
+    });
+    const data = await apiRes.json();
+
+    if (data.error === 'limit_reached') {
+      popup.classList.remove('visible');
+      showLimitModal('lexicon', data);
+      return;
+    }
+
+    if (data.found) {
+        populateLexiconPopup(data, null);
+      } else {
+        document.getElementById('lexDef').textContent = 'No se encontró información para este Strong\'s.';
+      }
+  } catch(e) {
+    document.getElementById('lexDef').textContent = 'Error al cargar la definición.';
   }
 }
 
@@ -3357,6 +4115,7 @@ function openProfile() {
   document.getElementById('profileEmail').textContent = user.email;
 
   switchProfileTab('stats');
+  initInterlinearPref();
   document.getElementById('profileOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -3804,6 +4563,9 @@ let bmState = {
   filter: 'all',
 };
 let touchTimer = null;
+let lastTapTime = 0;
+let lastTapVerse = null;
+let lexiconLoading = false;
 
 // Build color grid in menu
 function buildColorGrid() {
@@ -3854,6 +4616,145 @@ function filterBookmarks(color, el) {
 }
 
 /* ── Open bookmark context menu ── */
+/* ════════════════════════════════════
+   VERSE ACTION BOTTOM SHEET
+════════════════════════════════════ */
+let verseSheetState = { book: '', chapter: 0, verse: 0, selectedColor: 'blue' };
+
+function openVerseSheet(book, chapter, verse) {
+  verseSheetState = { book, chapter, verse, selectedColor: 'blue' };
+
+  const bookName = getAllBooks().find(b => b.id === book)?.abbr || book;
+  document.getElementById('verseSheetRef').textContent = `${bookName} ${chapter}:${verse}`;
+
+  // Build color dots
+  const row = document.getElementById('verseSheetColorRow');
+  row.innerHTML = Object.entries(BOOKMARK_CATEGORIES).map(([key, cat]) => {
+    const existing = state.bookmarks[`${book}:${chapter}:${verse}`];
+    const isActive = existing?.color === key;
+    return `<div class="verse-sheet-color-dot ${isActive ? 'active' : ''}"
+      style="background:${cat.color}"
+      title="${cat.name}"
+      onclick="selectVerseSheetColor('${key}', this)"></div>`;
+  }).join('');
+
+  // Pre-fill note if exists
+  const existing = state.bookmarks[`${book}:${chapter}:${verse}`];
+  document.getElementById('verseSheetNote').value = existing?.note || '';
+  if (existing) verseSheetState.selectedColor = existing.color;
+
+  document.getElementById('verseSheetOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeVerseSheet() {
+  document.getElementById('verseSheetOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeVerseSheetOutside(e) {
+  if (e.target === document.getElementById('verseSheetOverlay')) closeVerseSheet();
+}
+
+function selectVerseSheetColor(color, el) {
+  verseSheetState.selectedColor = color;
+  document.querySelectorAll('.verse-sheet-color-dot').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function verseSheetAction(action) {
+  const { book, chapter, verse } = verseSheetState;
+  closeVerseSheet();
+
+  if (action === 'explain') {
+    const verseEl = document.getElementById(`v-${verse}`);
+    const verseText = verseEl ? verseEl.textContent.trim().slice(0, 200) : '';
+    const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+    openAssistant(bookName, chapter);
+    setTimeout(() => {
+      const input = document.getElementById('assistantInput');
+      if (input) {
+        input.value = `Explica ${bookName} ${chapter}:${verse} — "${verseText}"`;
+        sendMessage();
+      }
+    }, 500);
+  }
+  else if (action === 'interlinear') {
+    openInterlinear(book, chapter);
+  }
+  else if (action === 'deep') {
+    const verseEl = document.getElementById(`v-${verse}`);
+    const verseText = verseEl ? verseEl.textContent.trim().slice(0, 300) : '';
+    const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+    openAssistant(bookName, chapter);
+    setTimeout(() => {
+      const input = document.getElementById('assistantInput');
+      if (input) {
+        input.value = `Haz un estudio profundo de ${bookName} ${chapter}:${verse} desde una perspectiva Hebreo-Mesiánica. Incluye:\n1. Contexto histórico\n2. Análisis del idioma original (hebreo/griego)\n3. Conexiones Torah→Profetas→Brit Hadashá\n4. Cumplimiento mesiánico en Yeshúa\n5. Aplicación práctica\n\nTexto: "${verseText}"`;
+        sendMessage();
+      }
+    }, 500);
+  }
+  else if (action === 'note') {
+    const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+    openChapterNotes(book, bookName, chapter);
+  }
+  else if (action === 'share') {
+    const verseEl = document.getElementById(`v-${verse}`);
+    const verseText = verseEl ? verseEl.textContent.trim() : '';
+    const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+    const text = `"${verseText}"\n— ${bookName} ${chapter}:${verse}\n\nEstudiado en KODESH · kodeshbible.com`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => showToast('✓ Versículo copiado'));
+    }
+  }
+  else if (action === 'copy') {
+    const verseEl = document.getElementById(`v-${verse}`);
+    const verseText = verseEl ? verseEl.textContent.trim() : '';
+    const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+    navigator.clipboard?.writeText(`"${verseText}" — ${bookName} ${chapter}:${verse}`)
+      .then(() => showToast('✓ Versículo copiado'));
+  }
+}
+
+function verseSheetSave() {
+  const { book, chapter, verse, selectedColor } = verseSheetState;
+  const note = document.getElementById('verseSheetNote').value.trim();
+  const key = `${book}:${chapter}:${verse}`;
+  const verseEl = document.getElementById(`v-${verse}`);
+  const verseText = verseEl ? verseEl.textContent.replace(/^\d+/, '').trim().slice(0, 80) : '';
+
+  state.bookmarks[key] = {
+    book, chapter, verse, color: selectedColor, note,
+    text: verseText, savedAt: Date.now(),
+  };
+  saveBookmarksLocal();
+  saveBookmarkToCloud(state.bookmarks[key]);
+  closeVerseSheet();
+  loadChapter(state.currentBook, state.currentChapter);
+  renderBookmarkList();
+  showToast(`${BOOKMARK_CATEGORIES[selectedColor].emoji} Marcador guardado`);
+}
+
+function verseSheetRemove() {
+  const { book, chapter, verse } = verseSheetState;
+  const key = `${book}:${chapter}:${verse}`;
+  delete state.bookmarks[key];
+  saveBookmarksLocal();
+  removeBookmarkFromCloud(book, chapter, verse);
+  closeVerseSheet();
+  loadChapter(state.currentBook, state.currentChapter);
+  renderBookmarkList();
+  showToast('Marcador eliminado');
+}
+
+function openVerseSheetDesktop(e, book, chapter, verse) {
+  e.preventDefault();
+  openVerseSheet(book, chapter, verse);
+}
+
 function openBookmarkMenu(e, book, chapter, verse) {
   e.preventDefault();
   e.stopPropagation();
@@ -3930,12 +4831,22 @@ async function interpretVerse() {
 
 /* ── Touch support (long press) ── */
 function handleTouchStart(e, book, chapter, verse) {
-  touchTimer = setTimeout(() => {
-    const touch = e.touches[0];
-    const fakeEvent = { preventDefault:()=>{}, stopPropagation:()=>{}, clientX: touch.clientX, clientY: touch.clientY };
-    openBookmarkMenu(fakeEvent, book, chapter, verse);
-  }, 600);
+  const now = Date.now();
+  const DOUBLE_TAP_DELAY = 300; // ms between taps to count as double tap
+
+  if (lastTapVerse === `${book}:${chapter}:${verse}` && now - lastTapTime < DOUBLE_TAP_DELAY) {
+    // Double tap detected on same verse
+    e.preventDefault();
+    openVerseSheet(book, chapter, verse);
+    lastTapTime = 0;
+    lastTapVerse = null;
+  } else {
+    // First tap — record time and verse
+    lastTapTime = now;
+    lastTapVerse = `${book}:${chapter}:${verse}`;
+  }
 }
+
 function handleTouchEnd() {
   clearTimeout(touchTimer);
 }
