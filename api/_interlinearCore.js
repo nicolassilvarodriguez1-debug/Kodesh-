@@ -53,12 +53,21 @@ export function groupByVerse(rows, fields) {
   return verses;
 }
 
-// Call Claude Haiku for one verse: returns array of { gloss, translit }
+// Call Claude Haiku for one verse: returns array of { gloss, translit, strongs }
 export async function generateVerseData(words, language, verseRef) {
   const lang = language === 'griego' ? 'griego' : 'hebreo';
   const wordsList = words.map((w, i) => `${i + 1}. "${w.original_text}" (Strong's: ${w.strongs || '?'})`).join('\n');
+  const needsStrongs = words.some(w => !w.strongs);
 
-  const system = `Léxico ${lang} bíblico, KODESH (Hebreo-Mesiánico). Para cada palabra da:
+  const system = needsStrongs
+    ? `Léxico ${lang} bíblico, KODESH (Hebreo-Mesiánico). Para cada palabra da:
+1. "gloss": traducción breve al español en contexto (1-4 palabras)
+2. "translit": transliteración fonética latina (ej: bereshit, logos, agape)
+3. "strongs": número Strong's correcto para esa palabra (formato "${lang === 'griego' ? 'G####' : 'H####'}"), determinado a partir de la palabra y su contexto.
+Usa: YHWH, Yeshúa, Mashíaj.
+SOLO array JSON, sin texto extra: [{"gloss":"...","translit":"...","strongs":"${lang === 'griego' ? 'G26' : 'H776'}"}]
+Mismo número de elementos que palabras, mismo orden.`
+    : `Léxico ${lang} bíblico, KODESH (Hebreo-Mesiánico). Para cada palabra da:
 1. "gloss": traducción breve al español en contexto (1-4 palabras)
 2. "translit": transliteración fonética latina (ej: bereshit, logos, agape)
 Usa: YHWH, Yeshúa, Mashíaj.
@@ -132,7 +141,7 @@ export async function generateChapter(bookU, chapterN, source, concurrency = 5) 
 
       resultVerses[vnum] = words.map((w, idx) => ({
         text: w.original_text,
-        strongs: w.strongs,
+        strongs: w.strongs || genData[idx]?.strongs || '',
         translit: genData[idx]?.translit || '',
         gloss: genData[idx]?.gloss || '',
         language: w.language,
@@ -145,7 +154,7 @@ export async function generateChapter(bookU, chapterN, source, concurrency = 5) 
           verse: vnum,
           word_order: w.word_order,
           original_text: w.original_text,
-          strongs: w.strongs,
+          strongs: w.strongs || genData[idx]?.strongs || '',
           transliteration: genData[idx]?.translit || '',
           gloss: genData[idx]?.gloss || '',
           language: w.language,
