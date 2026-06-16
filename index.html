@@ -1282,9 +1282,11 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
     padding-bottom: 6px;
     gap: 6px;
     min-height: 52px;
-    overflow: visible;
+    overflow: hidden;
     flex-wrap: nowrap;
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
   }
   .logo-sep { display: none; }
   .logo-text { font-size: 0.85rem; letter-spacing: 2px; flex-shrink: 0; }
@@ -1292,16 +1294,19 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
   .logo { flex-shrink: 0; }
   .topbar-center { display: none; }
   .version-select { display: none; }
-  .btn-premium { display: none; }
   .user-name { display: none; }
   .btn-search-open span { display: none; }
   .btn-search-open { padding: 6px 8px; min-width: auto; flex-shrink: 0; }
   .topbar-ciclo { display: none; }
   .sidebar-toggle { flex-shrink: 0; }
-  .streak-badge { display: flex !important; font-size: 0.6rem; padding: 3px 6px; }
+  .streak-badge { display: flex !important; font-size: 0.6rem; padding: 3px 6px; flex-shrink: 0; }
   .usage-indicator { display: none !important; }
-  .btn-premium { display: flex !important; align-items: center; font-size: 0.48rem; padding: 4px 7px; letter-spacing: 0.8px; flex-shrink: 0; white-space: nowrap; }
-  .topbar-right { gap: 5px; flex-shrink: 0; }
+  .btn-premium {
+    display: flex !important; align-items: center; font-size: 0.48rem;
+    padding: 4px 7px; letter-spacing: 0.8px; white-space: nowrap;
+    flex-shrink: 1; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar-right { gap: 5px; flex-shrink: 1; min-width: 0; overflow: hidden; }
   .theme-toggle { width: 32px; height: 32px; padding: 0; font-size: 0.85rem; }
   .user-btn { padding: 4px 8px; min-width: auto; }
   .sidebar-toggle { padding: 6px 8px; font-size: 1rem; }
