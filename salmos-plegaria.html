@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Salmos de Plegaria · KODESH</title>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim: #5a4820;
+  --gold-glow: rgba(201,168,76,0.15);
+  --bg: #05050a;
+  --bg2: #0a0a12;
+  --bg3: #0f0f1a;
+  --bg4: #141428;
+  --border: #1a1a2a;
+  --border2: #252538;
+  --text: #ede5d5;
+  --text-mid: #a09880;
+  --text-dim: #5a5870;
+  --green: #5ccc68;
+  --blue: #5a9cf0;
+  --red: #e05a5a;
+}
+html.light {
+  --gold: #8a6010;
+  --gold-bright: #6a4808;
+  --gold-dim: #d4a855;
+  --gold-glow: rgba(138,96,16,0.10);
+  --bg: #faf8f4;
+  --bg2: #f3efe8;
+  --bg3: #ece7dc;
+  --bg4: #e4ddd0;
+  --border: #ddd6c8;
+  --border2: #cec5b4;
+  --text: #1a1610;
+  --text-mid: #5a4e38;
+  --text-dim: #9a8e78;
+  --green: #2a8a30;
+  --blue: #1a5a9a;
+  --red: #c03030;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg2); position: sticky; top: 0; z-index: 50;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-hebrew { font-family: serif; font-size: 1.3rem; color: var(--gold); }
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; }
+.topbar-spacer { flex: 1; }
+.theme-toggle {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center; font-size: 1rem; flex-shrink: 0;
+}
+.theme-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
+.back-link {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+  border: 1px solid var(--border2); padding: 7px 14px; border-radius: 6px; transition: all 0.2s;
+  white-space: nowrap;
+}
+.back-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* ── HERO ── */
+.hero {
+  text-align: center; padding: 56px 24px 36px;
+  background: linear-gradient(180deg, var(--bg2), var(--bg));
+  border-bottom: 1px solid var(--border);
+}
+.hero-hebrew { font-family: serif; font-size: 2.4rem; color: var(--gold); margin-bottom: 8px; }
+.hero h1 {
+  font-family: 'Cinzel', serif; font-size: 1.9rem; font-weight: 900;
+  color: var(--text); letter-spacing: 1px; margin-bottom: 10px;
+}
+.hero p {
+  font-size: 1.05rem; color: var(--text-mid); max-width: 520px; margin: 0 auto;
+  font-style: italic;
+}
+
+/* ── SEARCH ── */
+.search-wrap { max-width: 640px; margin: -22px auto 0; padding: 0 24px; position: relative; z-index: 5; }
+.search-box {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--gold-dim); border-radius: 14px;
+  padding: 14px 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+html.light .search-box { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+.search-box input {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-family: 'Crimson Pro', serif; font-size: 1rem; color: var(--text);
+}
+.search-box input::placeholder { color: var(--text-dim); font-style: italic; }
+.search-icon { color: var(--gold); font-size: 1.05rem; flex-shrink: 0; }
+.search-clear {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 1.1rem; display: none; flex-shrink: 0;
+}
+.search-clear.visible { display: block; }
+.search-results-note {
+  text-align: center; font-size: 0.85rem; color: var(--text-dim);
+  margin-top: 10px; min-height: 1.2em;
+}
+.search-results-note strong { color: var(--gold); }
+
+/* ── TOC ── */
+.toc-wrap { max-width: 980px; margin: 0 auto; padding: 36px 24px 0; }
+.toc {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.toc a {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px;
+  padding: 12px 14px; text-decoration: none; color: var(--text-mid);
+  font-size: 0.85rem; transition: all 0.2s;
+}
+.toc a:hover { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+.toc-icon { font-size: 1.15rem; flex-shrink: 0; }
+
+/* ── MAIN ── */
+.doc { max-width: 980px; margin: 0 auto; padding: 48px 24px 100px; }
+
+.category {
+  margin-bottom: 52px;
+  scroll-margin-top: 90px;
+  transition: opacity 0.25s;
+}
+.category.hidden-by-search { display: none; }
+.category-header {
+  display: flex; align-items: flex-start; gap: 14px;
+  margin-bottom: 22px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.category-icon {
+  font-size: 1.6rem; width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg2); border: 1px solid var(--gold-dim); border-radius: 12px;
+  flex-shrink: 0;
+}
+.category-header h2 {
+  font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 700;
+  color: var(--gold-bright); letter-spacing: 0.5px;
+}
+.category-header .subtitle { font-size: 0.88rem; color: var(--text-dim); margin-top: 4px; }
+
+.psalm-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.psalm-card {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px;
+  padding: 18px; transition: all 0.2s;
+}
+.psalm-card.matched { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-glow); }
+.psalm-card.hidden-by-search { display: none; }
+.psalm-num-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.psalm-num {
+  font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 900;
+  color: var(--gold); background: var(--bg3); border: 1px solid var(--gold-dim);
+  padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+}
+.psalm-title { font-family: 'Cinzel', serif; font-size: 0.92rem; font-weight: 700; color: var(--text); }
+.psalm-use { font-size: 0.9rem; color: var(--text-mid); margin-bottom: 14px; }
+.psalm-read-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--bg); background: var(--gold); border: none; border-radius: 8px;
+  padding: 9px 16px; cursor: pointer; text-decoration: none; transition: all 0.2s;
+}
+.psalm-read-btn:hover { background: var(--gold-bright); }
+
+.intro-note {
+  background: var(--bg2); border-left: 3px solid var(--gold-dim);
+  border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 0 auto 8px;
+  font-size: 0.92rem; color: var(--text-mid); max-width: 980px;
+}
+.intro-note strong { color: var(--gold); }
+
+.no-results {
+  text-align: center; padding: 50px 20px; color: var(--text-dim);
+  font-size: 0.95rem; font-style: italic; display: none;
+}
+.no-results.visible { display: block; }
+
+.back-to-top {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg2); border: 1px solid var(--gold-dim); color: var(--gold);
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; cursor: pointer; text-decoration: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  z-index: 40;
+}
+.back-to-top.visible { opacity: 1; pointer-events: auto; }
+
+footer {
+  text-align: center; padding: 32px 24px; border-top: 1px solid var(--border);
+  font-size: 0.8rem; color: var(--text-dim);
+}
+footer a { color: var(--gold); text-decoration: none; }
+
+@media (max-width: 640px) {
+  .hero h1 { font-size: 1.5rem; }
+  .hero-hebrew { font-size: 2rem; }
+  .doc { padding: 36px 16px 80px; }
+  .toc-wrap { padding: 24px 16px 0; }
+  .category-header h2 { font-size: 1.05rem; }
+  .back-link span { display: none; }
+  .psalm-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="logo">
+    <span class="logo-hebrew">קֹדֶשׁ</span>
+    <span class="logo-text">KODESH</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  <a href="/" class="back-link"><span>←</span> Volver a la app</a>
+</header>
+
+<section class="hero">
+  <div class="hero-hebrew">תְּהִלִּים</div>
+  <h1>Salmos de Plegaria</h1>
+  <p>Cada Salmo tiene un propósito. Encuentra el que tu corazón necesita hoy — para agradecer, clamar, sanar, amar o consolarte.</p>
+</section>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="searchInput" placeholder="¿Qué necesitas hoy? Ej: ansiedad, sanación, perdón…" oninput="handleSearch()">
+    <button class="search-clear" id="clearBtn" onclick="clearSearch()">✕</button>
+  </div>
+  <div class="search-results-note" id="searchNote"></div>
+</div>
+
+<div class="toc-wrap">
+  <div class="toc" id="tocList"></div>
+</div>
+
+<main class="doc">
+  <p class="intro-note"><strong>Cómo usar esta guía ·</strong> Explora por categoría según lo que sientas, o escribe una palabra en el buscador de arriba. Cada Salmo tiene un botón "Leer" que lo abre directamente en tu Biblia con todas las herramientas de estudio (interlineal, marcadores, notas).</p>
+
+  <div id="categoriesContainer"></div>
+
+  <p class="no-results" id="noResults">No encontramos un Salmo para esa palabra todavía — pero puedes explorar las categorías de arriba, seguro hay uno que te acompañe.</p>
+</main>
+
+<a href="#" class="back-to-top" id="backToTop">↑</a>
+
+<footer>
+  קֹדֶשׁ KODESH — <a href="/ayuda.html">Guía de Uso</a> · <a href="/">Volver a la Biblia</a>
+</footer>
+
+<script>
+// ════════════════════════════════════════
+// DATOS — Salmos curados por categoría
+// ════════════════════════════════════════
+const PSALM_CATEGORIES = [
+  {
+    id: 'agradecimiento', icon: '🙌', title: 'Agradecimiento',
+    description: 'Para alabar y reconocer la bondad de YHWH en tiempos de bendición.',
+    psalms: [
+      { num: 100, title: 'Salmo de gratitud', use: 'Para entrar con alegría a la presencia de Dios y reconocer que Él es nuestro Hacedor.', keywords: ['gracias','alegria','alegría','bendicion','bendición','alabanza','gozo'] },
+      { num: 103, title: 'Bendice, alma mía, a YHWH', use: 'Para recordar todos los beneficios recibidos: perdón, sanidad, misericordia.', keywords: ['gracias','bendicion','bendición','perdon','perdón','misericordia','sanidad','beneficios'] },
+      { num: 136, title: 'Porque para siempre es su misericordia', use: 'Repaso histórico de la fidelidad de Dios, ideal para una oración de acción de gracias prolongada.', keywords: ['gracias','fidelidad','misericordia','historia'] },
+      { num: 30, title: 'El llanto se convirtió en danza', use: 'Para agradecer después de salir de una temporada de angustia o enfermedad.', keywords: ['gracias','restauracion','restauración','sanidad','liberacion','liberación'] },
+      { num: 92, title: 'Bueno es alabar a YHWH', use: 'Salmo de Shabat — para agradecer el descanso y la obra de Dios en la semana.', keywords: ['gracias','shabat','sábado','descanso','alabanza'] },
+    ],
+  },
+  {
+    id: 'ruego', icon: '🙏', title: 'Ruego y Súplica',
+    description: 'Para clamar a Dios en momentos de necesidad urgente o angustia.',
+    psalms: [
+      { num: 86, title: 'Inclina, YHWH, tu oído', use: 'Súplica directa pidiendo ayuda, misericordia y guía en medio de la aflicción.', keywords: ['ruego','suplica','súplica','ayuda','necesidad','aflicción','aflicion'] },
+      { num: 102, title: 'Oración del afligido', use: 'Para cuando el alma se siente desfallecer y se necesita clamar con urgencia.', keywords: ['ruego','suplica','súplica','desesperacion','desesperación','afligido','clamor'] },
+      { num: 130, title: 'De las profundidades clamo a ti', use: 'Para orar desde el lugar más bajo, esperando con fe la respuesta de Dios.', keywords: ['ruego','suplica','súplica','profundidad','espera','clamor','desesperación'] },
+      { num: 88, title: 'El clamor más oscuro', use: 'Para cuando no hay palabras de consuelo, solo el clamor honesto en la oscuridad.', keywords: ['ruego','oscuridad','desesperacion','desesperación','dolor profundo'] },
+      { num: 70, title: 'Apresúrate, oh Dios, a librarme', use: 'Oración breve para pedir ayuda inmediata en una crisis.', keywords: ['ruego','urgencia','crisis','ayuda rápida','rapida'] },
+    ],
+  },
+  {
+    id: 'sanacion', icon: '🩹', title: 'Sanación',
+    description: 'Para pedir restauración física, emocional o espiritual.',
+    psalms: [
+      { num: 6, title: 'Sáname, porque mis huesos se estremecen', use: 'Oración por sanidad física en medio del dolor y la debilidad del cuerpo.', keywords: ['sanacion','sanación','sanidad','enfermedad','dolor fisico','físico','cuerpo'] },
+      { num: 41, title: 'Bienaventurado el que piensa en el pobre', use: 'Promesa de sostén divino durante la enfermedad y la cama de dolor.', keywords: ['sanacion','sanación','enfermedad','cama','recuperacion','recuperación'] },
+      { num: 103, title: 'Quien sana todas tus dolencias', use: 'Recordatorio de que Dios es quien perdona y sana, cuerpo y alma juntos.', keywords: ['sanacion','sanación','sanidad','perdon','perdón','dolencia'] },
+      { num: 38, title: 'Señor, no me reprendas con tu ira', use: 'Para cuando el dolor físico se siente también como carga del alma.', keywords: ['sanacion','sanación','dolor','carga','culpa','enfermedad'] },
+      { num: 147, title: 'Él sana a los quebrantados de corazón', use: 'Para sanidad emocional, cuando el corazón está roto y se necesita restauración interior.', keywords: ['sanacion','sanación','corazon roto','corazón roto','emocional','quebranto'] },
+    ],
+  },
+  {
+    id: 'amor', icon: '💛', title: 'Amor y Devoción',
+    description: 'Para expresar amor a Dios y meditar en su amor por nosotros.',
+    psalms: [
+      { num: 18, title: 'Te amo, oh YHWH, fortaleza mía', use: 'Declaración de amor y confianza total en Dios como roca y libertador.', keywords: ['amor','devocion','devoción','fortaleza','confianza'] },
+      { num: 63, title: 'Mi alma tiene sed de ti', use: 'Para expresar anhelo profundo de la presencia de Dios, como quien busca agua en el desierto.', keywords: ['amor','anhelo','sed','presencia','deseo de dios'] },
+      { num: 116, title: 'Amo a YHWH, pues ha oído mi voz', use: 'Gratitud y amor que nacen de haber sido escuchado y librado por Dios.', keywords: ['amor','gratitud','liberacion','liberación','escuchado'] },
+      { num: 36, title: 'Tu misericordia llega a los cielos', use: 'Meditación poética sobre la inmensidad del amor y fidelidad de Dios.', keywords: ['amor','misericordia','fidelidad','meditacion','meditación'] },
+      { num: 84, title: 'Cuán amables son tus moradas', use: 'Amor por la casa de Dios y el deseo de estar en su presencia en comunidad.', keywords: ['amor','templo','congregacion','congregación','presencia','comunidad'] },
+    ],
+  },
+  {
+    id: 'tristeza', icon: '😔', title: 'Tristeza y Consuelo',
+    description: 'Para encontrar consuelo en momentos de duelo, pérdida o tristeza profunda.',
+    psalms: [
+      { num: 23, title: 'YHWH es mi pastor', use: 'El salmo más conocido de consuelo — para sentir la cercanía y protección de Dios en el valle de sombra.', keywords: ['tristeza','consuelo','duelo','perdida','pérdida','muerte','luto','miedo'] },
+      { num: 34, title: 'Cercano está YHWH a los quebrantados de corazón', use: 'Promesa de cercanía divina en medio del quebranto y la angustia.', keywords: ['tristeza','consuelo','quebranto','angustia','corazon roto','corazón roto'] },
+      { num: 42, title: '¿Por qué te abates, alma mía?', use: 'Para cuando la tristeza se siente como sed del alma; diálogo honesto entre la persona y su propia alma.', keywords: ['tristeza','depresion','depresión','abatimiento','soledad','vacio','vacío'] },
+      { num: 77, title: 'Clamé a Dios, y él me escuchó', use: 'Para recordar las obras pasadas de Dios cuando el presente se siente sin esperanza.', keywords: ['tristeza','desesperanza','recuerdo','memoria','noche oscura'] },
+      { num: 143, title: 'Mi espíritu desmaya dentro de mí', use: 'Oración honesta en momentos de agotamiento emocional y espiritual profundo.', keywords: ['tristeza','agotamiento','cansancio emocional','desmayo','vacio','vacío'] },
+    ],
+  },
+  {
+    id: 'proteccion', icon: '🛡️', title: 'Protección',
+    description: 'Para pedir refugio y cobertura divina frente al peligro o el temor.',
+    psalms: [
+      { num: 91, title: 'El que habita al abrigo del Altísimo', use: 'El salmo de protección por excelencia — para cubrirse bajo las alas de Dios frente a todo peligro.', keywords: ['proteccion','protección','peligro','temor','miedo','refugio','seguridad'] },
+      { num: 27, title: 'YHWH es mi luz y mi salvación', use: 'Para enfrentar enemigos o circunstancias adversas con valentía y confianza.', keywords: ['proteccion','protección','valentia','valentía','enemigos','miedo'] },
+      { num: 121, title: 'Alzaré mis ojos a los montes', use: 'Salmo de viaje y protección — para pedir cuidado antes de un trayecto o decisión importante.', keywords: ['proteccion','protección','viaje','cuidado','guardia'] },
+      { num: 46, title: 'Dios es nuestro amparo y fortaleza', use: 'Para tiempos de caos o incertidumbre, recordando que Dios es refugio seguro.', keywords: ['proteccion','protección','caos','incertidumbre','refugio','crisis'] },
+      { num: 3, title: 'No temeré a multitud de gente', use: 'Para protección frente a quienes se levantan en contra, con descanso y paz al dormir.', keywords: ['proteccion','protección','enemigos','dormir','paz nocturna'] },
+    ],
+  },
+  {
+    id: 'confianza', icon: '🕊️', title: 'Confianza y Fe',
+    description: 'Para fortalecer la fe y descansar en las promesas de Dios.',
+    psalms: [
+      { num: 37, title: 'No te impacientes a causa de los malignos', use: 'Para descansar en que Dios actúa a su tiempo, incluso cuando la injusticia parece prevalecer.', keywords: ['confianza','fe','paciencia','injusticia','espera'] },
+      { num: 62, title: 'En Dios solamente reposa mi alma', use: 'Declaración de descanso total en Dios como única roca firme.', keywords: ['confianza','fe','reposo','descanso','roca'] },
+      { num: 121, title: 'Mi ayuda viene de YHWH', use: 'Recordatorio de que la ayuda y la fe vienen del Creador del cielo y la tierra.', keywords: ['confianza','fe','ayuda','esperanza'] },
+      { num: 23, title: 'Nada me faltará', use: 'Confianza en la provisión y guía constante de Dios como pastor.', keywords: ['confianza','fe','provision','provisión','guia','guía'] },
+      { num: 139, title: 'Tú me conoces, oh YHWH', use: 'Para afirmar la fe en un Dios que conoce íntimamente cada parte de nuestra vida.', keywords: ['confianza','fe','conocido','intimidad','identidad'] },
+    ],
+  },
+  {
+    id: 'arrepentimiento', icon: '🕯️', title: 'Arrepentimiento',
+    description: 'Para pedir perdón y restauración tras reconocer una falta.',
+    psalms: [
+      { num: 51, title: 'Ten piedad de mí, oh Dios', use: 'El salmo de arrepentimiento más profundo de la Escritura — oración de David tras su pecado con Betsabé.', keywords: ['arrepentimiento','perdon','perdón','pecado','culpa','restauracion','restauración'] },
+      { num: 32, title: 'Bienaventurado aquel cuya transgresión es perdonada', use: 'Para experimentar el alivio del perdón después de confesar una falta.', keywords: ['arrepentimiento','perdon','perdón','confesion','confesión','alivio'] },
+      { num: 38, title: 'No hay paz en mis huesos a causa de mi pecado', use: 'Oración honesta sobre el peso físico y emocional de la culpa no resuelta.', keywords: ['arrepentimiento','culpa','peso','pecado','carga'] },
+      { num: 130, title: 'Si miras a los pecados, ¿quién subsistirá?', use: 'Para acercarse a Dios con esperanza, sabiendo que en Él hay perdón abundante.', keywords: ['arrepentimiento','perdon','perdón','esperanza','misericordia'] },
+    ],
+  },
+];
+
+// ════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════
+function readUrl(num) {
+  return `/index.html?book=PSA&chapter=${num}`;
+}
+
+function renderToc() {
+  const toc = document.getElementById('tocList');
+  toc.innerHTML = PSALM_CATEGORIES.map(cat =>
+    `<a href="#${cat.id}"><span class="toc-icon">${cat.icon}</span> ${cat.title}</a>`
+  ).join('');
+}
+
+function renderCategories() {
+  const container = document.getElementById('categoriesContainer');
+  container.innerHTML = PSALM_CATEGORIES.map(cat => `
+    <section class="category" id="${cat.id}" data-cat-id="${cat.id}">
+      <div class="category-header">
+        <div class="category-icon">${cat.icon}</div>
+        <div>
+          <h2>${cat.title}</h2>
+          <div class="subtitle">${cat.description}</div>
+        </div>
+      </div>
+      <div class="psalm-grid">
+        ${cat.psalms.map(p => `
+          <div class="psalm-card" data-keywords="${p.keywords.join(',')}" data-psalm="${p.num}">
+            <div class="psalm-num-row">
+              <span class="psalm-num">SALMO ${p.num}</span>
+            </div>
+            <div class="psalm-title">${p.title}</div>
+            <p class="psalm-use">${p.use}</p>
+            <a class="psalm-read-btn" href="${readUrl(p.num)}">📖 Leer Salmo</a>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `).join('');
+}
+
+// ════════════════════════════════════════
+// SEARCH (palabras clave fijas, sin IA)
+// ════════════════════════════════════════
+function normalize(s) {
+  return s.toLowerCase().trim();
+}
+
+function handleSearch() {
+  const raw = document.getElementById('searchInput').value;
+  const clearBtn = document.getElementById('clearBtn');
+  const note = document.getElementById('searchNote');
+  const noResults = document.getElementById('noResults');
+  clearBtn.classList.toggle('visible', raw.length > 0);
+
+  const query = normalize(raw);
+  const cards = document.querySelectorAll('.psalm-card');
+  const categories = document.querySelectorAll('.category');
+
+  if (!query) {
+    cards.forEach(c => { c.classList.remove('hidden-by-search', 'matched'); });
+    categories.forEach(c => c.classList.remove('hidden-by-search'));
+    note.textContent = '';
+    noResults.classList.remove('visible');
+    return;
+  }
+
+  let totalMatches = 0;
+  const categoryHasMatch = {};
+
+  cards.forEach(card => {
+    const keywords = card.dataset.keywords.split(',');
+    const isMatch = keywords.some(kw => kw.includes(query) || query.includes(kw));
+    card.classList.toggle('hidden-by-search', !isMatch);
+    card.classList.toggle('matched', isMatch);
+    if (isMatch) {
+      totalMatches++;
+      const cat = card.closest('.category');
+      categoryHasMatch[cat.dataset.catId] = true;
+    }
+  });
+
+  categories.forEach(cat => {
+    cat.classList.toggle('hidden-by-search', !categoryHasMatch[cat.dataset.catId]);
+  });
+
+  if (totalMatches === 0) {
+    note.textContent = '';
+    noResults.classList.add('visible');
+  } else {
+    noResults.classList.remove('visible');
+    note.innerHTML = `<strong>${totalMatches}</strong> Salmo${totalMatches !== 1 ? 's' : ''} encontrado${totalMatches !== 1 ? 's' : ''} para "${raw}"`;
+  }
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  handleSearch();
+}
+
+// ════════════════════════════════════════
+// THEME
+// ════════════════════════════════════════
+function initTheme() {
+  const saved = localStorage.getItem('kodesh_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeBtn').textContent = '☀️';
+  }
+}
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+}
+
+// ════════════════════════════════════════
+// BACK TO TOP
+// ════════════════════════════════════════
+window.addEventListener('scroll', () => {
+  document.getElementById('backToTop').classList.toggle('visible', window.scrollY > 400);
+});
+document.getElementById('backToTop').addEventListener('click', (e) => {
+  e.preventDefault();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+initTheme();
+renderToc();
+renderCategories();
+</script>
+</body>
+</html>
