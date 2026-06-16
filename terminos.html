@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Términos de Servicio · KODESH</title>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim: #5a4820;
+  --gold-glow: rgba(201,168,76,0.15);
+  --bg: #05050a;
+  --bg2: #0a0a12;
+  --bg3: #0f0f1a;
+  --border: #1a1a2a;
+  --border2: #252538;
+  --text: #ede5d5;
+  --text-mid: #a09880;
+  --text-dim: #5a5870;
+}
+html.light {
+  --gold: #8a6010;
+  --gold-bright: #6a4808;
+  --gold-dim: #d4a855;
+  --gold-glow: rgba(138,96,16,0.10);
+  --bg: #faf8f4;
+  --bg2: #f3efe8;
+  --bg3: #ece7dc;
+  --border: #ddd6c8;
+  --border2: #cec5b4;
+  --text: #1a1610;
+  --text-mid: #5a4e38;
+  --text-dim: #9a8e78;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg2); position: sticky; top: 0; z-index: 10;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-hebrew { font-family: serif; font-size: 1.3rem; color: var(--gold); }
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; }
+.topbar-spacer { flex: 1; }
+.theme-toggle {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center; font-size: 1rem;
+}
+.back-link {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+  border: 1px solid var(--border2); padding: 7px 14px; border-radius: 6px; transition: all 0.2s;
+}
+.back-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+.doc {
+  max-width: 760px; margin: 0 auto; padding: 40px 24px 80px;
+}
+.doc h1 {
+  font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900;
+  color: var(--gold); margin-bottom: 6px; letter-spacing: 1px;
+}
+.doc .updated {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim);
+  margin-bottom: 28px;
+}
+.doc h2 {
+  font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 700;
+  color: var(--gold-bright); margin: 32px 0 12px; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.doc h3 {
+  font-family: 'Cinzel', serif; font-size: 0.9rem; font-weight: 600;
+  color: var(--text); margin: 18px 0 8px;
+}
+.doc p { margin-bottom: 14px; font-size: 1rem; color: var(--text-mid); }
+.doc strong { color: var(--text); }
+.doc ul, .doc ol { margin: 0 0 14px 24px; color: var(--text-mid); }
+.doc li { margin-bottom: 6px; }
+.doc hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+.doc table {
+  width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.92rem;
+}
+.doc th, .doc td {
+  border: 1px solid var(--border); padding: 8px 12px; text-align: left; color: var(--text-mid);
+}
+.doc th { background: var(--bg3); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+.doc a { color: var(--gold); text-decoration: underline; }
+.placeholder { color: var(--gold-dim); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="logo" href="/index.html">
+    <span class="logo-hebrew">קֹדֶשׁ</span>
+    <span class="logo-text">KODESH</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <a class="back-link" href="/index.html">← Volver</a>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+</header>
+
+<main class="doc">
+
+<h1>Términos de Servicio</h1>
+<div class="updated">Última actualización: 13 de junio de 2026</div>
+
+<p>Bienvenido a KODESH (קֹדֶשׁ). Estos Términos de Servicio ("Términos") rigen tu acceso y uso de la plataforma KODESH (kodeshbible.com) y sus aplicaciones relacionadas (el "Servicio"), operado por <strong>Yajol Investment Group LLC</strong> ("nosotros", "nuestro" o "la Compañía").</p>
+
+<p>Al crear una cuenta o usar el Servicio, aceptas estos Términos. Si no estás de acuerdo, no utilices el Servicio.</p>
+
+<h2>1. Descripción del Servicio</h2>
+<p>KODESH es una plataforma de estudio bíblico Hebreo-Mesiánica que ofrece, entre otras funciones:</p>
+<ul>
+  <li>Lectura de la Biblia en múltiples versiones</li>
+  <li>Marcadores, notas y seguimiento de progreso de lectura</li>
+  <li>Un Asistente de Estudio basado en inteligencia artificial</li>
+  <li>Búsqueda Inteligente de versículos</li>
+  <li>Lexicón Hebreo/Griego con análisis de palabras originales</li>
+  <li>Modo Interlineal (función Premium)</li>
+  <li>Contenido relacionado con el Ciclo de Estudio de la Torá (parashot)</li>
+</ul>
+<p>El Servicio se ofrece en un plan gratuito con funcionalidades limitadas y un plan <strong>KODESH Premium</strong> mediante suscripción de pago.</p>
+
+<h2>2. Cuentas de usuario</h2>
+<ul>
+  <li>Debes proporcionar información precisa al registrarte</li>
+  <li>Eres responsable de mantener la confidencialidad de tus credenciales de acceso</li>
+  <li>Eres responsable de toda actividad que ocurra bajo tu cuenta</li>
+  <li>Debes notificarnos inmediatamente si sospechas de un uso no autorizado de tu cuenta</li>
+  <li>Debes tener al menos 13 años para crear una cuenta. Si eres menor de 18 años, debes contar con el consentimiento de un padre o tutor</li>
+</ul>
+
+<h2>3. Suscripciones y pagos</h2>
+<h3>3.1 Plan Premium</h3>
+<p>KODESH Premium es una suscripción mensual recurrente que otorga acceso a funciones adicionales, incluyendo mayores límites de uso de IA, el Lexicón completo, el Modo Interlineal y otras funciones marcadas como "Premium".</p>
+
+<h3>3.2 Facturación</h3>
+<ul>
+  <li>Los pagos se procesan a través de <strong>Stripe</strong></li>
+  <li>Las suscripciones se renuevan automáticamente al final de cada período de facturación, salvo que se cancelen antes de la fecha de renovación</li>
+  <li>Los precios pueden cambiar; te notificaremos con anticipación razonable antes de que un cambio de precio te afecte</li>
+</ul>
+
+<h3>3.3 Cancelación</h3>
+<p>Puedes cancelar tu suscripción en cualquier momento desde tu perfil. La cancelación tomará efecto al final del período de facturación ya pagado; no se realizan reembolsos prorrateados por el tiempo no utilizado, salvo que la ley aplicable lo requiera.</p>
+
+<h3>3.4 Reembolsos</h3>
+<p>Las solicitudes de reembolso se evaluarán caso por caso, contactando a kodeshbible@gmail.com. No garantizamos reembolsos salvo que sean requeridos por ley.</p>
+
+<h2>4. Uso aceptable</h2>
+<p>Al usar KODESH, aceptas que <strong>no</strong> harás lo siguiente:</p>
+<ul>
+  <li>Usar el Servicio para fines ilegales o no autorizados</li>
+  <li>Intentar obtener acceso no autorizado a otros sistemas o cuentas</li>
+  <li>Realizar ingeniería inversa, descompilar o intentar extraer el código fuente del Servicio</li>
+  <li>Usar bots, scrapers o medios automatizados para acceder al Servicio de manera que sobrecargue nuestra infraestructura</li>
+  <li>Compartir tu cuenta con terceros de forma que viole los límites de un plan individual</li>
+  <li>Subir contenido ilegal, difamatorio, obsceno o que infrinja derechos de terceros</li>
+  <li>Usar el Asistente de IA para generar contenido dañino, engañoso o que viole las políticas de uso de Anthropic</li>
+</ul>
+<p>Nos reservamos el derecho de suspender o terminar cuentas que violen estos Términos.</p>
+
+<h2>5. Funciones de Inteligencia Artificial</h2>
+<p>El Asistente de Estudio, la Búsqueda Inteligente y el Lexicón utilizan modelos de IA de terceros (Anthropic Claude) para generar contenido. Reconoces que:</p>
+<ul>
+  <li>Las respuestas generadas por IA son herramientas de apoyo al estudio y <strong>no constituyen consejo teológico, legal, médico o profesional definitivo</strong></li>
+  <li>El contenido generado por IA puede contener errores o imprecisiones; te recomendamos verificar información importante con fuentes primarias (el texto bíblico) y consultar con líderes espirituales calificados</li>
+  <li>Los límites de uso de las funciones de IA dependen de tu plan (gratuito o premium) y pueden modificarse</li>
+</ul>
+
+<h2>6. Propiedad intelectual</h2>
+<h3>6.1 Nuestro contenido</h3>
+<p>El diseño, código, marca KODESH, logotipos y contenido original de la plataforma son propiedad de Yajol Investment Group LLC o sus licenciantes, y están protegidos por leyes de propiedad intelectual.</p>
+
+<h3>6.2 Textos bíblicos y recursos de dominio público</h3>
+<p>Las versiones bíblicas, textos del Tanaj/AT (OSHB/WLC) y otros recursos de estudio utilizados pueden provenir de fuentes de dominio público o bajo licencias de uso abierto, utilizados conforme a sus respectivas licencias.</p>
+
+<h3>6.3 Tu contenido</h3>
+<p>Conservas la propiedad de tus notas y marcadores personales. Al usarlos en el Servicio, nos otorgas una licencia limitada para almacenar, procesar y mostrar dicho contenido únicamente con el propósito de operar el Servicio para ti.</p>
+
+<h2>7. Disponibilidad del Servicio</h2>
+<p>Nos esforzamos por mantener KODESH disponible, pero no garantizamos un servicio ininterrumpido o libre de errores. Podemos modificar, suspender o discontinuar funciones del Servicio en cualquier momento, con o sin previo aviso, aunque procuraremos notificar cambios significativos con anticipación razonable cuando sea posible.</p>
+
+<h2>8. Limitación de responsabilidad</h2>
+<p>EN LA MEDIDA MÁXIMA PERMITIDA POR LA LEY, KODESH Y YAJOL INVESTMENT GROUP LLC SE PROPORCIONAN "TAL CUAL" Y "SEGÚN DISPONIBILIDAD", SIN GARANTÍAS DE NINGÚN TIPO. NO SEREMOS RESPONSABLES POR DAÑOS INDIRECTOS, INCIDENTALES, ESPECIALES O CONSECUENTES DERIVADOS DEL USO O LA IMPOSIBILIDAD DE USAR EL SERVICIO, INCLUYENDO PÉRDIDA DE DATOS, AUN CUANDO HAYAMOS SIDO ADVERTIDOS DE LA POSIBILIDAD DE TALES DAÑOS.</p>
+<p>Nuestra responsabilidad total agregada por cualquier reclamo relacionado con el Servicio no excederá el monto que hayas pagado a la Compañía en los últimos 12 meses.</p>
+
+<h2>9. Indemnización</h2>
+<p>Aceptas indemnizar y mantener indemne a Yajol Investment Group LLC, sus afiliados y empleados de cualquier reclamo, daño o gasto (incluidos honorarios legales razonables) que surja de tu uso del Servicio o tu violación de estos Términos.</p>
+
+<h2>10. Ley aplicable</h2>
+<p>Estos Términos se rigen por las leyes del Estado de <strong>Florida, Estados Unidos</strong>, sin considerar sus disposiciones sobre conflictos de leyes. Cualquier disputa estará sujeta a la jurisdicción exclusiva de los tribunales competentes ubicados en Florida.</p>
+
+<h2>11. Cambios a estos Términos</h2>
+<p>Podemos modificar estos Términos ocasionalmente. Publicaremos la versión actualizada en esta página con una nueva fecha de "Última actualización". El uso continuado del Servicio después de dichos cambios constituye tu aceptación de los Términos modificados.</p>
+
+<h2>12. Contacto</h2>
+<p><strong>Yajol Investment Group LLC</strong><br>
+Email: kodeshbible@gmail.com<br>
+Dirección: <span class="placeholder">[dirección de la LLC, opcional]</span></p>
+
+<hr>
+<p style="font-size:0.85rem"><a href="/privacidad.html">Política de Privacidad</a> · <a href="/cookies.html">Política de Cookies</a></p>
+
+</main>
+
+<script>
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+}
+(function() {
+  const saved = localStorage.getItem('kodesh_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+})();
+</script>
+</body>
+</html>

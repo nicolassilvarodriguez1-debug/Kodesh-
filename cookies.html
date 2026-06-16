@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Cookies · KODESH</title>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim: #5a4820;
+  --gold-glow: rgba(201,168,76,0.15);
+  --bg: #05050a;
+  --bg2: #0a0a12;
+  --bg3: #0f0f1a;
+  --border: #1a1a2a;
+  --border2: #252538;
+  --text: #ede5d5;
+  --text-mid: #a09880;
+  --text-dim: #5a5870;
+}
+html.light {
+  --gold: #8a6010;
+  --gold-bright: #6a4808;
+  --gold-dim: #d4a855;
+  --gold-glow: rgba(138,96,16,0.10);
+  --bg: #faf8f4;
+  --bg2: #f3efe8;
+  --bg3: #ece7dc;
+  --border: #ddd6c8;
+  --border2: #cec5b4;
+  --text: #1a1610;
+  --text-mid: #5a4e38;
+  --text-dim: #9a8e78;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg2); position: sticky; top: 0; z-index: 10;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-hebrew { font-family: serif; font-size: 1.3rem; color: var(--gold); }
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; }
+.topbar-spacer { flex: 1; }
+.theme-toggle {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center; font-size: 1rem;
+}
+.back-link {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+  border: 1px solid var(--border2); padding: 7px 14px; border-radius: 6px; transition: all 0.2s;
+}
+.back-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+.doc {
+  max-width: 760px; margin: 0 auto; padding: 40px 24px 80px;
+}
+.doc h1 {
+  font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900;
+  color: var(--gold); margin-bottom: 6px; letter-spacing: 1px;
+}
+.doc .updated {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim);
+  margin-bottom: 28px;
+}
+.doc h2 {
+  font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 700;
+  color: var(--gold-bright); margin: 32px 0 12px; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.doc h3 {
+  font-family: 'Cinzel', serif; font-size: 0.9rem; font-weight: 600;
+  color: var(--text); margin: 18px 0 8px;
+}
+.doc p { margin-bottom: 14px; font-size: 1rem; color: var(--text-mid); }
+.doc strong { color: var(--text); }
+.doc ul, .doc ol { margin: 0 0 14px 24px; color: var(--text-mid); }
+.doc li { margin-bottom: 6px; }
+.doc hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+.doc table {
+  width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.92rem;
+}
+.doc th, .doc td {
+  border: 1px solid var(--border); padding: 8px 12px; text-align: left; color: var(--text-mid);
+}
+.doc th { background: var(--bg3); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+.doc a { color: var(--gold); text-decoration: underline; }
+.placeholder { color: var(--gold-dim); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="logo" href="/index.html">
+    <span class="logo-hebrew">קֹדֶשׁ</span>
+    <span class="logo-text">KODESH</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <a class="back-link" href="/index.html">← Volver</a>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+</header>
+
+<main class="doc">
+
+<h1>Política de Cookies</h1>
+<div class="updated">Última actualización: 13 de junio de 2026</div>
+
+<p>Esta Política de Cookies explica cómo Yajol Investment Group LLC ("nosotros") utiliza cookies y tecnologías similares de almacenamiento en KODESH (kodeshbible.com).</p>
+
+<h2>1. ¿Qué son las cookies?</h2>
+<p>Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas un sitio web. También usamos tecnologías similares como <strong>almacenamiento local (localStorage)</strong>, que funciona de manera parecida pero permanece en tu navegador hasta que se borra manualmente.</p>
+
+<h2>2. Cómo usamos cookies y almacenamiento local</h2>
+
+<h3>2.1 Esenciales (necesarias para el funcionamiento del Servicio)</h3>
+<ul>
+  <li><strong>Autenticación</strong>: mantener tu sesión iniciada (gestionado por Supabase Auth)</li>
+  <li><strong>Preferencias de la app</strong>: tema claro/oscuro, versión de la Biblia seleccionada, preferencia de Modo Interlineal</li>
+</ul>
+<p>Estas no se pueden desactivar sin afectar el funcionamiento básico de KODESH.</p>
+
+<h3>2.2 Funcionales</h3>
+<ul>
+  <li><strong>Progreso de lectura, marcadores y notas</strong>: se guardan localmente y se sincronizan con tu cuenta en la nube</li>
+  <li><strong>Indicadores de "promesa del día"</strong>: para no mostrarte la misma promesa más de una vez al día</li>
+</ul>
+
+<h3>2.3 Analíticas</h3>
+<ul>
+  <li><strong>Vercel Web Analytics</strong>: recopila datos agregados y anonimizados sobre visitas, páginas vistas y dispositivos, para entender cómo se usa KODESH y mejorar la plataforma. Esta herramienta está diseñada para no usar cookies de identificación individual ni rastrear usuarios entre sitios.</li>
+</ul>
+
+<h2>3. Cookies de terceros</h2>
+<table>
+  <tr><th>Proveedor</th><th>Propósito</th></tr>
+  <tr><td>Supabase</td><td>Autenticación y gestión de sesión</td></tr>
+  <tr><td>Stripe</td><td>Procesamiento seguro de pagos durante el checkout</td></tr>
+  <tr><td>Vercel</td><td>Analítica de uso del sitio (agregada y anonimizada)</td></tr>
+</table>
+<p>Estos proveedores pueden establecer sus propias cookies conforme a sus respectivas políticas de privacidad.</p>
+
+<h2>4. Cómo controlar las cookies</h2>
+<p>Puedes controlar y eliminar cookies a través de la configuración de tu navegador. Ten en cuenta que deshabilitar cookies esenciales puede impedir que funciones como el inicio de sesión, los marcadores y la sincronización de progreso funcionen correctamente.</p>
+<p>La mayoría de los navegadores te permiten:</p>
+<ul>
+  <li>Ver qué cookies tienes almacenadas y eliminarlas individualmente</li>
+  <li>Bloquear cookies de terceros</li>
+  <li>Bloquear cookies de sitios específicos</li>
+  <li>Bloquear todas las cookies</li>
+  <li>Eliminar todas las cookies al cerrar el navegador</li>
+</ul>
+
+<h2>5. Cambios a esta política</h2>
+<p>Podemos actualizar esta Política de Cookies ocasionalmente para reflejar cambios en las tecnologías que usamos. Publicaremos cualquier cambio en esta página con una fecha de actualización revisada.</p>
+
+<h2>6. Contacto</h2>
+<p><strong>Yajol Investment Group LLC</strong><br>
+Email: kodeshbible@gmail.com</p>
+
+<hr>
+<p style="font-size:0.85rem"><a href="/terminos.html">Términos de Servicio</a> · <a href="/privacidad.html">Política de Privacidad</a></p>
+
+</main>
+
+<script>
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+}
+(function() {
+  const saved = localStorage.getItem('kodesh_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+})();
+</script>
+</body>
+</html>
