@@ -1342,10 +1342,12 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
     gap: 6px;
     margin-top: 10px;
     width: 100%;
+    min-width: 0;
   }
+  .chapter-meta > * { min-width: 0; }
   .chapter-badge { font-size: 0.65rem; }
   .bible-text { font-size: 1.05rem; line-height: 1.85; overflow-wrap: break-word; word-break: break-word; }
-  .btn-study-chapter, .btn-notes-chapter, .btn-read-toggle {
+  .btn-study-chapter, .btn-notes-chapter, .btn-read-toggle, .btn-interlinear {
     font-size: 0.58rem;
     padding: 6px 10px;
     letter-spacing: 1px;
