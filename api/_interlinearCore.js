@@ -86,7 +86,7 @@ ${wordsList}`;
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 800,
+      max_tokens: Math.min(4096, Math.max(800, words.length * 60)),
       system,
       messages: [{ role: 'user', content: user }],
     }),
@@ -100,7 +100,17 @@ ${wordsList}`;
   try { parsed = JSON.parse(text.trim()); }
   catch(e) {
     const m = text.match(/\[[\s\S]*\]/);
-    parsed = m ? JSON.parse(m[0]) : [];
+    if (m) {
+      try { parsed = JSON.parse(m[0]); }
+      catch(e2) {
+        // Response was likely truncated mid-array. Recover whatever
+        // complete {...} objects appeared before the cut, in order.
+        const objs = text.match(/\{[^{}]*\}/g);
+        parsed = objs ? objs.map(o => { try { return JSON.parse(o); } catch { return null; } }).filter(Boolean) : [];
+      }
+    } else {
+      parsed = [];
+    }
   }
   if (!Array.isArray(parsed) || parsed.length !== words.length) {
     const fixed = [];
