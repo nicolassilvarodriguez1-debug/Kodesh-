@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Guía de Uso · KODESH</title>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim: #5a4820;
+  --gold-glow: rgba(201,168,76,0.15);
+  --bg: #05050a;
+  --bg2: #0a0a12;
+  --bg3: #0f0f1a;
+  --bg4: #141428;
+  --border: #1a1a2a;
+  --border2: #252538;
+  --text: #ede5d5;
+  --text-mid: #a09880;
+  --text-dim: #5a5870;
+  --green: #5ccc68;
+  --blue: #5a9cf0;
+  --red: #e05a5a;
+}
+html.light {
+  --gold: #8a6010;
+  --gold-bright: #6a4808;
+  --gold-dim: #d4a855;
+  --gold-glow: rgba(138,96,16,0.10);
+  --bg: #faf8f4;
+  --bg2: #f3efe8;
+  --bg3: #ece7dc;
+  --bg4: #e4ddd0;
+  --border: #ddd6c8;
+  --border2: #cec5b4;
+  --text: #1a1610;
+  --text-mid: #5a4e38;
+  --text-dim: #9a8e78;
+  --green: #2a8a30;
+  --blue: #1a5a9a;
+  --red: #c03030;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg2); position: sticky; top: 0; z-index: 50;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-hebrew { font-family: serif; font-size: 1.3rem; color: var(--gold); }
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; }
+.topbar-spacer { flex: 1; }
+.theme-toggle {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center; font-size: 1rem; flex-shrink: 0;
+}
+.theme-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
+.back-link {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+  border: 1px solid var(--border2); padding: 7px 14px; border-radius: 6px; transition: all 0.2s;
+  white-space: nowrap;
+}
+.back-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* ── HERO ── */
+.hero {
+  text-align: center; padding: 56px 24px 40px;
+  background: linear-gradient(180deg, var(--bg2), var(--bg));
+  border-bottom: 1px solid var(--border);
+}
+.hero-hebrew { font-family: serif; font-size: 2.4rem; color: var(--gold); margin-bottom: 8px; }
+.hero h1 {
+  font-family: 'Cinzel', serif; font-size: 1.9rem; font-weight: 900;
+  color: var(--text); letter-spacing: 1px; margin-bottom: 10px;
+}
+.hero p {
+  font-size: 1.05rem; color: var(--text-mid); max-width: 480px; margin: 0 auto;
+  font-style: italic;
+}
+
+/* ── TABLE OF CONTENTS ── */
+.toc-wrap { max-width: 880px; margin: 0 auto; padding: 32px 24px 0; }
+.toc {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.toc a {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px;
+  padding: 12px 14px; text-decoration: none; color: var(--text-mid);
+  font-size: 0.85rem; transition: all 0.2s;
+}
+.toc a:hover { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+.toc-icon { font-size: 1.15rem; flex-shrink: 0; }
+
+/* ── MAIN CONTENT ── */
+.doc { max-width: 880px; margin: 0 auto; padding: 48px 24px 100px; }
+
+.section {
+  margin-bottom: 56px;
+  scroll-margin-top: 90px;
+}
+.section-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.section-icon {
+  font-size: 1.6rem; width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg2); border: 1px solid var(--gold-dim); border-radius: 12px;
+  flex-shrink: 0;
+}
+.section-header h2 {
+  font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 700;
+  color: var(--gold-bright); letter-spacing: 0.5px;
+}
+.section-header .subtitle {
+  font-size: 0.85rem; color: var(--text-dim); margin-top: 2px;
+}
+
+.step {
+  display: flex; gap: 16px; margin-bottom: 22px;
+  padding-bottom: 22px; border-bottom: 1px solid var(--border);
+}
+.step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.step-num {
+  font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 900;
+  color: var(--gold); background: var(--bg3); border: 1px solid var(--gold-dim);
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-content { flex: 1; padding-top: 2px; }
+.step-content h3 {
+  font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 700;
+  color: var(--text); margin-bottom: 6px; letter-spacing: 0.3px;
+}
+.step-content p { font-size: 0.96rem; color: var(--text-mid); }
+.step-content p + p { margin-top: 8px; }
+
+.tip {
+  background: var(--bg2); border-left: 3px solid var(--gold-dim);
+  border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 10px;
+  font-size: 0.88rem; color: var(--text-mid);
+}
+.tip strong { color: var(--gold); }
+
+.gesture-row {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+}
+.gesture-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-mid);
+  padding: 6px 12px; border-radius: 20px;
+}
+.gesture-tag b { color: var(--gold); }
+
+.feature-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px; margin-top: 16px;
+}
+.feature-card {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px;
+  padding: 16px;
+}
+.feature-card .icon { font-size: 1.3rem; margin-bottom: 8px; }
+.feature-card h4 {
+  font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.5px;
+  color: var(--gold); margin-bottom: 6px;
+}
+.feature-card p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.55; }
+
+.color-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.color-chip { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text-mid); }
+.color-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+
+.premium-banner {
+  background: linear-gradient(135deg, var(--bg3), var(--gold-glow));
+  border: 1px solid var(--gold-dim); border-radius: 12px;
+  padding: 18px 20px; margin-top: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.premium-banner .icon { font-size: 1.5rem; }
+.premium-banner p { font-size: 0.88rem; color: var(--text-mid); }
+.premium-banner strong { color: var(--gold-bright); }
+
+.faq-item { margin-bottom: 16px; }
+.faq-item .q {
+  font-family: 'Cinzel', serif; font-size: 0.88rem; font-weight: 700;
+  color: var(--text); margin-bottom: 6px;
+}
+.faq-item .q::before { content: "P · "; color: var(--gold); }
+.faq-item .a { font-size: 0.92rem; color: var(--text-mid); }
+.faq-item .a::before { content: "R · "; color: var(--text-dim); }
+
+.back-to-top {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg2); border: 1px solid var(--gold-dim); color: var(--gold);
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; cursor: pointer; text-decoration: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  z-index: 40;
+}
+.back-to-top.visible { opacity: 1; pointer-events: auto; }
+
+footer {
+  text-align: center; padding: 32px 24px; border-top: 1px solid var(--border);
+  font-size: 0.8rem; color: var(--text-dim);
+}
+footer a { color: var(--gold); text-decoration: none; }
+
+@media (max-width: 640px) {
+  .hero h1 { font-size: 1.5rem; }
+  .hero-hebrew { font-size: 2rem; }
+  .doc { padding: 36px 16px 80px; }
+  .toc-wrap { padding: 24px 16px 0; }
+  .section-header h2 { font-size: 1.1rem; }
+  .back-link span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="logo">
+    <span class="logo-hebrew">קֹדֶשׁ</span>
+    <span class="logo-text">KODESH</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  <a href="/" class="back-link"><span>←</span> Volver a la app</a>
+</header>
+
+<section class="hero">
+  <div class="hero-hebrew">קֹדֶשׁ</div>
+  <h1>Guía de Uso de KODESH</h1>
+  <p>Todo lo que necesitas saber para aprovechar al máximo tu plataforma de estudio bíblico Hebreo-Mesiánico.</p>
+</section>
+
+<div class="toc-wrap">
+  <div class="toc">
+    <a href="#navegacion"><span class="toc-icon">📖</span> Navegar la Biblia</a>
+    <a href="#lexicon"><span class="toc-icon">✶</span> Lexicón Hebreo/Griego</a>
+    <a href="#interlineal"><span class="toc-icon">📜</span> Modo Interlineal</a>
+    <a href="#marcadores"><span class="toc-icon">🎨</span> Marcadores y Notas</a>
+    <a href="#asistente"><span class="toc-icon">✦</span> Asistente de Estudio</a>
+    <a href="#busqueda"><span class="toc-icon">🔍</span> Búsqueda</a>
+    <a href="#ciclo"><span class="toc-icon">🔥</span> Ciclo de Estudio</a>
+    <a href="#premium"><span class="toc-icon">👑</span> Premium</a>
+    <a href="#faq"><span class="toc-icon">❓</span> Preguntas Frecuentes</a>
+  </div>
+</div>
+
+<main class="doc">
+
+  <!-- ═══ NAVEGACIÓN ═══ -->
+  <section class="section" id="navegacion">
+    <div class="section-header">
+      <div class="section-icon">📖</div>
+      <div>
+        <h2>Navegar la Biblia</h2>
+        <div class="subtitle">Moverte entre libros, capítulos y versículos</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Elige Antiguo o Nuevo Testamento</h3>
+        <p>En el menú lateral (o el botón ☰ en móvil) verás dos pestañas: <strong>Antiguo</strong> y <strong>Nuevo</strong>. Selecciona el testamento que quieres leer.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Selecciona un libro</h3>
+        <p>Debajo aparece la lista completa de libros con tu progreso de lectura (por ejemplo "6/50" significa que llevas 6 de 50 capítulos leídos en Génesis). Toca cualquier libro para abrirlo.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Cambia de capítulo</h3>
+        <p>Dentro de un libro puedes pasar al capítulo siguiente o anterior con las flechas, o usar el selector de capítulos en la parte superior.</p>
+        <div class="tip"><strong>Tip:</strong> el botón verde <strong>✓ Leído</strong> marca el capítulo como completado y actualiza tu progreso automáticamente.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Cambia de versión bíblica</h3>
+        <p>En la barra superior puedes elegir entre las versiones disponibles (como RVR60) según tu preferencia de lectura.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ LEXICÓN ═══ -->
+  <section class="section" id="lexicon">
+    <div class="section-header">
+      <div class="section-icon">✶</div>
+      <div>
+        <h2>Lexicón Hebreo y Griego</h2>
+        <div class="subtitle">Descubre el significado original de cada palabra</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Toca cualquier palabra del texto</h3>
+        <p>Mientras lees, simplemente toca o haz click sobre cualquier palabra del versículo. KODESH identifica automáticamente la palabra exacta en hebreo (Antiguo Testamento) o griego (Nuevo Testamento) usada en ese pasaje específico.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Explora el panel del lexicón</h3>
+        <p>Se abre un panel con la palabra original, su transliteración, número Strong's, y definición. Según la palabra, también puedes ver:</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="icon">⛪</div>
+            <h4>Significado Bíblico</h4>
+            <p>El significado teológico profundo de la palabra en su contexto mesiánico.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">📜</div>
+            <h4>Origen de la Palabra</h4>
+            <p>La etimología y raíces del término en el idioma original.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">💡</div>
+            <h4>¿Sabías que?</h4>
+            <p>Datos curiosos que enriquecen tu comprensión del texto.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">❤️</div>
+            <h4>Aplícalo</h4>
+            <p>Una reflexión práctica para tu vida de fe hoy.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Explora palabras relacionadas y versículos clave</h3>
+        <p>Toca cualquier palabra relacionada para abrir su propio análisis, o toca un versículo en "Explorar en la Escritura" para saltar directamente a ese pasaje.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Copia o comparte</h3>
+        <p>Usa los íconos ⎘ y ↗ en la parte superior del panel para copiar el análisis al portapapeles o compartirlo directamente.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ INTERLINEAL ═══ -->
+  <section class="section" id="interlineal">
+    <div class="section-header">
+      <div class="section-icon">📜</div>
+      <div>
+        <h2>Modo Interlineal</h2>
+        <div class="subtitle">Lee el texto bíblico palabra por palabra en su idioma original</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Abre el modo Interlineal</h3>
+        <p>Dentro de cualquier capítulo, toca el botón <strong>📜 Interlineal</strong> ubicado junto a "Estudiar" y "Notas".</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Lee palabra por palabra</h3>
+        <p>Cada versículo se descompone en sus palabras originales (hebreo o griego), mostrando debajo de cada una su transliteración y traducción al español. Así puedes seguir el versículo en el idioma original sin perder el sentido.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Toca cualquier número Strong's</h3>
+        <p>Encima de cada palabra verás su código Strong's (como H7225 o G3056). Tócalo para abrir el lexicón completo de esa palabra específica.</p>
+        <div class="tip"><strong>Nota:</strong> la primera vez que abres un capítulo, el interlineal puede tardar unos segundos en generarse. Las próximas veces se carga al instante porque KODESH lo guarda en caché.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ MARCADORES ═══ -->
+  <section class="section" id="marcadores">
+    <div class="section-header">
+      <div class="section-icon">🎨</div>
+      <div>
+        <h2>Marcadores y Notas</h2>
+        <div class="subtitle">Resalta, anota y guarda tus versículos favoritos</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Abre el panel de acciones del versículo</h3>
+        <p>Sobre cualquier versículo, usa uno de estos gestos:</p>
+        <div class="gesture-row">
+          <span class="gesture-tag">📱 <b>Doble toque</b> en móvil</span>
+          <span class="gesture-tag">🖱️ <b>Click derecho</b> en computadora</span>
+        </div>
+        <p style="margin-top:10px">Se abre un panel desde abajo con todas las acciones disponibles para ese versículo.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Elige una acción rápida</h3>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="icon">✦</div>
+            <h4>Explicar</h4>
+            <p>Abre el asistente de estudio con una explicación del versículo.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">📜</div>
+            <h4>Interlineal</h4>
+            <p>Salta directo al modo interlineal de ese capítulo.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">📖</div>
+            <h4>Estudio Profundo</h4>
+            <p>Análisis estructurado: contexto histórico, idioma original, conexiones mesiánicas y aplicación.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">📝</div>
+            <h4>Nota</h4>
+            <p>Abre el panel de notas del capítulo para escribir tus reflexiones.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">↗</div>
+            <h4>Compartir</h4>
+            <p>Comparte el versículo con la cita incluida.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">⎘</div>
+            <h4>Copiar</h4>
+            <p>Copia el texto del versículo al portapapeles.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Resalta con un color</h3>
+        <p>Más abajo en el mismo panel, elige uno de los colores disponibles para marcar el versículo según su significado para ti:</p>
+        <div class="color-legend">
+          <span class="color-chip"><span class="color-dot" style="background:#5a9cf0"></span> Promesa</span>
+          <span class="color-chip"><span class="color-dot" style="background:#5ccc68"></span> Enseñanza</span>
+          <span class="color-chip"><span class="color-dot" style="background:#c9a84c"></span> Mesiánico</span>
+          <span class="color-chip"><span class="color-dot" style="background:#e05a5a"></span> Advertencia</span>
+          <span class="color-chip"><span class="color-dot" style="background:#b56ae0"></span> Oración</span>
+          <span class="color-chip"><span class="color-dot" style="background:#e0a050"></span> Profecía</span>
+          <span class="color-chip"><span class="color-dot" style="background:#888"></span> General</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Añade una nota opcional y guarda</h3>
+        <p>Puedes escribir una breve nota personal antes de tocar <strong>✓ Guardar marcador</strong>. Para quitar un marcador existente, toca <strong>Quitar</strong>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h3>Revisa todos tus marcadores</h3>
+        <p>Ve a la pestaña <strong>Marcadores</strong> en la navegación inferior (móvil) o el menú lateral (escritorio) para ver la lista completa, filtrar por color, y saltar directamente a cada versículo guardado.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ASISTENTE ═══ -->
+  <section class="section" id="asistente">
+    <div class="section-header">
+      <div class="section-icon">✦</div>
+      <div>
+        <h2>Asistente de Estudio</h2>
+        <div class="subtitle">Tu compañero de inteligencia artificial para profundizar en la Escritura</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Abre el asistente</h3>
+        <p>Toca el botón <strong>✦ Estudiar</strong> en cualquier capítulo, o el ícono ✦ en la barra superior. También se abre automáticamente cuando usas "Explicar" o "Estudio Profundo" desde el panel de un versículo.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Haz cualquier pregunta bíblica</h3>
+        <p>Puedes preguntar sobre el significado de un pasaje, conexiones entre la Torá y el Nuevo Testamento, contexto histórico, cumplimiento mesiánico en Yeshúa, o cualquier duda teológica desde una perspectiva Hebreo-Mesiánica.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Mantén el contexto del capítulo</h3>
+        <p>El asistente sabe en qué libro y capítulo estás leyendo, así que tus preguntas se responden con ese contexto en mente sin que tengas que repetirlo.</p>
+        <div class="tip"><strong>Tip:</strong> el plan gratuito tiene un número limitado de consultas mensuales al asistente. El plan Premium ofrece uso ampliado.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ BÚSQUEDA ═══ -->
+  <section class="section" id="busqueda">
+    <div class="section-header">
+      <div class="section-icon">🔍</div>
+      <div>
+        <h2>Búsqueda</h2>
+        <div class="subtitle">Encuentra versículos, palabras o temas en toda la Biblia</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Abre el buscador</h3>
+        <p>Toca <strong>🔍 Buscar</strong> en la barra superior o en la navegación inferior.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Escribe tu búsqueda</h3>
+        <p>Puedes buscar una palabra clave, una frase, o una referencia exacta (como "Génesis 1:1" o "Juan 3:16"). Los resultados muestran el versículo completo con la coincidencia resaltada.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Toca un resultado</h3>
+        <p>Te lleva directamente a ese capítulo y versículo dentro de la Biblia.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CICLO DE ESTUDIO ═══ -->
+  <section class="section" id="ciclo">
+    <div class="section-header">
+      <div class="section-icon">🔥</div>
+      <div>
+        <h2>Ciclo de Estudio y Racha</h2>
+        <div class="subtitle">Sigue el calendario de lectura de las porciones semanales (parashot)</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Observa la porción actual</h3>
+        <p>En la parte superior de cada libro verás un recuadro con la <strong>Porción de la semana</strong> (parashá), su nombre en hebreo, y el rango de capítulos que cubre — por ejemplo, "Bereshit — En el Principio · Génesis 1:1–6:8".</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Sigue tu progreso</h3>
+        <p>Los cuadros de color junto al nombre de la porción muestran cuántos capítulos de esa parashá ya marcaste como leídos. Toca <strong>Ver Ciclo</strong> para ver el calendario completo de todas las porciones del año.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Mantén tu racha</h3>
+        <p>El ícono 🔥 con un número en la barra superior muestra cuántos días consecutivos has leído la Biblia en KODESH. Lee al menos un capítulo cada día para mantener tu racha activa.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PREMIUM ═══ -->
+  <section class="section" id="premium">
+    <div class="section-header">
+      <div class="section-icon">👑</div>
+      <div>
+        <h2>Premium</h2>
+        <div class="subtitle">Desbloquea el potencial completo de tu estudio</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>¿Qué incluye Premium?</h3>
+        <p>El plan Premium elimina los límites mensuales de consultas al lexicón, al asistente de estudio, y a la generación del modo interlineal, además de futuras funciones exclusivas.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Cómo suscribirte</h3>
+        <p>Toca el botón <strong>✦ Premium</strong> en la barra superior para ver los planes disponibles y completar tu suscripción de forma segura a través de Stripe.</p>
+      </div>
+    </div>
+
+    <div class="premium-banner">
+      <span class="icon">✦</span>
+      <p>El plan gratuito te permite explorar todas las funciones de KODESH con límites mensuales razonables — perfecto para comenzar tu estudio sin compromiso.</p>
+    </div>
+  </section>
+
+  <!-- ═══ FAQ ═══ -->
+  <section class="section" id="faq">
+    <div class="section-header">
+      <div class="section-icon">❓</div>
+      <div>
+        <h2>Preguntas Frecuentes</h2>
+        <div class="subtitle">Dudas comunes sobre el uso de KODESH</div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">¿Por qué el interlineal tarda en cargar la primera vez?</div>
+      <div class="a">KODESH genera el análisis palabra por palabra usando inteligencia artificial la primera vez que alguien abre ese capítulo. Una vez generado, queda guardado y carga instantáneamente para todos los usuarios después.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">¿Por qué algunas palabras no muestran el lexicón al tocarlas?</div>
+      <div class="a">Palabras gramaticales como artículos, preposiciones o conjunciones (como "el", "de", "y") no tienen una entrada léxica propia en hebreo o griego, por lo que no se muestra ningún panel al tocarlas.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">¿Puedo usar KODESH sin conexión a internet?</div>
+      <div class="a">La lectura básica de la Biblia funciona con conexión limitada, pero las funciones de inteligencia artificial (lexicón, interlineal, asistente) requieren conexión a internet activa.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">¿Cómo cambio entre modo claro y oscuro?</div>
+      <div class="a">Toca el ícono ☀️/🌙 en la barra superior de la app para alternar entre los dos temas visuales.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">¿Mis marcadores y notas se guardan en la nube?</div>
+      <div class="a">Sí, todos tus marcadores, notas y tu progreso de lectura se sincronizan a tu cuenta, así que puedes acceder a ellos desde cualquier dispositivo donde inicies sesión.</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>KODESH · קֹדֶשׁ — Plataforma de Estudio Bíblico Hebreo-Mesiánico</p>
+  <p style="margin-top:6px"><a href="/terminos.html">Términos</a> · <a href="/privacidad.html">Privacidad</a> · <a href="/">Volver a la app</a></p>
+</footer>
+
+<a href="#top" class="back-to-top" id="backToTop">↑</a>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const isLight = html.classList.toggle('light');
+  document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('kodesh-theme', isLight ? 'light' : 'dark');
+}
+(function initTheme() {
+  const saved = localStorage.getItem('kodesh-theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeBtn').textContent = '☀️';
+  }
+})();
+
+const backToTop = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  backToTop.classList.toggle('visible', window.scrollY > 400);
+});
+</script>
+
+</body>
+</html>
