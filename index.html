@@ -1287,9 +1287,9 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
     align-items: center;
   }
   .logo-sep { display: none; }
-  .logo-text { font-size: 0.85rem; letter-spacing: 2px; flex-shrink: 0; }
-  .logo-hebrew { font-size: 1rem; }
-  .logo { flex-shrink: 0; }
+  .logo-text { font-size: 0.85rem; letter-spacing: 2px; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logo-hebrew { font-size: 1rem; flex-shrink: 0; }
+  .logo { flex-shrink: 1; min-width: 0; overflow: hidden; }
   .topbar-center { display: none; }
   .version-select { display: none; }
   .btn-premium { display: none; }
@@ -1298,12 +1298,17 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
   .btn-search-open { padding: 6px 8px; min-width: auto; flex-shrink: 0; }
   .topbar-ciclo { display: none; }
   .sidebar-toggle { flex-shrink: 0; }
-  .streak-badge { display: flex !important; font-size: 0.6rem; padding: 3px 6px; }
+  .streak-badge { display: flex !important; font-size: 0.6rem; padding: 3px 6px; flex-shrink: 0; }
   .usage-indicator { display: none !important; }
-  .btn-premium { display: flex !important; align-items: center; font-size: 0.48rem; padding: 4px 7px; letter-spacing: 0.8px; flex-shrink: 0; white-space: nowrap; }
-  .topbar-right { gap: 5px; flex-shrink: 0; }
-  .theme-toggle { width: 32px; height: 32px; padding: 0; font-size: 0.85rem; }
-  .user-btn { padding: 4px 8px; min-width: auto; }
+  .btn-premium {
+    display: flex !important; align-items: center;
+    font-size: 0.46rem; padding: 4px 6px; letter-spacing: 0.5px;
+    flex-shrink: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar-right { gap: 4px; flex-shrink: 1; min-width: 0; overflow: hidden; }
+  .theme-toggle { width: 32px; height: 32px; padding: 0; font-size: 0.85rem; flex-shrink: 0; }
+  .user-btn { padding: 4px 8px; min-width: auto; flex-shrink: 0; }
   .sidebar-toggle { padding: 6px 8px; font-size: 1rem; }
 
   /* ── Sidebar as bottom sheet ── */
