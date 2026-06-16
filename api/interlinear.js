@@ -3,14 +3,25 @@
 // for a given book/chapter.
 //
 // Flow:
-//   1. Check interlinear_cache for (book, chapter). If found, return it.
-//   2. If not found, read bible_source_words for that chapter.
-//      If no source words exist either -> not_available (book not yet supported).
-//   3. Generate gloss + transliteration per verse via Claude Haiku.
-//   4. Save results into interlinear_cache.
-//   5. Return the data.
+//   1. Check interlinear_cache for (book, chapter), regardless of plan.
+//      If found -> Premium users get it immediately; free users still get the paywall message.
+//   2. If NOT cached:
+//      - Premium user: generate synchronously, cache it, and return the full result.
+//      - Free user: respond with the paywall message immediately, but kick off
+//        generation in the background ("cache warming") so the chapter is ready
+//        the next time anyone (free or premium) requests it. The free user never
+//        waits for this and never sees the generated content themselves.
+//   3. If no source words exist for the book at all -> not_available (book not yet supported).
 
 import { sbGet, getUserPlan, groupByVerse, generateChapter } from './_interlinearCore.js';
+import { waitUntil } from '@vercel/functions';
+
+const PAYWALL_MESSAGE = 'El Modo Interlineal es una función Premium. Actualiza tu plan para acceder al texto hebreo/griego original con análisis palabra por palabra.';
+
+// Tracks chapters currently being warmed in the background, to avoid
+// triggering duplicate generations if several free users hit the same
+// uncached chapter in quick succession within the same server instance.
+const warmingInProgress = new Set();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,23 +35,23 @@ export default async function handler(req, res) {
 
   const bookU = book.toUpperCase();
   const chapterN = Number(chapter);
-
-  // Check premium
-  const plan = await getUserPlan(userId);
-  if (plan !== 'premium') {
-    return res.status(403).json({
-      error: 'premium_required',
-      message: 'El Modo Interlineal es una función Premium. Actualiza tu plan para acceder al texto hebreo/griego original con análisis palabra por palabra.',
-    });
-  }
+  const warmKey = `${bookU}:${chapterN}`;
 
   try {
-    // 1 — Check cache
+    const plan = await getUserPlan(userId);
+
+    // 1 — Check cache first, regardless of plan. This is cheap and lets us
+    // decide whether we even need to think about generation at all.
     const cached = await sbGet(
       `interlinear_cache?book=eq.${bookU}&chapter=eq.${chapterN}&select=verse,word_order,original_text,strongs,transliteration,gloss,language&order=verse.asc,word_order.asc`
     );
 
-    if (Array.isArray(cached) && cached.length > 0) {
+    const isCached = Array.isArray(cached) && cached.length > 0;
+
+    if (isCached) {
+      if (plan !== 'premium') {
+        return res.status(403).json({ error: 'premium_required', message: PAYWALL_MESSAGE });
+      }
       const verses = groupByVerse(cached, [
         { in: 'original_text', out: 'text' },
         { in: 'strongs', out: 'strongs' },
@@ -51,7 +62,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ book: bookU, chapter: chapterN, verses });
     }
 
-    // 2 — Read source words
+    // Not cached yet. Read source words — needed either way (to generate now
+    // for Premium, or to warm the cache in the background for free users).
     const source = await sbGet(
       `bible_source_words?book=eq.${bookU}&chapter=eq.${chapterN}&select=verse,word_order,original_text,strongs,language&order=verse.asc,word_order.asc`
     );
@@ -63,9 +75,26 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3-5 — Generate, cache, and return
-    const resultVerses = await generateChapter(bookU, chapterN, source, 8);
-    return res.status(200).json({ book: bookU, chapter: chapterN, verses: resultVerses });
+    if (plan === 'premium') {
+      // Premium + not cached: generate synchronously and return the full result.
+      const resultVerses = await generateChapter(bookU, chapterN, source, 8);
+      return res.status(200).json({ book: bookU, chapter: chapterN, verses: resultVerses });
+    }
+
+    // Free user + not cached: respond with the paywall immediately, and warm
+    // the cache in the background so it's ready next time (for any user).
+    // waitUntil keeps the function alive long enough for generateChapter to
+    // finish and save to cache, even though we've already sent the response.
+    if (!warmingInProgress.has(warmKey)) {
+      warmingInProgress.add(warmKey);
+      waitUntil(
+        generateChapter(bookU, chapterN, source, 8)
+          .catch(err => console.error(`Background warm failed for ${warmKey}:`, err.message))
+          .finally(() => warmingInProgress.delete(warmKey))
+      );
+    }
+
+    return res.status(403).json({ error: 'premium_required', message: PAYWALL_MESSAGE });
 
   } catch(err) {
     console.error('Interlinear error:', err);
