@@ -13,7 +13,7 @@ const CONTEXT_SENSITIVE = new Set([
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const LEXICON_LIMITS = { free: 30, premium: 999999 };
+const LEXICON_LIMITS = { free: 30, premium: 800 };
 
 async function sbFetch(path, options = {}) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
