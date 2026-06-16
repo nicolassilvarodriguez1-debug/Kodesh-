@@ -126,7 +126,13 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { word, bookId, chapter, verse, verseContext, userId } = req.body;
+  const { word, strongsCode, bookId, chapter, verse, verseContext, userId } = req.body;
+
+  // Direct Strong's lookup (used by the Interlinear panel when clicking a Strong's number)
+  if (strongsCode && !word) {
+    return handleStrongsLookup(strongsCode, userId, res);
+  }
+
   if (!word) return res.status(400).json({ error: 'word required' });
 
   const isNT = NT_BOOKS.has(bookId);
@@ -247,6 +253,109 @@ Identifica la palabra ${lang} EXACTA usada en este versículo específico. Si ha
 
   } catch(err) {
     console.error('Lexicon error:', err.message);
+    return res.status(500).json({ found: false, error: err.message });
+  }
+}
+
+// Direct Strong's code lookup — used by the Interlinear panel.
+// Cached separately under word = "strongs_<code>" (e.g. "strongs_h776").
+async function handleStrongsLookup(strongsCode, userId, res) {
+  const isNT = strongsCode.toUpperCase().startsWith('G');
+  const testament = isNT ? 'NT' : 'AT';
+  const cacheKey = `strongs_${strongsCode.toLowerCase()}`;
+
+  // 1 — Check cache
+  try {
+    const w = encodeURIComponent(cacheKey);
+    const cacheRes = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
+    const cacheData = await cacheRes.json();
+    if (cacheData?.[0]?.strongs) {
+      return res.status(200).json({
+        found: true,
+        strongs: cacheData[0].strongs,
+        lemma: cacheData[0].lemma,
+        transliteration: cacheData[0].transliteration,
+        pronunciation: cacheData[0].pronunciation,
+        definition: cacheData[0].definition,
+        language: cacheData[0].language,
+        fromCache: true,
+      });
+    }
+  } catch(e) {}
+
+  // 2 — Check user limits (same pool as word lookups)
+  if (userId) {
+    const [plan, used] = await Promise.all([getUserPlan(userId), getLexiconUsage(userId)]);
+    const limit = LEXICON_LIMITS[plan] || LEXICON_LIMITS.free;
+    if (used >= limit) {
+      return res.status(429).json({
+        error: 'limit_reached', plan, used, limit,
+        message: plan === 'free'
+          ? `Alcanzaste tu límite de ${limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
+          : `Alcanzaste tu límite de consultas este mes.`,
+      });
+    }
+  }
+
+  // 3 — Generate via AI from the Strong's code alone
+  const lang = isNT ? 'griego' : 'hebreo';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: `Eres un experto en léxico bíblico ${lang} para KODESH (plataforma Hebreo-Mesiánica). Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj.
+
+Responde SOLO JSON:
+{"found":true,"strongs":"H776","lemma":"אֶרֶץ","transliteration":"erets","pronunciation":"eh'-rets","definition":"Tierra, suelo, país. Palabra muy frecuente que designa tanto la tierra física como una nación o territorio específico.","language":"hebreo"}
+
+Si el código no existe: {"found":false}`,
+        messages: [{
+          role: 'user',
+          content: `Genera la entrada léxica completa para el número Strong's ${strongsCode.toUpperCase()} (${lang} bíblico).`
+        }]
+      })
+    });
+
+    if (!response.ok) throw new Error(`API error ${response.status}`);
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    let parsed;
+    try { parsed = JSON.parse(text.trim()); }
+    catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { found: false }; }
+
+    if (parsed.found) {
+      try {
+        await sbFetch('lexicon_cache', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({
+            word: cacheKey,
+            testament,
+            strongs: parsed.strongs,
+            lemma: parsed.lemma,
+            transliteration: parsed.transliteration,
+            pronunciation: parsed.pronunciation,
+            definition: parsed.definition,
+            language: parsed.language,
+          })
+        });
+      } catch(e) {}
+      if (userId) await incrementLexiconUsage(userId);
+    }
+
+    return res.status(200).json(parsed);
+
+  } catch(err) {
+    console.error('Strongs lookup error:', err.message);
     return res.status(500).json({ found: false, error: err.message });
   }
 }
