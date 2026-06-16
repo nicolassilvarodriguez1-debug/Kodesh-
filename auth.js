@@ -4,6 +4,10 @@
 const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 
+// Versión actual de los Términos y Condiciones. Si actualizas terminos.html,
+// cambia esta fecha para que TODOS los usuarios deban re-aceptar la nueva versión.
+const TERMS_VERSION = '2026-06-16';
+
 let _supabase = null;
 let currentUser = null;
 
@@ -56,6 +60,13 @@ async function loadUserProfile(userId) {
 
 /* ── USER LOGGED IN ── */
 async function onUserLoggedIn(user) {
+  // Gate: must accept current Terms version before anything else loads.
+  const accepted = await checkTermsAccepted(user.id);
+  if (!accepted) {
+    showTermsGateModal(user.id);
+    return; // Stop here — rest of init resumes after acceptance, via acceptTermsAndContinue()
+  }
+
   // Check if this is a different user than before
   const lastUserId = localStorage.getItem('kodesh_last_user');
   if (lastUserId && lastUserId !== user.id) {
@@ -109,6 +120,130 @@ async function onUserLoggedIn(user) {
       }
     } catch(e) { console.warn('Confirm error:', e.message); }
   }
+}
+
+/* ════════════════════════════════════
+   TERMS & CONDITIONS ACCEPTANCE GATE
+   Registro legal de aceptación — evidencia con fecha, versión, IP y user agent.
+════════════════════════════════════ */
+
+async function checkTermsAccepted(userId) {
+  const sb = getSupabase();
+  if (!sb) return true; // fail-open if Supabase unreachable, to avoid bricking the app
+  try {
+    const { data, error } = await sb
+      .from('user_terms_acceptance')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('terms_version', TERMS_VERSION)
+      .maybeSingle();
+    if (error) { console.warn('Terms check error:', error.message); return true; }
+    return !!data;
+  } catch(e) {
+    console.warn('Terms check exception:', e.message);
+    return true;
+  }
+}
+
+async function getClientIp() {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    return data.ip || null;
+  } catch(e) { return null; }
+}
+
+async function recordTermsAcceptance(userId) {
+  const sb = getSupabase();
+  if (!sb) return false;
+  const ip = await getClientIp();
+  try {
+    const { error } = await sb.from('user_terms_acceptance').insert({
+      user_id: userId,
+      terms_version: TERMS_VERSION,
+      ip_address: ip,
+      user_agent: navigator.userAgent,
+    });
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.error('Error saving terms acceptance:', e.message);
+    return false;
+  }
+}
+
+function showTermsGateModal(userId) {
+  if (document.getElementById('termsGateOverlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'termsGateOverlay';
+  overlay.style.cssText = `
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    backdrop-filter: blur(4px);
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background:var(--bg2, #0a0a12); border:1px solid var(--gold-dim, #5a4820);
+      border-radius:16px; max-width:480px; width:100%; padding:32px 28px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.5); text-align:center;
+    ">
+      <div style="font-size:2.2rem; margin-bottom:12px;">📜</div>
+      <h2 style="font-family:'Cinzel',serif; font-size:1.15rem; color:var(--gold, #c9a84c); margin-bottom:14px; letter-spacing:0.5px;">
+        Actualizamos nuestros Términos
+      </h2>
+      <p style="font-family:'Crimson Pro',serif; font-size:0.95rem; color:var(--text-mid, #a09880); line-height:1.6; margin-bottom:22px;">
+        Para continuar usando KODESH, por favor revisa y acepta nuestros
+        <a href="/terminos.html" target="_blank" style="color:var(--gold,#c9a84c); text-decoration:underline;">Términos y Condiciones</a>
+        y nuestra
+        <a href="/privacidad.html" target="_blank" style="color:var(--gold,#c9a84c); text-decoration:underline;">Política de Privacidad</a>.
+      </p>
+      <label style="display:flex; align-items:flex-start; gap:10px; text-align:left; margin-bottom:22px; cursor:pointer; font-size:0.85rem; color:var(--text,#ede5d5);">
+        <input type="checkbox" id="termsGateCheckbox" style="margin-top:3px; width:16px; height:16px; flex-shrink:0; accent-color: var(--gold,#c9a84c);">
+        <span>He leído y acepto los Términos y Condiciones y la Política de Privacidad de KODESH.</span>
+      </label>
+      <button id="termsGateAcceptBtn" disabled style="
+        width:100%; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:1px; text-transform:uppercase;
+        background:var(--gold-dim,#5a4820); color:#fff; border:none; border-radius:8px;
+        padding:14px; cursor:not-allowed; opacity:0.5; transition: all 0.2s;
+      ">Aceptar y continuar</button>
+      <p id="termsGateError" style="color:var(--red,#e05a5a); font-size:0.8rem; margin-top:10px; display:none;">
+        Hubo un problema al guardar tu aceptación. Intenta de nuevo.
+      </p>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  const checkbox = document.getElementById('termsGateCheckbox');
+  const acceptBtn = document.getElementById('termsGateAcceptBtn');
+
+  checkbox.addEventListener('change', () => {
+    acceptBtn.disabled = !checkbox.checked;
+    acceptBtn.style.opacity = checkbox.checked ? '1' : '0.5';
+    acceptBtn.style.cursor = checkbox.checked ? 'pointer' : 'not-allowed';
+    acceptBtn.style.background = checkbox.checked ? 'var(--gold, #c9a84c)' : 'var(--gold-dim, #5a4820)';
+    acceptBtn.style.color = checkbox.checked ? 'var(--bg, #05050a)' : '#fff';
+  });
+
+  acceptBtn.addEventListener('click', async () => {
+    acceptBtn.disabled = true;
+    acceptBtn.textContent = 'Guardando...';
+    const errorEl = document.getElementById('termsGateError');
+    const ok = await recordTermsAcceptance(userId);
+    if (ok) {
+      overlay.remove();
+      document.body.style.overflow = '';
+      // Resume the normal login flow now that terms are accepted.
+      onUserLoggedIn(currentUser);
+    } else {
+      errorEl.style.display = 'block';
+      acceptBtn.disabled = false;
+      acceptBtn.textContent = 'Aceptar y continuar';
+    }
+  });
 }
 
 /* ── USER LOGGED OUT ── */
