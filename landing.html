@@ -261,6 +261,16 @@ html, body {
 }
 .footer-link:hover { color: var(--gold); }
 .footer-copy { font-size: 0.7rem; color: var(--text-dim); font-style: italic; }
+.footer-legal {
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-family: 'Crimson Pro', serif; font-size: 0.85rem;
+}
+.footer-legal a {
+  color: var(--gold); text-decoration: underline; transition: opacity 0.2s;
+}
+.footer-legal a:hover { opacity: 0.8; }
+.footer-legal .sep { color: var(--text-dim); margin: 0 8px; }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeDown {
@@ -403,6 +413,13 @@ html, body {
       <a href="/login.html" class="footer-link" id="footerAuthLink">Iniciar sesión</a>
     </div>
     <div class="footer-copy">KODESH · קֹדֶשׁ · kodeshbible.com · © 2026</div>
+    <div class="footer-legal">
+      <a href="/terminos.html">Términos de Servicio</a>
+      <span class="sep">·</span>
+      <a href="/privacidad.html">Política de Privacidad</a>
+      <span class="sep">·</span>
+      <a href="/cookies.html">Cookies</a>
+    </div>
   </footer>
 
 </div>
