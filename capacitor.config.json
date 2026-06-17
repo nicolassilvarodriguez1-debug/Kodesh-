@@ -1,0 +1,24 @@
+{
+  "appId": "com.iglesiafreedom.kodesh",
+  "appName": "KODESH",
+  "webDir": "www",
+  "ios": {
+    "allowsLinkPreview": false,
+    "contentInset": "always"
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#05050a"
+    },
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}
