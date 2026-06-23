@@ -176,6 +176,139 @@ const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ══════════════════════════════════════════
+// REVENUECAT — STOREKIT INTEGRATION
+// ══════════════════════════════════════════
+const RC_API_KEY = 'appl_vspUVvGMnobdbtulUhMZoDptiEK';
+const RC_ENTITLEMENT = 'premium';
+const PRODUCT_ID = 'com.iglesiafreedom.kodesh.premium.monthly';
+
+let rcConfigured = false;
+let PurchasesSDK = null;
+
+async function initRevenueCat(userId) {
+  // Solo inicializar en app nativa (Capacitor iOS/Android)
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  try {
+    const mod = await import('/node_modules/@revenuecat/purchases-capacitor/dist/esm/index.js').catch(() => null);
+    if (!mod) { console.warn('RevenueCat SDK no disponible'); return; }
+    PurchasesSDK = mod.Purchases;
+    await PurchasesSDK.configure({
+      apiKey: RC_API_KEY,
+      appUserID: userId,
+    });
+    rcConfigured = true;
+    console.log('[RC] RevenueCat configurado para:', userId);
+  } catch(e) {
+    console.warn('[RC] Init error:', e.message);
+  }
+}
+
+async function purchasePremium() {
+  // En web: redirigir a Stripe como antes
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+    window.location.href = '/index.html';
+    return;
+  }
+
+  const btn = document.getElementById('btnPremium');
+  if (!rcConfigured || !PurchasesSDK) {
+    if (btn) btn.textContent = 'Cargando...';
+    await new Promise(r => setTimeout(r, 1500));
+    if (!rcConfigured) {
+      alert('La tienda no está disponible. Intenta de nuevo.');
+      if (btn) btn.textContent = '$5.99/mes →';
+      return;
+    }
+  }
+
+  try {
+    if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
+
+    // Obtener offerings desde RevenueCat
+    const { current } = await PurchasesSDK.getOfferings();
+    if (!current || !current.availablePackages?.length) {
+      throw new Error('No hay productos disponibles en este momento.');
+    }
+
+    // Buscar el package del producto mensual
+    const pkg = current.availablePackages.find(p =>
+      p.product?.identifier === PRODUCT_ID
+    ) || current.monthly || current.availablePackages[0];
+
+    if (!pkg) throw new Error('Producto no encontrado.');
+
+    // Iniciar compra nativa StoreKit
+    const { customerInfo } = await PurchasesSDK.purchasePackage({ aPackage: pkg });
+
+    // Verificar que el entitlement Premium está activo
+    if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
+      await syncPremiumWithSupabase();
+      alert('🎉 ¡Bienvenido a KODESH Premium!');
+      window.location.reload();
+    } else {
+      throw new Error('La compra no pudo verificarse. Contacta soporte.');
+    }
+
+  } catch(e) {
+    console.error('[RC] Purchase error:', e);
+    if (btn) { btn.textContent = '$5.99/mes →'; btn.disabled = false; }
+    // No mostrar error si el usuario simplemente canceló
+    const cancelled = e.message?.toLowerCase().includes('cancel') ||
+                      e.code === 'PURCHASE_CANCELLED';
+    if (!cancelled) {
+      alert('Hubo un problema con la compra: ' + (e.message || 'Error desconocido'));
+    }
+  }
+}
+
+async function restorePurchases() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  if (!rcConfigured || !PurchasesSDK) {
+    alert('La tienda no está disponible. Intenta de nuevo.');
+    return;
+  }
+
+  try {
+    const btn = document.getElementById('btnRestore');
+    if (btn) { btn.textContent = 'Restaurando...'; btn.disabled = true; }
+
+    const { customerInfo } = await PurchasesSDK.restorePurchases();
+    const isPremium = customerInfo?.entitlements?.active?.[RC_ENTITLEMENT];
+
+    if (isPremium) {
+      await syncPremiumWithSupabase();
+      alert('✓ Compras restauradas. ¡Bienvenido de vuelta a Premium!');
+      window.location.reload();
+    } else {
+      alert('No se encontraron compras previas de Premium.');
+      if (btn) { btn.textContent = 'Restaurar compras'; btn.disabled = false; }
+    }
+  } catch(e) {
+    console.error('[RC] Restore error:', e);
+    alert('Error al restaurar: ' + (e.message || 'Error desconocido'));
+  }
+}
+
+async function syncPremiumWithSupabase() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) return;
+  try {
+    await sb.from('user_plans').upsert({
+      user_id: session.user.id,
+      plan: 'premium',
+      subscription_status: 'active',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    console.log('[RC] Premium sincronizado con Supabase');
+  } catch(e) {
+    console.warn('[RC] Sync error:', e.message);
+  }
+}
+// ══════════════════════════════════════════
+// FIN REVENUECAT
+// ══════════════════════════════════════════
+
 const BOOK_NAMES = {
   GEN:'Génesis',EXO:'Éxodo',LEV:'Levítico',NUM:'Números',DEU:'Deuteronomio',
   JOS:'Josué',JDG:'Jueces',RUT:'Rut','1SA':'1 Samuel','2SA':'2 Samuel',
@@ -222,6 +355,8 @@ async function init() {
     window.location.href = '/login.html';
     return;
   }
+  // Inicializar RevenueCat en paralelo con la carga del perfil
+  initRevenueCat(session.user.id);
   await loadProfile(session.user);
 }
 
@@ -252,7 +387,6 @@ async function loadProfile(user) {
   const readPct = Math.round((chaptersRead / TOTAL_CHAPTERS) * 100 * 10) / 10;
   const provider = user.app_metadata?.provider || 'email';
 
-  // Search limit
   const searchLimit = isPremium ? 80 : 10;
   const assistantLimit = isPremium ? 70 : 15;
   const lexiconLimit = isPremium ? 999 : 30;
@@ -261,14 +395,15 @@ async function loadProfile(user) {
   const assistantUsed = usage.assistant_used || 0;
   const lexiconUsed = usage.lexicon_used || 0;
 
-  // Calendar (last 5 weeks)
   const calendarHtml = buildCalendar(profile.reading_goal_chapters || 2);
 
-  // Reading progress by testament
   const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
   const ntRead = progress.filter(p => NT_BOOKS.has(p.book_id)).length;
   const atRead = progress.length - ntRead;
   const NT_TOTAL = 260, AT_TOTAL = 929;
+
+  // Detectar si estamos en app nativa para mostrar botón correcto
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
 
   document.getElementById('mainContent').innerHTML = `
     <!-- HERO -->
@@ -290,6 +425,7 @@ async function loadProfile(user) {
       <div class="profile-actions">
         <a href="/index.html" class="btn-read">📖 Abrir Biblia</a>
         <button class="btn-logout" onclick="signOut()">Cerrar sesión</button>
+        ${isNative ? `<button id="btnRestore" class="btn-logout" onclick="restorePurchases()" style="font-size:0.48rem;">Restaurar compras</button>` : ''}
       </div>
     </div>
 
@@ -383,7 +519,9 @@ async function loadProfile(user) {
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium</div>
             <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
           </div>
-          <a href="/index.html" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;text-decoration:none;white-space:nowrap;font-weight:700;">$5.99/mes →</a>
+          <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
+            ${isNative ? '$5.99/mes →' : 'Ver planes →'}
+          </button>
         </div>` : ''}
       </div>
     </div>
@@ -447,8 +585,6 @@ function switchTab(tab, btn) {
 function buildCalendar(goalChapters) {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  
-  // Build 5 weeks back
   const days = [];
   for (let i = 34; i >= 0; i--) {
     const d = new Date(today);
@@ -459,10 +595,8 @@ function buildCalendar(goalChapters) {
     try { const parsed = JSON.parse(raw); count = typeof parsed === 'number' ? parsed : (parsed?.count || 0); } catch(e) {}
     days.push({ str, day: d.getDate(), count, isToday: str === todayStr });
   }
-
   const weeks = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-
   return weeks.map(week => `
     <div class="cal-week">
       ${week.map(d => {
