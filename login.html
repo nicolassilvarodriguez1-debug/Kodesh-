@@ -19,6 +19,45 @@
   --text:#ede5d5; --text-mid:#a09880; --text-dim:#5a5870;
   --green:#5ccc68; --red:#e05a5a;
 }
+/* ── MODO CLARO ── */
+body.light {
+  --bg:#f5f0e8; --bg2:#fffdf7; --bg3:#f0ebe0;
+  --border:#e0d8c8; --border2:#d4cbb8;
+  --text:#1a1408; --text-mid:#5a4e38; --text-dim:#9a8e78;
+  --gold:#a07828; --gold-bright:#c9a84c; --gold-dim:#c9a84c;
+  --gold-glow:rgba(160,120,40,0.12);
+  --green:#2d8a3e; --red:#c0392b;
+}
+
+/* Ajuste del gradiente de fondo en modo claro */
+body.light::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(160,120,40,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(180,150,80,0.08) 0%, transparent 50%);
+}
+
+/* Toggle de modo */
+.theme-toggle {
+  position:fixed;
+  top:16px;
+  right:16px;
+  z-index:100;
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:6px 12px;
+  cursor:pointer;
+  font-family:'Cinzel',serif;
+  font-size:0.6rem;
+  letter-spacing:1px;
+  color:var(--text-dim);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:all 0.2s;
+}
+.theme-toggle:hover { border-color:var(--gold-dim); color:var(--gold); }
+
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 body {
   font-family:'Crimson Pro',Georgia,serif;
@@ -263,6 +302,11 @@ body::before {
 </head>
 <body>
 
+<button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+  <span id="themeIcon">☀️</span>
+  <span id="themeLabel">Claro</span>
+</button>
+
 <div class="auth-wrap">
 
   <!-- Logo -->
@@ -488,6 +532,30 @@ async function forgotPassword() {
     showMsg('login-msg', 'success', '✓ Revisa tu correo para restablecer tu contraseña');
   }
 }
+
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
+  updateThemeToggle(isLight);
+}
+
+function updateThemeToggle(isLight) {
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+  if (!icon || !label) return;
+  icon.textContent = isLight ? '🌙' : '☀️';
+  label.textContent = isLight ? 'Oscuro' : 'Claro';
+}
+
+// Apply saved theme on load
+(function() {
+  const saved = localStorage.getItem('kodesh_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    updateThemeToggle(true);
+  }
+})();
 </script>
 </body>
 </html>
