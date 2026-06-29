@@ -75,6 +75,32 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .btn-read:hover { opacity:0.85; }
 .btn-logout { font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:8px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s; }
 .btn-logout:hover { border-color:var(--red); color:var(--red); }
+.btn-delete { font-family:'Cinzel',serif; font-size:0.48rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid rgba(224,92,92,0.3); color:var(--red); padding:6px 12px; border-radius:8px; cursor:pointer; transition:all 0.2s; opacity:0.7; }
+.btn-delete:hover { opacity:1; border-color:var(--red); background:rgba(224,92,92,0.08); }
+
+/* MODAL ELIMINAR CUENTA */
+.delete-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  z-index:9999; display:flex; align-items:center; justify-content:center;
+  padding:20px; backdrop-filter:blur(4px);
+}
+.delete-modal {
+  background:var(--bg2); border:1px solid rgba(224,92,92,0.3);
+  border-radius:16px; max-width:420px; width:100%;
+  padding:32px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  text-align:center;
+}
+.delete-modal-icon { font-size:2.5rem; margin-bottom:12px; }
+.delete-modal-title { font-family:'Cinzel',serif; font-size:1rem; color:var(--red); margin-bottom:12px; letter-spacing:1px; }
+.delete-modal-text { font-size:0.9rem; color:var(--text-mid); line-height:1.6; margin-bottom:20px; }
+.delete-modal-confirm { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text-dim); font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; padding:10px; border-radius:8px; margin-bottom:12px; outline:none; }
+.delete-modal-confirm:focus { border-color:var(--red); }
+.delete-modal-buttons { display:flex; gap:10px; }
+.btn-cancel-delete { flex:1; font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:10px; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+.btn-cancel-delete:hover { border-color:var(--gold); color:var(--gold); }
+.btn-confirm-delete { flex:1; font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; text-transform:uppercase; background:var(--red); border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; transition:opacity 0.2s; }
+.btn-confirm-delete:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-confirm-delete:not(:disabled):hover { opacity:0.85; }
 
 /* STATS GRID */
 .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
@@ -187,16 +213,12 @@ let rcConfigured = false;
 let PurchasesSDK = null;
 
 async function initRevenueCat(userId) {
-  // Solo inicializar en app nativa (Capacitor iOS/Android)
   if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
   try {
     const mod = await import('/node_modules/@revenuecat/purchases-capacitor/dist/esm/index.js').catch(() => null);
     if (!mod) { console.warn('RevenueCat SDK no disponible'); return; }
     PurchasesSDK = mod.Purchases;
-    await PurchasesSDK.configure({
-      apiKey: RC_API_KEY,
-      appUserID: userId,
-    });
+    await PurchasesSDK.configure({ apiKey: RC_API_KEY, appUserID: userId });
     rcConfigured = true;
     console.log('[RC] RevenueCat configurado para:', userId);
   } catch(e) {
@@ -205,12 +227,10 @@ async function initRevenueCat(userId) {
 }
 
 async function purchasePremium() {
-  // En web: redirigir a Stripe como antes
   if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
     window.location.href = '/index.html';
     return;
   }
-
   const btn = document.getElementById('btnPremium');
   if (!rcConfigured || !PurchasesSDK) {
     if (btn) btn.textContent = 'Cargando...';
@@ -221,62 +241,36 @@ async function purchasePremium() {
       return;
     }
   }
-
   try {
     if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
-
-    // Obtener offerings desde RevenueCat
     const { current } = await PurchasesSDK.getOfferings();
-    if (!current || !current.availablePackages?.length) {
-      throw new Error('No hay productos disponibles en este momento.');
-    }
-
-    // Buscar el package del producto mensual
-    const pkg = current.availablePackages.find(p =>
-      p.product?.identifier === PRODUCT_ID
-    ) || current.monthly || current.availablePackages[0];
-
+    if (!current || !current.availablePackages?.length) throw new Error('No hay productos disponibles.');
+    const pkg = current.availablePackages.find(p => p.product?.identifier === PRODUCT_ID) || current.monthly || current.availablePackages[0];
     if (!pkg) throw new Error('Producto no encontrado.');
-
-    // Iniciar compra nativa StoreKit
     const { customerInfo } = await PurchasesSDK.purchasePackage({ aPackage: pkg });
-
-    // Verificar que el entitlement Premium está activo
     if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
       await syncPremiumWithSupabase();
       alert('🎉 ¡Bienvenido a KODESH Premium!');
       window.location.reload();
     } else {
-      throw new Error('La compra no pudo verificarse. Contacta soporte.');
+      throw new Error('La compra no pudo verificarse.');
     }
-
   } catch(e) {
     console.error('[RC] Purchase error:', e);
     if (btn) { btn.textContent = '$5.99/mes →'; btn.disabled = false; }
-    // No mostrar error si el usuario simplemente canceló
-    const cancelled = e.message?.toLowerCase().includes('cancel') ||
-                      e.code === 'PURCHASE_CANCELLED';
-    if (!cancelled) {
-      alert('Hubo un problema con la compra: ' + (e.message || 'Error desconocido'));
-    }
+    const cancelled = e.message?.toLowerCase().includes('cancel') || e.code === 'PURCHASE_CANCELLED';
+    if (!cancelled) alert('Hubo un problema con la compra: ' + (e.message || 'Error desconocido'));
   }
 }
 
 async function restorePurchases() {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
-  if (!rcConfigured || !PurchasesSDK) {
-    alert('La tienda no está disponible. Intenta de nuevo.');
-    return;
-  }
-
+  if (!rcConfigured || !PurchasesSDK) { alert('La tienda no está disponible.'); return; }
   try {
     const btn = document.getElementById('btnRestore');
     if (btn) { btn.textContent = 'Restaurando...'; btn.disabled = true; }
-
     const { customerInfo } = await PurchasesSDK.restorePurchases();
-    const isPremium = customerInfo?.entitlements?.active?.[RC_ENTITLEMENT];
-
-    if (isPremium) {
+    if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
       await syncPremiumWithSupabase();
       alert('✓ Compras restauradas. ¡Bienvenido de vuelta a Premium!');
       window.location.reload();
@@ -295,18 +289,113 @@ async function syncPremiumWithSupabase() {
   if (!session?.user) return;
   try {
     await sb.from('user_plans').upsert({
-      user_id: session.user.id,
-      plan: 'premium',
-      subscription_status: 'active',
-      updated_at: new Date().toISOString(),
+      user_id: session.user.id, plan: 'premium',
+      subscription_status: 'active', updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
-    console.log('[RC] Premium sincronizado con Supabase');
+  } catch(e) { console.warn('[RC] Sync error:', e.message); }
+}
+
+// ══════════════════════════════════════════
+// ELIMINAR CUENTA
+// ══════════════════════════════════════════
+function showDeleteAccountModal() {
+  if (document.getElementById('deleteModalOverlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'deleteModalOverlay';
+  overlay.className = 'delete-modal-overlay';
+  overlay.innerHTML = `
+    <div class="delete-modal">
+      <div class="delete-modal-icon">⚠️</div>
+      <div class="delete-modal-title">Eliminar Cuenta</div>
+      <div class="delete-modal-text">
+        Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán todos tus datos:
+        progreso de lectura, notas, marcadores, racha, y tu cuenta de acceso.<br><br>
+        Para confirmar, escribe <strong>ELIMINAR</strong> en el campo de abajo.
+      </div>
+      <input
+        type="text"
+        id="deleteConfirmInput"
+        class="delete-modal-confirm"
+        placeholder="Escribe ELIMINAR para confirmar"
+        oninput="checkDeleteConfirm()"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+      />
+      <div id="deleteError" style="color:var(--red);font-size:0.8rem;margin-bottom:10px;display:none;">
+        Hubo un error al eliminar tu cuenta. Intenta de nuevo.
+      </div>
+      <div class="delete-modal-buttons">
+        <button class="btn-cancel-delete" onclick="closeDeleteModal()">Cancelar</button>
+        <button class="btn-confirm-delete" id="btnConfirmDelete" onclick="confirmDeleteAccount()" disabled>
+          Eliminar cuenta
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('deleteConfirmInput')?.focus(), 100);
+}
+
+function checkDeleteConfirm() {
+  const input = document.getElementById('deleteConfirmInput');
+  const btn = document.getElementById('btnConfirmDelete');
+  if (!input || !btn) return;
+  btn.disabled = input.value.trim().toUpperCase() !== 'ELIMINAR';
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModalOverlay')?.remove();
+  document.body.style.overflow = '';
+}
+
+async function confirmDeleteAccount() {
+  const btn = document.getElementById('btnConfirmDelete');
+  const errorEl = document.getElementById('deleteError');
+  if (btn) { btn.disabled = true; btn.textContent = 'Eliminando...'; }
+  if (errorEl) errorEl.style.display = 'none';
+
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) throw new Error('No hay sesión activa');
+    const userId = session.user.id;
+
+    // Eliminar todos los datos del usuario en Supabase
+    await Promise.all([
+      sb.from('reading_progress').delete().eq('user_id', userId),
+      sb.from('bookmarks').delete().eq('user_id', userId),
+      sb.from('chapter_notes').delete().eq('user_id', userId),
+      sb.from('reading_streaks').delete().eq('user_id', userId),
+      sb.from('ai_usage').delete().eq('user_id', userId),
+      sb.from('user_plans').delete().eq('user_id', userId),
+      sb.from('user_terms_acceptance').delete().eq('user_id', userId),
+    ]);
+
+    // Eliminar perfil
+    await sb.from('user_profiles').delete().eq('id', userId);
+
+    // Limpiar localStorage
+    localStorage.clear();
+
+    // Cerrar sesión
+    await sb.auth.signOut();
+
+    // Redirigir al login
+    closeDeleteModal();
+    alert('Tu cuenta ha sido eliminada. Lamentamos verte partir.');
+    window.location.href = '/login.html';
+
   } catch(e) {
-    console.warn('[RC] Sync error:', e.message);
+    console.error('Delete account error:', e);
+    if (errorEl) errorEl.style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Eliminar cuenta'; }
   }
 }
+
 // ══════════════════════════════════════════
-// FIN REVENUECAT
+// FIN ELIMINAR CUENTA
 // ══════════════════════════════════════════
 
 const BOOK_NAMES = {
@@ -333,7 +422,6 @@ const BOOKMARK_COLORS = {
   red:'#e05c5c', gold:'#c9a84c', orange:'#e8943a', white:'#e8e0cc'
 };
 
-// ── THEME ──
 function initTheme() {
   const t = localStorage.getItem('kodesh_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
@@ -347,15 +435,10 @@ function toggleTheme() {
   document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
 }
 
-// ── INIT ──
 async function init() {
   initTheme();
   const { data: { session } } = await sb.auth.getSession();
-  if (!session?.user) {
-    window.location.href = '/login.html';
-    return;
-  }
-  // Inicializar RevenueCat en paralelo con la carga del perfil
+  if (!session?.user) { window.location.href = '/login.html'; return; }
   initRevenueCat(session.user.id);
   await loadProfile(session.user);
 }
@@ -390,7 +473,6 @@ async function loadProfile(user) {
   const searchLimit = isPremium ? 80 : 10;
   const assistantLimit = isPremium ? 70 : 15;
   const lexiconLimit = isPremium ? 999 : 30;
-
   const searchUsed = usage.searches_used || 0;
   const assistantUsed = usage.assistant_used || 0;
   const lexiconUsed = usage.lexicon_used || 0;
@@ -401,17 +483,12 @@ async function loadProfile(user) {
   const ntRead = progress.filter(p => NT_BOOKS.has(p.book_id)).length;
   const atRead = progress.length - ntRead;
   const NT_TOTAL = 260, AT_TOTAL = 929;
-
-  // Detectar si estamos en app nativa para mostrar botón correcto
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
 
   document.getElementById('mainContent').innerHTML = `
-    <!-- HERO -->
     <div class="profile-hero">
       <div class="profile-avatar">
-        ${profile.avatar_url
-          ? `<img src="${profile.avatar_url}" />`
-          : initials}
+        ${profile.avatar_url ? `<img src="${profile.avatar_url}" />` : initials}
       </div>
       <div class="profile-info">
         <div class="profile-name">${name}</div>
@@ -426,10 +503,10 @@ async function loadProfile(user) {
         <a href="/index.html" class="btn-read">📖 Abrir Biblia</a>
         <button class="btn-logout" onclick="signOut()">Cerrar sesión</button>
         ${isNative ? `<button id="btnRestore" class="btn-logout" onclick="restorePurchases()" style="font-size:0.48rem;">Restaurar compras</button>` : ''}
+        <button class="btn-delete" onclick="showDeleteAccountModal()">Eliminar cuenta</button>
       </div>
     </div>
 
-    <!-- STATS -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-number">${chaptersRead}</div>
@@ -449,7 +526,6 @@ async function loadProfile(user) {
       </div>
     </div>
 
-    <!-- PROGRESO -->
     <div class="section">
       <div class="section-header">
         <div class="section-title">📊 Progreso de Lectura</div>
@@ -480,7 +556,6 @@ async function loadProfile(user) {
       </div>
     </div>
 
-    <!-- CALENDARIO -->
     <div class="section">
       <div class="section-header">
         <div class="section-title">📅 Calendario de Lectura</div>
@@ -491,7 +566,6 @@ async function loadProfile(user) {
       </div>
     </div>
 
-    <!-- USO IA -->
     <div class="section">
       <div class="section-header">
         <div class="section-title">🤖 Uso de IA — ${month}</div>
@@ -526,7 +600,6 @@ async function loadProfile(user) {
       </div>
     </div>
 
-    <!-- OBJETIVOS -->
     ${profile.study_goals?.length ? `
     <div class="section">
       <div class="section-header">
@@ -540,13 +613,11 @@ async function loadProfile(user) {
       </div>
     </div>` : ''}
 
-    <!-- TABS: MARCADORES + NOTAS -->
     <div class="section">
       <div class="profile-tabs">
         <button class="profile-tab active" onclick="switchTab('bookmarks',this)">🔖 Marcadores (${bookmarks.length})</button>
         <button class="profile-tab" onclick="switchTab('notes',this)">📝 Notas (${notes.length})</button>
       </div>
-
       <div class="tab-panel active" id="tab-bookmarks">
         ${bookmarks.length > 0
           ? `<div class="bookmark-list">${bookmarks.slice(0,20).map(b => `
@@ -560,7 +631,6 @@ async function loadProfile(user) {
           : '<div class="bookmark-empty">Aún no tienes marcadores.<br>Toca cualquier versículo en la Biblia para agregar uno.</div>'
         }
       </div>
-
       <div class="tab-panel" id="tab-notes">
         ${notes.length > 0
           ? notes.slice(0, 10).map(n => `
