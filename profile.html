@@ -78,6 +78,68 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .btn-delete { font-family:'Cinzel',serif; font-size:0.48rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid rgba(224,92,92,0.3); color:var(--red); padding:6px 12px; border-radius:8px; cursor:pointer; transition:all 0.2s; opacity:0.7; }
 .btn-delete:hover { opacity:1; border-color:var(--red); background:rgba(224,92,92,0.08); }
 
+/* MODAL PREMIUM */
+.premium-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.88);
+  z-index:9999; display:flex; align-items:center; justify-content:center;
+  padding:20px; backdrop-filter:blur(6px);
+}
+.premium-modal {
+  background:var(--bg2); border:1px solid var(--gold-dim);
+  border-radius:20px; max-width:400px; width:100%;
+  padding:32px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  text-align:center;
+}
+.premium-modal-icon { font-size:2.8rem; margin-bottom:12px; }
+.premium-modal-title {
+  font-family:'Cinzel',serif; font-size:1.1rem;
+  color:var(--gold); margin-bottom:6px; letter-spacing:2px;
+}
+.premium-modal-price {
+  font-family:'Cinzel',serif; font-size:1.6rem;
+  color:var(--text); font-weight:700; margin-bottom:4px;
+}
+.premium-modal-duration {
+  font-size:0.82rem; color:var(--text-dim);
+  font-style:italic; margin-bottom:20px;
+}
+.premium-features {
+  background:var(--bg3); border:1px solid var(--border2);
+  border-radius:12px; padding:16px; margin-bottom:20px;
+  text-align:left;
+}
+.premium-feature-item {
+  display:flex; align-items:center; gap:10px;
+  padding:6px 0; font-size:0.88rem; color:var(--text-mid);
+}
+.premium-feature-item:not(:last-child) {
+  border-bottom:1px solid var(--border);
+}
+.premium-feature-icon { color:var(--gold); font-size:0.9rem; flex-shrink:0; }
+.premium-legal {
+  font-size:0.72rem; color:var(--text-dim);
+  line-height:1.6; margin-bottom:20px;
+}
+.premium-legal a { color:var(--gold); text-decoration:none; }
+.premium-legal a:hover { text-decoration:underline; }
+.btn-premium-buy {
+  width:100%; font-family:'Cinzel',serif; font-size:0.7rem;
+  letter-spacing:2px; text-transform:uppercase;
+  background:var(--gold); border:none; color:#1a0e00;
+  padding:14px; border-radius:10px; cursor:pointer;
+  font-weight:700; margin-bottom:10px; transition:opacity 0.2s;
+}
+.btn-premium-buy:hover { opacity:0.85; }
+.btn-premium-buy:disabled { opacity:0.5; cursor:not-allowed; }
+.btn-premium-cancel {
+  width:100%; font-family:'Cinzel',serif; font-size:0.6rem;
+  letter-spacing:1px; text-transform:uppercase;
+  background:none; border:1px solid var(--border2);
+  color:var(--text-dim); padding:10px; border-radius:10px;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-premium-cancel:hover { border-color:var(--gold); color:var(--gold); }
+
 /* MODAL ELIMINAR CUENTA */
 .delete-modal-overlay {
   position:fixed; inset:0; background:rgba(0,0,0,0.85);
@@ -226,18 +288,75 @@ async function initRevenueCat(userId) {
   }
 }
 
-async function purchasePremium() {
-  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
-    window.location.href = '/index.html';
-    return;
-  }
-  const btn = document.getElementById('btnPremium');
+// ══════════════════════════════════════════
+// MODAL PREMIUM — CUMPLE GUIDELINE 3.1.2
+// ══════════════════════════════════════════
+function showPremiumModal() {
+  if (document.getElementById('premiumModalOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'premiumModalOverlay';
+  overlay.className = 'premium-modal-overlay';
+  overlay.innerHTML = `
+    <div class="premium-modal">
+      <div class="premium-modal-icon">✦</div>
+      <div class="premium-modal-title">KODESH Premium</div>
+      <div class="premium-modal-price">$5.99 / mes</div>
+      <div class="premium-modal-duration">
+        Suscripción mensual · Se renueva automáticamente
+      </div>
+      <div class="premium-features">
+        <div class="premium-feature-item">
+          <span class="premium-feature-icon">📖</span>
+          Interlineal hebreo-griego ilimitado
+        </div>
+        <div class="premium-feature-item">
+          <span class="premium-feature-icon">🔤</span>
+          Lexicón Strong's completo sin límites
+        </div>
+        <div class="premium-feature-item">
+          <span class="premium-feature-icon">🤖</span>
+          80 búsquedas · 70 consultas de asistente IA
+        </div>
+        <div class="premium-feature-item">
+          <span class="premium-feature-icon">📅</span>
+          52 Porciones Torah + acceso anticipado
+        </div>
+      </div>
+      <div class="premium-legal">
+        El pago se cargará a tu cuenta de Apple al confirmar la compra.
+        La suscripción se renueva automáticamente por $5.99/mes
+        a menos que se cancele al menos 24 horas antes del fin del período actual.
+        Puedes gestionar o cancelar en
+        <strong>Configuración → [tu nombre] → Suscripciones</strong>.<br><br>
+        <a href="https://kodeshbible.com/terminos" target="_blank">Términos de uso</a>
+        &nbsp;·&nbsp;
+        <a href="https://kodeshbible.com/privacidad" target="_blank">Política de privacidad</a>
+      </div>
+      <button class="btn-premium-buy" id="btnBuyPremium" onclick="executePurchase()">
+        Suscribirse por $5.99/mes
+      </button>
+      <button class="btn-premium-cancel" onclick="closePremiumModal()">
+        Cancelar
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+
+function closePremiumModal() {
+  document.getElementById('premiumModalOverlay')?.remove();
+  document.body.style.overflow = '';
+}
+
+async function executePurchase() {
+  const btn = document.getElementById('btnBuyPremium');
   if (!rcConfigured || !PurchasesSDK) {
-    if (btn) btn.textContent = 'Cargando...';
+    if (btn) btn.textContent = 'Cargando tienda...';
     await new Promise(r => setTimeout(r, 1500));
     if (!rcConfigured) {
       alert('La tienda no está disponible. Intenta de nuevo.');
-      if (btn) btn.textContent = '$5.99/mes →';
+      if (btn) btn.textContent = 'Suscribirse por $5.99/mes';
       return;
     }
   }
@@ -245,11 +364,14 @@ async function purchasePremium() {
     if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
     const { current } = await PurchasesSDK.getOfferings();
     if (!current || !current.availablePackages?.length) throw new Error('No hay productos disponibles.');
-    const pkg = current.availablePackages.find(p => p.product?.identifier === PRODUCT_ID) || current.monthly || current.availablePackages[0];
+    const pkg = current.availablePackages.find(p => p.product?.identifier === PRODUCT_ID)
+      || current.monthly
+      || current.availablePackages[0];
     if (!pkg) throw new Error('Producto no encontrado.');
     const { customerInfo } = await PurchasesSDK.purchasePackage({ aPackage: pkg });
     if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
       await syncPremiumWithSupabase();
+      closePremiumModal();
       alert('🎉 ¡Bienvenido a KODESH Premium!');
       window.location.reload();
     } else {
@@ -257,10 +379,14 @@ async function purchasePremium() {
     }
   } catch(e) {
     console.error('[RC] Purchase error:', e);
-    if (btn) { btn.textContent = '$5.99/mes →'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'Suscribirse por $5.99/mes'; btn.disabled = false; }
     const cancelled = e.message?.toLowerCase().includes('cancel') || e.code === 'PURCHASE_CANCELLED';
-    if (!cancelled) alert('Hubo un problema con la compra: ' + (e.message || 'Error desconocido'));
+    if (!cancelled) alert('Hubo un problema: ' + (e.message || 'Error desconocido'));
   }
+}
+
+function purchasePremium() {
+  showPremiumModal();
 }
 
 async function restorePurchases() {
@@ -300,7 +426,6 @@ async function syncPremiumWithSupabase() {
 // ══════════════════════════════════════════
 function showDeleteAccountModal() {
   if (document.getElementById('deleteModalOverlay')) return;
-
   const overlay = document.createElement('div');
   overlay.id = 'deleteModalOverlay';
   overlay.className = 'delete-modal-overlay';
@@ -356,13 +481,10 @@ async function confirmDeleteAccount() {
   const errorEl = document.getElementById('deleteError');
   if (btn) { btn.disabled = true; btn.textContent = 'Eliminando...'; }
   if (errorEl) errorEl.style.display = 'none';
-
   try {
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.user) throw new Error('No hay sesión activa');
     const userId = session.user.id;
-
-    // Eliminar todos los datos del usuario en Supabase
     await Promise.all([
       sb.from('reading_progress').delete().eq('user_id', userId),
       sb.from('bookmarks').delete().eq('user_id', userId),
@@ -372,21 +494,12 @@ async function confirmDeleteAccount() {
       sb.from('user_plans').delete().eq('user_id', userId),
       sb.from('user_terms_acceptance').delete().eq('user_id', userId),
     ]);
-
-    // Eliminar perfil
     await sb.from('user_profiles').delete().eq('id', userId);
-
-    // Limpiar localStorage
     localStorage.clear();
-
-    // Cerrar sesión
     await sb.auth.signOut();
-
-    // Redirigir al login
     closeDeleteModal();
     alert('Tu cuenta ha sido eliminada. Lamentamos verte partir.');
     window.location.href = '/login.html';
-
   } catch(e) {
     console.error('Delete account error:', e);
     if (errorEl) errorEl.style.display = 'block';
@@ -395,9 +508,8 @@ async function confirmDeleteAccount() {
 }
 
 // ══════════════════════════════════════════
-// FIN ELIMINAR CUENTA
+// DATOS
 // ══════════════════════════════════════════
-
 const BOOK_NAMES = {
   GEN:'Génesis',EXO:'Éxodo',LEV:'Levítico',NUM:'Números',DEU:'Deuteronomio',
   JOS:'Josué',JDG:'Jueces',RUT:'Rut','1SA':'1 Samuel','2SA':'2 Samuel',
@@ -594,7 +706,7 @@ async function loadProfile(user) {
             <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
           </div>
           <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
-            ${isNative ? '$5.99/mes →' : 'Ver planes →'}
+            $5.99/mes →
           </button>
         </div>` : ''}
       </div>
