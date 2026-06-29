@@ -95,8 +95,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   max-width: 100vw;
-  padding-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
-  padding-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
   box-sizing: border-box;
 }
 
@@ -144,9 +144,9 @@ body::before {
   align-items: center;
   padding-left: 24px;
   padding-right: 24px;
-  padding-top: max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 59px);
+  padding-top: max(env(safe-area-inset-top), 59px);
   padding-bottom: 10px;
-  min-height: calc(54px + max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 59px));
+  min-height: calc(54px + max(env(safe-area-inset-top), 59px));
   gap: 20px;
   position: sticky;
   top: 0;
@@ -265,8 +265,8 @@ body::before {
   border-right: 1px solid var(--border);
   overflow-y: auto;
   position: sticky;
-  top: calc(54px + max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 59px) + 1px);
-  height: calc(100vh - (54px + max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 59px) + 1px));
+  top: calc(54px + max(env(safe-area-inset-top), 59px) + 1px);
+  height: calc(100vh - (54px + max(env(safe-area-inset-top), 59px) + 1px));
 }
 
 .sidebar-section {
@@ -861,7 +861,7 @@ body::before {
   border-top: 1px solid var(--gold-dim);
   border-radius: 20px 20px 0 0;
   z-index: 751;
-  padding: 0 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 -8px 40px rgba(0,0,0,0.6), 0 0 20px var(--gold-glow);
@@ -1465,15 +1465,15 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
   display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: calc(64px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
-  padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  height: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   background: var(--bg2);
   border-top: 1px solid var(--border);
   z-index: 300;
   align-items: center;
   justify-content: space-around;
-  padding-left: max(8px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
-  padding-right: max(8px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+  padding-left: max(8px, env(safe-area-inset-left));
+  padding-right: max(8px, env(safe-area-inset-right));
   box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
 }
 @media (max-width: 900px) {
@@ -3740,15 +3740,21 @@ async function lookupStrongs(event, strongsCode) {
 }
 
 async function goToPremium() {
-  document.getElementById('limitOverlay').classList.remove('open');
+  document.getElementById('limitOverlay')?.classList.remove('open');
 
   if (!currentUser) {
     window.location.href = 'login.html';
     return;
   }
 
-  showToast('✦ Preparando tu suscripción...');
+  // App nativa iOS → RevenueCat en profile.html
+  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    window.location.href = '/profile.html';
+    return;
+  }
 
+  // Web → Stripe (flujo original)
+  showToast('✦ Preparando tu suscripción...');
   try {
     const name = userProfile?.display_name || currentUser.email?.split('@')[0] || '';
     const res = await kapiFetch('/api/checkout', {
@@ -3760,14 +3766,11 @@ async function goToPremium() {
         userName: name,
       })
     });
-
     const data = await res.json();
-
     if (data.error === 'already_subscribed') {
       showToast('✦ Ya tienes KODESH Premium activo');
       return;
     }
-
     if (data.url) {
       window.location.href = data.url;
     } else {
