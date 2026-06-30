@@ -540,13 +540,10 @@ async function loginAppleNative() {
       if (b) { b.disabled = true; }
     });
 
-    const mod = await import('https://cdn.jsdelivr.net/npm/@capacitor-community/apple-sign-in@7.1.0/dist/esm/index.js').catch(() => null);
-
-    // Fallback: usar el plugin ya registrado vía Capacitor (bundle nativo)
-    const SignInWithApple = (window.Capacitor?.Plugins?.SignInWithApple) || mod?.SignInWithApple;
+    const SignInWithApple = window.Capacitor?.Plugins?.SignInWithApple;
 
     if (!SignInWithApple) {
-      throw new Error('Plugin de Apple Sign In no disponible');
+      throw new Error('Plugin de Apple Sign In no registrado en Capacitor.Plugins');
     }
 
     const options = {
