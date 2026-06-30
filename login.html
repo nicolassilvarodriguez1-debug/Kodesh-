@@ -574,6 +574,7 @@ async function loginAppleNative() {
 
   } catch (e) {
     console.error('[Apple Sign In] Error:', e);
+    alert('DEBUG Apple Sign In error: ' + (e?.message || JSON.stringify(e)) + ' | code: ' + (e?.code || 'none'));
     const cancelled = e?.message?.toLowerCase().includes('cancel') || e?.code === '1001';
     if (!cancelled) {
       showMsg(msgId, 'error', 'No se pudo completar el inicio de sesión con Apple. Intenta de nuevo.');
