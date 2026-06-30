@@ -255,6 +255,7 @@ body::before {
   gap:10px;
 }
 .btn-apple:hover { border-color:var(--border2); color:var(--text); background:var(--bg2); }
+.btn-apple:disabled { opacity:0.5; cursor:not-allowed; }
 
 .google-icon {
   width:18px; height:18px;
@@ -353,7 +354,7 @@ body::before {
         Entrar con Google
       </button>
 
-      <button class="btn-apple" onclick="loginApple()">
+      <button class="btn-apple" id="btn-apple-login" onclick="loginApple()">
         <svg class="apple-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
         </svg>
@@ -392,7 +393,7 @@ body::before {
         Registrarse con Google
       </button>
 
-      <button class="btn-apple" onclick="loginApple()">
+      <button class="btn-apple" id="btn-apple-register" onclick="loginApple()">
         <svg class="apple-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
         </svg>
@@ -414,12 +415,14 @@ const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
 // If already logged in, redirect to app
 sbClient.auth.getSession().then(({ data: { session } }) => {
   if (session) checkAndRedirect(session.user);
 });
 
-// Listen for auth changes (e.g. OAuth redirect)
+// Listen for auth changes (e.g. OAuth redirect on web)
 sbClient.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
     checkAndRedirect(session.user);
@@ -511,11 +514,76 @@ async function loginGoogle() {
   });
 }
 
+// ══════════════════════════════════════════
+// SIGN IN WITH APPLE — NATIVO (sin Safari)
+// ══════════════════════════════════════════
+// En app nativa usa el diálogo nativo de Apple (SignInWithApple plugin).
+// En web usa el flujo normal de OAuth de Supabase (redirect a Apple).
 async function loginApple() {
+  if (isNativeApp) {
+    return loginAppleNative();
+  }
+  // Web fallback — flujo OAuth normal
   await sbClient.auth.signInWithOAuth({
     provider: 'apple',
     options: { redirectTo: window.location.origin + '/index.html' }
   });
+}
+
+async function loginAppleNative() {
+  const btnIds = ['btn-apple-login', 'btn-apple-register'];
+  const msgId = document.getElementById('form-login').classList.contains('active') ? 'login-msg' : 'register-msg';
+
+  try {
+    btnIds.forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.disabled = true; }
+    });
+
+    const mod = await import('https://cdn.jsdelivr.net/npm/@capacitor-community/apple-sign-in@7.1.0/dist/esm/index.js').catch(() => null);
+
+    // Fallback: usar el plugin ya registrado vía Capacitor (bundle nativo)
+    const SignInWithApple = (window.Capacitor?.Plugins?.SignInWithApple) || mod?.SignInWithApple;
+
+    if (!SignInWithApple) {
+      throw new Error('Plugin de Apple Sign In no disponible');
+    }
+
+    const options = {
+      clientId: 'com.iglesiafreedom.kodesh.signin',
+      redirectURI: 'https://fvknbqdsgqdmwirrgcvb.supabase.co/auth/v1/callback',
+      scopes: 'email name',
+    };
+
+    const result = await SignInWithApple.authorize(options);
+
+    const identityToken = result?.response?.identityToken;
+    if (!identityToken) throw new Error('No se recibió el token de Apple');
+
+    // Intercambiar el identityToken nativo por una sesión de Supabase
+    const { data, error } = await sbClient.auth.signInWithIdToken({
+      provider: 'apple',
+      token: identityToken,
+    });
+
+    if (error) throw error;
+
+    if (data?.user) {
+      checkAndRedirect(data.user);
+    }
+
+  } catch (e) {
+    console.error('[Apple Sign In] Error:', e);
+    const cancelled = e?.message?.toLowerCase().includes('cancel') || e?.code === '1001';
+    if (!cancelled) {
+      showMsg(msgId, 'error', 'No se pudo completar el inicio de sesión con Apple. Intenta de nuevo.');
+    }
+  } finally {
+    btnIds.forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.disabled = false; }
+    });
+  }
 }
 
 async function forgotPassword() {
