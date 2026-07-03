@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KODESH · Entrar</title>
-<!-- PWA -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#c9a84c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +18,6 @@
   --text:#ede5d5; --text-mid:#a09880; --text-dim:#5a5870;
   --green:#5ccc68; --red:#e05a5a;
 }
-/* ── MODO CLARO ── */
 body.light {
   --bg:#f5f0e8; --bg2:#fffdf7; --bg3:#f0ebe0;
   --border:#e0d8c8; --border2:#d4cbb8;
@@ -28,277 +26,69 @@ body.light {
   --gold-glow:rgba(160,120,40,0.12);
   --green:#2d8a3e; --red:#c0392b;
 }
-
-/* Ajuste del gradiente de fondo en modo claro */
 body.light::before {
   background:
     radial-gradient(ellipse at 20% 50%, rgba(160,120,40,0.06) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(180,150,80,0.08) 0%, transparent 50%);
 }
-
-/* Toggle de modo */
 .theme-toggle {
-  position:fixed;
-  top:16px;
-  right:16px;
-  z-index:100;
-  background:var(--bg2);
-  border:1px solid var(--border2);
-  border-radius:20px;
-  padding:6px 12px;
-  cursor:pointer;
-  font-family:'Cinzel',serif;
-  font-size:0.6rem;
-  letter-spacing:1px;
-  color:var(--text-dim);
-  display:flex;
-  align-items:center;
-  gap:6px;
+  position:fixed; top:16px; right:16px; z-index:100;
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:20px; padding:6px 12px; cursor:pointer;
+  font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px;
+  color:var(--text-dim); display:flex; align-items:center; gap:6px;
   transition:all 0.2s;
 }
 .theme-toggle:hover { border-color:var(--gold-dim); color:var(--gold); }
-
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 body {
   font-family:'Crimson Pro',Georgia,serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  background:var(--bg); color:var(--text);
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
   padding:20px;
 }
 body::before {
-  content:'';
-  position:fixed; inset:0;
+  content:''; position:fixed; inset:0;
   background:
     radial-gradient(ellipse at 20% 50%, rgba(201,168,76,0.04) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(90,72,32,0.06) 0%, transparent 50%);
   pointer-events:none;
 }
-
-.auth-wrap {
-  width:100%;
-  max-width:420px;
-  position:relative;
-  z-index:1;
-}
-
-/* Logo */
-.auth-logo {
-  text-align:center;
-  margin-bottom:32px;
-}
-.auth-logo-heb {
-  font-family:serif;
-  font-size:2.5rem;
-  color:var(--gold);
-  display:block;
-  line-height:1;
-  margin-bottom:6px;
-}
-.auth-logo-name {
-  font-family:'Cinzel',serif;
-  font-size:1.4rem;
-  font-weight:900;
-  color:var(--gold);
-  letter-spacing:6px;
-  display:block;
-}
-.auth-logo-tagline {
-  font-size:0.85rem;
-  color:var(--text-dim);
-  font-style:italic;
-  margin-top:6px;
-  display:block;
-}
-
-/* Card */
-.auth-card {
-  background:var(--bg2);
-  border:1px solid var(--border);
-  border-radius:14px;
-  overflow:hidden;
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
-}
-
-/* Tabs */
-.auth-tabs {
-  display:flex;
-  border-bottom:1px solid var(--border);
-}
-.auth-tab {
-  flex:1;
-  font-family:'Cinzel',serif;
-  font-size:0.65rem;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  padding:14px;
-  text-align:center;
-  cursor:pointer;
-  color:var(--text-dim);
-  background:transparent;
-  border:none;
-  transition:all 0.2s;
-  border-bottom:2px solid transparent;
-}
-.auth-tab.active {
-  color:var(--gold);
-  border-bottom-color:var(--gold);
-  background:var(--bg3);
-}
-
-/* Form */
-.auth-form {
-  padding:28px 24px;
-  display:none;
-}
+.auth-wrap { width:100%; max-width:420px; position:relative; z-index:1; }
+.auth-logo { text-align:center; margin-bottom:32px; }
+.auth-logo-heb { font-family:serif; font-size:2.5rem; color:var(--gold); display:block; line-height:1; margin-bottom:6px; }
+.auth-logo-name { font-family:'Cinzel',serif; font-size:1.4rem; font-weight:900; color:var(--gold); letter-spacing:6px; display:block; }
+.auth-logo-tagline { font-size:0.85rem; color:var(--text-dim); font-style:italic; margin-top:6px; display:block; }
+.auth-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+.auth-tabs { display:flex; border-bottom:1px solid var(--border); }
+.auth-tab { flex:1; font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; padding:14px; text-align:center; cursor:pointer; color:var(--text-dim); background:transparent; border:none; transition:all 0.2s; border-bottom:2px solid transparent; }
+.auth-tab.active { color:var(--gold); border-bottom-color:var(--gold); background:var(--bg3); }
+.auth-form { padding:28px 24px; display:none; }
 .auth-form.active { display:block; }
-
 .form-group { margin-bottom:16px; }
-.form-label {
-  font-family:'Cinzel',serif;
-  font-size:0.6rem;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--text-dim);
-  display:block;
-  margin-bottom:6px;
-}
-.form-input {
-  width:100%;
-  background:var(--bg3);
-  border:1px solid var(--border2);
-  color:var(--text);
-  font-family:'Crimson Pro',serif;
-  font-size:1rem;
-  padding:10px 14px;
-  border-radius:8px;
-  outline:none;
-  transition:border 0.2s;
-}
+.form-label { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); display:block; margin-bottom:6px; }
+.form-input { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:'Crimson Pro',serif; font-size:1rem; padding:10px 14px; border-radius:8px; outline:none; transition:border 0.2s; }
 .form-input:focus { border-color:var(--gold-dim); }
 .form-input::placeholder { color:var(--text-dim); }
-
-.btn-primary {
-  width:100%;
-  background:linear-gradient(135deg, var(--gold-dim), #3a2a08);
-  border:1px solid var(--gold-dim);
-  color:var(--gold-bright);
-  font-family:'Cinzel',serif;
-  font-size:0.7rem;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  padding:12px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:all 0.2s;
-  margin-top:8px;
-}
+.btn-primary { width:100%; background:linear-gradient(135deg, var(--gold-dim), #3a2a08); border:1px solid var(--gold-dim); color:var(--gold-bright); font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; padding:12px; border-radius:8px; cursor:pointer; transition:all 0.2s; margin-top:8px; }
 .btn-primary:hover { box-shadow:0 0 20px var(--gold-glow); }
 .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
-
-.divider {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin:16px 0;
-}
+.divider { display:flex; align-items:center; gap:12px; margin:16px 0; }
 .divider-line { flex:1; height:1px; background:var(--border2); }
-.divider-text {
-  font-family:'Cinzel',serif;
-  font-size:0.58rem;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--text-dim);
-}
-
-.btn-google {
-  width:100%;
-  background:var(--bg3);
-  border:1px solid var(--border2);
-  color:var(--text-mid);
-  font-family:'Cinzel',serif;
-  font-size:0.65rem;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  padding:11px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:all 0.2s;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  margin-bottom:10px;
-}
+.divider-text { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
+.btn-google { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text-mid); font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1.5px; text-transform:uppercase; padding:11px; border-radius:8px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; }
 .btn-google:hover { border-color:var(--border2); color:var(--text); background:var(--bg2); }
-
-/* Botón Apple — mismo estilo que Google pero con ícono de Apple */
-.btn-apple {
-  width:100%;
-  background:var(--bg3);
-  border:1px solid var(--border2);
-  color:var(--text-mid);
-  font-family:'Cinzel',serif;
-  font-size:0.65rem;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  padding:11px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:all 0.2s;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-}
+.btn-apple { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text-mid); font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1.5px; text-transform:uppercase; padding:11px; border-radius:8px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:10px; }
 .btn-apple:hover { border-color:var(--border2); color:var(--text); background:var(--bg2); }
-.btn-apple:disabled { opacity:0.5; cursor:not-allowed; }
-
-.google-icon {
-  width:18px; height:18px;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%234285F4' d='M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z'/%3E%3Cpath fill='%2334A853' d='M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z'/%3E%3Cpath fill='%23FBBC05' d='M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z'/%3E%3Cpath fill='%23EA4335' d='M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z'/%3E%3C/svg%3E") center/contain no-repeat;
-  flex-shrink:0;
-}
-
-.apple-icon {
-  width:18px; height:18px;
-  flex-shrink:0;
-  color:var(--text-mid);
-}
-
-.auth-message {
-  padding:10px 14px;
-  border-radius:6px;
-  font-size:0.88rem;
-  margin-bottom:14px;
-  display:none;
-}
+.google-icon { width:18px; height:18px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%234285F4' d='M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z'/%3E%3Cpath fill='%2334A853' d='M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z'/%3E%3Cpath fill='%23FBBC05' d='M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z'/%3E%3Cpath fill='%23EA4335' d='M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z'/%3E%3C/svg%3E") center/contain no-repeat; flex-shrink:0; }
+.apple-icon { width:18px; height:18px; flex-shrink:0; color:var(--text-mid); }
+.auth-message { padding:10px 14px; border-radius:6px; font-size:0.88rem; margin-bottom:14px; display:none; }
 .auth-message.error { background:#1a0808; border:1px solid var(--red); color:var(--red); display:block; }
 .auth-message.success { background:#081a08; border:1px solid var(--green); color:var(--green); display:block; }
-
-.forgot-link {
-  text-align:right;
-  margin-top:6px;
-}
-.forgot-link a {
-  font-size:0.8rem;
-  color:var(--text-dim);
-  text-decoration:none;
-  cursor:pointer;
-  transition:color 0.2s;
-}
+.forgot-link { text-align:right; margin-top:6px; }
+.forgot-link a { font-size:0.8rem; color:var(--text-dim); text-decoration:none; cursor:pointer; transition:color 0.2s; }
 .forgot-link a:hover { color:var(--gold); }
-
-/* Footer */
-.auth-footer {
-  text-align:center;
-  margin-top:20px;
-  font-size:0.8rem;
-  color:var(--text-dim);
-}
+.auth-footer { text-align:center; margin-top:20px; font-size:0.8rem; color:var(--text-dim); }
 </style>
 </head>
 <body>
@@ -309,24 +99,18 @@ body::before {
 </button>
 
 <div class="auth-wrap">
-
-  <!-- Logo -->
   <div class="auth-logo">
     <span class="auth-logo-heb">קֹדֶשׁ</span>
     <span class="auth-logo-name">KODESH</span>
     <span class="auth-logo-tagline">Plataforma Bíblica Hebreo-Mesiánica</span>
   </div>
 
-  <!-- Card -->
   <div class="auth-card">
-
-    <!-- Tabs -->
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Entrar</button>
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Crear cuenta</button>
     </div>
 
-    <!-- LOGIN -->
     <div class="auth-form active" id="form-login">
       <div class="auth-message" id="login-msg"></div>
 
@@ -354,7 +138,7 @@ body::before {
         Entrar con Google
       </button>
 
-      <button class="btn-apple" id="btn-apple-login" onclick="loginApple()">
+      <button class="btn-apple" onclick="loginApple()">
         <svg class="apple-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
         </svg>
@@ -362,7 +146,6 @@ body::before {
       </button>
     </div>
 
-    <!-- REGISTER -->
     <div class="auth-form" id="form-register">
       <div class="auth-message" id="register-msg"></div>
 
@@ -393,20 +176,18 @@ body::before {
         Registrarse con Google
       </button>
 
-      <button class="btn-apple" id="btn-apple-register" onclick="loginApple()">
+      <button class="btn-apple" onclick="loginApple()">
         <svg class="apple-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
         </svg>
         Registrarse con Apple
       </button>
     </div>
-
   </div>
 
   <div class="auth-footer">
     Al entrar aceptas estudiar las Escrituras con corazón íntegro 📖
   </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -417,12 +198,10 @@ const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
-// If already logged in, redirect to app
 sbClient.auth.getSession().then(({ data: { session } }) => {
   if (session) checkAndRedirect(session.user);
 });
 
-// Listen for auth changes (e.g. OAuth redirect on web)
 sbClient.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
     checkAndRedirect(session.user);
@@ -430,6 +209,12 @@ sbClient.auth.onAuthStateChange((event, session) => {
 });
 
 async function checkAndRedirect(user) {
+  // Cerrar el Safari View Controller si está abierto
+  try {
+    const Browser = window.Capacitor?.Plugins?.Browser;
+    if (Browser?.close) await Browser.close();
+  } catch(e) {}
+
   try {
     const { data } = await sbClient
       .from('user_profiles')
@@ -463,14 +248,10 @@ async function login() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const btn = document.getElementById('btn-login');
-
   if (!email || !password) return showMsg('login-msg', 'error', 'Completa todos los campos');
-
   btn.disabled = true;
   btn.textContent = 'Entrando...';
-
   const { error } = await sbClient.auth.signInWithPassword({ email, password });
-
   if (error) {
     btn.disabled = false;
     btn.textContent = 'Entrar a KODESH';
@@ -484,22 +265,16 @@ async function register() {
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
   const btn = document.getElementById('btn-register');
-
   if (!name || !email || !password) return showMsg('register-msg', 'error', 'Completa todos los campos');
   if (password.length < 8) return showMsg('register-msg', 'error', 'La contraseña debe tener al menos 8 caracteres');
-
   btn.disabled = true;
   btn.textContent = 'Creando cuenta...';
-
   const { error } = await sbClient.auth.signUp({
-    email,
-    password,
+    email, password,
     options: { data: { full_name: name } }
   });
-
   btn.disabled = false;
   btn.textContent = 'Crear mi cuenta';
-
   if (error) {
     showMsg('register-msg', 'error', error.message);
   } else {
@@ -507,91 +282,55 @@ async function register() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// OAUTH — Usa Safari View Controller DENTRO de la app
+// Apple acepta SFSafariViewController como flujo in-app.
+// ══════════════════════════════════════════════════════════════
+async function openOAuthInApp(provider) {
+  const redirectTo = isNativeApp
+    ? 'https://kodeshbible.com/index.html'
+    : window.location.origin + '/index.html';
+
+  const { data, error } = await sbClient.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: isNativeApp,
+    }
+  });
+
+  if (error) {
+    console.error('[OAuth] Error:', error);
+    return;
+  }
+
+  if (isNativeApp && data?.url) {
+    const Browser = window.Capacitor?.Plugins?.Browser;
+    if (Browser?.open) {
+      await Browser.open({
+        url: data.url,
+        presentationStyle: 'popover',
+      });
+    } else {
+      window.location.href = data.url;
+    }
+  }
+}
+
 async function loginGoogle() {
-  await sbClient.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin + '/index.html' }
-  });
+  await openOAuthInApp('google');
 }
 
-// ══════════════════════════════════════════
-// SIGN IN WITH APPLE — NATIVO (sin Safari)
-// ══════════════════════════════════════════
-// En app nativa usa el diálogo nativo de Apple (SignInWithApple plugin).
-// En web usa el flujo normal de OAuth de Supabase (redirect a Apple).
 async function loginApple() {
-  if (isNativeApp) {
-    return loginAppleNative();
-  }
-  // Web fallback — flujo OAuth normal
-  await sbClient.auth.signInWithOAuth({
-    provider: 'apple',
-    options: { redirectTo: window.location.origin + '/index.html' }
-  });
-}
-
-async function loginAppleNative() {
-  const btnIds = ['btn-apple-login', 'btn-apple-register'];
-  const msgId = document.getElementById('form-login').classList.contains('active') ? 'login-msg' : 'register-msg';
-
-  try {
-    btnIds.forEach(id => {
-      const b = document.getElementById(id);
-      if (b) { b.disabled = true; }
-    });
-
-    const SignInWithApple = window.Capacitor?.Plugins?.SignInWithApple;
-
-    if (!SignInWithApple) {
-      throw new Error('Plugin de Apple Sign In no registrado en Capacitor.Plugins');
-    }
-
-    const options = {
-      clientId: 'com.iglesiafreedom.kodesh.signin',
-      redirectURI: 'https://fvknbqdsgqdmwirrgcvb.supabase.co/auth/v1/callback',
-      scopes: 'email name',
-    };
-
-    const result = await SignInWithApple.authorize(options);
-
-    const identityToken = result?.response?.identityToken;
-    if (!identityToken) throw new Error('No se recibió el token de Apple');
-
-    // Intercambiar el identityToken nativo por una sesión de Supabase
-    const { data, error } = await sbClient.auth.signInWithIdToken({
-      provider: 'apple',
-      token: identityToken,
-    });
-
-    if (error) throw error;
-
-    if (data?.user) {
-      checkAndRedirect(data.user);
-    }
-
-  } catch (e) {
-    console.error('[Apple Sign In] Error:', e);
-    alert('DEBUG Apple Sign In error: ' + (e?.message || JSON.stringify(e)) + ' | code: ' + (e?.code || 'none'));
-    const cancelled = e?.message?.toLowerCase().includes('cancel') || e?.code === '1001';
-    if (!cancelled) {
-      showMsg(msgId, 'error', 'No se pudo completar el inicio de sesión con Apple. Intenta de nuevo.');
-    }
-  } finally {
-    btnIds.forEach(id => {
-      const b = document.getElementById(id);
-      if (b) { b.disabled = false; }
-    });
-  }
+  await openOAuthInApp('apple');
 }
 
 async function forgotPassword() {
   const email = document.getElementById('login-email').value.trim();
   if (!email) return showMsg('login-msg', 'error', 'Escribe tu correo primero');
-
   const { error } = await sbClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + '/index.html'
   });
-
   if (error) {
     showMsg('login-msg', 'error', error.message);
   } else {
@@ -599,7 +338,6 @@ async function forgotPassword() {
   }
 }
 
-// ── THEME TOGGLE ──
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light');
   localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
@@ -614,7 +352,6 @@ function updateThemeToggle(isLight) {
   label.textContent = isLight ? 'Oscuro' : 'Claro';
 }
 
-// Apply saved theme on load
 (function() {
   const saved = localStorage.getItem('kodesh_theme');
   if (saved === 'light') {
