@@ -277,9 +277,12 @@ let PurchasesSDK = null;
 async function initRevenueCat(userId) {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
   try {
-    const mod = await import('/node_modules/@revenuecat/purchases-capacitor/dist/esm/index.js').catch(() => null);
-    if (!mod) { console.warn('RevenueCat SDK no disponible'); return; }
-    PurchasesSDK = mod.Purchases;
+    // El plugin nativo de RevenueCat está registrado en Capacitor.Plugins
+    PurchasesSDK = window.Capacitor?.Plugins?.Purchases;
+    if (!PurchasesSDK) {
+      console.warn('[RC] Plugin Purchases no encontrado en Capacitor.Plugins');
+      return;
+    }
     await PurchasesSDK.configure({ apiKey: RC_API_KEY, appUserID: userId });
     rcConfigured = true;
     console.log('[RC] RevenueCat configurado para:', userId);
