@@ -157,7 +157,6 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-eyebrow">✦ Iglesia Freedom</div>
   <h1 class="hero-title">Crónicas del <span>Reino</span></h1>
   <p class="hero-sub">Música, historias y recursos para crecer en la fe</p>
 </div>
@@ -244,7 +243,7 @@ async function loadCanciones() {
         ${c.descripcion ? `<div class="cancion-desc">${c.descripcion}</div>` : ''}
       </div>
       <div class="cancion-actions">
-        <button class="btn-play" id="btn-${c.id}" onclick="playCancion('${c.id}','${c.titulo}','${c.personaje||''}','${c.archivo_url}','${c.portada_url||''}')">▶ Escuchar</button>
+        <button class="btn-play" id="btn-${c.id}" onclick="playCancion('${c.id}','${c.titulo}','${c.personaje||''}','${c.archivo_url}','${c.imagen_url||''}')">▶ Escuchar</button>
       </div>
     </div>`).join('');
 }
