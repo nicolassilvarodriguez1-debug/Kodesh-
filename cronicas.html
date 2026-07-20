@@ -83,18 +83,26 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .player-bar {
   position:fixed; bottom:0; left:0; right:0; z-index:200;
   background:var(--bg2); border-top:1px solid var(--gold-dim);
-  padding:12px 24px; display:none; align-items:center; gap:16px;
+  padding:10px 20px; display:none; align-items:center; gap:14px;
   backdrop-filter:blur(12px);
+  box-shadow:0 -4px 20px rgba(0,0,0,0.3);
 }
 .player-bar.visible { display:flex; }
+.player-thumb {
+  width:44px; height:44px; border-radius:6px;
+  object-fit:cover; flex-shrink:0;
+  border:1px solid var(--gold-dim);
+  background:var(--bg3);
+}
 .player-info { flex:1; min-width:0; }
-.player-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; }
+.player-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .player-artist { font-size:0.78rem; color:var(--text-dim); font-style:italic; }
-.player-controls { display:flex; align-items:center; gap:12px; }
+.player-controls { display:flex; align-items:center; gap:12px; flex-shrink:0; }
 .btn-ctrl { background:none; border:1px solid var(--border2); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-mid); transition:all 0.2s; font-size:0.9rem; }
 .btn-ctrl:hover { border-color:var(--gold); color:var(--gold); }
 .btn-ctrl.main { background:var(--gold); border-color:var(--gold); color:#1a0e00; width:42px; height:42px; font-size:1.1rem; }
-.player-progress { flex:1; max-width:200px; }
+.player-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.player-progress { width:160px; }
 .progress-track { height:3px; background:var(--border); border-radius:2px; cursor:pointer; }
 .progress-fill { height:100%; background:var(--gold); border-radius:2px; width:0%; transition:width 0.5s linear; }
 .player-time { font-family:'Cinzel',serif; font-size:0.55rem; color:var(--text-dim); white-space:nowrap; }
@@ -170,6 +178,7 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 
 <!-- AUDIO PLAYER -->
 <div class="player-bar" id="playerBar">
+  <img class="player-thumb" id="playerThumb" src="" alt="carátula" onerror="this.style.visibility='hidden'">
   <div class="player-info">
     <div class="player-title" id="playerTitle">—</div>
     <div class="player-artist" id="playerArtist">—</div>
@@ -177,13 +186,15 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
   <div class="player-controls">
     <button class="btn-ctrl main" onclick="togglePlay()" id="btnPlay">▶</button>
   </div>
-  <div class="player-progress">
-    <div class="progress-track" onclick="seekAudio(event)">
-      <div class="progress-fill" id="progressFill"></div>
+  <div class="player-right">
+    <div class="player-progress">
+      <div class="progress-track" onclick="seekAudio(event)">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
     </div>
+    <div class="player-time" id="playerTime">0:00</div>
+    <button class="btn-close-player" onclick="closePlayer()">✕</button>
   </div>
-  <div class="player-time" id="playerTime">0:00</div>
-  <button class="btn-close-player" onclick="closePlayer()">✕</button>
 </div>
 
 <audio id="audioEl" onended="onAudioEnd()" ontimeupdate="onTimeUpdate()"></audio>
@@ -233,7 +244,7 @@ async function loadCanciones() {
         ${c.descripcion ? `<div class="cancion-desc">${c.descripcion}</div>` : ''}
       </div>
       <div class="cancion-actions">
-        <button class="btn-play" id="btn-${c.id}" onclick="playCancion('${c.id}','${c.titulo}','${c.personaje||''}','${c.archivo_url}')">▶ Escuchar</button>
+        <button class="btn-play" id="btn-${c.id}" onclick="playCancion('${c.id}','${c.titulo}','${c.personaje||''}','${c.archivo_url}','${c.portada_url||''}')">▶ Escuchar</button>
       </div>
     </div>`).join('');
 }
@@ -264,7 +275,7 @@ async function loadActividades() {
 }
 
 // AUDIO PLAYER
-function playCancion(id, titulo, personaje, url) {
+function playCancion(id, titulo, personaje, url, portada) {
   if (currentCancionId === id && !audio.paused) {
     audio.pause();
     document.getElementById('btn-' + id).textContent = '▶ Escuchar';
@@ -287,6 +298,11 @@ function playCancion(id, titulo, personaje, url) {
   document.getElementById('btn-' + id).classList.add('playing');
   document.getElementById('playerTitle').textContent = titulo;
   document.getElementById('playerArtist').textContent = personaje || 'Crónicas del Reino';
+  const thumb = document.getElementById('playerThumb');
+  if (thumb) {
+    thumb.src = portada || '';
+    thumb.style.visibility = portada ? 'visible' : 'hidden';
+  }
   document.getElementById('playerBar').classList.add('visible');
   document.getElementById('btnPlay').textContent = '⏸';
 }
