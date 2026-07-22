@@ -208,41 +208,65 @@ sbClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// En app nativa: escuchar cuando el Browser recibe el URL scheme callback
+// En app nativa: manejar deep link del URL scheme
 if (isNativeApp) {
   window.addEventListener('load', async () => {
     try {
-      const Browser = window.Capacitor?.Plugins?.Browser;
-      if (Browser?.addListener) {
-        await Browser.addListener('browserFinished', async () => {
-          // El browser se cerró — verificar si hay sesión activa
-          const { data: { session } } = await sbClient.auth.getSession();
-          if (session) checkAndRedirect(session.user);
-        });
-      }
-
-      // También escuchar el App URL open event (cuando iOS abre el custom scheme)
       const App = window.Capacitor?.Plugins?.App;
+      const Browser = window.Capacitor?.Plugins?.Browser;
+
       if (App?.addListener) {
         await App.addListener('appUrlOpen', async (data) => {
+          console.log('[DeepLink] URL recibida:', data?.url);
           if (data?.url?.startsWith('com.iglesiafreedom.kodesh://')) {
-            // Cerrar el Safari View Controller
+            // Cerrar Safari View Controller
             try { await Browser?.close(); } catch(e) {}
-            // Obtener la sesión de Supabase del URL
-            const url = new URL(data.url.replace('com.iglesiafreedom.kodesh://', 'https://kodeshbible.com/'));
-            const { data: authData, error } = await sbClient.auth.exchangeCodeForSession(url.search.slice(1));
-            if (authData?.session) {
-              checkAndRedirect(authData.session.user);
-            } else {
-              // Intentar obtener sesión existente
-              const { data: { session } } = await sbClient.auth.getSession();
-              if (session) checkAndRedirect(session.user);
+
+            // Extraer tokens del URL
+            const rawUrl = data.url;
+            // Convertir el scheme URL a algo parseable
+            const fakeBase = 'https://x.x/';
+            const afterScheme = rawUrl.replace('com.iglesiafreedom.kodesh://', '');
+            
+            // El URL puede tener access_token en el fragment (#) o como query params
+            let accessToken = null;
+            let refreshToken = null;
+
+            // Buscar en el fragment
+            const hashPart = afterScheme.includes('#') ? afterScheme.split('#')[1] : afterScheme;
+            const params = new URLSearchParams(hashPart);
+            accessToken = params.get('access_token');
+            refreshToken = params.get('refresh_token');
+
+            if (accessToken) {
+              const { data: sessionData, error } = await sbClient.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || '',
+              });
+              if (sessionData?.session) {
+                checkAndRedirect(sessionData.session.user);
+                return;
+              }
             }
+
+            // Si no hay tokens, intentar con code (PKCE flow)
+            const code = params.get('code');
+            if (code) {
+              const { data: sessionData } = await sbClient.auth.exchangeCodeForSession(code);
+              if (sessionData?.session) {
+                checkAndRedirect(sessionData.session.user);
+                return;
+              }
+            }
+
+            // Fallback: verificar sesión existente
+            const { data: { session } } = await sbClient.auth.getSession();
+            if (session) checkAndRedirect(session.user);
           }
         });
       }
     } catch(e) {
-      console.warn('[DeepLink] Error configurando listeners:', e);
+      console.warn('[DeepLink] Error:', e);
     }
   });
 }
