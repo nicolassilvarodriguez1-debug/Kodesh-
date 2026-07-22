@@ -649,6 +649,40 @@ async function loadProfile(user) {
 
     <div class="section">
       <div class="section-header">
+        <div class="section-title">🤖 Uso de IA — ${month}</div>
+        <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? '✦ Premium' : 'Gratuito'}</span>
+      </div>
+      <div class="section-body">
+        <div class="usage-row">
+          <span class="usage-label">Búsquedas</span>
+          <div class="usage-bar-wrap"><div class="usage-bar-fill ${searchUsed/searchLimit >= 0.9 ? 'danger' : ''}" style="width:${Math.min(100, searchUsed/searchLimit*100)}%"></div></div>
+          <span class="usage-count">${searchUsed}/${searchLimit}</span>
+        </div>
+        <div class="usage-row">
+          <span class="usage-label">Asistente</span>
+          <div class="usage-bar-wrap"><div class="usage-bar-fill ${assistantUsed/assistantLimit >= 0.9 ? 'danger' : ''}" style="width:${Math.min(100, assistantUsed/assistantLimit*100)}%"></div></div>
+          <span class="usage-count">${assistantUsed}/${assistantLimit}</span>
+        </div>
+        <div class="usage-row">
+          <span class="usage-label">Lexicón</span>
+          <div class="usage-bar-wrap"><div class="usage-bar-fill" style="width:${isPremium ? 0 : Math.min(100, lexiconUsed/lexiconLimit*100)}%"></div></div>
+          <span class="usage-count">${lexiconUsed}${isPremium ? '' : '/'+lexiconLimit}</span>
+        </div>
+        ${!isPremium ? `
+        <div style="margin-top:16px;padding:14px 16px;background:rgba(201,168,76,0.05);border:1px solid var(--gold-dim);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium</div>
+            <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
+          </div>
+          <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
+            $5.99/mes →
+          </button>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
         <div class="section-title">📊 Progreso de Lectura</div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim)">${streak.total_days_read || 0} días totales</span>
       </div>
@@ -684,40 +718,6 @@ async function loadProfile(user) {
       </div>
       <div class="section-body">
         <div class="calendar-grid">${calendarHtml}</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">🤖 Uso de IA — ${month}</div>
-        <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? '✦ Premium' : 'Gratuito'}</span>
-      </div>
-      <div class="section-body">
-        <div class="usage-row">
-          <span class="usage-label">Búsquedas</span>
-          <div class="usage-bar-wrap"><div class="usage-bar-fill ${searchUsed/searchLimit >= 0.9 ? 'danger' : ''}" style="width:${Math.min(100, searchUsed/searchLimit*100)}%"></div></div>
-          <span class="usage-count">${searchUsed}/${searchLimit}</span>
-        </div>
-        <div class="usage-row">
-          <span class="usage-label">Asistente</span>
-          <div class="usage-bar-wrap"><div class="usage-bar-fill ${assistantUsed/assistantLimit >= 0.9 ? 'danger' : ''}" style="width:${Math.min(100, assistantUsed/assistantLimit*100)}%"></div></div>
-          <span class="usage-count">${assistantUsed}/${assistantLimit}</span>
-        </div>
-        <div class="usage-row">
-          <span class="usage-label">Lexicón</span>
-          <div class="usage-bar-wrap"><div class="usage-bar-fill" style="width:${isPremium ? 0 : Math.min(100, lexiconUsed/lexiconLimit*100)}%"></div></div>
-          <span class="usage-count">${lexiconUsed}${isPremium ? '' : '/'+lexiconLimit}</span>
-        </div>
-        ${!isPremium ? `
-        <div style="margin-top:16px;padding:14px 16px;background:rgba(201,168,76,0.05);border:1px solid var(--gold-dim);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium</div>
-            <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
-          </div>
-          <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
-            $5.99/mes →
-          </button>
-        </div>` : ''}
       </div>
     </div>
 
