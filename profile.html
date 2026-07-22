@@ -359,6 +359,21 @@ function closePremiumModal() {
 }
 
 async function executePurchase() {
+  // Verificar que este usuario NO tenga ya premium en Supabase
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) { alert('Debes iniciar sesión primero.'); return; }
+  
+  const { data: planData } = await sb.from('user_plans')
+    .select('plan, subscription_status')
+    .eq('user_id', session.user.id)
+    .single();
+  
+  if (planData?.plan === 'premium' && planData?.subscription_status === 'active') {
+    alert('Ya tienes KODESH Premium activo en esta cuenta.');
+    closePremiumModal();
+    return;
+  }
+
   const btn = document.getElementById('btnBuyPremium');
   if (!rcConfigured || !PurchasesSDK) {
     if (btn) btn.textContent = 'Cargando tienda...';
