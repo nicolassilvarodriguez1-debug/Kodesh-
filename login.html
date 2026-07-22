@@ -208,65 +208,43 @@ sbClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// En app nativa: manejar deep link del URL scheme
+// En app nativa: manejar deep link del URL scheme via evento nativo
 if (isNativeApp) {
-  window.addEventListener('load', async () => {
+  window.addEventListener('kodeshDeepLink', async (e) => {
     try {
-      const App = window.Capacitor?.Plugins?.App;
-      const Browser = window.Capacitor?.Plugins?.Browser;
+      const rawUrl = e.detail?.url || '';
+      console.log('[DeepLink] Evento recibido:', rawUrl);
 
-      if (App?.addListener) {
-        await App.addListener('appUrlOpen', async (data) => {
-          console.log('[DeepLink] URL recibida:', data?.url);
-          if (data?.url?.startsWith('com.iglesiafreedom.kodesh://')) {
-            // Cerrar Safari View Controller
-            try { await Browser?.close(); } catch(e) {}
+      // Cerrar Safari View Controller
+      try {
+        const Browser = window.Capacitor?.Plugins?.Browser;
+        if (Browser?.close) await Browser.close();
+      } catch(err) {}
 
-            // Extraer tokens del URL
-            const rawUrl = data.url;
-            // Convertir el scheme URL a algo parseable
-            const fakeBase = 'https://x.x/';
-            const afterScheme = rawUrl.replace('com.iglesiafreedom.kodesh://', '');
-            
-            // El URL puede tener access_token en el fragment (#) o como query params
-            let accessToken = null;
-            let refreshToken = null;
+      // Extraer tokens del fragment (#access_token=...&refresh_token=...)
+      const afterScheme = rawUrl.replace('com.iglesiafreedom.kodesh://', '');
+      const hashPart = afterScheme.includes('#') ? afterScheme.split('#')[1] : afterScheme;
+      const params = new URLSearchParams(hashPart);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
 
-            // Buscar en el fragment
-            const hashPart = afterScheme.includes('#') ? afterScheme.split('#')[1] : afterScheme;
-            const params = new URLSearchParams(hashPart);
-            accessToken = params.get('access_token');
-            refreshToken = params.get('refresh_token');
-
-            if (accessToken) {
-              const { data: sessionData, error } = await sbClient.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken || '',
-              });
-              if (sessionData?.session) {
-                checkAndRedirect(sessionData.session.user);
-                return;
-              }
-            }
-
-            // Si no hay tokens, intentar con code (PKCE flow)
-            const code = params.get('code');
-            if (code) {
-              const { data: sessionData } = await sbClient.auth.exchangeCodeForSession(code);
-              if (sessionData?.session) {
-                checkAndRedirect(sessionData.session.user);
-                return;
-              }
-            }
-
-            // Fallback: verificar sesión existente
-            const { data: { session } } = await sbClient.auth.getSession();
-            if (session) checkAndRedirect(session.user);
-          }
+      if (accessToken) {
+        const { data: sessionData } = await sbClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
         });
+        if (sessionData?.session) {
+          checkAndRedirect(sessionData.session.user);
+          return;
+        }
       }
+
+      // Fallback
+      const { data: { session } } = await sbClient.auth.getSession();
+      if (session) checkAndRedirect(session.user);
+
     } catch(e) {
-      console.warn('[DeepLink] Error:', e);
+      console.warn('[DeepLink] Error procesando URL:', e);
     }
   });
 }
