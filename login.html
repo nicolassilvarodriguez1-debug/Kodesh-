@@ -208,6 +208,45 @@ sbClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
+// En app nativa: escuchar cuando el Browser recibe el URL scheme callback
+if (isNativeApp) {
+  window.addEventListener('load', async () => {
+    try {
+      const Browser = window.Capacitor?.Plugins?.Browser;
+      if (Browser?.addListener) {
+        await Browser.addListener('browserFinished', async () => {
+          // El browser se cerró — verificar si hay sesión activa
+          const { data: { session } } = await sbClient.auth.getSession();
+          if (session) checkAndRedirect(session.user);
+        });
+      }
+
+      // También escuchar el App URL open event (cuando iOS abre el custom scheme)
+      const App = window.Capacitor?.Plugins?.App;
+      if (App?.addListener) {
+        await App.addListener('appUrlOpen', async (data) => {
+          if (data?.url?.startsWith('com.iglesiafreedom.kodesh://')) {
+            // Cerrar el Safari View Controller
+            try { await Browser?.close(); } catch(e) {}
+            // Obtener la sesión de Supabase del URL
+            const url = new URL(data.url.replace('com.iglesiafreedom.kodesh://', 'https://kodeshbible.com/'));
+            const { data: authData, error } = await sbClient.auth.exchangeCodeForSession(url.search.slice(1));
+            if (authData?.session) {
+              checkAndRedirect(authData.session.user);
+            } else {
+              // Intentar obtener sesión existente
+              const { data: { session } } = await sbClient.auth.getSession();
+              if (session) checkAndRedirect(session.user);
+            }
+          }
+        });
+      }
+    } catch(e) {
+      console.warn('[DeepLink] Error configurando listeners:', e);
+    }
+  });
+}
+
 async function checkAndRedirect(user) {
   // Cerrar el Safari View Controller si está abierto
   try {
@@ -288,7 +327,7 @@ async function register() {
 // ══════════════════════════════════════════════════════════════
 async function openOAuthInApp(provider) {
   const redirectTo = isNativeApp
-    ? 'https://kodeshbible.com/index.html'
+    ? 'com.iglesiafreedom.kodesh://index'
     : window.location.origin + '/index.html';
 
   const { data, error } = await sbClient.auth.signInWithOAuth({
