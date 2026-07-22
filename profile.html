@@ -386,6 +386,14 @@ async function executePurchase() {
   }
   try {
     if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
+
+    // Verificar si este dispositivo/Apple ID YA tiene la suscripción activa
+    // (pasa cuando otra cuenta de KODESH la activó antes en el mismo dispositivo)
+    const preCheckInfo = await PurchasesSDK.getCustomerInfo();
+    if (preCheckInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
+      throw new Error('Este Apple ID ya tiene una suscripción KODESH Premium activa asociada a otra cuenta. Si es tuya, inicia sesión con esa cuenta o contáctanos para transferirla.');
+    }
+
     const { current } = await PurchasesSDK.getOfferings();
     if (!current || !current.availablePackages?.length) throw new Error('No hay productos disponibles.');
     const pkg = current.availablePackages.find(p => p.product?.identifier === PRODUCT_ID)
