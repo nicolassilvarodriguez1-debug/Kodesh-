@@ -379,10 +379,17 @@ async function executePurchase() {
     if (!pkg) throw new Error('Producto no encontrado.');
     const { customerInfo } = await PurchasesSDK.purchasePackage({ aPackage: pkg });
     if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
-      await syncPremiumWithSupabase();
-      closePremiumModal();
-      alert('🎉 ¡Bienvenido a KODESH Premium!');
-      window.location.reload();
+  // Verificar que el appUserID de RevenueCat coincida con el usuario de Supabase
+  const { data: { session } } = await sb.auth.getSession();
+  const rcUserId = customerInfo?.originalAppUserId;
+  if (session?.user?.id && rcUserId && rcUserId !== session.user.id) {
+    // Usuario diferente — no sincronizar
+    throw new Error('La compra pertenece a otra cuenta.');
+  }
+  await syncPremiumWithSupabase();
+  closePremiumModal();
+  alert('🎉 ¡Bienvenido a KODESH Premium!');
+  window.location.reload();
     } else {
       throw new Error('La compra no pudo verificarse.');
     }
