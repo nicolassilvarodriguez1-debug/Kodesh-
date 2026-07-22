@@ -805,6 +805,15 @@ function buildCalendar(goalChapters) {
 }
 
 async function signOut() {
+  // Logout de RevenueCat para desvincularlo del usuario actual
+  try {
+    const Purchases = window.Capacitor?.Plugins?.Purchases;
+    if (Purchases) {
+      await Purchases.logOut();
+    }
+  } catch(e) {
+    console.warn('[RC] Logout error:', e);
+  }
   await sb.auth.signOut();
   window.location.href = '/login.html';
 }
