@@ -381,8 +381,7 @@ async function executePurchase() {
     if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
   // Verificar que el appUserID de RevenueCat coincida con el usuario de Supabase
   const { data: { session } } = await sb.auth.getSession();
-  const rcUserId = customerInfo?.originalAppUserId;
-  if (session?.user?.id && rcUserId && rcUserId !== session.user.id) {
+alert('RC User: ' + rcUserId + ' | SB User: ' + session?.user?.id);  if (session?.user?.id && rcUserId && rcUserId !== session.user.id) {
     // Usuario diferente — no sincronizar
     throw new Error('La compra pertenece a otra cuenta.');
   }
