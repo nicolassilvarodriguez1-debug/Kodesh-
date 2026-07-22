@@ -1311,6 +1311,23 @@ html.light .nav-header { background: linear-gradient(135deg, #f5efe0, #ede4cc); 
   .user-btn { padding: 4px 8px; min-width: auto; }
   .sidebar-toggle { padding: 6px 8px; font-size: 1rem; }
 
+/* ── iPad específico ── */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .topbar {
+    padding-top: max(env(safe-area-inset-top), 20px);
+    padding-left: 16px;
+    padding-right: 16px;
+    gap: 10px;
+  }
+  .topbar-center { display: flex; }
+  .btn-premium { font-size: 0.55rem; padding: 5px 10px; }
+  .topbar-right { gap: 8px; }
+  .btn-search-open span { display: inline; }
+  .logo-text { font-size: 1rem; }
+  .user-btn { padding: 5px 10px; }
+  .streak-badge { font-size: 0.65rem; padding: 4px 8px; }
+}
+
   /* ── Sidebar as bottom sheet ── */
   .sidebar {
     position: fixed;
