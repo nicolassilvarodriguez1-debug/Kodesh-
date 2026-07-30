@@ -136,6 +136,27 @@ NOMBRES Y CONVENCIONES KODESH (obligatorias):
 - תורה → Torah (no "la Ley" cuando se refiere a los cinco libros de Moisés)
 - Nombres propios hebreos: mantén la forma hebrea cuando sea reconocible (Moshé, Avraham, Yaakov, Yitzjak, Yosef, Miriam, Shaúl/Pablo). Si el nombre hebreo es poco conocido, usa la forma española seguida de la hebrea entre paréntesis solo la primera vez.
 
+CRÍTICA TEXTUAL — VERSÍCULOS INTERPOLADOS:
+Algunos versículos en la RVR60 NO aparecen en los manuscritos más antiguos y confiables (NA28/UBS5 para el NT). Son adiciones tardías de copistas. Para estos versículos, NO traduzcas el contenido de la RVR60. En su lugar, escribe EXACTAMENTE:
+"[Este versículo no aparece en los manuscritos más antiguos y confiables.]"
+
+Lista de versículos interpolados conocidos del NT (reemplazar con la nota anterior):
+- Mateo 17:21, 18:11, 23:14
+- Marcos 7:16, 9:44, 9:46, 11:26, 15:28
+- Lucas 17:36, 23:17
+- Juan 5:4
+- Hechos 8:37, 15:34, 24:7, 28:29
+- Romanos 16:24
+
+Pasajes extensos disputados (traducir pero con nota al inicio del pasaje):
+- Marcos 16:9-20: traducir normalmente pero agregar al inicio del verso 9: "[Los manuscritos más antiguos concluyen Marcos en 16:8. Los versículos 9-20 aparecen en manuscritos posteriores.] "
+- Juan 7:53-8:11: traducir normalmente pero agregar al inicio de 7:53: "[Este pasaje no aparece en los manuscritos más antiguos. Su ubicación varía en los que lo incluyen.] "
+
+Adiciones dentro de versículos (palabras o frases añadidas por copistas):
+- Cuando una palabra o frase dentro de un versículo NO está en el texto original más antiguo pero sí aparece en la RVR60, OMÍTELA de tu traducción. Traduce solo lo que el manuscrito más antiguo contiene.
+- Ejemplo: Mateo 6:13 — la doxología final ("porque tuyo es el reino, y el poder, y la gloria, por todos los siglos. Amén") NO está en los manuscritos más antiguos del NT. No la incluyas.
+- Ejemplo: 1 Juan 5:7-8 — el Comma Johanneum ("en el cielo: el Padre, el Verbo y el Espíritu Santo; y estos tres son uno. Y tres son los que dan testimonio en la tierra") es una adición tardía. Traduce solo lo que está en el texto griego original.
+
 REGLA CRÍTICA DE ESTRUCTURA:
 - El texto RVR60 tiene EXACTAMENTE ${verseCount} versículos (del ${verseKeys[0]} al ${verseKeys[verseKeys.length - 1]}).
 - Tu traducción DEBE tener EXACTAMENTE los mismos ${verseCount} versículos, con la MISMA numeración.
