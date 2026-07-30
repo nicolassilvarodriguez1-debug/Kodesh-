@@ -3196,6 +3196,32 @@ async function loadTextualVersion() {
   var btn = document.getElementById('btnTextualToggle');
   if (btn) { btn.classList.add('active'); btn.innerHTML = '← RVR60'; }
 
+  // Verificar premium — mismo patrón que el interlineal
+  if (!userUsage || userUsage.plan !== 'premium') {
+    textualActive = false;
+    state.version = 'RVR60';
+    _textualLoading = false;
+    if (btn) { btn.classList.remove('active'); btn.innerHTML = '✦ Traducción Kodesh <span class="badge-beta">BETA</span>'; }
+    // Mostrar paywall igual que el interlineal
+    var bibleTextDiv = document.querySelector('.bible-text');
+    if (bibleTextDiv) {
+      bibleTextDiv.innerHTML = `
+        <div class="interlinear-locked">
+          <div class="lock-big">🔒</div>
+          <div style="font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">
+            Función Premium
+          </div>
+          <div style="font-size:0.8rem;line-height:1.6">
+            La Traducción Kodesh es una versión de equivalencia formal anclada
+            al hebreo y griego original, exclusiva para suscriptores Premium.
+          </div>
+          <button class="btn-go-premium" onclick="goToPremium()">✦ Conocer Premium</button>
+        </div>
+      `;
+    }
+    return;
+  }
+
   var bibleTextDiv = document.querySelector('.bible-text');
   if (bibleTextDiv) {
     bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;"><div style="margin-bottom:8px;">✦</div>Generando traducción textual...</div>';
