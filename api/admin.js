@@ -185,7 +185,7 @@ export default async function handler(req, res) {
     try {
       const [cached, reports, lastGenArr] = await Promise.all([
         sbGetAll('textual_cache?select=book_id,chapter'),
-        sbGetAll('textual_reports?select=id,book_id,chapter,verse,comment,created_at&order=created_at.desc&limit=50'),
+        sbGet('textual_reports?select=id,book_id,chapter,verse,comment,created_at&order=created_at.desc&limit=50'),
         sbGet('textual_cache?select=book_id,chapter,created_at&order=created_at.desc&limit=1'),
       ]);
 
