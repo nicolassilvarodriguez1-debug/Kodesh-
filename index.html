@@ -3133,10 +3133,10 @@ async function loadTextualVersion() {
   if (_textualLoading) return;
   _textualLoading = true;
   textualActive = true;
-  state.version = 'Textual IA';
+  state.version = 'Traducción Kodesh';
 
   var btn = document.getElementById('btnTextualToggle');
-  if (btn) { btn.classList.add('active'); btn.innerHTML = '← Volver a RVR60'; }
+  if (btn) { btn.classList.add('active'); btn.innerHTML = '← RVR60'; }
 
   var bibleTextDiv = document.querySelector('.bible-text');
   if (bibleTextDiv) {
@@ -3172,7 +3172,7 @@ async function loadTextualVersion() {
       var notice = document.createElement('div');
       notice.className = 'textual-notice';
       var langLabel = BIBLE_BOOKS.NT.some(function(b) { return b.id === state.currentBook; }) ? 'griego' : 'hebreo';
-      notice.innerHTML = '✦ <strong>Biblia Textual (IA)</strong> — Traducción de equivalencia formal anclada al ' + langLabel + ' original. En revisión permanente. <a onclick="reportTextualChapter()">¿Algo no suena bien? Repórtalo</a>.';
+      notice.innerHTML = '✦ <strong>Traducción Kodesh</strong> — Equivalencia formal anclada al ' + langLabel + ' original. En revisión permanente. <a onclick="reportTextualChapter()">¿Algo no suena bien? Repórtalo</a>.';
       newBibleText.insertBefore(notice, newBibleText.firstChild);
 
       if (!data.fromCache) {
@@ -3204,7 +3204,7 @@ function restoreTextualToggleButton() {
   btn.id = 'btnTextualToggle';
   btn.className = 'btn-textual-toggle' + (textualActive ? ' active' : '');
   btn.onclick = toggleTextualVersion;
-  btn.innerHTML = textualActive ? '← Volver a RVR60' : '✦ Textual IA <span class="badge-beta">BETA</span>';
+  btn.innerHTML = textualActive ? '← RVR60' : '✦ Traducción Kodesh <span class="badge-beta">BETA</span>';
   chapterMeta.appendChild(btn);
 }
 
