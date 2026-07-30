@@ -164,6 +164,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     <button class="admin-tab" onclick="switchTab('canciones',this)">🎵 Canciones</button>
     <button class="admin-tab" onclick="switchTab('actividades',this)">🎨 Actividades</button>
     <button class="admin-tab" onclick="switchTab('interlineal',this)">📜 Interlineal</button>
+    <button class="admin-tab" onclick="switchTab('traduccion',this)">✦ Traducción Kodesh</button>
     <button class="admin-tab" id="tabRoles" onclick="switchTab('roles',this)" style="display:none">🔑 Editores</button>
   </div>
 
@@ -318,6 +319,50 @@ tr:hover td { background:rgba(255,255,255,0.02); }
   </div>
 
 
+  <!-- TAB: TRADUCCIÓN KODESH -->
+  <div class="tab-content" id="tab-traduccion">
+    <div class="main">
+
+      <!-- Stats -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card">
+          <div class="stat-label">Capítulos generados</div>
+          <div class="stat-value gold" id="tkCachedCount">—</div>
+          <div class="stat-sub" id="tkTotalCount">de — totales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cobertura</div>
+          <div class="stat-value green" id="tkPct">—</div>
+          <div class="stat-sub">% de la Biblia generada</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Reportes pendientes</div>
+          <div class="stat-value" id="tkReportCount" style="color:var(--red)">—</div>
+          <div class="stat-sub">de usuarios</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Último generado</div>
+          <div class="stat-value" id="tkLastGen" style="font-size:0.8rem;color:var(--text-mid)">—</div>
+          <div class="stat-sub" id="tkLastGenDate"></div>
+        </div>
+      </div>
+
+      <!-- Reportes de usuarios -->
+      <div class="section-title" style="margin-top:8px">Reportes de usuarios</div>
+      <div class="table-wrap" id="tkReportsWrap">
+        <div class="loading">Cargando reportes...</div>
+      </div>
+
+      <!-- Cobertura por libro -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div class="section-title" style="margin:0;padding:0;border:none">Cobertura por libro</div>
+        <button class="btn-sm" onclick="loadTraduccionKodesh()">↻ Actualizar</button>
+      </div>
+      <div id="tkBooks"><div class="loading">Cargando...</div></div>
+
+    </div>
+  </div>
+
   <!-- TAB: ROLES (solo superadmin) -->
   <div class="tab-content" id="tab-roles">
     <div class="main">
@@ -403,9 +448,124 @@ async function init() {
 
 async function loadAll() {
   document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
-  const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage()];
+  const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage(), loadTraduccionKodesh()];
   if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles());
   await Promise.all(promises);
+}
+
+// ── TRADUCCIÓN KODESH COVERAGE ──
+async function loadTraduccionKodesh() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: session.user.id, action: 'traduccion_kodesh_coverage' })
+    });
+    const data = await res.json();
+    if (data.error) { console.error('traduccion_kodesh_coverage:', data.error); return; }
+    renderTraduccionKodesh(data);
+  } catch(e) { console.error(e); }
+}
+
+function renderTraduccionKodesh({ totalCached, totalChapters, books, reports, lastGenerated }) {
+  // Stats
+  document.getElementById('tkCachedCount').textContent = totalCached.toLocaleString();
+  document.getElementById('tkTotalCount').textContent = `de ${totalChapters.toLocaleString()} totales`;
+  const pct = totalChapters ? ((totalCached / totalChapters) * 100).toFixed(1) : '0.0';
+  document.getElementById('tkPct').textContent = `${pct}%`;
+  document.getElementById('tkReportCount').textContent = reports.length;
+
+  // Último generado
+  if (lastGenerated) {
+    document.getElementById('tkLastGen').textContent = `${lastGenerated.book_id} ${lastGenerated.chapter}`;
+    document.getElementById('tkLastGenDate').textContent = new Date(lastGenerated.created_at).toLocaleString('es');
+  }
+
+  // Tabla de reportes
+  const reportsWrap = document.getElementById('tkReportsWrap');
+  if (reports.length === 0) {
+    reportsWrap.innerHTML = '<div class="loading">No hay reportes pendientes ✓</div>';
+  } else {
+    reportsWrap.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Pasaje</th><th>Versículo</th><th>Comentario</th><th>Fecha</th><th>Acción</th>
+        </tr></thead>
+        <tbody>
+          ${reports.map(r => `
+            <tr>
+              <td class="name-cell">${r.book_name} ${r.chapter}</td>
+              <td>${r.verse || '—'}</td>
+              <td style="max-width:300px;white-space:normal;line-height:1.4">${r.comment || '<span style="color:var(--text-dim)">Sin comentario</span>'}</td>
+              <td style="color:var(--text-dim)">${new Date(r.created_at).toLocaleDateString('es')}</td>
+              <td>
+                <button class="btn-plan" onclick="verCapituloTextual('${r.book_id}',${r.chapter})">Ver</button>
+                <button class="btn-plan down" onclick="borrarReporte(${r.id})">Borrar</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // Cobertura por libro
+  const container = document.getElementById('tkBooks');
+  container.innerHTML = books.map((b, i) => {
+    const bookPct = b.total ? (b.cached / b.total) * 100 : 0;
+    const chips = b.chapters.map(c =>
+      `<div class="chapter-chip ${c.cached ? 'cached' : ''}"
+        title="Capítulo ${c.chapter}${c.cached ? ' · generado' : ' · pendiente'}"
+        onclick="${c.cached ? `borrarCacheTextual('${b.id}',${c.chapter})` : ''}"
+        style="${c.cached ? 'cursor:pointer' : 'cursor:default'}"
+      >${c.chapter}</div>`
+    ).join('');
+    return `<div class="book-row" id="tk-book-${i}">
+      <div class="book-row-head" onclick="toggleTKBookRow(${i})">
+        <div class="book-row-name">${b.name}</div>
+        <div class="book-row-stats">
+          <div class="book-row-frac">${b.cached}/${b.total}</div>
+          <div class="book-row-bar"><div class="book-row-bar-fill" style="width:${bookPct}%"></div></div>
+          <div class="book-row-arrow">▶</div>
+        </div>
+      </div>
+      <div class="book-row-chapters">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleTKBookRow(i) {
+  document.getElementById(`tk-book-${i}`).classList.toggle('open');
+}
+
+function verCapituloTextual(bookId, chapter) {
+  window.open(`/index.html?book=${bookId}&chapter=${chapter}`, '_blank');
+}
+
+async function borrarReporte(id) {
+  if (!confirm('¿Borrar este reporte?')) return;
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch('/api/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: session.user.id, action: 'delete_textual_report', reportId: id })
+  });
+  const data = await res.json();
+  if (data.ok) loadTraduccionKodesh();
+  else alert('Error al borrar reporte: ' + data.error);
+}
+
+async function borrarCacheTextual(bookId, chapter) {
+  if (!confirm(`¿Borrar el caché de ${bookId} ${chapter}? Se regenerará la próxima vez que alguien lo abra.`)) return;
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch('/api/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: session.user.id, action: 'delete_textual_cache', bookId, chapter })
+  });
+  const data = await res.json();
+  if (data.ok) loadTraduccionKodesh();
+  else alert('Error al borrar caché: ' + data.error);
 }
 
 // ── INTERLINEAR COVERAGE ──
