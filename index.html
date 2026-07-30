@@ -2670,6 +2670,60 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
   </div>
 </div>
 
+<!-- ══ MODAL PREMIUM — PRESENTACIÓN COMPLETA ══ -->
+<div class="limit-overlay" id="premiumPresentationOverlay" onclick="closePremiumPresentation(event)">
+  <div class="limit-modal" style="max-width:520px">
+    <div style="text-align:right;margin-bottom:-8px">
+      <button onclick="closePremiumPresentation()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:0">✕</button>
+    </div>
+    <div class="limit-icon">✦</div>
+    <div class="limit-title">KODESH Premium</div>
+    <div class="limit-msg">Todo lo que necesitas para estudiar las Escrituras desde sus raíces hebraicas.</div>
+
+    <!-- Features detalladas -->
+    <div style="text-align:left;margin-bottom:20px">
+
+      <div style="background:var(--bg3);border:1px solid var(--gold-dim);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">✦ Traducción Kodesh</div>
+        <div style="font-size:0.85rem;color:var(--text-mid);line-height:1.5">Traducción de equivalencia formal anclada al hebreo y griego original. Fiel al texto más antiguo, nombres restaurados (YHWH, Yeshúa, Mashíaj).</div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">📖 Interlineal Hebreo-Griego</div>
+        <div style="font-size:0.85rem;color:var(--text-mid);line-height:1.5">Lee cada versículo palabra por palabra en el idioma original con su número Strong's, análisis morfológico y traducción al español.</div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">🔤 Lexicón Strong's Completo</div>
+        <div style="font-size:0.85rem;color:var(--text-mid);line-height:1.5">Sin límites de consultas. Etimología, usos en toda la Escritura y conexiones entre el Antiguo y el Nuevo Pacto.</div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">🤖 Asistente IA de Estudio</div>
+        <div style="font-size:0.85rem;color:var(--text-mid);line-height:1.5">80 búsquedas y 70 consultas al mes. Pregunta sobre cualquier pasaje, obtén contexto histórico, conexiones y aplicación.</div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px">
+        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">📅 52 Porciones Torah + más</div>
+        <div style="font-size:0.85rem;color:var(--text-mid);line-height:1.5">Ciclo de estudio completo con lecturas de Torah, Haftarah y Brit Hadashá. Acceso anticipado a nuevas funciones.</div>
+      </div>
+
+    </div>
+
+    <!-- Precio y botón de suscripción -->
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.05));border:1px solid var(--gold-dim);border-radius:12px;padding:18px;margin-bottom:16px">
+      <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px">Plan mensual</div>
+      <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--text);line-height:1">$5.99<span style="font-size:0.75rem;color:var(--text-dim);font-weight:400">/mes</span></div>
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;font-style:italic">🔥 Precio de lanzamiento · Cancela cuando quieras</div>
+    </div>
+
+    <button class="limit-btn-upgrade" id="btnPresentationSubscribe" onclick="subscribePremiumFromPresentation()">
+      Suscribirse a Premium →
+    </button>
+    <button class="limit-btn-close" onclick="closePremiumPresentation()">Ahora no</button>
+  </div>
+</div>
+
 <!-- ══ BOOK/CHAPTER NAV MODAL ══ -->
 <div class="nav-overlay" id="navOverlay" onclick="closeNavOutside(event)">
   <div class="nav-modal" id="navModal">
@@ -3215,7 +3269,7 @@ async function loadTextualVersion() {
             La Traducción Kodesh es una versión de equivalencia formal anclada
             al hebreo y griego original, exclusiva para suscriptores Premium.
           </div>
-          <button class="btn-go-premium" onclick="goToPremium()">✦ Conocer Premium</button>
+          <button class="btn-go-premium" onclick="showPremiumPresentation()">✦ Conocer Premium</button>
         </div>
       `;
     }
@@ -4043,6 +4097,22 @@ async function goToPremium() {
 
 function goToBerith() { goToPremium(); }
 function goToPro() { goToPremium(); }
+
+function showPremiumPresentation() {
+  document.getElementById('premiumPresentationOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePremiumPresentation(e) {
+  if (e && e.target !== document.getElementById('premiumPresentationOverlay')) return;
+  document.getElementById('premiumPresentationOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function subscribePremiumFromPresentation() {
+  closePremiumPresentation();
+  await goToPremium();
+}
 
 /* ════════════════════════════════════
    PROMESA DEL DÍA
