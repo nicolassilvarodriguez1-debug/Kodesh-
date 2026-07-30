@@ -3171,7 +3171,7 @@ async function loadTextualVersion() {
     if (newBibleText) {
       var notice = document.createElement('div');
       notice.className = 'textual-notice';
-      var langLabel = NT_BOOKS.has(state.currentBook) ? 'griego' : 'hebreo';
+      var langLabel = BIBLE_BOOKS.NT.some(function(b) { return b.id === state.currentBook; }) ? 'griego' : 'hebreo';
       notice.innerHTML = '✦ <strong>Biblia Textual (IA)</strong> — Traducción de equivalencia formal anclada al ' + langLabel + ' original. En revisión permanente. <a onclick="reportTextualChapter()">¿Algo no suena bien? Repórtalo</a>.';
       newBibleText.insertBefore(notice, newBibleText.firstChild);
 
