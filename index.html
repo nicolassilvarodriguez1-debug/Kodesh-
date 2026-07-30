@@ -2243,6 +2243,38 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
   opacity: 1;
   transform: translateX(0);
 }
+
+/* ════ BIBLIA TEXTUAL (IA) ════ */
+.btn-textual-toggle {
+  font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:1.5px; text-transform:uppercase;
+  background:transparent; border:1px solid var(--border2); color:var(--text-dim);
+  padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.2s;
+  display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+}
+.btn-textual-toggle:hover { border-color:var(--gold-dim); color:var(--gold); }
+.btn-textual-toggle.active {
+  border-color:var(--gold); color:var(--gold); background:var(--gold-glow);
+}
+.badge-beta {
+  background:var(--red); color:#fff; font-size:0.45rem;
+  padding:1px 5px; border-radius:8px; letter-spacing:0.5px;
+}
+.textual-notice {
+  font-size:0.78rem; color:var(--text-dim); background:var(--bg3);
+  border:1px solid var(--border); border-left:3px solid var(--gold);
+  border-radius:0 8px 8px 0; padding:10px 14px; margin-bottom:14px; line-height:1.6;
+}
+.textual-notice a {
+  color:var(--gold); text-decoration:underline; cursor:pointer;
+  background:none; border:none; font-size:inherit;
+}
+.textual-fadein .verse {
+  opacity:0; animation: textualVerseIn 0.3s ease forwards;
+}
+@keyframes textualVerseIn {
+  from { opacity:0; transform:translateY(3px); }
+  to { opacity:1; transform:translateY(0); }
+}
 </style>
 </head>
 <body>
@@ -3078,6 +3110,139 @@ function goChapter(num) {
   const bookData = getAllBooks().find(b => b.id === state.currentBook);
   if (bookData && num > bookData.chapters) return;
   loadChapter(state.currentBook, num);
+}
+
+/* ════════════════════════════════════
+   BIBLIA TEXTUAL (IA) — Toggle de versión
+════════════════════════════════════ */
+let textualActive = false;
+
+async function toggleTextualVersion() {
+  const btn = document.getElementById('btnTextualToggle');
+  if (!btn) return;
+
+  if (textualActive) {
+    // Volver a RVR60
+    textualActive = false;
+    btn.classList.remove('active');
+    btn.innerHTML = '✦ Textual IA <span class="badge-beta">BETA</span>';
+    state.version = 'RVR60';
+    loadChapter(state.currentBook, state.currentChapter);
+    return;
+  }
+
+  // Activar Textual
+  textualActive = true;
+  btn.classList.add('active');
+  btn.innerHTML = '← Volver a RVR60';
+  state.version = 'Textual IA';
+
+  const bibleTextDiv = document.querySelector('.bible-text');
+  if (bibleTextDiv) {
+    bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;"><div style="margin-bottom:8px;">✦</div>Generando traducción textual...</div>';
+  }
+
+  try {
+    const sourceChapterObj = await fetchChapter(state.currentBook, state.currentChapter);
+
+    const res = await fetch('/api/textual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bookId: state.currentBook,
+        chapter: state.currentChapter,
+        sourceVerses: sourceChapterObj,
+      })
+    });
+    const data = await res.json();
+    if (!data.found) throw new Error(data.error || 'Error desconocido');
+
+    // Convertir a formato [{ num, text }] — mismo que parseLocalChapter
+    const verses = parseLocalChapter(data.verses);
+
+    const bookData = getAllBooks().find(b => b.id === state.currentBook);
+    const bookName = bookData ? bookData.name : state.currentBook;
+    const parasha = await getParashaForChapter(state.currentBook, state.currentChapter);
+
+    // Renderizar con la MISMA función — bookmarks, notas, lexicón, verse sheet
+    // todo funciona automáticamente
+    renderBibleText(verses, bookName, state.currentChapter, parasha);
+
+    // Insertar banner Beta encima del texto
+    const newBibleText = document.querySelector('.bible-text');
+    if (newBibleText) {
+      const notice = document.createElement('div');
+      notice.className = 'textual-notice';
+      const langLabel = NT_BOOKS.has(state.currentBook) ? 'griego' : 'hebreo';
+      notice.innerHTML = '✦ <strong>Biblia Textual (IA)</strong> — Traducción de equivalencia formal anclada al ' + langLabel + ' original. En revisión permanente. <a onclick="reportTextualChapter()">¿Algo no suena bien? Repórtalo</a>.';
+      newBibleText.insertBefore(notice, newBibleText.firstChild);
+
+      // Efecto verso por verso solo si recién se generó
+      if (!data.fromCache) {
+        newBibleText.classList.add('textual-fadein');
+        newBibleText.querySelectorAll('.verse').forEach(function(el, i) {
+          el.style.animationDelay = (i * 0.08) + 's';
+        });
+      }
+    }
+
+    // Re-inyectar el botón toggle (renderBibleText reemplazó mainContent)
+    restoreTextualToggleButton();
+
+  } catch(e) {
+    console.error('[Textual] Error:', e);
+    const fallback = document.querySelector('.bible-text');
+    if (fallback) {
+      fallback.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--red);">No se pudo generar la traducción: ' + e.message + '<br><button onclick="toggleTextualVersion()" style="margin-top:12px;padding:8px 16px;background:var(--bg3);border:1px solid var(--border2);color:var(--text-dim);border-radius:6px;cursor:pointer;font-family:Cinzel,serif;font-size:0.6rem;">Volver a RVR60</button></div>';
+    }
+  }
+}
+
+function restoreTextualToggleButton() {
+  const chapterMeta = document.querySelector('.chapter-meta');
+  if (!chapterMeta || document.getElementById('btnTextualToggle')) return;
+  const btn = document.createElement('button');
+  btn.id = 'btnTextualToggle';
+  btn.className = 'btn-textual-toggle' + (textualActive ? ' active' : '');
+  btn.onclick = toggleTextualVersion;
+  btn.innerHTML = textualActive ? '← Volver a RVR60' : '✦ Textual IA <span class="badge-beta">BETA</span>';
+  chapterMeta.appendChild(btn);
+}
+
+async function reportTextualChapter() {
+  var verse = prompt('¿En qué versículo notaste el problema? (número, o deja vacío si es general)');
+  if (verse === null) return;
+  var comment = prompt('¿Qué te pareció incorrecto o extraño?');
+  if (comment === null) return;
+  var sess = await sb.auth.getSession();
+  try {
+    await sb.from('textual_reports').insert({
+      book_id: state.currentBook,
+      chapter: state.currentChapter,
+      verse: verse ? parseInt(verse) : null,
+      user_id: sess.data.session ? sess.data.session.user.id : null,
+      comment: comment || null,
+    });
+    alert('¡Gracias! Tu reporte ayuda a mejorar la traducción.');
+  } catch(e) {
+    alert('No se pudo enviar el reporte. Intenta de nuevo.');
+  }
+}
+
+// Auto-inyectar el botón cada vez que se renderiza un capítulo
+const _textualObserver = new MutationObserver(function() {
+  var meta = document.querySelector('.chapter-meta');
+  if (meta && !document.getElementById('btnTextualToggle')) {
+    restoreTextualToggleButton();
+    if (textualActive) {
+      setTimeout(function() { toggleTextualVersion(); }, 100);
+    }
+  }
+});
+
+// Se inicia cuando el DOM esté listo (el mainContent ya existe en el HTML)
+if (document.getElementById('mainContent')) {
+  _textualObserver.observe(document.getElementById('mainContent'), { childList: true, subtree: true });
 }
 
 /* ════════════════════════════════════
