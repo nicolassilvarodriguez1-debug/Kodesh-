@@ -222,11 +222,15 @@ const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
+// Flag para evitar que onAuthStateChange redirija cuando estamos procesando un recovery
+let isProcessingRecovery = false;
+
 sbClient.auth.getSession().then(({ data: { session } }) => {
   if (session) checkAndRedirect(session.user);
 });
 
 sbClient.auth.onAuthStateChange((event, session) => {
+  if (isProcessingRecovery) return; // ignorar durante recovery
   if (event === 'SIGNED_IN' && session) {
     checkAndRedirect(session.user);
   }
@@ -253,13 +257,15 @@ if (isNativeApp) {
       const refreshToken = params.get('refresh_token');
       const tokenType = params.get('type');
 
+      // Si es recovery, activar flag ANTES de setSession para bloquear onAuthStateChange
+      if (tokenType === 'recovery') isProcessingRecovery = true;
+
       if (accessToken) {
         const { data: sessionData } = await sbClient.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || '',
         });
         if (sessionData?.session) {
-          // Si es un token de recuperación de contraseña, mostrar el formulario
           if (tokenType === 'recovery') {
             showResetPasswordForm();
             return;
@@ -277,6 +283,25 @@ if (isNativeApp) {
       console.warn('[DeepLink] Error procesando URL:', e);
     }
   });
+}
+
+// En web: verificar si la URL tiene un token de recovery en el hash
+// (cuando el usuario abre el link del correo directamente en el navegador)
+if (!isNativeApp && window.location.hash) {
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const hashType = hashParams.get('type');
+  const hashToken = hashParams.get('access_token');
+  if (hashType === 'recovery' && hashToken) {
+    isProcessingRecovery = true;
+    sbClient.auth.setSession({
+      access_token: hashToken,
+      refresh_token: hashParams.get('refresh_token') || '',
+    }).then(() => {
+      showResetPasswordForm();
+      // Limpiar el hash de la URL para no revelar el token
+      window.history.replaceState(null, '', window.location.pathname);
+    });
+  }
 }
 
 async function checkAndRedirect(user) {
