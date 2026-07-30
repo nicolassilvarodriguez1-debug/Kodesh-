@@ -3116,36 +3116,37 @@ function goChapter(num) {
    BIBLIA TEXTUAL (IA) — Toggle de versión
 ════════════════════════════════════ */
 let textualActive = false;
+let _textualLoading = false; // previene re-entrada del observer
 
-async function toggleTextualVersion() {
-  const btn = document.getElementById('btnTextualToggle');
-  if (!btn) return;
-
+function toggleTextualVersion() {
+  if (_textualLoading) return;
   if (textualActive) {
-    // Volver a RVR60
     textualActive = false;
-    btn.classList.remove('active');
-    btn.innerHTML = '✦ Textual IA <span class="badge-beta">BETA</span>';
     state.version = 'RVR60';
     loadChapter(state.currentBook, state.currentChapter);
-    return;
+  } else {
+    loadTextualVersion();
   }
+}
 
-  // Activar Textual
+async function loadTextualVersion() {
+  if (_textualLoading) return;
+  _textualLoading = true;
   textualActive = true;
-  btn.classList.add('active');
-  btn.innerHTML = '← Volver a RVR60';
   state.version = 'Textual IA';
 
-  const bibleTextDiv = document.querySelector('.bible-text');
+  var btn = document.getElementById('btnTextualToggle');
+  if (btn) { btn.classList.add('active'); btn.innerHTML = '← Volver a RVR60'; }
+
+  var bibleTextDiv = document.querySelector('.bible-text');
   if (bibleTextDiv) {
     bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;"><div style="margin-bottom:8px;">✦</div>Generando traducción textual...</div>';
   }
 
   try {
-    const sourceChapterObj = await fetchChapter(state.currentBook, state.currentChapter);
+    var sourceChapterObj = await fetchChapter(state.currentBook, state.currentChapter);
 
-    const res = await fetch('/api/textual', {
+    var res = await fetch('/api/textual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3154,30 +3155,26 @@ async function toggleTextualVersion() {
         sourceVerses: sourceChapterObj,
       })
     });
-    const data = await res.json();
+    var data = await res.json();
     if (!data.found) throw new Error(data.error || 'Error desconocido');
 
-    // Convertir a formato [{ num, text }] — mismo que parseLocalChapter
-    const verses = parseLocalChapter(data.verses);
-
-    const bookData = getAllBooks().find(b => b.id === state.currentBook);
-    const bookName = bookData ? bookData.name : state.currentBook;
-    const parasha = await getParashaForChapter(state.currentBook, state.currentChapter);
+    var verses = parseLocalChapter(data.verses);
+    var bookData = getAllBooks().find(function(b) { return b.id === state.currentBook; });
+    var bookName = bookData ? bookData.name : state.currentBook;
+    var parasha = await getParashaForChapter(state.currentBook, state.currentChapter);
 
     // Renderizar con la MISMA función — bookmarks, notas, lexicón, verse sheet
-    // todo funciona automáticamente
     renderBibleText(verses, bookName, state.currentChapter, parasha);
 
     // Insertar banner Beta encima del texto
-    const newBibleText = document.querySelector('.bible-text');
+    var newBibleText = document.querySelector('.bible-text');
     if (newBibleText) {
-      const notice = document.createElement('div');
+      var notice = document.createElement('div');
       notice.className = 'textual-notice';
-      const langLabel = NT_BOOKS.has(state.currentBook) ? 'griego' : 'hebreo';
+      var langLabel = NT_BOOKS.has(state.currentBook) ? 'griego' : 'hebreo';
       notice.innerHTML = '✦ <strong>Biblia Textual (IA)</strong> — Traducción de equivalencia formal anclada al ' + langLabel + ' original. En revisión permanente. <a onclick="reportTextualChapter()">¿Algo no suena bien? Repórtalo</a>.';
       newBibleText.insertBefore(notice, newBibleText.firstChild);
 
-      // Efecto verso por verso solo si recién se generó
       if (!data.fromCache) {
         newBibleText.classList.add('textual-fadein');
         newBibleText.querySelectorAll('.verse').forEach(function(el, i) {
@@ -3191,17 +3188,19 @@ async function toggleTextualVersion() {
 
   } catch(e) {
     console.error('[Textual] Error:', e);
-    const fallback = document.querySelector('.bible-text');
-    if (fallback) {
-      fallback.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--red);">No se pudo generar la traducción: ' + e.message + '<br><button onclick="toggleTextualVersion()" style="margin-top:12px;padding:8px 16px;background:var(--bg3);border:1px solid var(--border2);color:var(--text-dim);border-radius:6px;cursor:pointer;font-family:Cinzel,serif;font-size:0.6rem;">Volver a RVR60</button></div>';
-    }
+    textualActive = false;
+    state.version = 'RVR60';
+    alert('No se pudo generar la traducción: ' + (e.message || 'Error desconocido'));
+    loadChapter(state.currentBook, state.currentChapter);
   }
+
+  _textualLoading = false;
 }
 
 function restoreTextualToggleButton() {
-  const chapterMeta = document.querySelector('.chapter-meta');
+  var chapterMeta = document.querySelector('.chapter-meta');
   if (!chapterMeta || document.getElementById('btnTextualToggle')) return;
-  const btn = document.createElement('button');
+  var btn = document.createElement('button');
   btn.id = 'btnTextualToggle';
   btn.className = 'btn-textual-toggle' + (textualActive ? ' active' : '');
   btn.onclick = toggleTextualVersion;
@@ -3229,18 +3228,13 @@ async function reportTextualChapter() {
   }
 }
 
-// Auto-inyectar el botón cada vez que se renderiza un capítulo
-const _textualObserver = new MutationObserver(function() {
+// Observer: solo inyecta el botón, NUNCA auto-recarga textual
+var _textualObserver = new MutationObserver(function() {
   var meta = document.querySelector('.chapter-meta');
   if (meta && !document.getElementById('btnTextualToggle')) {
     restoreTextualToggleButton();
-    if (textualActive) {
-      setTimeout(function() { toggleTextualVersion(); }, 100);
-    }
   }
 });
-
-// Se inicia cuando el DOM esté listo (el mainContent ya existe en el HTML)
 if (document.getElementById('mainContent')) {
   _textualObserver.observe(document.getElementById('mainContent'), { childList: true, subtree: true });
 }
