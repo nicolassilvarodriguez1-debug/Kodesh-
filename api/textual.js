@@ -176,14 +176,28 @@ Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, si
 
     const data = await response.json();
     const raw = data?.content?.[0]?.text || '';
-    const cleaned = raw.replace(/```json|```/g, '').trim();
+
+    // Parseo robusto: limpiar backticks, extraer primer objeto JSON válido
+    let cleaned = raw
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+
+    // Si hay texto antes o después del JSON, extraer solo el objeto {}
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) cleaned = jsonMatch[0];
 
     let verses;
     try {
       verses = JSON.parse(cleaned);
     } catch(parseErr) {
-      console.error('[Textual] JSON parse error:', parseErr.message, 'Raw:', raw.slice(0, 200));
-      return res.status(500).json({ error: 'La IA generó una respuesta con formato inválido. Intenta de nuevo.' });
+      console.error('[Textual] JSON parse error:', parseErr.message, 'Raw:', raw.slice(0, 300));
+      // Fallback: devolver el texto RVR60 original con nota
+      verses = {};
+      for (const key of verseKeys) {
+        verses[key] = sourceVerses[key];
+      }
+      console.warn('[Textual] Usando fallback RVR60 para', bookId, chapter);
     }
 
     // Validar que tenga exactamente el mismo número de versículos
