@@ -3293,7 +3293,22 @@ async function loadTextualVersion() {
         sourceVerses: sourceChapterObj,
       })
     });
-    var data = await res.json();
+
+    // Verificar que la respuesta sea JSON válido
+    var contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      var textResponse = await res.text();
+      console.error('[Textual] Respuesta no-JSON:', textResponse.slice(0, 500));
+      throw new Error('El servidor respondió con formato inesperado (status ' + res.status + ')');
+    }
+
+    var data;
+    try {
+      data = await res.json();
+    } catch(jsonErr) {
+      console.error('[Textual] JSON parse error del servidor:', jsonErr);
+      throw new Error('La respuesta del servidor no es JSON válido');
+    }
     if (!data.found) throw new Error(data.error || 'Error desconocido');
 
     var verses = parseLocalChapter(data.verses);
