@@ -128,8 +128,8 @@ PRINCIPIOS DE TRADUCCIÓN:
 3. PRECISIÓN LÉXICA: Elige la palabra española que mejor refleje el campo semántico de la palabra original. No uses sinónimos genéricos cuando hay una equivalencia precisa disponible.
 
 NOMBRES Y CONVENCIONES KODESH (obligatorias):
-- El Tetragrámaton (יהוה / κύριος cuando traduce YHWH) → YHWH (nunca "Jehová", nunca "el Señor" cuando el original tiene el Nombre)
-- Cuando κύριος en el NT se refiere a un señor humano o título genérico → "señor" (minúscula)
+- El Tetragrámaton יהוה (solo estas cuatro letras exactas, YHWH) → YHWH. NO confundas Elohim con YHWH. Cuando el hebreo original dice אֱלֹהִים (Elohim, "Dios") → traduce como "Elohim" o "Dios". Cuando el hebreo dice יהוה → YHWH. Cuando dice יהוה אֱלֹהִים (YHWH Elohim) → YHWH Elohim. NUNCA sustituyas Elohim por YHWH. Ejemplo: Génesis 1:1 dice "Bereshit bara Elohim" = "En el principio Elohim creó" (NO YHWH). YHWH aparece por primera vez en Génesis 2:4.
+- En el NT griego, κύριος (kurios) cuando cita textos del AT donde había YHWH → YHWH. Cuando κύριος se refiere a un señor humano o título genérico → "señor" (minúscula).
 - ישוע / Ἰησοῦς → Yeshúa (nunca "Jesús")
 - משיח / Χριστός → Mashíaj (nunca "Cristo", excepto si usas "Mesías" como alternativa aceptable)
 - רוח הקודש / Πνεῦμα Ἅγιον → Ruaj HaKódesh o Espíritu Santo (ambos aceptables)
