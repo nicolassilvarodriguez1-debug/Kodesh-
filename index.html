@@ -3325,10 +3325,10 @@ async function loadTextualVersion() {
     restoreTextualToggleButton();
 
   } catch(e) {
-    console.error('[Textual] Error:', e);
+    console.error('[Textual] Error completo:', e, e.stack);
     textualActive = false;
     state.version = 'RVR60';
-    alert('No se pudo generar la traducción: ' + (e.message || 'Error desconocido'));
+    alert('No se pudo generar la traducción: ' + (e.message || 'Error desconocido') + '\n\nDetalle: ' + (e.name || 'sin nombre'));
     loadChapter(state.currentBook, state.currentChapter);
   }
 
