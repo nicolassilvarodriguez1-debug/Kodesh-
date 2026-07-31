@@ -3284,7 +3284,13 @@ async function loadTextualVersion() {
   try {
     var sourceChapterObj = await fetchChapter(state.currentBook, state.currentChapter);
 
-    var res = await fetch('/api/textual', {
+    var apiUrl = '/api/textual';
+    // En app nativa (Capacitor), CapacitorHttp intercepta fetch y necesita URL absoluta
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      apiUrl = 'https://kodeshbible.com/api/textual';
+    }
+
+    var res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
