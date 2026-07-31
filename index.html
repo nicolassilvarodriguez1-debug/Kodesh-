@@ -3387,12 +3387,35 @@ async function reportTextualChapter() {
   }
 }
 
-// Observer: solo inyecta el botón, NUNCA auto-recarga textual
+// Observer: mantiene el estado del botón sincronizado con la vista actual
+// Si el usuario tiene la vista Kodesh activa y navega, se mantiene activa
+// y se carga automáticamente el nuevo capítulo
 var _textualObserver = new MutationObserver(function() {
   var meta = document.querySelector('.chapter-meta');
-  if (meta && !document.getElementById('btnTextualToggle')) {
+  if (!meta || document.getElementById('btnTextualToggle')) return;
+
+  // Si estamos cargando activamente la vista textual, no hacer nada
+  if (_textualLoading) {
     restoreTextualToggleButton();
+    return;
   }
+
+  // Si el usuario tenía la vista Kodesh activa, cargar el nuevo capítulo en Kodesh
+  if (textualActive) {
+    restoreTextualToggleButton();
+    // Cargar la vista Kodesh para el nuevo capítulo automáticamente
+    // Pequeño delay para dejar que renderBibleText termine
+    setTimeout(function() {
+      // Volver a activar el estado y recargar
+      textualActive = false; // reset porque loadTextualVersion lo va a volver a poner en true
+      loadTextualVersion();
+    }, 50);
+    return;
+  }
+
+  // Navegación normal en RVR60 — solo inyectar el botón en estado inactivo
+  state.version = 'RVR60';
+  restoreTextualToggleButton();
 });
 if (document.getElementById('mainContent')) {
   _textualObserver.observe(document.getElementById('mainContent'), { childList: true, subtree: true });
