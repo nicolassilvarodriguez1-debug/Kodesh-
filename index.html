@@ -2295,6 +2295,53 @@ html.light .search-btn-run { background: linear-gradient(135deg, #c8960a, #a0700
   letter-spacing: 1px; min-width: 26px; text-align: center;
   user-select: none;
 }
+
+/* ════ BOTÓN GRANDE MARCAR LEÍDO (AL FINAL DEL CAPÍTULO) ════ */
+.chapter-end-actions {
+  display: flex; justify-content: center;
+  padding: 32px 20px 8px;
+}
+.btn-mark-read {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  color: var(--text-mid);
+  font-family: 'Cinzel', serif; font-size: 0.75rem;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 16px 32px; border-radius: 12px;
+  cursor: pointer; transition: all 0.2s;
+  min-width: 240px; justify-content: center;
+}
+.btn-mark-read:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: var(--gold-glow);
+}
+.btn-mark-read.done {
+  background: var(--gold-glow);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.mark-read-icon {
+  font-size: 1.1rem; line-height: 1;
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid currentColor; border-radius: 50%;
+}
+.btn-mark-read.done .mark-read-icon {
+  background: var(--gold);
+  color: #1a0e00;
+  border-color: var(--gold);
+}
+@media (max-width: 600px) {
+  .btn-mark-read {
+    font-size: 0.68rem;
+    padding: 14px 24px;
+    min-width: 200px;
+  }
+  .chapter-end-actions {
+    padding: 24px 16px 4px;
+  }
+}
 </style>
 </head>
 <body>
@@ -3089,10 +3136,6 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
         <button class="btn-interlinear" onclick="openInterlinear('${state.currentBook}', ${chapterNum})">
           📜 Interlineal
         </button>
-        <button class="btn-read-toggle ${isRead ? 'done' : ''}" id="readToggleBtn" onclick="toggleRead()">
-          <span class="check-icon">${isRead ? '✓' : '○'}</span>
-          ${isRead ? 'Leído' : 'Marcar leído'}
-        </button>
         ${getFontSizeControlHTML()}
       </div>
     </div>
@@ -3115,6 +3158,12 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
   });
 
   html += `</div>
+    <div class="chapter-end-actions">
+      <button class="btn-mark-read ${isRead ? 'done' : ''}" id="readToggleBtn" onclick="toggleRead()">
+        <span class="mark-read-icon">${isRead ? '✓' : '○'}</span>
+        <span>${isRead ? 'Capítulo leído' : 'Marcar como leído'}</span>
+      </button>
+    </div>
     <div class="chapter-nav">
       <button class="btn-nav" onclick="goChapter(${chapterNum - 1})" ${!prevOk ? 'disabled' : ''}>
         ← Capítulo ${chapterNum - 1}
@@ -3450,8 +3499,8 @@ function toggleRead() {
   const btn = document.getElementById('readToggleBtn');
   if (btn) {
     const isNowRead = !!state.readChapters[key];
-    btn.className = `btn-read-toggle ${isNowRead ? 'done' : ''}`;
-    btn.innerHTML = `<span class="check-icon">${isNowRead ? '✓' : '○'}</span> ${isNowRead ? 'Leído' : 'Marcar leído'}`;
+    btn.className = `btn-mark-read ${isNowRead ? 'done' : ''}`;
+    btn.innerHTML = `<span class="mark-read-icon">${isNowRead ? '✓' : '○'}</span><span>${isNowRead ? 'Capítulo leído' : 'Marcar como leído'}</span>`;
   }
 }
 
