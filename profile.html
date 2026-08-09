@@ -270,6 +270,35 @@ const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// CapacitorHttp intercepts fetch() in the native app and needs an absolute URL
+const KAPI_BASE = 'https://kodeshbible.com';
+async function kapiFetch(url, options = {}) {
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  const fullUrl = (url.startsWith('/') && isNative) ? KAPI_BASE + url : url;
+  if (isNative) {
+    try {
+      const http = window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+      if (http) {
+        const body = options.body ? JSON.parse(options.body) : undefined;
+        const result = await http.request({
+          method: options.method || 'GET',
+          url: fullUrl,
+          headers: options.headers || { 'Content-Type': 'application/json' },
+          data: body,
+        });
+        return {
+          ok: result.status >= 200 && result.status < 300,
+          status: result.status,
+          json: async () => result.data,
+        };
+      }
+    } catch(e) {
+      console.warn('CapacitorHttp falló, usando fetch:', e);
+    }
+  }
+  return fetch(fullUrl, options);
+}
+
 // ══════════════════════════════════════════
 // REVENUECAT — STOREKIT INTEGRATION
 // ══════════════════════════════════════════
@@ -452,10 +481,17 @@ async function syncPremiumWithSupabase() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session?.user) return;
   try {
-    await sb.from('user_plans').upsert({
-      user_id: session.user.id, plan: 'premium',
-      subscription_status: 'active', updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
+    const res = await kapiFetch('/api/sync-premium', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn('[RC] Sync error:', err.error || res.status);
+    }
   } catch(e) { console.warn('[RC] Sync error:', e.message); }
 }
 
