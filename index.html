@@ -3216,6 +3216,7 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
         </div>
       </div>
       <div class="assistant-header-right">
+        <button class="assistant-clear" onclick="openStudyHistory()" title="Historial de estudios">🕐</button>
         <button class="assistant-clear" onclick="clearAssistant()" title="Nueva conversación">↺</button>
         <button class="assistant-close" onclick="closeAssistant()">✕</button>
       </div>
@@ -3242,6 +3243,27 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
         onkeydown="handleAssistantKey(event)"
       ></textarea>
       <button class="assistant-send" id="assistantSend" onclick="sendMessage()">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STUDY HISTORY PANEL ══ -->
+<div class="assistant-overlay" id="studyHistoryOverlay" onclick="closeStudyHistoryOutside(event)">
+  <div class="assistant-panel" id="studyHistoryPanel">
+    <div class="assistant-header">
+      <div class="assistant-header-left">
+        <span class="assistant-icon">🕐</span>
+        <div>
+          <div class="assistant-title">Mis Estudios</div>
+          <div class="assistant-context">Conversaciones guardadas</div>
+        </div>
+      </div>
+      <div class="assistant-header-right">
+        <button class="assistant-close" onclick="closeStudyHistory()">✕</button>
+      </div>
+    </div>
+    <div id="studyHistoryList" style="overflow-y:auto; flex:1; padding:8px 0">
+      <div class="bm-empty">Cargando...</div>
     </div>
   </div>
 </div>
@@ -6055,15 +6077,139 @@ async function syncBookmarksFromCloud() {
 ════════════════════════════════════ */
 let assistantHistory = [];
 let assistantBook = '';
+let assistantBookId = '';
 let assistantChapter = 0;
 
-function openAssistant(bookName, chapter) {
+async function openAssistant(bookName, chapter, bookIdOverride) {
   assistantBook = bookName;
+  assistantBookId = bookIdOverride || state.currentBook;
   assistantChapter = chapter;
   document.getElementById('assistantContext').textContent = `${bookName} · Capítulo ${chapter}`;
   document.getElementById('assistantOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   setTimeout(() => document.getElementById('assistantInput').focus(), 300);
+
+  await loadAssistantThread();
+}
+
+async function loadAssistantThread() {
+  clearAssistant();
+  const sb = getSupabase();
+  if (!sb || !currentUser || !assistantBookId) return;
+
+  try {
+    const { data, error } = await sb.from('study_chat_messages')
+      .select('role,content')
+      .eq('user_id', currentUser.id)
+      .eq('book_id', assistantBookId)
+      .eq('chapter', assistantChapter)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    if (!data || data.length === 0) return;
+
+    document.getElementById('assistantMessages').innerHTML = '';
+    assistantHistory = [];
+    data.forEach(m => {
+      addMessage(m.role, m.content);
+      assistantHistory.push({ role: m.role, content: m.content });
+    });
+    if (assistantHistory.length > 20) assistantHistory = assistantHistory.slice(-20);
+  } catch(e) { console.warn('Study thread load error:', e.message); }
+}
+
+async function saveStudyMessagesToCloud(userMsg, assistantMsg) {
+  const sb = getSupabase();
+  if (!sb || !currentUser || !assistantBookId) return;
+  try {
+    await sb.from('study_chat_messages').insert([
+      { user_id: currentUser.id, book_id: assistantBookId, chapter: assistantChapter, role: 'user', content: userMsg },
+      { user_id: currentUser.id, book_id: assistantBookId, chapter: assistantChapter, role: 'assistant', content: assistantMsg },
+    ]);
+  } catch(e) { console.warn('Study message save error:', e.message); }
+}
+
+function openStudyHistory() {
+  document.getElementById('studyHistoryOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadStudyHistoryList();
+}
+
+function closeStudyHistory() {
+  document.getElementById('studyHistoryOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeStudyHistoryOutside(e) {
+  if (e.target === document.getElementById('studyHistoryOverlay')) closeStudyHistory();
+}
+
+async function loadStudyHistoryList() {
+  const listEl = document.getElementById('studyHistoryList');
+  const sb = getSupabase();
+  if (!sb || !currentUser) {
+    listEl.innerHTML = `<div class="bm-empty">Inicia sesión para ver tu historial de estudios</div>`;
+    return;
+  }
+
+  try {
+    const { data, error } = await sb.from('study_chat_messages')
+      .select('book_id,chapter,role,content,created_at')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      listEl.innerHTML = `<div class="bm-empty">Aún no tienes conversaciones guardadas. Habla con el Asistente de Estudio en cualquier capítulo.</div>`;
+      return;
+    }
+
+    const seen = new Map();
+    data.forEach(m => {
+      const key = `${m.book_id}:${m.chapter}`;
+      if (!seen.has(key)) {
+        seen.set(key, { book_id: m.book_id, chapter: m.chapter, lastText: m.content, lastAt: m.created_at });
+      }
+    });
+
+    const groups = Array.from(seen.values()).sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
+
+    listEl.innerHTML = groups.map(g => {
+      const isGeneral = g.book_id === '_GENERAL';
+      const label = isGeneral
+        ? 'Preguntas generales'
+        : `${getAllBooks().find(b => b.id === g.book_id)?.name || g.book_id} · Capítulo ${g.chapter}`;
+      const date = new Date(g.lastAt).toLocaleDateString('es', { day:'numeric', month:'short', year:'numeric' });
+      return `
+        <div class="bm-list-item" onclick="openStudyFromHistory('${g.book_id}',${g.chapter})">
+          <div class="bm-list-dot" style="background:var(--gold)"></div>
+          <div style="flex:1;overflow:hidden">
+            <div class="bm-list-ref">${label} — ${date}</div>
+            <div class="bm-list-text">${g.lastText.replace(/[<>]/g,'')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div class="bm-empty">Error cargando el historial</div>`;
+    console.warn('Study history list error:', e.message);
+  }
+}
+
+async function openStudyFromHistory(bookId, chapter) {
+  closeStudyHistory();
+
+  if (bookId === '_GENERAL') {
+    await openAssistant('Preguntas generales', 0, '_GENERAL');
+    return;
+  }
+
+  const bookData = getAllBooks().find(b => b.id === bookId);
+  const bookName = bookData ? bookData.name : bookId;
+  if (state.currentBook !== bookId || state.currentChapter !== chapter) {
+    await loadChapter(bookId, chapter);
+  }
+  await openAssistant(bookName, chapter);
 }
 
 function closeAssistant() {
@@ -6197,6 +6343,8 @@ async function sendMessage() {
     if (assistantHistory.length > 20) {
       assistantHistory = assistantHistory.slice(-20);
     }
+
+    saveStudyMessagesToCloud(message, reply);
 
   } catch (err) {
     removeTyping();
