@@ -1,6 +1,7 @@
-// KODESH Admin API — only accessible by admin user
+// KODESH Admin API — only accessible by users with a role in admin_roles,
+// verified via JWT + 2FA (aal2). See api/_auth.js.
+import { requireAdmin } from './_auth.js';
 
-const ADMIN_USER_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -53,11 +54,16 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, action } = req.body;
+  const admin = await requireAdmin(req, res);
+  if (!admin) return; // requireAdmin already sent 401/403
 
-  // Verify admin
-  if (userId !== ADMIN_USER_ID) {
-    return res.status(403).json({ error: 'Acceso denegado' });
+  const { action } = req.body;
+
+  // Actions that touch billing/PII (plans, user list, lookups by email) are superadmin-only.
+  const SUPERADMIN_ONLY_ACTIONS = new Set(['find_user', 'set_plan']);
+  const isDashboard = !action; // default (no action) branch = full user dashboard
+  if (admin.role !== 'superadmin' && (SUPERADMIN_ONLY_ACTIONS.has(action) || isDashboard)) {
+    return res.status(403).json({ error: 'forbidden_role' });
   }
 
   // ── ACTION: find_user (used by roles tab) ──

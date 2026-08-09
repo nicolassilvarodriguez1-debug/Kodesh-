@@ -143,6 +143,33 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 <div id="authGate">
   <h2>✦ KODESH Admin</h2>
   <p id="authMsg">Verificando acceso...</p>
+
+  <div id="mfaEnrollBox" style="display:none; max-width:320px; width:100%; padding:0 20px">
+    <p style="color:var(--text-mid); font-size:0.72rem; text-align:center; margin-bottom:12px">
+      Configura la verificación en dos pasos. Escanea este código con Google Authenticator, Authy o 1Password:
+    </p>
+    <div style="display:flex; justify-content:center; margin-bottom:12px">
+      <img id="mfaQrImg" style="width:180px;height:180px;border-radius:8px;background:#fff;padding:8px">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Código de 6 dígitos</label>
+      <input class="form-input" id="mfaEnrollCode" placeholder="123456" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')verifyMfaEnroll()">
+    </div>
+    <button class="btn-upload" onclick="verifyMfaEnroll()">Activar 2FA</button>
+    <p id="mfaEnrollMsg" class="upload-msg"></p>
+  </div>
+
+  <div id="mfaChallengeBox" style="display:none; max-width:320px; width:100%; padding:0 20px">
+    <p style="color:var(--text-mid); font-size:0.72rem; text-align:center; margin-bottom:12px">
+      Ingresa el código de tu app de autenticación:
+    </p>
+    <div class="form-group">
+      <label class="form-label">Código de 6 dígitos</label>
+      <input class="form-input" id="mfaChallengeCode" placeholder="123456" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')verifyMfaChallenge()">
+    </div>
+    <button class="btn-upload" onclick="verifyMfaChallenge()">Verificar</button>
+    <p id="mfaChallengeMsg" class="upload-msg"></p>
+  </div>
 </div>
 
 <div id="adminPanel">
@@ -394,6 +421,18 @@ const COST = { search:0.0005, assistant:0.003, lexicon:0.0004 };
 let currentUserId = null;
 let isSuperAdmin = false;
 
+async function adminApi(body) {
+  const { data: { session } } = await sb.auth.getSession();
+  return fetch('/api/admin', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token || ''}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 // ── THEME ──
 function initTheme() {
   const t = localStorage.getItem('kodesh_theme') || 'dark';
@@ -417,6 +456,8 @@ function switchTab(tab, btn) {
 }
 
 // ── INIT ──
+let pendingMfaFactorId = null;
+
 async function init() {
   initTheme();
   const { data: { session } } = await sb.auth.getSession();
@@ -432,6 +473,28 @@ async function init() {
 
   isSuperAdmin = role === 'superadmin';
 
+  // ── 2FA gate — required for anyone in admin_roles ──
+  document.getElementById('mfaEnrollBox').style.display = 'none';
+  document.getElementById('mfaChallengeBox').style.display = 'none';
+
+  const { data: aalData } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalData?.currentLevel !== 'aal2') {
+    const { data: factorsData } = await sb.auth.mfa.listFactors();
+    const totpFactor = factorsData?.totp?.find(f => f.status === 'verified');
+
+    if (totpFactor) {
+      // Ya está enrolado — falta completar el desafío de esta sesión
+      pendingMfaFactorId = totpFactor.id;
+      document.getElementById('authMsg').textContent = 'Verificación en dos pasos requerida';
+      document.getElementById('mfaChallengeBox').style.display = 'block';
+    } else {
+      // Primera vez — hay que enrolar un factor TOTP
+      document.getElementById('authMsg').textContent = 'Configura la verificación en dos pasos para continuar';
+      await startMfaEnroll();
+    }
+    return;
+  }
+
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('adminPanel').style.display = 'block';
 
@@ -446,6 +509,51 @@ async function init() {
   await loadAll();
 }
 
+// ── 2FA ──
+async function startMfaEnroll() {
+  const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp' });
+  if (error) {
+    document.getElementById('authMsg').textContent = 'Error configurando 2FA: ' + error.message;
+    return;
+  }
+  pendingMfaFactorId = data.id;
+  document.getElementById('mfaQrImg').src = data.totp.qr_code;
+  document.getElementById('mfaEnrollBox').style.display = 'block';
+}
+
+async function verifyMfaEnroll() {
+  const code = document.getElementById('mfaEnrollCode').value.trim();
+  const msg = document.getElementById('mfaEnrollMsg');
+  if (!code || !pendingMfaFactorId) return;
+  try {
+    const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId: pendingMfaFactorId });
+    if (chErr) throw chErr;
+    const { error: vErr } = await sb.auth.mfa.verify({ factorId: pendingMfaFactorId, challengeId: challenge.id, code });
+    if (vErr) throw vErr;
+    msg.textContent = '✓ 2FA activado'; msg.className = 'upload-msg ok';
+    document.getElementById('mfaEnrollBox').style.display = 'none';
+    await init();
+  } catch(e) {
+    msg.textContent = 'Código inválido: ' + e.message; msg.className = 'upload-msg err';
+  }
+}
+
+async function verifyMfaChallenge() {
+  const code = document.getElementById('mfaChallengeCode').value.trim();
+  const msg = document.getElementById('mfaChallengeMsg');
+  if (!code || !pendingMfaFactorId) return;
+  try {
+    const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId: pendingMfaFactorId });
+    if (chErr) throw chErr;
+    const { error: vErr } = await sb.auth.mfa.verify({ factorId: pendingMfaFactorId, challengeId: challenge.id, code });
+    if (vErr) throw vErr;
+    document.getElementById('mfaChallengeBox').style.display = 'none';
+    await init();
+  } catch(e) {
+    msg.textContent = 'Código inválido: ' + e.message; msg.className = 'upload-msg err';
+  }
+}
+
 async function loadAll() {
   document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
   const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage(), loadTraduccionKodesh()];
@@ -456,12 +564,7 @@ async function loadAll() {
 // ── TRADUCCIÓN KODESH COVERAGE ──
 async function loadTraduccionKodesh() {
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: session.user.id, action: 'traduccion_kodesh_coverage' })
-    });
+    const res = await adminApi({ action: 'traduccion_kodesh_coverage' });
     const data = await res.json();
     if (data.error) { console.error('traduccion_kodesh_coverage:', data.error); return; }
     renderTraduccionKodesh(data);
@@ -544,12 +647,7 @@ function verCapituloTextual(bookId, chapter) {
 
 async function borrarReporte(id) {
   if (!confirm('¿Borrar este reporte?')) return;
-  const { data: { session } } = await sb.auth.getSession();
-  const res = await fetch('/api/admin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: session.user.id, action: 'delete_textual_report', reportId: id })
-  });
+  const res = await adminApi({ action: 'delete_textual_report', reportId: id });
   const data = await res.json();
   if (data.ok) loadTraduccionKodesh();
   else alert('Error al borrar reporte: ' + data.error);
@@ -557,12 +655,7 @@ async function borrarReporte(id) {
 
 async function borrarCacheTextual(bookId, chapter) {
   if (!confirm(`¿Borrar el caché de ${bookId} ${chapter}? Se regenerará la próxima vez que alguien lo abra.`)) return;
-  const { data: { session } } = await sb.auth.getSession();
-  const res = await fetch('/api/admin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: session.user.id, action: 'delete_textual_cache', bookId, chapter })
-  });
+  const res = await adminApi({ action: 'delete_textual_cache', bookId, chapter });
   const data = await res.json();
   if (data.ok) loadTraduccionKodesh();
   else alert('Error al borrar caché: ' + data.error);
@@ -571,12 +664,7 @@ async function borrarCacheTextual(bookId, chapter) {
 // ── INTERLINEAR COVERAGE ──
 async function loadInterlinearCoverage() {
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: session.user.id, action: 'interlinear_coverage' })
-    });
+    const res = await adminApi({ action: 'interlinear_coverage' });
     const data = await res.json();
     if (data.error) return;
     renderInterlinearCoverage(data);
@@ -616,12 +704,7 @@ function toggleBookRow(i) {
 // ── USUARIOS (solo superadmin) ──
 async function loadUsuarios() {
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: session.user.id })
-    });
+    const res = await adminApi({});
     const data = await res.json();
     if (data.error) return;
     renderUsuarios(data);
@@ -685,11 +768,7 @@ async function cambiarPlan(targetUserId, newPlan) {
   const label = newPlan === 'premium' ? 'PREMIUM' : 'FREE';
   if (!confirm(`¿Cambiar este usuario al plan ${label}?`)) return;
   try {
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUserId, action: 'set_plan', targetUserId, plan: newPlan })
-    });
+    const res = await adminApi({ action: 'set_plan', targetUserId, plan: newPlan });
     const data = await res.json();
     if (data.error) { alert('Error: ' + data.error); return; }
     await loadUsuarios();
@@ -873,11 +952,7 @@ async function agregarEditor() {
 
   try {
     // Find user by email via admin API
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUserId, action: 'find_user', email })
-    });
+    const res = await adminApi({ action: 'find_user', email });
     const data = await res.json();
     if (!data.foundUser) { msg.textContent = 'Usuario no encontrado.'; msg.className='upload-msg err'; return; }
 
