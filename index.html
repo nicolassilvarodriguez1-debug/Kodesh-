@@ -2070,6 +2070,29 @@ html.light .nav-header { background: var(--head-grad); }
   transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 .nav-close:hover { border-color: var(--red); color: var(--red); }
+.nav-header-actions { display: flex; align-items: center; gap: 6px; }
+.nav-icon-btn {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  font-size: 0.8rem; padding: 4px 9px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.nav-icon-btn:hover, .nav-icon-btn.active { border-color: var(--gold); color: var(--gold); }
+.nav-quick-row { padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.nav-history-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.nav-history-chip {
+  flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-mid);
+  padding: 5px 10px; border-radius: 14px; cursor: pointer; white-space: nowrap;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.nav-history-chip:hover { border-color: var(--gold); color: var(--gold); }
+.nav-search-input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text);
+  font-family: 'EB Garamond', Georgia, serif; font-size: 0.85rem;
+}
+.nav-search-input:focus { outline: none; border-color: var(--gold); }
+.nav-search-hint { font-size: 0.65rem; color: var(--text-dim); margin-top: 5px; font-style: italic; }
 .nav-back {
   background: none; border: 1px solid var(--border2); color: var(--gold);
   font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 1px;
@@ -3393,8 +3416,13 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
     <div class="nav-step" id="navStepBook">
       <div class="nav-header">
         <div class="nav-header-title">Seleccionar Libro</div>
-        <button class="nav-close" onclick="closeNav()">✕</button>
+        <div class="nav-header-actions">
+          <button class="nav-icon-btn" id="navHistoryBtn" onclick="toggleNavHistory()" title="Historial de lectura">🕐</button>
+          <button class="nav-icon-btn" id="navSearchBtn" onclick="toggleNavSearch()" title="Buscar libro y capítulo">🔍</button>
+          <button class="nav-close" onclick="closeNav()">✕</button>
+        </div>
       </div>
+      <div class="nav-quick-row" id="navQuickRow" style="display:none"></div>
       <div class="nav-testament-tabs">
         <button class="nav-tab active" id="navTabAT" onclick="navSwitchTestament('AT')">Antiguo Testamento</button>
         <button class="nav-tab" id="navTabNT" onclick="navSwitchTestament('NT')">Nuevo Testamento</button>
@@ -4935,6 +4963,7 @@ let navTestament = 'AT';
 function openNav() {
   navTestament = state.testament;
   renderNavBooks();
+  closeNavQuickRow();
   document.getElementById('navStepBook').style.display = 'flex';
   document.getElementById('navStepChapter').style.display = 'none';
   document.getElementById('navOverlay').classList.add('open');
@@ -4951,6 +4980,111 @@ function closeNav() {
 
 function closeNavOutside(e) {
   if (e.target === document.getElementById('navOverlay')) closeNav();
+}
+
+/* ── Quick row: reading history + text search ── */
+let navQuickMode = null; // 'history' | 'search' | null
+
+function closeNavQuickRow() {
+  navQuickMode = null;
+  document.getElementById('navQuickRow').style.display = 'none';
+  document.getElementById('navQuickRow').innerHTML = '';
+  document.getElementById('navHistoryBtn').classList.remove('active');
+  document.getElementById('navSearchBtn').classList.remove('active');
+}
+
+function toggleNavHistory() {
+  if (navQuickMode === 'history') { closeNavQuickRow(); return; }
+  navQuickMode = 'history';
+  document.getElementById('navHistoryBtn').classList.add('active');
+  document.getElementById('navSearchBtn').classList.remove('active');
+  document.getElementById('navQuickRow').style.display = 'block';
+  renderNavHistoryChips();
+}
+
+function toggleNavSearch() {
+  if (navQuickMode === 'search') { closeNavQuickRow(); return; }
+  navQuickMode = 'search';
+  document.getElementById('navSearchBtn').classList.add('active');
+  document.getElementById('navHistoryBtn').classList.remove('active');
+  document.getElementById('navQuickRow').style.display = 'block';
+  renderNavSearchInput();
+}
+
+async function renderNavHistoryChips() {
+  const row = document.getElementById('navQuickRow');
+  row.innerHTML = `<div class="nav-history-chips"><div class="nav-search-hint">Cargando...</div></div>`;
+
+  const sb = getSupabase();
+  if (!sb || !currentUser) {
+    row.innerHTML = `<div class="nav-search-hint">Inicia sesión para ver tu historial de lectura</div>`;
+    return;
+  }
+
+  try {
+    const { data, error } = await sb.from('reading_progress')
+      .select('book_id,chapter,read_at')
+      .eq('user_id', currentUser.id)
+      .order('read_at', { ascending: false })
+      .limit(15);
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      row.innerHTML = `<div class="nav-search-hint">Aún no has marcado capítulos como leídos</div>`;
+      return;
+    }
+
+    row.innerHTML = `<div class="nav-history-chips">${data.map(r => {
+      const book = getAllBooks().find(b => b.id === r.book_id);
+      const label = book ? `${book.abbr || book.name} ${r.chapter}` : `${r.book_id} ${r.chapter}`;
+      return `<button class="nav-history-chip" onclick="navGoToHistoryChapter('${r.book_id}',${r.chapter})">${label}</button>`;
+    }).join('')}</div>`;
+  } catch(e) {
+    row.innerHTML = `<div class="nav-search-hint">Error cargando el historial</div>`;
+    console.warn('Nav history error:', e.message);
+  }
+}
+
+function navGoToHistoryChapter(bookId, chapter) {
+  closeNav();
+  loadChapter(bookId, chapter);
+}
+
+function renderNavSearchInput() {
+  const row = document.getElementById('navQuickRow');
+  row.innerHTML = `
+    <input type="text" class="nav-search-input" id="navSearchInput" placeholder="Ej: Génesis 3, Juan 3..." onkeydown="handleNavSearchKey(event)">
+    <div class="nav-search-hint" id="navSearchHint">Escribe el libro y capítulo, luego presiona Enter</div>
+  `;
+  setTimeout(() => document.getElementById('navSearchInput')?.focus(), 50);
+}
+
+function parseBookChapterRef(ref) {
+  const match = ref.match(/^(.+?)\s+(\d+)/);
+  if (!match) return null;
+  const bookName = match[1].toLowerCase().trim();
+  const chapter = parseInt(match[2]);
+  const bookId = BOOK_NAME_TO_ID[bookName];
+  if (!bookId) return null;
+  const bookData = getAllBooks().find(b => b.id === bookId);
+  if (bookData && (chapter < 1 || chapter > bookData.chapters)) return null;
+  return { bookId, chapter, bookName: bookData?.name || bookId };
+}
+
+function handleNavSearchKey(e) {
+  if (e.key !== 'Enter') return;
+  const input = e.target;
+  const raw = input.value.trim();
+  if (!raw) return;
+
+  const parsed = parseBookChapterRef(raw);
+  if (!parsed) {
+    document.getElementById('navSearchHint').textContent = 'No encontré ese libro/capítulo — intenta "Génesis 3"';
+    input.style.borderColor = 'var(--red)';
+    return;
+  }
+  closeNav();
+  loadChapter(parsed.bookId, parsed.chapter);
 }
 
 function navSwitchTestament(t) {
