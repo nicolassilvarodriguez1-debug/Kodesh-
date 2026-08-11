@@ -3569,6 +3569,111 @@ async function kapiFetch(url, options = {}) {
 }
 
 /* ════════════════════════════════════
+   REVENUECAT — compra directa desde el modal Premium
+   (evita el salto a profile.html + un segundo modal repetido)
+════════════════════════════════════ */
+const RC_API_KEY = 'appl_vspUVvGMnobdbtulUhMZoDptiEK';
+const RC_ENTITLEMENT = 'KODESH Pro';
+const PRODUCT_ID = 'com.iglesiafreedom.kodesh.premium.monthly';
+
+let rcConfigured = false;
+let PurchasesSDK = null;
+
+async function initRevenueCat(userId) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  try {
+    PurchasesSDK = window.Capacitor?.Plugins?.Purchases;
+    if (!PurchasesSDK) {
+      console.warn('[RC] Plugin Purchases no encontrado en Capacitor.Plugins');
+      return;
+    }
+    await PurchasesSDK.configure({ apiKey: RC_API_KEY, appUserID: userId });
+    rcConfigured = true;
+    console.log('[RC] RevenueCat configurado para:', userId);
+  } catch(e) {
+    console.warn('[RC] Init error:', e.message);
+  }
+}
+
+async function syncPremiumWithSupabase() {
+  const sbc = getSupabase();
+  const { data: { session } } = await sbc.auth.getSession();
+  if (!session?.user) return;
+  try {
+    const res = await kapiFetch('/api/sync-premium', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn('[RC] Sync error:', err.error || res.status);
+    }
+  } catch(e) { console.warn('[RC] Sync error:', e.message); }
+}
+
+// Se llama al tocar "Comenzar prueba gratis de 7 días" en el modal Premium.
+// En iOS nativo dispara la compra (y la hoja de confirmación de Apple) sin
+// salir de este modal ni pasar por profile.html.
+async function purchasePremiumDirect() {
+  const btn = document.getElementById('btnPresentationSubscribe');
+  if (!currentUser) { window.location.href = 'login.html'; return; }
+
+  if (userUsage && userUsage.plan === 'premium') {
+    showToast('✦ Ya tienes KODESH Premium activo');
+    closePremiumPresentation();
+    return;
+  }
+
+  if (!rcConfigured || !PurchasesSDK) {
+    if (btn) btn.textContent = 'Cargando tienda...';
+    await new Promise(r => setTimeout(r, 1200));
+    if (!rcConfigured || !PurchasesSDK) {
+      showToast('La tienda no está disponible — intenta de nuevo');
+      if (btn) btn.textContent = 'Comenzar prueba gratis de 7 días →';
+      return;
+    }
+  }
+
+  try {
+    if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
+
+    const preCheckInfo = await PurchasesSDK.getCustomerInfo();
+    if (preCheckInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
+      throw new Error('Este Apple ID ya tiene una suscripción KODESH Premium activa asociada a otra cuenta. Si es tuya, inicia sesión con esa cuenta o contáctanos para transferirla.');
+    }
+
+    const { current } = await PurchasesSDK.getOfferings();
+    if (!current || !current.availablePackages?.length) throw new Error('No hay productos disponibles.');
+    const pkg = current.availablePackages.find(p => p.product?.identifier === PRODUCT_ID)
+      || current.monthly
+      || current.availablePackages[0];
+    if (!pkg) throw new Error('Producto no encontrado.');
+
+    const { customerInfo } = await PurchasesSDK.purchasePackage({ aPackage: pkg });
+    if (customerInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
+      const rcUserId = customerInfo.originalAppUserId;
+      if (currentUser?.id && rcUserId && rcUserId !== currentUser.id) {
+        throw new Error('La compra pertenece a otra cuenta.');
+      }
+      await syncPremiumWithSupabase();
+      closePremiumPresentation();
+      showToast('🎉 ¡Bienvenido a KODESH Premium!');
+      await loadUsage();
+    } else {
+      throw new Error('La compra no pudo verificarse.');
+    }
+  } catch(e) {
+    console.error('[RC] Purchase error:', e);
+    if (btn) { btn.textContent = 'Comenzar prueba gratis de 7 días →'; btn.disabled = false; }
+    const cancelled = e.message?.toLowerCase().includes('cancel') || e.code === 'PURCHASE_CANCELLED';
+    if (!cancelled) showToast('Hubo un problema: ' + (e.message || 'Error desconocido'));
+  }
+}
+
+/* ════════════════════════════════════
    VERSIÓN MÍNIMA OBLIGATORIA
    Muchos usuarios no saben que hay una actualización — esto bloquea la
    app (solo en iOS/Android nativo) si la versión instalada quedó vieja,
@@ -4888,6 +4993,10 @@ async function lookupStrongs(event, strongsCode) {
   }
 }
 
+// Punto de entrada único para "quiero Premium" — usado por el botón de la
+// topbar, el modal de límite alcanzado, etc. Ya no navega a ningún lado:
+// siempre abre el modal de presentación, que a su vez decide cómo cobrar
+// (Apple directo en nativo, Stripe en web) al tocar el botón de suscribirse.
 async function goToPremium() {
   document.getElementById('limitOverlay')?.classList.remove('open');
 
@@ -4896,14 +5005,41 @@ async function goToPremium() {
     return;
   }
 
-  // App nativa iOS → RevenueCat en profile.html
-  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-    window.location.href = '/profile.html';
+  if (userUsage && userUsage.plan === 'premium') {
+    showToast('✦ Ya tienes KODESH Premium activo');
     return;
   }
 
-  // Web → Stripe (flujo original)
-  showToast('✦ Preparando tu suscripción...');
+  showPremiumPresentation();
+}
+
+function goToBerith() { goToPremium(); }
+function goToPro() { goToPremium(); }
+
+function showPremiumPresentation() {
+  document.getElementById('premiumPresentationOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePremiumPresentation(e) {
+  if (e && e.target !== document.getElementById('premiumPresentationOverlay')) return;
+  document.getElementById('premiumPresentationOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Botón "Comenzar prueba gratis de 7 días →" dentro del modal.
+// Nativo: compra directa con RevenueCat/StoreKit, sin salir de este modal.
+// Web: checkout de Stripe (flujo original).
+async function subscribePremiumFromPresentation() {
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+  if (isNative) {
+    await purchasePremiumDirect();
+    return;
+  }
+
+  closePremiumPresentation();
+  showToast('✦ Preparando tu prueba gratis...');
   try {
     const name = userProfile?.display_name || currentUser.email?.split('@')[0] || '';
     const res = await kapiFetch('/api/checkout', {
@@ -4929,25 +5065,6 @@ async function goToPremium() {
     showToast('Error al procesar — intenta de nuevo');
     console.error('Checkout error:', err);
   }
-}
-
-function goToBerith() { goToPremium(); }
-function goToPro() { goToPremium(); }
-
-function showPremiumPresentation() {
-  document.getElementById('premiumPresentationOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closePremiumPresentation(e) {
-  if (e && e.target !== document.getElementById('premiumPresentationOverlay')) return;
-  document.getElementById('premiumPresentationOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-async function subscribePremiumFromPresentation() {
-  closePremiumPresentation();
-  await goToPremium();
 }
 
 /* ════════════════════════════════════

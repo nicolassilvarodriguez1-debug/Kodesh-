@@ -99,6 +99,10 @@ async function onUserLoggedIn(user) {
   // Load usage/plan info
   if (typeof loadUsage === 'function') loadUsage();
 
+  // Configura RevenueCat de una vez (solo hace algo en nativo) para que la
+  // compra sea instantánea cuando el usuario toque "Comenzar prueba gratis".
+  if (typeof initRevenueCat === 'function') initRevenueCat(user.id);
+
   // Show daily promise card
   if (typeof showDailyPromise === 'function') setTimeout(() => showDailyPromise(), 500);
 
