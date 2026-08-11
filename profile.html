@@ -338,9 +338,9 @@ function showPremiumModal() {
     <div class="premium-modal">
       <div class="premium-modal-icon">✦</div>
       <div class="premium-modal-title">KODESH Premium</div>
-      <div class="premium-modal-price">$5.99 / mes</div>
+      <div class="premium-modal-price">7 días gratis</div>
       <div class="premium-modal-duration">
-        Suscripción mensual · Se renueva automáticamente
+        Luego $5.99/mes · Se renueva automáticamente · Cancela cuando quieras
       </div>
       <div class="premium-features">
         <div class="premium-feature-item">
@@ -361,9 +361,10 @@ function showPremiumModal() {
         </div>
       </div>
       <div class="premium-legal">
-        El pago se cargará a tu cuenta de Apple al confirmar la compra.
-        La suscripción se renueva automáticamente por $5.99/mes
-        a menos que se cancele al menos 24 horas antes del fin del período actual.
+        Empiezas con 7 días gratis. Si no cancelas antes de que termine la prueba,
+        se te cobrará $5.99 a tu cuenta de Apple y la suscripción se renovará
+        automáticamente cada mes, a menos que se cancele al menos 24 horas antes
+        del fin del período actual.
         Puedes gestionar o cancelar en
         <strong>Configuración → [tu nombre] → Suscripciones</strong>.<br><br>
         <a href="https://kodeshbible.com/terminos" target="_blank">Términos de uso</a>
@@ -371,7 +372,7 @@ function showPremiumModal() {
         <a href="https://kodeshbible.com/privacidad" target="_blank">Política de privacidad</a>
       </div>
       <button class="btn-premium-buy" id="btnBuyPremium" onclick="executePurchase()">
-        Suscribirse por $5.99/mes
+        Comenzar prueba gratis de 7 días →
       </button>
       <button class="btn-premium-cancel" onclick="closePremiumModal()">
         Cancelar
@@ -409,7 +410,7 @@ async function executePurchase() {
     await new Promise(r => setTimeout(r, 1500));
     if (!rcConfigured) {
       alert('La tienda no está disponible. Intenta de nuevo.');
-      if (btn) btn.textContent = 'Suscribirse por $5.99/mes';
+      if (btn) btn.textContent = 'Comenzar prueba gratis de 7 días →';
       return;
     }
   }
@@ -649,7 +650,9 @@ async function loadProfile(user) {
   const notes = notesRes.data || [];
   const progress = progressRes.data || [];
 
-  const isPremium = plan.plan === 'premium' && plan.subscription_status === 'active';
+  const isPremium = plan.plan === 'premium' && (plan.subscription_status === 'active' || plan.subscription_status === 'trialing');
+  const isTrialing = isPremium && plan.subscription_status === 'trialing';
+  const premiumBadgeLabel = isTrialing ? '✦ Prueba gratis' : '✦ Premium';
   const name = profile.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const chaptersRead = progress.length;
@@ -680,7 +683,7 @@ async function loadProfile(user) {
         <div class="profile-name">${name}</div>
         <div class="profile-email">${user.email || ''}</div>
         <div class="profile-badges">
-          <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? '✦ Premium' : 'Plan Gratuito'}</span>
+          <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? premiumBadgeLabel : 'Plan Gratuito'}</span>
           ${streak.current_streak > 0 ? `<span class="badge badge-streak">🔥 ${streak.current_streak} días</span>` : ''}
           ${provider === 'google' ? `<span class="badge badge-google">G Google</span>` : ''}
         </div>
@@ -715,7 +718,7 @@ async function loadProfile(user) {
     <div class="section">
       <div class="section-header">
         <div class="section-title">🤖 Uso de IA — ${month}</div>
-        <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? '✦ Premium' : 'Gratuito'}</span>
+        <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? premiumBadgeLabel : 'Gratuito'}</span>
       </div>
       <div class="section-body">
         <div class="usage-row">
@@ -736,11 +739,11 @@ async function loadProfile(user) {
         ${!isPremium ? `
         <div style="margin-top:16px;padding:14px 16px;background:rgba(201,168,76,0.05);border:1px solid var(--gold-dim);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium</div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium · 7 días gratis</div>
             <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
           </div>
           <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
-            $5.99/mes →
+            Probar gratis →
           </button>
         </div>` : ''}
       </div>

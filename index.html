@@ -3362,8 +3362,9 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
       <button onclick="closePremiumPresentation()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:0">✕</button>
     </div>
     <div class="limit-icon">✦</div>
+    <div style="display:inline-block;margin:0 auto 10px;padding:5px 14px;background:linear-gradient(135deg,var(--gold),#e0bd6a);border-radius:20px;font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#1a0e00;font-weight:700;">7 días gratis, hoy</div>
     <div class="limit-title">KODESH Premium</div>
-    <div class="limit-msg">Todo lo que necesitas para estudiar las Escrituras desde sus raíces hebraicas.</div>
+    <div class="limit-msg">Todo lo que necesitas para estudiar las Escrituras desde sus raíces hebraicas. Prueba Premium sin costo por 7 días — cancela cuando quieras.</div>
 
     <!-- Features detalladas -->
     <div style="text-align:left;margin-bottom:20px">
@@ -3397,13 +3398,13 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
 
     <!-- Precio y botón de suscripción -->
     <div style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.05));border:1px solid var(--gold-dim);border-radius:12px;padding:18px;margin-bottom:16px">
-      <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px">Plan mensual</div>
-      <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--text);line-height:1">$5.99<span style="font-size:0.75rem;color:var(--text-dim);font-weight:400">/mes</span></div>
-      <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;font-style:italic">🔥 Precio de lanzamiento · Cancela cuando quieras</div>
+      <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px">Prueba gratis · 7 días</div>
+      <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--text);line-height:1">$0<span style="font-size:0.75rem;color:var(--text-dim);font-weight:400"> hoy</span></div>
+      <div style="font-size:0.78rem;color:var(--text-mid);margin-top:6px;line-height:1.4">Después, $5.99/mes. Cancela cuando quieras antes de que termine tu prueba y no se te cobra nada.</div>
     </div>
 
     <button class="limit-btn-upgrade" id="btnPresentationSubscribe" onclick="subscribePremiumFromPresentation()">
-      Suscribirse a Premium →
+      Comenzar prueba gratis de 7 días →
     </button>
     <button class="limit-btn-close" onclick="closePremiumPresentation()">Ahora no</button>
   </div>
@@ -4601,8 +4602,27 @@ async function loadUsage() {
     if (res.ok) {
       userUsage = await res.json();
       updateUsageDisplay();
+      maybeAutoShowPaywall();
     }
   } catch(e) { console.warn('Usage load error:', e); }
+}
+
+// Muestra automáticamente la pantalla de "7 días gratis" a todo usuario que
+// no sea premium — a los nuevos apenas terminan onboarding, y a los
+// existentes cada vez que abren la app (máx. 1 vez cada 3 días para no
+// ser invasivos). Objetivo: subir la conversión de 150 usuarios / 14 premium.
+function maybeAutoShowPaywall() {
+  if (!userUsage || userUsage.plan === 'premium') return;
+  const THROTTLE_DAYS = 3;
+  const last = parseInt(localStorage.getItem('kodesh_paywall_last_shown') || '0', 10);
+  const now = Date.now();
+  if (now - last < THROTTLE_DAYS * 24 * 60 * 60 * 1000) return;
+  localStorage.setItem('kodesh_paywall_last_shown', String(now));
+  // Pequeño delay para no chocar con la tarjeta de "Promesa del día" ni con
+  // el modal de aceptación de términos.
+  setTimeout(() => {
+    if (typeof showPremiumPresentation === 'function') showPremiumPresentation();
+  }, 1400);
 }
 
 function updateUsageDisplay() {

@@ -84,6 +84,7 @@ export default async function handler(req, res) {
     sessionBody.append('line_items[0][price]', PRICE_ID);
     sessionBody.append('line_items[0][quantity]', '1');
     sessionBody.append('subscription_data[metadata][supabase_user_id]', userId);
+    sessionBody.append('subscription_data[trial_period_days]', '7');
     sessionBody.append('payment_method_types[0]', 'card');
 
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {

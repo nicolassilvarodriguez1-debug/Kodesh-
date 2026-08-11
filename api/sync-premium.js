@@ -41,6 +41,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: false, plan: 'free' });
     }
 
+    // RevenueCat marca period_type='trial' mientras dura la prueba gratis de
+    // 7 días; lo reflejamos en subscription_status para que el badge de la
+    // app diga "Prueba gratis" en vez de "Premium" durante ese período.
+    const isTrial = entitlement.period_type === 'trial' || entitlement.period_type === 'intro';
+
     await fetch(`${SB_URL}/rest/v1/user_plans?on_conflict=user_id`, {
       method: 'POST',
       headers: {
@@ -52,7 +57,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         user_id: user.id,
         plan: 'premium',
-        subscription_status: 'active',
+        subscription_status: isTrial ? 'trialing' : 'active',
         current_period_end: entitlement.expires_date || null,
         updated_at: new Date().toISOString(),
       }),

@@ -61,11 +61,15 @@ async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
 
   const userId = data[0].user_id;
 
+  // 'trialing' cuenta como premium — si no, los usuarios en su prueba
+  // gratis de 7 días quedarían bloqueados como plan 'free'.
+  const isPremiumStatus = status === 'active' || status === 'trialing';
+
   await fetch(`${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}`, {
     method: 'PATCH',
     headers,
     body: JSON.stringify({
-      plan: status === 'active' ? 'premium' : 'free',
+      plan: isPremiumStatus ? 'premium' : 'free',
       subscription_status: status,
       stripe_subscription_id: subscriptionId,
       current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
@@ -73,7 +77,7 @@ async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
     })
   });
 
-  console.log(`Updated user ${userId} to plan: ${status === 'active' ? 'premium' : 'free'}`);
+  console.log(`Updated user ${userId} to plan: ${isPremiumStatus ? 'premium' : 'free'} (status: ${status})`);
 }
 
 export default async function handler(req, res) {
