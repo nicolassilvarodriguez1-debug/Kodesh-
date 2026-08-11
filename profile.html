@@ -478,6 +478,50 @@ async function restorePurchases() {
   }
 }
 
+// ══════════════════════════════════════════
+// GESTIONAR / CANCELAR SUSCRIPCIÓN
+// iOS: Apple no permite cancelar por API — se abre la pantalla nativa
+// de gestión de suscripciones (requerido por Apple para apps con
+// auto-renovables). Web: se abre el Customer Portal de Stripe, donde
+// el usuario cancela o cambia su método de pago sin intervención nuestra.
+// ══════════════════════════════════════════
+async function manageSubscription() {
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+  const btn = document.getElementById('btnManageSub');
+
+  if (isNative) {
+    const url = 'itms-apps://apps.apple.com/account/subscriptions';
+    try {
+      const Browser = window.Capacitor?.Plugins?.Browser;
+      if (Browser && Browser.open) { await Browser.open({ url }); return; }
+    } catch(e) { /* fallback below */ }
+    window.location.href = url;
+    return;
+  }
+
+  // Web → Stripe Customer Portal
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) { alert('Debes iniciar sesión primero.'); return; }
+  try {
+    if (btn) { btn.textContent = 'Abriendo portal...'; btn.disabled = true; }
+    const res = await kapiFetch('/api/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: session.user.id }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error(data.message || data.error || 'No se pudo abrir el portal de facturación.');
+    }
+  } catch(e) {
+    console.error('Portal error:', e);
+    alert('Hubo un problema al abrir el portal: ' + (e.message || 'intenta de nuevo.'));
+    if (btn) { btn.textContent = 'Gestionar / cancelar suscripción'; btn.disabled = false; }
+  }
+}
+
 async function syncPremiumWithSupabase() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session?.user) return;
@@ -692,6 +736,7 @@ async function loadProfile(user) {
         <a href="/index.html" class="btn-read">📖 Abrir Biblia</a>
         <button class="btn-logout" onclick="signOut()">Cerrar sesión</button>
         ${isNative ? `<button id="btnRestore" class="btn-logout" onclick="restorePurchases()" style="font-size:0.48rem;">Restaurar compras</button>` : ''}
+        ${isPremium ? `<button id="btnManageSub" class="btn-logout" onclick="manageSubscription()" style="font-size:0.48rem;">Gestionar / cancelar suscripción</button>` : ''}
         <button class="btn-delete" onclick="showDeleteAccountModal()">Eliminar cuenta</button>
       </div>
     </div>
