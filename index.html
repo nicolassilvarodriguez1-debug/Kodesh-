@@ -3355,6 +3355,16 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
   </div>
 </div>
 
+<!-- ══ MODAL ACTUALIZACIÓN OBLIGATORIA — no descartable ══ -->
+<div class="limit-overlay" id="forceUpdateOverlay" style="z-index:99999">
+  <div class="limit-modal" style="max-width:420px">
+    <div class="limit-icon">⬆️</div>
+    <div class="limit-title">Nueva actualización disponible</div>
+    <div class="limit-msg">Publicamos una versión nueva de KODESH Bible con mejoras importantes. Necesitas actualizar para seguir usando la app.</div>
+    <button class="limit-btn-upgrade" onclick="goToAppStoreUpdate()">Actualizar ahora →</button>
+  </div>
+</div>
+
 <!-- ══ MODAL PREMIUM — PRESENTACIÓN COMPLETA ══ -->
 <div class="limit-overlay" id="premiumPresentationOverlay" onclick="closePremiumPresentation(event)">
   <div class="limit-modal" style="max-width:520px">
@@ -3556,6 +3566,62 @@ async function kapiFetch(url, options = {}) {
     }
   }
   return fetch(fullUrl, options);
+}
+
+/* ════════════════════════════════════
+   VERSIÓN MÍNIMA OBLIGATORIA
+   Muchos usuarios no saben que hay una actualización — esto bloquea la
+   app (solo en iOS/Android nativo) si la versión instalada quedó vieja,
+   y los manda directo a la tienda a actualizar. No aplica en web.
+════════════════════════════════════ */
+function compareVersions(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff < 0 ? -1 : 1;
+  }
+  return 0;
+}
+
+let _forceUpdateStoreUrl = null;
+
+async function checkAppVersion() {
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  if (!isNative) return;
+
+  try {
+    const AppPlugin = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (!AppPlugin || !AppPlugin.getInfo) return; // plugin no instalado aún — no bloquear
+
+    const [info, res] = await Promise.all([
+      AppPlugin.getInfo(),
+      kapiFetch('/api/app-version'),
+    ]);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.minVersion || !info.version) return;
+
+    if (compareVersions(info.version, data.minVersion) < 0) {
+      const platform = window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'ios';
+      _forceUpdateStoreUrl = (data.storeUrl && data.storeUrl[platform]) || data.storeUrl?.ios || 'https://apps.apple.com/app/kodesh-bible/id6781083106';
+      document.getElementById('forceUpdateOverlay')?.classList.add('open');
+    }
+  } catch(e) {
+    console.warn('checkAppVersion error (no bloqueante):', e);
+  }
+}
+
+async function goToAppStoreUpdate() {
+  const url = _forceUpdateStoreUrl || 'https://apps.apple.com/app/kodesh-bible/id6781083106';
+  try {
+    const Browser = window.Capacitor?.Plugins?.Browser;
+    if (Browser && Browser.open) {
+      await Browser.open({ url });
+      return;
+    }
+  } catch(e) { /* fallback below */ }
+  window.location.href = url;
 }
 
 /* ════════════════════════════════════
@@ -6696,6 +6762,7 @@ function initTheme() {
    INIT
 ════════════════════════════════════ */
 function init() {
+  checkAppVersion();
   initTheme();
   updateBookList();
   updateProgress();

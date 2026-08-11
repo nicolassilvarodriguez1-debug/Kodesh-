@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@capacitor/app": "^7.0.0",
     "@vercel/functions": "^3.7.1"
   }
 }
