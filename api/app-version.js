@@ -8,11 +8,11 @@
 // (capacitor.config.json / Info.plist) del build que acabas de publicar
 // en App Store Connect, haz commit y push — no requiere un nuevo build
 // nativo, el cambio aplica apenas Vercel despliega.
-const MIN_VERSION = '1.0.1';
+const MIN_VERSION = '1.0.2';
 
 // Última versión disponible (informativa — no bloquea, solo se puede usar
 // para mostrar "hay una versión nueva, opcional" en el futuro si se quiere).
-const LATEST_VERSION = '1.0.1';
+const LATEST_VERSION = '1.0.2';
 
 const APP_STORE_URL = 'https://apps.apple.com/app/kodesh-bible/id6781083106';
 // Actualiza esto cuando publiquen en Google Play.
