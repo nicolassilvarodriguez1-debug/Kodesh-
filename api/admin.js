@@ -287,12 +287,13 @@ export default async function handler(req, res) {
       const profile = profileMap[u.id];
       const plan = planMap[u.id];
       const use = usageMap[u.id] || {};
-      const isPremium = plan?.plan === 'premium' && plan?.subscription_status === 'active';
+      const isPremium = plan?.plan === 'premium' && (plan?.subscription_status === 'active' || plan?.subscription_status === 'trialing');
       return {
         id: u.id,
         email: u.email,
         name: profile || u.user_metadata?.full_name || u.email?.split('@')[0] || '—',
         plan: isPremium ? 'premium' : 'free',
+        subscription_status: plan?.subscription_status || null,
         provider: u.app_metadata?.provider || 'email',
         created_at: u.created_at,
         last_sign_in: u.last_sign_in_at,

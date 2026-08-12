@@ -221,16 +221,29 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         </div>
       </div>
 
-      <div class="section-title">Usuarios registrados — <span id="currentMonth"></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div class="section-title" style="margin:0;padding:0;border:none">Usuarios registrados — <span id="currentMonth"></span></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label class="form-label" style="margin:0;white-space:nowrap">Ordenar por</label>
+          <select class="form-select" id="userSortSelect" style="width:auto;min-width:200px" onchange="renderUsersTable()">
+            <option value="usage_desc">Mayor uso primero</option>
+            <option value="usage_asc">Menor uso primero</option>
+            <option value="newest">Más nuevos primero</option>
+            <option value="oldest">Más antiguos primero</option>
+            <option value="premium_first">Premium primero</option>
+            <option value="free_first">Gratuitos primero</option>
+          </select>
+        </div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>#</th><th>Nombre</th><th>Email</th><th>Plan</th><th>Proveedor</th>
-              <th>Búsquedas</th><th>Asistente</th><th>Lexicón</th><th>Total</th><th>Costo est.</th><th>Último acceso</th>
+              <th>Búsquedas</th><th>Asistente</th><th>Lexicón</th><th>Total</th><th>Costo est.</th><th>Registrado</th><th>Último acceso</th>
             </tr>
           </thead>
-          <tbody id="usersTable"><tr><td colspan="11" class="loading">Cargando...</td></tr></tbody>
+          <tbody id="usersTable"><tr><td colspan="12" class="loading">Cargando...</td></tr></tbody>
         </table>
       </div>
 
@@ -711,6 +724,8 @@ async function loadUsuarios() {
   } catch(e) { console.error(e); }
 }
 
+let allUsers = [];
+
 function renderUsuarios({ users, month, cache }) {
   document.getElementById('currentMonth').textContent = month;
   const premiumUsers = users.filter(u => u.plan === 'premium');
@@ -729,32 +744,8 @@ function renderUsuarios({ users, month, cache }) {
   document.getElementById('statConsultas').textContent = totalConsultas.toLocaleString();
   document.getElementById('statCosto').textContent = `$${totalCost.toFixed(4)}`;
 
-  users.sort((a,b) => (b.searches+b.assistant+b.lexicon)-(a.searches+a.assistant+a.lexicon));
-  let rows = '';
-  users.forEach((u,i) => {
-    const total = u.searches+u.assistant+u.lexicon;
-    const cost = (u.searches*COST.search)+(u.assistant*COST.assistant)+(u.lexicon*COST.lexicon);
-    const isPremium = u.plan === 'premium';
-    const sl = isPremium?80:10, al = isPremium?70:3;
-    const sp = Math.min(100,u.searches/sl*100), ap = Math.min(100,u.assistant/al*100);
-    const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
-    const planBtn = u.id===ADMIN_ID ? '' :
-      `<br><button class="btn-plan${isPremium?' down':''}" onclick="cambiarPlan('${u.id}','${isPremium?'free':'premium'}')">${isPremium?'↓ Bajar a free':'↑ Subir a premium'}</button>`;
-    rows += `<tr${u.id===ADMIN_ID?' style="background:rgba(201,168,76,0.04)"':''}>
-      <td style="color:var(--text-dim)">${i+1}</td>
-      <td class="name-cell">${u.name}${u.id===ADMIN_ID?' 👑':''}</td>
-      <td style="font-size:0.68rem">${u.email||'—'}</td>
-      <td><span class="badge badge-${u.plan}">${u.plan}</span>${planBtn}</td>
-      <td><span class="badge ${u.provider==='google'?'badge-google':'badge-free'}">${u.provider}</span></td>
-      <td>${u.searches}/${sl}<div class="usage-bar"><div class="usage-fill ${sp>=90?'danger':''}" style="width:${sp}%"></div></div></td>
-      <td>${u.assistant}/${al}<div class="usage-bar"><div class="usage-fill ${ap>=90?'danger':''}" style="width:${ap}%"></div></div></td>
-      <td>${u.lexicon}</td>
-      <td style="color:var(--text);font-weight:600">${total}</td>
-      <td class="cost-cell">$${cost.toFixed(4)}</td>
-      <td style="font-size:0.65rem">${last}</td>
-    </tr>`;
-  });
-  document.getElementById('usersTable').innerHTML = rows||'<tr><td colspan="11" class="loading">Sin usuarios</td></tr>';
+  allUsers = users;
+  renderUsersTable();
 
   const cacheSavings = (cache.total*COST.lexicon).toFixed(4);
   document.getElementById('cacheTable').innerHTML = `<tr>
@@ -762,6 +753,68 @@ function renderUsuarios({ users, month, cache }) {
     <td>${cache.at}</td><td>${cache.nt}</td>
     <td class="cost-cell">$${cacheSavings} ahorro por consulta</td>
   </tr>`;
+}
+
+// Reordena la tabla de usuarios ya cargados (sin volver a pedirle nada al
+// servidor) según la opción elegida en el selector "Ordenar por".
+function renderUsersTable() {
+  const sortBy = document.getElementById('userSortSelect')?.value || 'usage_desc';
+  const users = [...allUsers];
+
+  const totalUsage = u => u.searches + u.assistant + u.lexicon;
+  const createdTime = u => u.created_at ? new Date(u.created_at).getTime() : 0;
+
+  switch (sortBy) {
+    case 'usage_asc':
+      users.sort((a,b) => totalUsage(a) - totalUsage(b));
+      break;
+    case 'newest':
+      users.sort((a,b) => createdTime(b) - createdTime(a));
+      break;
+    case 'oldest':
+      users.sort((a,b) => createdTime(a) - createdTime(b));
+      break;
+    case 'premium_first':
+      users.sort((a,b) => (b.plan === 'premium') - (a.plan === 'premium') || totalUsage(b) - totalUsage(a));
+      break;
+    case 'free_first':
+      users.sort((a,b) => (a.plan === 'premium') - (b.plan === 'premium') || totalUsage(b) - totalUsage(a));
+      break;
+    case 'usage_desc':
+    default:
+      users.sort((a,b) => totalUsage(b) - totalUsage(a));
+      break;
+  }
+
+  let rows = '';
+  users.forEach((u,i) => {
+    const total = totalUsage(u);
+    const cost = (u.searches*COST.search)+(u.assistant*COST.assistant)+(u.lexicon*COST.lexicon);
+    const isPremium = u.plan === 'premium';
+    const isTrialing = isPremium && u.subscription_status === 'trialing';
+    const planLabel = isTrialing ? 'trial' : u.plan;
+    const sl = isPremium?80:10, al = isPremium?70:3;
+    const sp = Math.min(100,u.searches/sl*100), ap = Math.min(100,u.assistant/al*100);
+    const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
+    const registered = u.created_at ? new Date(u.created_at).toLocaleDateString('es') : '—';
+    const planBtn = u.id===ADMIN_ID ? '' :
+      `<br><button class="btn-plan${isPremium?' down':''}" onclick="cambiarPlan('${u.id}','${isPremium?'free':'premium'}')">${isPremium?'↓ Bajar a free':'↑ Subir a premium'}</button>`;
+    rows += `<tr${u.id===ADMIN_ID?' style="background:rgba(201,168,76,0.04)"':''}>
+      <td style="color:var(--text-dim)">${i+1}</td>
+      <td class="name-cell">${u.name}${u.id===ADMIN_ID?' 👑':''}</td>
+      <td style="font-size:0.68rem">${u.email||'—'}</td>
+      <td><span class="badge badge-${isPremium?'premium':'free'}">${planLabel}</span>${planBtn}</td>
+      <td><span class="badge ${u.provider==='google'?'badge-google':'badge-free'}">${u.provider}</span></td>
+      <td>${u.searches}/${sl}<div class="usage-bar"><div class="usage-fill ${sp>=90?'danger':''}" style="width:${sp}%"></div></div></td>
+      <td>${u.assistant}/${al}<div class="usage-bar"><div class="usage-fill ${ap>=90?'danger':''}" style="width:${ap}%"></div></div></td>
+      <td>${u.lexicon}</td>
+      <td style="color:var(--text);font-weight:600">${total}</td>
+      <td class="cost-cell">$${cost.toFixed(4)}</td>
+      <td style="font-size:0.65rem">${registered}</td>
+      <td style="font-size:0.65rem">${last}</td>
+    </tr>`;
+  });
+  document.getElementById('usersTable').innerHTML = rows||'<tr><td colspan="12" class="loading">Sin usuarios</td></tr>';
 }
 
 async function cambiarPlan(targetUserId, newPlan) {
