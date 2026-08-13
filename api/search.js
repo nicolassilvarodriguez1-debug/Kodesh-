@@ -19,7 +19,8 @@ export default async function handler(req, res) {
   try {
     usageResult = await consumeUsage(userId, 'search');
   } catch(e) {
-    return sendError(res, 500, ERR.internal, e, 'search:consumeUsage');
+    // Fail closed: if we can't verify/reserve quota, don't call Anthropic.
+    return sendError(res, 503, ERR.unavailable, e, 'search:consumeUsage');
   }
   if (!usageResult.allowed) {
     return res.status(429).json({

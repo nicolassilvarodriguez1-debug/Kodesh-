@@ -9,10 +9,11 @@
 // generations anonymously) plus rate limiting and de-duplication to prevent
 // concurrent generations of the same chapter.
 
+import { randomUUID } from 'crypto';
 import { sbGet, groupByVerse, generateChapter } from './_interlinearCore.js';
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter } from './_security.js';
-import { checkRateLimit } from './_limits.js';
+import { checkRateLimit, acquireGenerationLock, releaseGenerationLock } from './_limits.js';
 
 // Cross-request (same server instance) de-dup guard — belt-and-suspenders
 // alongside the DB-backed rate limit, which is what actually protects
@@ -50,12 +51,20 @@ export default async function handler(req, res) {
     if (warmingInProgress.has(warmKey)) {
       return res.status(200).json({ status: 'already_warming' });
     }
+    // FAIL CLOSED: this is a background/fire-and-forget endpoint, so we
+    // never surface a scary error to the client — but we must still NOT
+    // generate (no Anthropic call) if we can't verify the rate limit.
+    // Returning 200 with an explicit status is the "safe, non-misleading"
+    // response the caller (index.html's warmInterlinearCache) already
+    // treats as fire-and-forget either way.
+    let rl;
     try {
-      const rl = await checkRateLimit(userId, 'interlinear_warm', 30, 3600);
-      if (!rl.allowed) return res.status(200).json({ status: 'rate_limited' });
+      rl = await checkRateLimit(userId, 'interlinear_warm', 30, 3600);
     } catch(e) {
-      console.warn('[Interlinear warm] rate limit check failed (allowing):', e.message);
+      console.error('[Interlinear warm] rate limit check failed — failing closed, no Anthropic call:', e.message);
+      return res.status(200).json({ status: 'rate_limit_unavailable' });
     }
+    if (!rl.allowed) return res.status(200).json({ status: 'rate_limited' });
 
     // 3 — Source words available for this book?
     const source = await sbGet(
@@ -65,6 +74,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'not_available' });
     }
 
+    // 3.5 — Distributed lock (cross-instance, shared with api/interlinear.js
+    // under the same 'interlinear' kind so the two endpoints can never
+    // generate the same chapter simultaneously either). FAIL CLOSED.
+    const leaseToken = randomUUID();
+    let lock;
+    try {
+      lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, 180);
+    } catch(e) {
+      console.error('[Interlinear warm] lock check failed — failing closed, no Anthropic call:', e.message);
+      return res.status(200).json({ status: 'lock_unavailable' });
+    }
+    if (!lock.acquired) {
+      return res.status(200).json({ status: 'already_warming' });
+    }
+
     // 4 — Generate and cache (lower concurrency: this runs silently for
     // free users too, so be a bit gentler on rate limits)
     warmingInProgress.add(warmKey);
@@ -72,6 +96,8 @@ export default async function handler(req, res) {
       await generateChapter(bookU, chapterN, source, 5);
     } finally {
       warmingInProgress.delete(warmKey);
+      try { await releaseGenerationLock('interlinear', bookU, chapterN, leaseToken); }
+      catch(e) { console.warn('[Interlinear warm] lock release failed:', e.message); }
     }
 
     return res.status(200).json({ status: 'generated' });

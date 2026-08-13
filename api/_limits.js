@@ -172,6 +172,31 @@ export async function releaseUsage(userId, type) {
 // Generic short-window rate limiter, atomic via check_rate_limit() RPC.
 // Used for endpoints that don't have a monthly quota of their own
 // (textual translation, interlinear generation).
+// Throws on RPC failure (via sbRpc) — callers MUST fail closed (503, no
+// Anthropic call) rather than catch-and-continue, since a failure here means
+// we cannot verify whether the caller is within their limit.
 export async function checkRateLimit(userId, endpoint, max, windowSeconds) {
   return sbRpc('check_rate_limit', { p_user_id: userId, p_endpoint: endpoint, p_max: max, p_window_seconds: windowSeconds });
+}
+
+// Distributed generation lock (supabase/migrations/
+// 20260813_webhook_lifecycle_ai_usage_repair_locks.sql) — prevents two
+// serverless instances from generating the same (kind, book, chapter) at
+// the same time. `kind` is a free-form namespace string ('textual',
+// 'interlinear') so different generators never collide with each other.
+// Throws on RPC failure — callers MUST fail closed (503, no Anthropic call).
+export async function acquireGenerationLock(kind, book, chapter, leaseToken, leaseSeconds) {
+  return sbRpc('acquire_generation_lock', {
+    p_kind: kind, p_book: book, p_chapter: chapter, p_lease_token: leaseToken, p_lease_seconds: leaseSeconds,
+  });
+}
+
+// Releases a lock previously acquired with the same (kind, book, chapter,
+// leaseToken). Safe to call even if the lease already expired/was reclaimed
+// by someone else — the RPC only deletes a row matching OUR lease_token, so
+// releasing a lock we no longer hold is a harmless no-op.
+export async function releaseGenerationLock(kind, book, chapter, leaseToken) {
+  return sbRpc('release_generation_lock', {
+    p_kind: kind, p_book: book, p_chapter: chapter, p_lease_token: leaseToken,
+  });
 }

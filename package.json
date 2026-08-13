@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/security.test.js",
+    "test": "node --test tests/security.test.js tests/endpoints_auth.test.js tests/endpoints_identity.test.js tests/endpoints_limits.test.js tests/webhook_lifecycle.test.js",
     "check": "for f in api/*.js *.js; do node --check \"$f\" || exit 1; done && echo 'All files OK'"
   },
   "dependencies": {

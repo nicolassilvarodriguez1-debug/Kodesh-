@@ -36,8 +36,16 @@ export async function sbInsert(table, rows) {
 export async function getUserPlan(userId) {
   if (!userId) return 'free';
   try {
-    const data = await sbGet(`user_plans?user_id=eq.${userId}&select=plan,subscription_status&limit=1`);
-    if (data?.[0]?.subscription_status === 'active') return data[0].plan || 'free';
+    const data = await sbGet(`user_plans?user_id=eq.${userId}&select=plan,subscription_status,current_period_end&limit=1`);
+    const row = data?.[0];
+    if (!row) return 'free';
+    // 'active' AND 'trialing' both count as premium while the period
+    // hasn't lapsed — matches _limits.js, textual.js, checkout.js, etc.
+    // (previously only 'active' counted here, incorrectly denying
+    // interlinear access to users in their 7-day free trial).
+    const isActiveStatus = row.subscription_status === 'active' || row.subscription_status === 'trialing';
+    const notExpired = !row.current_period_end || new Date(row.current_period_end) > new Date();
+    return (isActiveStatus && notExpired) ? (row.plan || 'free') : 'free';
   } catch(e) {}
   return 'free';
 }

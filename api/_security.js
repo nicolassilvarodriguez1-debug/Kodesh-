@@ -56,6 +56,10 @@ export const ERR = {
   conflict: 'Conflicto con el estado actual.',
   rateLimited: 'Alcanzaste tu límite. Intenta más tarde.',
   internal: 'Ocurrió un error. Intenta de nuevo.',
+  // Used when we CANNOT verify a quota/rate-limit/lock (e.g. Supabase RPC
+  // failure) — endpoints that call Anthropic must fail closed in this case
+  // (no AI call) rather than silently allowing unlimited requests through.
+  unavailable: 'Servicio temporalmente no disponible. Intenta de nuevo en unos minutos.',
 };
 
 // ── Input validation ──

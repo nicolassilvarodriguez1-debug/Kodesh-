@@ -7,9 +7,10 @@
 // sourceVerses and trigger generation. Now requires a verified Supabase
 // session with an active/trialing premium plan, plus input validation and
 // per-user rate limiting on cache misses (cache hits stay free/unlimited).
+import { randomUUID } from 'crypto';
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, sanitizeSourceVerses } from './_security.js';
-import { checkRateLimit } from './_limits.js';
+import { checkRateLimit, acquireGenerationLock, releaseGenerationLock } from './_limits.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -122,17 +123,39 @@ export default async function handler(req, res) {
 
   // 3 — Rate limit en generaciones nuevas (cache misses) — máx 20 capítulos
   // por hora por usuario. Los hits de caché de arriba no pasan por aquí.
+  // FAIL CLOSED: si no podemos verificar el límite (p.ej. la RPC de
+  // Supabase falla), NO llamamos a Anthropic — devolvemos 503 en vez de
+  // continuar silenciosamente sin protección de costos.
+  let rl;
   try {
-    const rl = await checkRateLimit(userId, 'textual_generate', 20, 3600);
-    if (!rl.allowed) return sendError(res, 429, ERR.rateLimited, null, 'textual:rate-limit');
+    rl = await checkRateLimit(userId, 'textual_generate', 20, 3600);
   } catch(e) {
-    console.warn('[Textual] rate limit check failed (allowing):', e.message);
+    console.error('[Textual] rate limit check failed — failing closed, no Anthropic call:', e.message);
+    return sendError(res, 503, ERR.unavailable, e, 'textual:rate-limit-unavailable');
   }
+  if (!rl.allowed) return sendError(res, 429, ERR.rateLimited, null, 'textual:rate-limit');
 
   // 4 — Necesitamos el texto RVR60 como ancla — el cliente lo envía. Se
   // valida tamaño y forma antes de construir el prompt.
   const sourceVerses = sanitizeSourceVerses(req.body?.sourceVerses, { maxVerses: 176, maxLen: 2000 });
   if (!sourceVerses) return sendError(res, 400, ERR.badRequest, null, 'textual:sourceVerses');
+
+  // 5 — Bloqueo distribuido: impide que dos instancias generen el MISMO
+  // libro/capítulo a la vez (p.ej. dos pestañas, o dos usuarios premium
+  // abriendo el mismo capítulo sin caché en el mismo instante). FAIL
+  // CLOSED igual que el rate limit — si no podemos verificar el lock, no
+  // generamos.
+  const leaseToken = randomUUID();
+  let lock;
+  try {
+    lock = await acquireGenerationLock('textual', bookId, chapter, leaseToken, 120);
+  } catch(e) {
+    console.error('[Textual] lock check failed — failing closed, no Anthropic call:', e.message);
+    return sendError(res, 503, ERR.unavailable, e, 'textual:lock-unavailable');
+  }
+  if (!lock.acquired) {
+    return sendError(res, 409, ERR.conflict, null, 'textual:already-generating');
+  }
 
   const verseKeys = Object.keys(sourceVerses).sort((a, b) => parseInt(a) - parseInt(b));
   const verseCount = verseKeys.length;
@@ -144,6 +167,7 @@ export default async function handler(req, res) {
   const bookName = BOOK_NAMES[bookId] || bookId;
 
   try {
+   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -264,8 +288,12 @@ Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, si
       reportCount: 0,
       fromCache: false,
     });
-  } catch(e) {
+   } catch(e) {
     console.error('[Textual] Error:', e.message);
     return res.status(500).json({ error: 'No se pudo generar la traducción. Intenta de nuevo.' });
+   }
+  } finally {
+    try { await releaseGenerationLock('textual', bookId, chapter, leaseToken); }
+    catch(e) { console.warn('[Textual] lock release failed:', e.message); }
   }
 }

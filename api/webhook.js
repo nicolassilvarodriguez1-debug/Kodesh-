@@ -5,21 +5,45 @@
 // asserts (it always re-derives state from the verified Stripe event).
 //
 // Security hardening in this file:
-//  - Raw-body HMAC-SHA256 signature verification (unchanged approach).
+//  - Raw-body HMAC-SHA256 signature verification.
 //  - Tolerates Stripe's signature-rotation window: the Stripe-Signature
 //    header can contain MULTIPLE `v1=` values while a secret is being
-//    rotated: https://stripe.com/docs/webhooks/signatures#verify-manually
-//    We now check ALL of them, not just the first found.
+//    rotated. We check ALL of them, not just the first found.
 //  - Constant-time comparison (Node's crypto.timingSafeEqual) instead of
 //    `!==`, so signature comparison can't leak timing information.
-//  - Idempotency: each event.id is recorded in stripe_webhook_events before
-//    processing. If the same event is redelivered (Stripe retries on any
-//    non-2xx, or can occasionally redeliver already-acked events), we skip
-//    reprocessing and just return 200.
+//
+// Idempotency (2nd-pass redesign — see supabase/migrations/
+// 20260813_webhook_lifecycle_ai_usage_repair_locks.sql):
+//  Each event.id goes through claim → process → complete/fail, backed by
+//  stripe_webhook_events.status ('processing'/'completed'/'failed') and a
+//  random per-attempt lease_token, via three atomic RPCs:
+//    - claim_stripe_webhook_event   — row-locked acquire-or-reclaim
+//    - complete_stripe_webhook_event — only succeeds if we still hold the lease
+//    - fail_stripe_webhook_event     — only succeeds if we still hold the lease
+//  This fixes a real bug in the previous design: that version recorded
+//  event.id as "done" the instant it was first seen, BEFORE processing —
+//  so a crash/error partway through (e.g. the Supabase update failing)
+//  would permanently mark a real event as already-handled, and Stripe's
+//  retry would be silently swallowed as a "duplicate". Now:
+//    - A duplicate delivery of a COMPLETED event → 200 immediately, no reprocessing.
+//    - A delivery that arrives while another instance's lease on the same
+//      event is still fresh → 200 without reprocessing (avoids double work).
+//    - A delivery for a FAILED event, or a 'processing' event whose lease
+//      expired (its instance crashed/died) → reclaimed and processed again.
+//    - The event is marked 'completed' ONLY after every required operation
+//      (updateUserPlan, etc.) has actually succeeded — verified against
+//      real Supabase/Stripe HTTP responses, not assumed.
 
 import nodeCrypto from 'crypto';
 
 export const config = { api: { bodyParser: false } };
+
+// How long a claimed-but-not-yet-completed event is considered "actively
+// being processed" before another instance is allowed to reclaim it. Must
+// comfortably exceed the worst-case time this handler could take (a couple
+// of sequential Supabase/Stripe HTTP calls) — 10 minutes, per the requested
+// 5–15 minute window.
+const LEASE_SECONDS = 600;
 
 async function getRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -90,41 +114,63 @@ function sbHeaders() {
   };
 }
 
-// Idempotency guard. Tries to INSERT the event id first; a unique-violation
-// (already exists) means this exact event was already processed, so the
-// caller should skip reprocessing. Returns true if this is a NEW event that
-// should be processed now, false if it's a duplicate delivery.
-async function claimEventOnce(eventId, eventType) {
+async function sbRpc(fn, args) {
   const SB_URL = process.env.SUPABASE_URL;
-  try {
-    const res = await fetch(`${SB_URL}/rest/v1/stripe_webhook_events`, {
-      method: 'POST',
-      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ id: eventId, type: eventType }),
-    });
-    if (res.status === 201 || res.status === 204) return true;
-    if (res.status === 409) return false; // duplicate — already processed
-    // Any other unexpected response: log and, to be safe, process anyway
-    // rather than silently dropping a legitimate event.
-    console.warn('[webhook] idempotency insert unexpected status:', res.status);
-    return true;
-  } catch (e) {
-    console.warn('[webhook] idempotency check failed, processing anyway:', e.message);
-    return true;
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: sbHeaders(),
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`RPC ${fn} failed (${res.status}): ${text.slice(0, 300)}`);
   }
+  return res.json();
 }
 
+export async function claimEvent(eventId, eventType, leaseToken, leaseSeconds = LEASE_SECONDS) {
+  return sbRpc('claim_stripe_webhook_event', {
+    p_event_id: eventId, p_event_type: eventType, p_lease_token: leaseToken, p_lease_seconds: leaseSeconds,
+  });
+}
+
+export async function completeEvent(eventId, leaseToken) {
+  const result = await sbRpc('complete_stripe_webhook_event', { p_event_id: eventId, p_lease_token: leaseToken });
+  return result === true;
+}
+
+export async function failEvent(eventId, leaseToken, errorMsg) {
+  const result = await sbRpc('fail_stripe_webhook_event', {
+    p_event_id: eventId, p_lease_token: leaseToken, p_error: String(errorMsg || '').slice(0, 500),
+  });
+  return result === true;
+}
+
+// Looks up the KODESH user for a Stripe customer, then applies the plan
+// update. Throws on ANY failure — a failed HTTP response is never treated
+// as success, and "the update didn't actually affect the expected user row"
+// is treated as a failure too (both cases bubble up so the caller marks the
+// event 'failed' and lets Stripe retry, instead of silently losing it).
 async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
   const SB_URL = process.env.SUPABASE_URL;
-  const headers = { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates' };
 
-  // Find user by stripe customer ID
-  const res = await fetch(`${SB_URL}/rest/v1/user_plans?stripe_customer_id=eq.${customerId}&select=user_id&limit=1`, { headers });
-  const data = await res.json();
+  const lookupRes = await fetch(
+    `${SB_URL}/rest/v1/user_plans?stripe_customer_id=eq.${encodeURIComponent(customerId)}&select=user_id&limit=1`,
+    { headers: sbHeaders() }
+  );
+  if (!lookupRes.ok) {
+    throw new Error(`Supabase lookup failed (${lookupRes.status}) for customer ${customerId}`);
+  }
+  const data = await lookupRes.json();
 
   if (!data?.[0]?.user_id) {
-    console.warn('No user found for customer:', customerId);
-    return;
+    // No linked user for this customer yet. This can legitimately happen if
+    // the webhook races ahead of checkout.js finishing its own write of
+    // stripe_customer_id — throwing here (rather than silently returning)
+    // means the event is marked 'failed' and Stripe retries with backoff,
+    // giving that race time to resolve, instead of permanently losing the
+    // plan update.
+    throw new Error(`No user found for Stripe customer ${customerId}`);
   }
 
   const userId = data[0].user_id;
@@ -133,9 +179,9 @@ async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
   // gratis de 7 días quedarían bloqueados como plan 'free'.
   const isPremiumStatus = status === 'active' || status === 'trialing';
 
-  await fetch(`${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}`, {
+  const patchRes = await fetch(`${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}`, {
     method: 'PATCH',
-    headers,
+    headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
     body: JSON.stringify({
       plan: isPremiumStatus ? 'premium' : 'free',
       subscription_status: status,
@@ -145,7 +191,52 @@ async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
     })
   });
 
+  if (!patchRes.ok) {
+    const text = await patchRes.text().catch(() => '');
+    throw new Error(`Supabase update failed (${patchRes.status}) for user ${userId}: ${text.slice(0, 200)}`);
+  }
+
+  // Never assume a 2xx means the row was actually touched — verify the
+  // response body reflects exactly the user we intended to update.
+  const updated = await patchRes.json();
+  if (!Array.isArray(updated) || updated.length === 0 || updated[0].user_id !== userId) {
+    throw new Error(`Supabase update affected 0 rows (or the wrong row) for user ${userId}`);
+  }
+
   console.log(`Updated user ${userId} to plan: ${isPremiumStatus ? 'premium' : 'free'} (status: ${status})`);
+}
+
+async function processEvent(event) {
+  const obj = event.data.object;
+
+  switch (event.type) {
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+      await updateUserPlan(obj.customer, obj.status, obj.id, obj.current_period_end);
+      break;
+
+    case 'customer.subscription.deleted':
+      await updateUserPlan(obj.customer, 'canceled', obj.id, null);
+      break;
+
+    case 'invoice.payment_succeeded':
+      if (obj.subscription) {
+        const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${obj.subscription}`, {
+          headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` }
+        });
+        if (!subRes.ok) {
+          throw new Error(`Stripe subscription fetch failed (${subRes.status}) for ${obj.subscription}`);
+        }
+        const sub = await subRes.json();
+        await updateUserPlan(obj.customer, sub.status, sub.id, sub.current_period_end);
+      }
+      break;
+
+    default:
+      // Unhandled event types: nothing to do, but still a successful,
+      // completable outcome — otherwise Stripe would retry these forever.
+      break;
+  }
 }
 
 export default async function handler(req, res) {
@@ -158,53 +249,66 @@ export default async function handler(req, res) {
   try {
     const rawBody = await getRawBody(req);
     event = await verifyStripeSignature(rawBody.toString(), signature, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch(err) {
-    // Signature/timestamp errors are safe to summarize generically — never
-    // echo internal details, but this one specific case (webhook auth) is
-    // low-risk to briefly describe since it's not user-facing.
+  } catch (err) {
     console.error('Webhook verification failed:', err.message);
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
-  // Idempotency: skip reprocessing if we've already handled this event.id.
-  const isNewEvent = await claimEventOnce(event.id, event.type);
-  if (!isNewEvent) {
-    console.log(`[webhook] duplicate delivery of ${event.id} (${event.type}) — skipping`);
-    return res.status(200).json({ received: true, duplicate: true });
+  const leaseToken = nodeCrypto.randomUUID();
+  let claim;
+  try {
+    claim = await claimEvent(event.id, event.type, leaseToken, LEASE_SECONDS);
+  } catch (err) {
+    // Can't even determine idempotency state — the safest option is to let
+    // Stripe retry rather than risk double-processing or silently dropping
+    // the event by guessing.
+    console.error('[webhook] claim RPC failed:', err?.message || err);
+    return res.status(500).json({ error: 'Internal error' });
   }
 
-  const obj = event.data.object;
+  if (!claim.claimed) {
+    if (claim.status === 'completed') {
+      console.log(`[webhook] duplicate delivery of ${event.id} (${event.type}) — already completed, skipping`);
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+    // status === 'processing' with a fresh lease held by another instance —
+    // don't reprocess; that instance will complete or fail it, and Stripe
+    // will redeliver later if needed.
+    console.log(`[webhook] ${event.id} (${event.type}) already being processed by another instance — skipping`);
+    return res.status(200).json({ received: true, status: 'processing' });
+  }
 
   try {
-    switch(event.type) {
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-        await updateUserPlan(
-          obj.customer,
-          obj.status,
-          obj.id,
-          obj.current_period_end
-        );
-        break;
-
-      case 'customer.subscription.deleted':
-        await updateUserPlan(obj.customer, 'canceled', obj.id, null);
-        break;
-
-      case 'invoice.payment_succeeded':
-        if (obj.subscription) {
-          // Refresh subscription status
-          const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${obj.subscription}`, {
-            headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` }
-          });
-          const sub = await subRes.json();
-          await updateUserPlan(obj.customer, sub.status, sub.id, sub.current_period_end);
-        }
-        break;
+    await processEvent(event);
+  } catch (err) {
+    console.error(`[webhook] processing failed for ${event.id} (${event.type}):`, err?.message || err);
+    try {
+      await failEvent(event.id, leaseToken, err?.message || 'unknown error');
+    } catch (err2) {
+      console.error('[webhook] failed to mark event as failed:', err2?.message || err2);
     }
-  } catch(err) {
-    console.error('Webhook handler error:', err?.message || err);
+    // 500 so Stripe retries — the event is now 'failed' and will be
+    // reclaimed and reprocessed on the next delivery attempt.
     return res.status(500).json({ error: 'Internal error processing webhook' });
+  }
+
+  try {
+    const completed = await completeEvent(event.id, leaseToken);
+    if (!completed) {
+      // Our lease expired mid-processing and got reclaimed by another
+      // instance before we could mark completion. The update we just
+      // applied is a harmless, idempotent re-application of the same
+      // Stripe state (updateUserPlan always writes the same fields the
+      // reclaiming instance would also write), so this is not data loss —
+      // just log it loudly for visibility.
+      console.warn(`[webhook] lease lost for ${event.id} before completion could be recorded`);
+    }
+  } catch (err) {
+    console.error('[webhook] failed to mark event completed:', err?.message || err);
+    // We already successfully applied the plan update — do NOT return 500
+    // here, that would make Stripe retry a change we already made. Ack 200;
+    // if this write genuinely failed, the lease will simply expire and a
+    // retry will safely re-apply identical state.
   }
 
   return res.status(200).json({ received: true });
