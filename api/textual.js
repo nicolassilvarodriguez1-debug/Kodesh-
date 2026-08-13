@@ -1,6 +1,15 @@
 // KODESH — Biblia Textual (IA) v2
 // Genera traducción de equivalencia formal anclada al texto RVR60 + hebreo/griego original
 // Formato de salida IDÉNTICO a biblia-rvr.json para compatibilidad con renderBibleText()
+//
+// This is a Premium-only, expensive (max_tokens 4096) generation endpoint.
+// Previously had NO authentication at all — anyone could POST arbitrary
+// sourceVerses and trigger generation. Now requires a verified Supabase
+// session with an active/trialing premium plan, plus input validation and
+// per-user rate limiting on cache misses (cache hits stay free/unlimited).
+import { requireUser } from './_auth.js';
+import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, sanitizeSourceVerses } from './_security.js';
+import { checkRateLimit } from './_limits.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -38,6 +47,18 @@ async function sbFetch(path, options = {}) {
   });
 }
 
+async function getPlan(userId) {
+  try {
+    const res = await sbFetch(`user_plans?user_id=eq.${userId}&select=plan,subscription_status,current_period_end&limit=1`);
+    const data = await res.json();
+    const row = data?.[0];
+    if (!row) return 'free';
+    const active = row.subscription_status === 'active' || row.subscription_status === 'trialing';
+    const notExpired = !row.current_period_end || new Date(row.current_period_end) > new Date();
+    return (active && notExpired) ? (row.plan || 'free') : 'free';
+  } catch(e) { return 'free'; }
+}
+
 async function getCachedChapter(bookId, chapter) {
   try {
     const res = await sbFetch(
@@ -66,18 +87,26 @@ async function saveChapter(bookId, chapter, verses, verseCount) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { bookId, chapter, sourceVerses } = req.body;
-  if (!bookId || !chapter) return res.status(400).json({ error: 'bookId y chapter requeridos' });
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const userId = user.id;
 
-  // 1 — Revisar caché
+  const bookId = isValidBookId(req.body?.bookId) ? req.body.bookId.toUpperCase() : null;
+  const chapter = bookId && isValidChapter(req.body?.chapter) ? Number(req.body.chapter) : null;
+  if (!bookId || !chapter) return sendError(res, 400, ERR.badRequest, null, 'textual');
+
+  // 1 — Revisar caché (gratis, no consume ni requiere premium para servir
+  // algo ya generado — pero igual exigimos sesión válida arriba).
   const cached = await getCachedChapter(bookId, chapter);
   if (cached) {
+    // Aun así, esta traducción es contenido Premium — no servir el cuerpo
+    // completo a cuentas free.
+    const plan = await getPlan(userId);
+    if (plan !== 'premium') return sendError(res, 403, ERR.forbidden, null, 'textual:not-premium');
     return res.status(200).json({
       found: true,
       verses: cached.verses,
@@ -87,19 +116,26 @@ export default async function handler(req, res) {
     });
   }
 
-  // 2 — Necesitamos el texto RVR60 como ancla — el cliente lo envía
-  if (!sourceVerses || typeof sourceVerses !== 'object') {
-    return res.status(400).json({
-      error: 'sourceVerses requerido (el texto RVR60 del capítulo como objeto { "1": "texto", "2": "texto" })'
-    });
+  // 2 — Generar un capítulo nuevo requiere plan Premium (activo o en trial).
+  const plan = await getPlan(userId);
+  if (plan !== 'premium') return sendError(res, 403, ERR.forbidden, null, 'textual:not-premium');
+
+  // 3 — Rate limit en generaciones nuevas (cache misses) — máx 20 capítulos
+  // por hora por usuario. Los hits de caché de arriba no pasan por aquí.
+  try {
+    const rl = await checkRateLimit(userId, 'textual_generate', 20, 3600);
+    if (!rl.allowed) return sendError(res, 429, ERR.rateLimited, null, 'textual:rate-limit');
+  } catch(e) {
+    console.warn('[Textual] rate limit check failed (allowing):', e.message);
   }
+
+  // 4 — Necesitamos el texto RVR60 como ancla — el cliente lo envía. Se
+  // valida tamaño y forma antes de construir el prompt.
+  const sourceVerses = sanitizeSourceVerses(req.body?.sourceVerses, { maxVerses: 176, maxLen: 2000 });
+  if (!sourceVerses) return sendError(res, 400, ERR.badRequest, null, 'textual:sourceVerses');
 
   const verseKeys = Object.keys(sourceVerses).sort((a, b) => parseInt(a) - parseInt(b));
   const verseCount = verseKeys.length;
-
-  if (verseCount === 0) {
-    return res.status(400).json({ error: 'sourceVerses está vacío' });
-  }
 
   // 3 — Construir el texto fuente formateado para el prompt
   const sourceText = verseKeys.map(k => `${k}. ${sourceVerses[k]}`).join('\n');

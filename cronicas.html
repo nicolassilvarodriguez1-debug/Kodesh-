@@ -203,6 +203,24 @@ const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ── XSS-safe helpers ──
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
+
 let currentCancionId = null;
 const audio = document.getElementById('audioEl');
 
@@ -232,20 +250,57 @@ async function loadCanciones() {
   document.getElementById('countCanciones').textContent = `${list.length} canción${list.length !== 1 ? 'es' : ''}`;
   const grid = document.getElementById('cancionesGrid');
   if (!list.length) { grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><div class="empty-title">Próximamente</div><div class="empty-sub">Las canciones aparecerán aquí</div></div>`; return; }
-  grid.innerHTML = list.map(c => `
-    <div class="cancion-card" id="card-${c.id}">
-      <div class="cancion-cover">
-        ${c.imagen_url ? `<img src="${c.imagen_url}" alt="${c.titulo}">` : '🎵'}
-      </div>
-      <div class="cancion-info">
-        <div class="cancion-titulo">${c.titulo}</div>
-        ${c.personaje ? `<div class="cancion-personaje">${c.personaje}</div>` : ''}
-        ${c.descripcion ? `<div class="cancion-desc">${c.descripcion}</div>` : ''}
-      </div>
-      <div class="cancion-actions">
-        <button class="btn-play" id="btn-${c.id}" onclick="playCancion('${c.id}','${c.titulo}','${c.personaje||''}','${c.archivo_url}','${c.imagen_url||''}')">▶ Escuchar</button>
-      </div>
-    </div>`).join('');
+  grid.innerHTML = '';
+  list.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'cancion-card';
+    card.id = `card-${c.id}`;
+
+    const cover = document.createElement('div');
+    cover.className = 'cancion-cover';
+    const imgUrl = safeUrl(c.imagen_url);
+    if (imgUrl) {
+      const img = document.createElement('img');
+      img.src = imgUrl;
+      img.alt = c.titulo || '';
+      cover.appendChild(img);
+    } else {
+      cover.textContent = '🎵';
+    }
+    card.appendChild(cover);
+
+    const info = document.createElement('div');
+    info.className = 'cancion-info';
+    const titulo = document.createElement('div');
+    titulo.className = 'cancion-titulo';
+    titulo.textContent = c.titulo || '';
+    info.appendChild(titulo);
+    if (c.personaje) {
+      const personaje = document.createElement('div');
+      personaje.className = 'cancion-personaje';
+      personaje.textContent = c.personaje;
+      info.appendChild(personaje);
+    }
+    if (c.descripcion) {
+      const desc = document.createElement('div');
+      desc.className = 'cancion-desc';
+      desc.textContent = c.descripcion;
+      info.appendChild(desc);
+    }
+    card.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'cancion-actions';
+    const playBtn = document.createElement('button');
+    playBtn.className = 'btn-play';
+    playBtn.id = `btn-${c.id}`;
+    playBtn.textContent = '▶ Escuchar';
+    playBtn.addEventListener('click', () => playCancion(c.id, c.titulo, c.personaje || '', c.archivo_url, c.imagen_url || ''));
+    actions.appendChild(playBtn);
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+  });
 }
 
 async function loadActividades() {
@@ -256,21 +311,70 @@ async function loadActividades() {
   if (!list.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎨</div><div class="empty-title">Próximamente</div><div class="empty-sub">Las actividades aparecerán aquí</div></div>`; return; }
 
   const CATEGORIA_ICONS = { colorear:'🖍️', manualidad:'✂️', juego:'🎮', leccion:'📖', otro:'📄' };
-  grid.innerHTML = list.map(a => `
-    <div class="actividad-card">
-      <div class="actividad-preview">
-        ${a.preview_url ? `<img src="${a.preview_url}" alt="${a.titulo}">` : (CATEGORIA_ICONS[a.categoria] || '📄')}
-      </div>
-      <div class="actividad-body">
-        <div class="actividad-titulo">${a.titulo}</div>
-        ${a.categoria || a.edad ? `<div class="actividad-meta">${[a.categoria, a.edad].filter(Boolean).join(' · ')}</div>` : ''}
-        <div class="actividad-tags">
-          ${a.tipo ? `<span class="tag">${a.tipo.toUpperCase()}</span>` : ''}
-          ${a.categoria ? `<span class="tag">${a.categoria}</span>` : ''}
-        </div>
-        <a href="${a.archivo_url}" target="_blank" download class="btn-download">⬇ Descargar</a>
-      </div>
-    </div>`).join('');
+  grid.innerHTML = '';
+  list.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'actividad-card';
+
+    const preview = document.createElement('div');
+    preview.className = 'actividad-preview';
+    const previewUrl = safeUrl(a.preview_url);
+    if (previewUrl) {
+      const img = document.createElement('img');
+      img.src = previewUrl;
+      img.alt = a.titulo || '';
+      preview.appendChild(img);
+    } else {
+      preview.textContent = CATEGORIA_ICONS[a.categoria] || '📄';
+    }
+    card.appendChild(preview);
+
+    const body = document.createElement('div');
+    body.className = 'actividad-body';
+
+    const titulo = document.createElement('div');
+    titulo.className = 'actividad-titulo';
+    titulo.textContent = a.titulo || '';
+    body.appendChild(titulo);
+
+    if (a.categoria || a.edad) {
+      const meta = document.createElement('div');
+      meta.className = 'actividad-meta';
+      meta.textContent = [a.categoria, a.edad].filter(Boolean).join(' · ');
+      body.appendChild(meta);
+    }
+
+    const tags = document.createElement('div');
+    tags.className = 'actividad-tags';
+    if (a.tipo) {
+      const t = document.createElement('span');
+      t.className = 'tag';
+      t.textContent = String(a.tipo).toUpperCase();
+      tags.appendChild(t);
+    }
+    if (a.categoria) {
+      const c = document.createElement('span');
+      c.className = 'tag';
+      c.textContent = a.categoria;
+      tags.appendChild(c);
+    }
+    body.appendChild(tags);
+
+    const archivoUrl = safeUrl(a.archivo_url);
+    if (archivoUrl) {
+      const link = document.createElement('a');
+      link.href = archivoUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('download', '');
+      link.className = 'btn-download';
+      link.textContent = '⬇ Descargar';
+      body.appendChild(link);
+    }
+
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
 }
 
 // AUDIO PLAYER
@@ -290,7 +394,7 @@ function playCancion(id, titulo, personaje, url, portada) {
   }
 
   currentCancionId = id;
-  audio.src = url;
+  audio.src = safeUrl(url);
   audio.play();
 
   document.getElementById('btn-' + id).textContent = '⏸ Pausar';
@@ -299,8 +403,9 @@ function playCancion(id, titulo, personaje, url, portada) {
   document.getElementById('playerArtist').textContent = personaje || 'Crónicas del Reino';
   const thumb = document.getElementById('playerThumb');
   if (thumb) {
-    thumb.src = portada || '';
-    thumb.style.visibility = portada ? 'visible' : 'hidden';
+    const portadaUrl = safeUrl(portada);
+    thumb.src = portadaUrl;
+    thumb.style.visibility = portadaUrl ? 'visible' : 'hidden';
   }
   document.getElementById('playerBar').classList.add('visible');
   document.getElementById('btnPlay').textContent = '⏸';

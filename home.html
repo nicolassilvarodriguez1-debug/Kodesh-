@@ -562,6 +562,16 @@ function loadDailyPromise() {
   document.getElementById('promiseRef').textContent = '— ' + p.ref;
 }
 
+// Only allow https: (or protocol-relative/same-origin) URLs for user-supplied
+// image sources — never javascript:, data:, or anything else.
+function isSafeImageUrl(u) {
+  if (typeof u !== 'string' || !u) return false;
+  try {
+    const url = new URL(u, window.location.href);
+    return url.protocol === 'https:';
+  } catch(e) { return false; }
+}
+
 async function loadUserContext(userId) {
   try {
     const { data: profile } = await sb.from('user_profiles').select('display_name, avatar_url').eq('id', userId).single();
@@ -569,26 +579,43 @@ async function loadUserContext(userId) {
     const { data: plan } = await sb.from('user_plans').select('plan, subscription_status').eq('user_id', userId).single();
 
     const name = profile?.display_name || '';
-    const isPremium = plan?.plan === 'premium' && plan?.subscription_status === 'active';
+    const isPremium = plan?.plan === 'premium' && (plan?.subscription_status === 'active' || plan?.subscription_status === 'trialing');
 
-    // Update pill
+    // Update pill — built with textContent/DOM APIs, never innerHTML, since
+    // display_name and avatar_url are user-controlled.
     const pill = document.getElementById('userPill');
     if (pill && name) {
       document.getElementById('pillName').textContent = name.split(' ')[0];
-      if (profile?.avatar_url) {
-        document.getElementById('pillAvatar').innerHTML = `<img src="${profile.avatar_url}" />`;
+      const avatarEl = document.getElementById('pillAvatar');
+      if (profile?.avatar_url && isSafeImageUrl(profile.avatar_url)) {
+        avatarEl.textContent = '';
+        const img = document.createElement('img');
+        img.src = profile.avatar_url;
+        img.alt = '';
+        avatarEl.appendChild(img);
       } else {
-        document.getElementById('pillAvatar').textContent = name[0].toUpperCase();
+        avatarEl.textContent = name[0].toUpperCase();
       }
     }
 
-    // Greeting
+    // Greeting — built with DOM nodes so the user's display name can never
+    // be interpreted as HTML.
     const hour = new Date().getHours();
     const saludo = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
     const greetingBar = document.getElementById('greetingBar');
     const greetingText = document.getElementById('greetingText');
     greetingBar.style.display = 'flex';
-    greetingText.innerHTML = `${saludo}, <strong>${name.split(' ')[0] || 'hermano/a'}</strong>${isPremium ? ' <span class="premium-pill">✦ Premium</span>' : ''}`;
+    greetingText.textContent = '';
+    greetingText.appendChild(document.createTextNode(saludo + ', '));
+    const strong = document.createElement('strong');
+    strong.textContent = name.split(' ')[0] || 'hermano/a';
+    greetingText.appendChild(strong);
+    if (isPremium) {
+      const pillSpan = document.createElement('span');
+      pillSpan.className = 'premium-pill';
+      pillSpan.textContent = ' ✦ Premium';
+      greetingText.appendChild(pillSpan);
+    }
 
     // Streak
     if (streak?.current_streak > 0) {
@@ -600,12 +627,23 @@ async function loadUserContext(userId) {
 function renderUserUI(user) {
   const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('topbarUser').innerHTML = `
-    <a href="/app" class="user-pill" id="userPill">
-      <div class="user-avatar" id="pillAvatar">${initials}</div>
-      <span class="user-name-pill" id="pillName">${name.split(' ')[0]}</span>
-    </a>
-  `;
+  const container = document.getElementById('topbarUser');
+  container.textContent = '';
+  const link = document.createElement('a');
+  link.href = '/app';
+  link.className = 'user-pill';
+  link.id = 'userPill';
+  const avatar = document.createElement('div');
+  avatar.className = 'user-avatar';
+  avatar.id = 'pillAvatar';
+  avatar.textContent = initials;
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'user-name-pill';
+  nameSpan.id = 'pillName';
+  nameSpan.textContent = name.split(' ')[0];
+  link.appendChild(avatar);
+  link.appendChild(nameSpan);
+  container.appendChild(link);
 }
 
 function renderGuestUI() {

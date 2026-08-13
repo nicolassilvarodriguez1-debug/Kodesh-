@@ -12,36 +12,45 @@
 //        the next time anyone (free or premium) requests it. The free user never
 //        waits for this and never sees the generated content themselves.
 //   3. If no source words exist for the book at all -> not_available (book not yet supported).
+//
+// Requires a verified Supabase session. Plan is looked up server-side from
+// user_plans — never trusted from the request body.
 
 import { sbGet, getUserPlan, groupByVerse, generateChapter } from './_interlinearCore.js';
 import { waitUntil } from '@vercel/functions';
+import { requireUser } from './_auth.js';
+import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter } from './_security.js';
+import { checkRateLimit } from './_limits.js';
 
 const PAYWALL_MESSAGE = 'El Modo Interlineal es una función Premium. Actualiza tu plan para acceder al texto hebreo/griego original con análisis palabra por palabra.';
 
 // Tracks chapters currently being warmed in the background, to avoid
 // triggering duplicate generations if several free users hit the same
 // uncached chapter in quick succession within the same server instance.
+// (Best-effort only — see check_rate_limit RPC for the cross-instance guard.)
 const warmingInProgress = new Set();
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { book, chapter, userId } = req.body;
-  if (!book || !chapter) return res.status(400).json({ error: 'book y chapter requeridos' });
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const userId = user.id;
 
-  const bookU = book.toUpperCase();
-  const chapterN = Number(chapter);
+  const book = isValidBookId(req.body?.book) ? req.body.book.toUpperCase() : null;
+  const chapter = book && isValidChapter(req.body?.chapter) ? Number(req.body.chapter) : null;
+  if (!book || !chapter) return sendError(res, 400, ERR.badRequest, null, 'interlinear');
+
+  const bookU = book;
+  const chapterN = chapter;
   const warmKey = `${bookU}:${chapterN}`;
 
   try {
     const plan = await getUserPlan(userId);
 
-    // 1 — Check cache first, regardless of plan. This is cheap and lets us
-    // decide whether we even need to think about generation at all.
+    // 1 — Check cache first, regardless of plan.
     const cached = await sbGet(
       `interlinear_cache?book=eq.${bookU}&chapter=eq.${chapterN}&select=verse,word_order,original_text,strongs,transliteration,gloss,language&order=verse.asc,word_order.asc`
     );
@@ -62,8 +71,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ book: bookU, chapter: chapterN, verses });
     }
 
-    // Not cached yet. Read source words — needed either way (to generate now
-    // for Premium, or to warm the cache in the background for free users).
+    // Not cached yet. Rate limit generation attempts per user regardless of
+    // plan — this is the expensive path (calls Anthropic per verse).
+    try {
+      const rl = await checkRateLimit(userId, 'interlinear_generate', 30, 3600);
+      if (!rl.allowed) return sendError(res, 429, ERR.rateLimited, null, 'interlinear:rate-limit');
+    } catch(e) {
+      console.warn('[Interlinear] rate limit check failed (allowing):', e.message);
+    }
+
     const source = await sbGet(
       `bible_source_words?book=eq.${bookU}&chapter=eq.${chapterN}&select=verse,word_order,original_text,strongs,language&order=verse.asc,word_order.asc`
     );
@@ -76,15 +92,20 @@ export default async function handler(req, res) {
     }
 
     if (plan === 'premium') {
-      // Premium + not cached: generate synchronously and return the full result.
-      const resultVerses = await generateChapter(bookU, chapterN, source, 8);
-      return res.status(200).json({ book: bookU, chapter: chapterN, verses: resultVerses });
+      if (warmingInProgress.has(warmKey)) {
+        return sendError(res, 409, ERR.conflict, null, 'interlinear:already-generating');
+      }
+      warmingInProgress.add(warmKey);
+      try {
+        const resultVerses = await generateChapter(bookU, chapterN, source, 8);
+        return res.status(200).json({ book: bookU, chapter: chapterN, verses: resultVerses });
+      } finally {
+        warmingInProgress.delete(warmKey);
+      }
     }
 
     // Free user + not cached: respond with the paywall immediately, and warm
     // the cache in the background so it's ready next time (for any user).
-    // waitUntil keeps the function alive long enough for generateChapter to
-    // finish and save to cache, even though we've already sent the response.
     if (!warmingInProgress.has(warmKey)) {
       warmingInProgress.add(warmKey);
       waitUntil(
@@ -97,7 +118,6 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'premium_required', message: PAYWALL_MESSAGE });
 
   } catch(err) {
-    console.error('Interlinear error:', err);
-    return res.status(500).json({ error: err.message });
+    return sendError(res, 500, ERR.internal, err, 'interlinear');
   }
 }

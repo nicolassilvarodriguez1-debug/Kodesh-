@@ -112,10 +112,16 @@ async function onUserLoggedIn(user) {
     localStorage.removeItem('kodesh_pending_session');
     try {
       const kapiF = (typeof kapiFetch !== 'undefined') ? kapiFetch : fetch;
+      const sbAuth = getSupabase();
+      const { data: { session } } = await sbAuth.auth.getSession();
+      if (!session?.access_token) throw new Error('not_authenticated');
       const res = await kapiF('/api/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, sessionId: pendingSession })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ sessionId: pendingSession })
       });
       const data = await res.json();
       if (data.plan === 'premium') {

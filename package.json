@@ -2,6 +2,11 @@
   "name": "kodesh-bible",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/security.test.js",
+    "check": "for f in api/*.js *.js; do node --check \"$f\" || exit 1; done && echo 'All files OK'"
+  },
   "dependencies": {
     "@capacitor/app": "^7.0.0",
     "@vercel/functions": "^3.7.1"

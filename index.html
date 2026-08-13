@@ -3568,6 +3568,43 @@ async function kapiFetch(url, options = {}) {
   return fetch(fullUrl, options);
 }
 
+// ── XSS-safe helpers ──
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
+
+// Devuelve los headers con el JWT de Supabase del usuario autenticado, para
+// llamadas a endpoints protegidos con requireUser() (checkout, portal,
+// search, assistant, lexicon, textual, interlinear, interlinear-warm).
+// Nunca envía userId/userEmail — la identidad siempre viene del token.
+async function authHeaders() {
+  try {
+    const sbAuth = getSupabase();
+    const { data: { session } } = await sbAuth.auth.getSession();
+    if (!session?.access_token) return null;
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    };
+  } catch(e) {
+    console.warn('No se pudo obtener el token de sesión:', e);
+    return null;
+  }
+}
+
 /* ════════════════════════════════════
    REVENUECAT — compra directa desde el modal Premium
    (evita el salto a profile.html + un segundo modal repetido)
@@ -4162,15 +4199,17 @@ async function loadTextualVersion() {
   try {
     var sourceChapterObj = await fetchChapter(state.currentBook, state.currentChapter);
 
-    var apiUrl = '/api/textual';
-    // En app nativa (Capacitor), CapacitorHttp intercepta fetch y necesita URL absoluta
-    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-      apiUrl = 'https://kodeshbible.com/api/textual';
+    var authH = await authHeaders();
+    if (!authH) {
+      if (bibleTextDiv) {
+        bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;">Inicia sesión para ver la Traducción Kodesh.</div>';
+      }
+      return;
     }
 
-    var res = await fetch(apiUrl, {
+    var res = await kapiFetch('/api/textual', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authH,
       body: JSON.stringify({
         bookId: state.currentBook,
         chapter: state.currentChapter,
@@ -4178,8 +4217,12 @@ async function loadTextualVersion() {
       })
     });
 
-    // Verificar que la respuesta sea JSON válido
-    var contentType = res.headers.get('content-type') || '';
+    // Verificar que la respuesta sea JSON válido.
+    // kapiFetch() en nativo (CapacitorHttp) no expone res.headers — en ese
+    // caso asumimos JSON, ya que nuestra propia API siempre responde JSON.
+    var contentType = (res.headers && typeof res.headers.get === 'function')
+      ? (res.headers.get('content-type') || '')
+      : 'application/json';
     if (!contentType.includes('application/json')) {
       var textResponse = await res.text();
       console.error('[Textual] Respuesta no-JSON:', textResponse.slice(0, 500));
@@ -4449,16 +4492,18 @@ async function lookupWord(event, cleanWord, rawWord) {
     const verseContext = verseEl ? verseEl.textContent.slice(0, 300) : '';
     const verseNum = verseEl ? verseEl.id?.replace('v-', '') : null;
 
+    const authH = await authHeaders();
+    if (!authH) throw new Error('not_authenticated');
+
     const apiRes = await kapiFetch('/api/lexicon', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authH,
       body: JSON.stringify({
         word: cleanWord,
         bookId: state.currentBook,
         chapter: state.currentChapter,
         verse: verseNum,
         verseContext,
-        userId: currentUser?.id || null,
       })
     });
 
@@ -4831,15 +4876,19 @@ function closeLimitModal(e) {
 /* ════════════════════════════════════
    INTERLINEAR MODE (Premium)
 ════════════════════════════════════ */
-// Silently pre-generate the interlinear cache for this chapter, for ALL
-// users (free included). Fire-and-forget — no UI feedback, no blocking,
-// no plan check. Helps the cache grow organically with normal traffic so
-// premium users get instant results.
-function warmInterlinearCache(bookId, chapterNum) {
+// Silently pre-generate the interlinear cache for this chapter, for any
+// logged-in user. Fire-and-forget — no UI feedback, no blocking, no plan
+// check. Helps the cache grow organically with normal traffic so premium
+// users get instant results. api/interlinear-warm.js now requires a valid
+// session (rate-limited server-side), so anonymous visitors simply skip
+// this — there's no token to send and no point hitting the endpoint.
+async function warmInterlinearCache(bookId, chapterNum) {
   try {
+    const authH = await authHeaders();
+    if (!authH) return;
     kapiFetch('/api/interlinear-warm', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authH,
       body: JSON.stringify({ book: bookId, chapter: chapterNum })
     }).catch(() => {});
   } catch(e) {}
@@ -4892,10 +4941,13 @@ async function openInterlinear(bookId, chapterNum) {
   }
 
   try {
+    const authH = await authHeaders();
+    if (!authH) throw new Error('not_authenticated');
+
     const res = await kapiFetch('/api/interlinear', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ book: bookId, chapter: chapterNum, userId: currentUser?.id || null })
+      headers: authH,
+      body: JSON.stringify({ book: bookId, chapter: chapterNum })
     });
     const data = await res.json();
 
@@ -4970,10 +5022,13 @@ async function lookupStrongs(event, strongsCode) {
   positionAndShowPopup(popup, event);
 
   try {
+    const authH = await authHeaders();
+    if (!authH) throw new Error('not_authenticated');
+
     const apiRes = await kapiFetch('/api/lexicon', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ strongsCode, bookId: state.currentBook, userId: currentUser?.id || null })
+      headers: authH,
+      body: JSON.stringify({ strongsCode, bookId: state.currentBook })
     });
     const data = await apiRes.json();
 
@@ -5041,13 +5096,14 @@ async function subscribePremiumFromPresentation() {
   closePremiumPresentation();
   showToast('✦ Preparando tu prueba gratis...');
   try {
+    const authH = await authHeaders();
+    if (!authH) { showToast('Inicia sesión para continuar'); return; }
+
     const name = userProfile?.display_name || currentUser.email?.split('@')[0] || '';
     const res = await kapiFetch('/api/checkout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authH,
       body: JSON.stringify({
-        userId: currentUser.id,
-        userEmail: currentUser.email,
         userName: name,
       })
     });
@@ -6596,13 +6652,19 @@ function addMessage(role, text) {
   const div = document.createElement('div');
   div.className = `msg msg-${role}`;
 
-  // Format text — convert **bold** and line breaks
-  const formatted = text
+  // Escape first (text may be the user's own raw input or the AI reply),
+  // THEN apply the limited markdown-style formatting (**bold**, line breaks)
+  // on top of the escaped string, so no HTML from the source text can ever
+  // reach the DOM.
+  const formatted = escHtml(text)
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n\n/g, '<br><br>')
     .replace(/\n/g, '<br>');
 
-  div.innerHTML = `<div class="msg-bubble">${formatted}</div>`;
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatted;
+  div.appendChild(bubble);
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
@@ -6642,9 +6704,16 @@ async function sendMessage() {
   showTyping();
 
   try {
+    const authH = await authHeaders();
+    if (!authH) {
+      removeTyping();
+      showToast('Inicia sesión para usar el asistente');
+      return;
+    }
+
     const response = await kapiFetch('/api/assistant', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authH,
       body: JSON.stringify({
         message,
         history: assistantHistory,
@@ -6652,11 +6721,15 @@ async function sendMessage() {
         chapter: assistantChapter,
         userName: (typeof userProfile !== 'undefined' && userProfile?.display_name) || null,
         userGoals: (typeof userProfile !== 'undefined' && userProfile?.study_goals) || [],
-        userId: currentUser?.id || null,
       })
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        removeTyping();
+        showToast('Tu sesión expiró — inicia sesión de nuevo');
+        return;
+      }
       const err = await response.json();
       if (err.error === 'limit_reached') {
         removeTyping();
@@ -6764,13 +6837,23 @@ async function runSearch() {
   `;
 
   try {
+    const authH = await authHeaders();
+    if (!authH) {
+      results.innerHTML = '<div class="search-error">Inicia sesión para buscar en las Escrituras.</div>';
+      return;
+    }
+
     const response = await kapiFetch('/api/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, userId: currentUser?.id || null })
+      headers: authH,
+      body: JSON.stringify({ query })
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        results.innerHTML = '<div class="search-error">Tu sesión expiró — inicia sesión de nuevo.</div>';
+        return;
+      }
       const err = await response.json();
       if (err.error === 'limit_reached') {
         showLimitModal('search', err);
@@ -6787,21 +6870,47 @@ async function runSearch() {
       return;
     }
 
-    results.innerHTML = resultados.map((r, i) => `
-      <div class="search-result-item" onclick="goToVerse('${r.libro_id}',${r.capitulo},${r.versiculo})">
-        <div class="result-ref">📖 ${r.referencia}</div>
-        <div class="result-text">"${r.texto}"</div>
-        <div class="result-reason">${r.razon}</div>
-        <div class="result-go">Toca para abrir este versículo →</div>
-      </div>
-    `).join('');
+    results.innerHTML = '';
+    resultados.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+      item.addEventListener('click', () => goToVerse(r.libro_id, Number(r.capitulo), Number(r.versiculo)));
+
+      const ref = document.createElement('div');
+      ref.className = 'result-ref';
+      ref.textContent = `📖 ${r.referencia || ''}`;
+      item.appendChild(ref);
+
+      const texto = document.createElement('div');
+      texto.className = 'result-text';
+      texto.textContent = `"${r.texto || ''}"`;
+      item.appendChild(texto);
+
+      const razon = document.createElement('div');
+      razon.className = 'result-reason';
+      razon.textContent = r.razon || '';
+      item.appendChild(razon);
+
+      const go = document.createElement('div');
+      go.className = 'result-go';
+      go.textContent = 'Toca para abrir este versículo →';
+      item.appendChild(go);
+
+      results.appendChild(item);
+    });
 
   } catch(err) {
     console.error('Search error:', err);
-    results.innerHTML = `<div class="search-error">
-      Error al buscar. Verifica tu conexión e intenta de nuevo.<br>
-      <small style="color:var(--text-dim)">${err.message}</small>
-    </div>`;
+    results.innerHTML = '';
+    const errDiv = document.createElement('div');
+    errDiv.className = 'search-error';
+    errDiv.appendChild(document.createTextNode('Error al buscar. Verifica tu conexión e intenta de nuevo.'));
+    errDiv.appendChild(document.createElement('br'));
+    const small = document.createElement('small');
+    small.style.color = 'var(--text-dim)';
+    small.textContent = err.message || '';
+    errDiv.appendChild(small);
+    results.appendChild(errDiv);
   } finally {
     btn.disabled = false;
   }

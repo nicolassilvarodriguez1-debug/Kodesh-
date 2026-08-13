@@ -270,6 +270,24 @@ const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ── XSS-safe helpers ──
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
+
 // CapacitorHttp intercepts fetch() in the native app and needs an absolute URL
 const KAPI_BASE = 'https://kodeshbible.com';
 async function kapiFetch(url, options = {}) {
@@ -367,9 +385,9 @@ function showPremiumModal() {
         del fin del período actual.
         Puedes gestionar o cancelar en
         <strong>Configuración → [tu nombre] → Suscripciones</strong>.<br><br>
-        <a href="https://kodeshbible.com/terminos" target="_blank">Términos de uso</a>
+        <a href="https://kodeshbible.com/terminos" target="_blank" rel="noopener noreferrer">Términos de uso</a>
         &nbsp;·&nbsp;
-        <a href="https://kodeshbible.com/privacidad" target="_blank">Política de privacidad</a>
+        <a href="https://kodeshbible.com/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a>
       </div>
       <button class="btn-premium-buy" id="btnBuyPremium" onclick="executePurchase()">
         Comenzar prueba gratis de 7 días →
@@ -506,8 +524,10 @@ async function manageSubscription() {
     if (btn) { btn.textContent = 'Abriendo portal...'; btn.disabled = true; }
     const res = await kapiFetch('/api/portal', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: session.user.id }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
     });
     const data = await res.json();
     if (data.url) {
@@ -721,11 +741,11 @@ async function loadProfile(user) {
   document.getElementById('mainContent').innerHTML = `
     <div class="profile-hero">
       <div class="profile-avatar">
-        ${profile.avatar_url ? `<img src="${profile.avatar_url}" />` : initials}
+        ${safeUrl(profile.avatar_url) ? `<img src="${safeUrl(profile.avatar_url)}" />` : escHtml(initials)}
       </div>
       <div class="profile-info">
-        <div class="profile-name">${name}</div>
-        <div class="profile-email">${user.email || ''}</div>
+        <div class="profile-name">${escHtml(name)}</div>
+        <div class="profile-email">${escHtml(user.email || '')}</div>
         <div class="profile-badges">
           <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? premiumBadgeLabel : 'Plan Gratuito'}</span>
           ${streak.current_streak > 0 ? `<span class="badge badge-streak">🔥 ${streak.current_streak} días</span>` : ''}
@@ -841,7 +861,7 @@ async function loadProfile(user) {
       </div>
       <div class="section-body">
         <div class="goals-list">
-          ${profile.study_goals.map(g => `<span class="goal-tag">${g}</span>`).join('')}
+          ${profile.study_goals.map(g => `<span class="goal-tag">${escHtml(g)}</span>`).join('')}
         </div>
         <div style="margin-top:12px;font-size:0.82rem;color:var(--text-dim);font-style:italic">Meta diaria: ${profile.reading_goal_chapters || 2} capítulos</div>
       </div>
@@ -857,8 +877,8 @@ async function loadProfile(user) {
           ? `<div class="bookmark-list">${bookmarks.slice(0,20).map(b => `
             <a href="/index.html" class="bookmark-item">
               <div class="bookmark-dot" style="background:${BOOKMARK_COLORS[b.color] || BOOKMARK_COLORS.gold}"></div>
-              <span class="bookmark-ref">${BOOK_NAMES[b.book_id] || b.book_id} ${b.chapter}:${b.verse}</span>
-              <span class="bookmark-text">${b.verse_text || ''}</span>
+              <span class="bookmark-ref">${escHtml(BOOK_NAMES[b.book_id] || b.book_id)} ${Number(b.chapter)||''}:${Number(b.verse)||''}</span>
+              <span class="bookmark-text">${escHtml(b.verse_text || '')}</span>
             </a>`).join('')}
             ${bookmarks.length > 20 ? `<div style="text-align:center;padding:12px;color:var(--text-dim);font-size:0.82rem;font-style:italic">+${bookmarks.length - 20} más en el lector</div>` : ''}
           </div>`
@@ -869,8 +889,8 @@ async function loadProfile(user) {
         ${notes.length > 0
           ? notes.slice(0, 10).map(n => `
             <div class="note-item">
-              <div class="note-ref">${BOOK_NAMES[n.book_id] || n.book_id} — Capítulo ${n.chapter}</div>
-              <div class="note-text">${n.note_text?.slice(0, 200) || ''}${n.note_text?.length > 200 ? '...' : ''}</div>
+              <div class="note-ref">${escHtml(BOOK_NAMES[n.book_id] || n.book_id)} — Capítulo ${Number(n.chapter)||''}</div>
+              <div class="note-text">${escHtml(n.note_text?.slice(0, 200) || '')}${n.note_text?.length > 200 ? '...' : ''}</div>
             </div>`).join('')
           : '<div class="note-empty">Aún no tienes notas.<br>Puedes agregar notas por capítulo desde el lector.</div>'
         }

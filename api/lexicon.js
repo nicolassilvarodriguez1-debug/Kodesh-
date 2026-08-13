@@ -1,4 +1,7 @@
 // KODESH Lexicon API — AI-powered with verse-precise lookup + cache
+import { requireUser } from './_auth.js';
+import { consumeUsage, releaseUsage } from './_limits.js';
+import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, isValidVerse, clampString } from './_security.js';
 
 const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH',
   'PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
@@ -13,7 +16,6 @@ const CONTEXT_SENSITIVE = new Set([
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const LEXICON_LIMITS = { free: 30, premium: 800 };
 
 async function sbFetch(path, options = {}) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -27,64 +29,16 @@ async function sbFetch(path, options = {}) {
   });
 }
 
-async function getUserPlan(userId) {
-  if (!userId) return 'free';
-  try {
-    const res = await sbFetch(`user_plans?user_id=eq.${userId}&select=plan,subscription_status&limit=1`);
-    const data = await res.json();
-    if (data?.[0]?.subscription_status === 'active') return data[0].plan || 'free';
-  } catch(e) {}
-  return 'free';
-}
-
-async function getLexiconUsage(userId) {
-  if (!userId) return 0;
-  const month = new Date().toISOString().slice(0, 7);
-  try {
-    const res = await sbFetch(`ai_usage?user_id=eq.${userId}&month=eq.${month}&select=lexicon_used&limit=1`);
-    const data = await res.json();
-    return data?.[0]?.lexicon_used || 0;
-  } catch(e) { return 0; }
-}
-
-async function incrementLexiconUsage(userId) {
-  if (!userId) return;
-  const month = new Date().toISOString().slice(0, 7);
-  try {
-    const res = await sbFetch(`ai_usage?user_id=eq.${userId}&month=eq.${month}&select=lexicon_used&limit=1`);
-    const data = await res.json();
-    const current = data?.[0]?.lexicon_used || 0;
-    if (data?.[0]) {
-      await sbFetch(`ai_usage?user_id=eq.${userId}&month=eq.${month}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ lexicon_used: current + 1 })
-      });
-    } else {
-      await sbFetch('ai_usage', {
-        method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ user_id: userId, month, lexicon_used: 1, searches_used: 0, assistant_used: 0 })
-      });
-    }
-  } catch(e) {}
-}
-
 async function getCached(word, testament, bookId, chapter, verse) {
-  // For context-sensitive words, use verse-specific cache key
   const isContextSensitive = CONTEXT_SENSITIVE.has(word.toLowerCase());
-  
   try {
-    let query;
     if (isContextSensitive && bookId && chapter && verse) {
-      // Look for verse-specific entry first
       const verseKey = `${word.toLowerCase()}_${bookId}_${chapter}_${verse}`;
       const w = encodeURIComponent(verseKey);
       const res = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
       const data = await res.json();
       if (data?.[0]?.strongs) return data[0];
-      // Fall through to general cache
     }
-    
     const w = encodeURIComponent(word.toLowerCase());
     const res = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
     const data = await res.json();
@@ -95,95 +49,80 @@ async function getCached(word, testament, bookId, chapter, verse) {
 
 async function saveCache(word, testament, entry, bookId, chapter, verse) {
   const isContextSensitive = CONTEXT_SENSITIVE.has(word.toLowerCase());
-  
-  // For context-sensitive words, save with verse-specific key
   const cacheWord = (isContextSensitive && bookId && chapter && verse)
     ? `${word.toLowerCase()}_${bookId}_${chapter}_${verse}`
     : word.toLowerCase();
-
   try {
     await sbFetch('lexicon_cache', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({
-        word: cacheWord,
-        testament,
-        strongs: entry.strongs,
-        lemma: entry.lemma,
-        transliteration: entry.transliteration,
-        pronunciation: entry.pronunciation,
-        definition: entry.definition,
-        language: entry.language,
+        word: cacheWord, testament,
+        strongs: entry.strongs, lemma: entry.lemma,
+        transliteration: entry.transliteration, pronunciation: entry.pronunciation,
+        definition: entry.definition, language: entry.language,
       })
     });
   } catch(e) {}
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { word, strongsCode, bookId, chapter, verse, verseContext, userId } = req.body;
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const userId = user.id;
+
+  const body = req.body || {};
+  const strongsCode = typeof body.strongsCode === 'string' ? clampString(body.strongsCode, 20) : null;
+  const word = typeof body.word === 'string' ? clampString(body.word.trim(), 100) : null;
+  const bookId = isValidBookId(body.bookId) ? body.bookId.toUpperCase() : null;
+  const chapter = bookId && isValidChapter(body.chapter) ? Number(body.chapter) : null;
+  const verse = chapter && isValidVerse(body.verse) ? Number(body.verse) : null;
+  const verseContext = typeof body.verseContext === 'string' ? clampString(body.verseContext, 500) : null;
 
   // Direct Strong's lookup (used by the Interlinear panel when clicking a Strong's number)
   if (strongsCode && !word) {
+    if (!/^[HG]\d{1,5}$/i.test(strongsCode)) return sendError(res, 400, ERR.badRequest, null, 'lexicon');
     return handleStrongsLookup(strongsCode, userId, res);
   }
 
-  if (!word) return res.status(400).json({ error: 'word required' });
+  if (!word) return sendError(res, 400, ERR.badRequest, null, 'lexicon');
 
-  const isNT = NT_BOOKS.has(bookId);
+  const isNT = bookId ? NT_BOOKS.has(bookId) : false;
   const testament = isNT ? 'NT' : 'AT';
   const wordClean = word.toLowerCase().trim();
   const isContextSensitive = CONTEXT_SENSITIVE.has(wordClean);
 
-  // 1 — Check cache (skip for context-sensitive words in NT where verse matters)
-  if (!isContextSensitive) {
-    const cached = await getCached(wordClean, testament, bookId, chapter, verse);
-    if (cached) {
-      return res.status(200).json({
-        found: true,
-        strongs: cached.strongs,
-        lemma: cached.lemma,
-        transliteration: cached.transliteration,
-        pronunciation: cached.pronunciation,
-        definition: cached.definition,
-        language: cached.language,
-        fromCache: true,
-      });
-    }
-  } else if (bookId && chapter && verse) {
-    // For context-sensitive, check verse-specific cache
-    const cached = await getCached(wordClean, testament, bookId, chapter, verse);
-    if (cached) {
-      return res.status(200).json({
-        found: true,
-        strongs: cached.strongs,
-        lemma: cached.lemma,
-        transliteration: cached.transliteration,
-        pronunciation: cached.pronunciation,
-        definition: cached.definition,
-        language: cached.language,
-        fromCache: true,
-      });
-    }
+  // 1 — Check cache (free — doesn't touch quota)
+  const cached = await getCached(wordClean, testament, bookId, chapter, verse);
+  if (cached) {
+    return res.status(200).json({
+      found: true, strongs: cached.strongs, lemma: cached.lemma,
+      transliteration: cached.transliteration, pronunciation: cached.pronunciation,
+      definition: cached.definition, language: cached.language, fromCache: true,
+    });
+  }
+  if (isContextSensitive && !(bookId && chapter && verse)) {
+    // context-sensitive word with no verse ref — nothing more we can safely cache/serve
   }
 
-  // 2 — Check user limits
-  if (userId) {
-    const [plan, used] = await Promise.all([getUserPlan(userId), getLexiconUsage(userId)]);
-    const limit = LEXICON_LIMITS[plan] || LEXICON_LIMITS.free;
-    if (used >= limit) {
-      return res.status(429).json({
-        error: 'limit_reached', plan, used, limit,
-        message: plan === 'free'
-          ? `Alcanzaste tu límite de ${limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
-          : `Alcanzaste tu límite de consultas este mes.`,
-      });
-    }
+  // 2 — Reserve quota atomically before calling Anthropic.
+  let usageResult;
+  try {
+    usageResult = await consumeUsage(userId, 'lexicon');
+  } catch(e) {
+    return sendError(res, 500, ERR.internal, e, 'lexicon:consumeUsage');
+  }
+  if (!usageResult.allowed) {
+    return res.status(429).json({
+      error: 'limit_reached', plan: usageResult.plan, used: usageResult.used, limit: usageResult.limit,
+      message: usageResult.plan === 'free'
+        ? `Alcanzaste tu límite de ${usageResult.limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
+        : `Alcanzaste tu límite de consultas este mes.`,
+    });
   }
 
   // 3 — Call AI with verse-precise context
@@ -226,7 +165,7 @@ Si no tiene entrada Strong's: {"found":false}`,
         messages: [{
           role: 'user',
           content: `Palabra en español: "${word}"
-Libro: ${bookId} | Testamento: ${testament_label}${verseRef ? ` | Referencia exacta: ${verseRef}` : ''}
+Libro: ${bookId || '—'} | Testamento: ${testament_label}${verseRef ? ` | Referencia exacta: ${verseRef}` : ''}
 ${verseContext ? `Texto del versículo: "${verseContext.slice(0, 300)}"` : ''}
 
 Identifica la palabra ${lang} EXACTA usada en este versículo específico. Si hay múltiples palabras posibles para esta traducción en español (como agape/fileo para "amor"), determina cuál fue usada en ESTE versículo por el hablante o texto.`
@@ -243,17 +182,16 @@ Identifica la palabra ${lang} EXACTA usada en este versículo específico. Si ha
     catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { found: false }; }
 
     if (parsed.found) {
-      await Promise.all([
-        saveCache(wordClean, testament, parsed, bookId, chapter, verse),
-        userId ? incrementLexiconUsage(userId) : Promise.resolve(),
-      ]);
+      await saveCache(wordClean, testament, parsed, bookId, chapter, verse);
+    } else {
+      await releaseUsage(userId, 'lexicon');
     }
 
     return res.status(200).json(parsed);
 
   } catch(err) {
-    console.error('Lexicon error:', err.message);
-    return res.status(500).json({ found: false, error: err.message });
+    await releaseUsage(userId, 'lexicon');
+    return sendError(res, 500, ERR.internal, err, 'lexicon');
   }
 }
 
@@ -264,37 +202,34 @@ async function handleStrongsLookup(strongsCode, userId, res) {
   const testament = isNT ? 'NT' : 'AT';
   const cacheKey = `strongs_${strongsCode.toLowerCase()}`;
 
-  // 1 — Check cache
+  // 1 — Check cache (free)
   try {
     const w = encodeURIComponent(cacheKey);
     const cacheRes = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
     const cacheData = await cacheRes.json();
     if (cacheData?.[0]?.strongs) {
       return res.status(200).json({
-        found: true,
-        strongs: cacheData[0].strongs,
-        lemma: cacheData[0].lemma,
-        transliteration: cacheData[0].transliteration,
-        pronunciation: cacheData[0].pronunciation,
-        definition: cacheData[0].definition,
-        language: cacheData[0].language,
-        fromCache: true,
+        found: true, strongs: cacheData[0].strongs, lemma: cacheData[0].lemma,
+        transliteration: cacheData[0].transliteration, pronunciation: cacheData[0].pronunciation,
+        definition: cacheData[0].definition, language: cacheData[0].language, fromCache: true,
       });
     }
   } catch(e) {}
 
-  // 2 — Check user limits (same pool as word lookups)
-  if (userId) {
-    const [plan, used] = await Promise.all([getUserPlan(userId), getLexiconUsage(userId)]);
-    const limit = LEXICON_LIMITS[plan] || LEXICON_LIMITS.free;
-    if (used >= limit) {
-      return res.status(429).json({
-        error: 'limit_reached', plan, used, limit,
-        message: plan === 'free'
-          ? `Alcanzaste tu límite de ${limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
-          : `Alcanzaste tu límite de consultas este mes.`,
-      });
-    }
+  // 2 — Reserve quota atomically (same pool as word lookups)
+  let usageResult;
+  try {
+    usageResult = await consumeUsage(userId, 'lexicon');
+  } catch(e) {
+    return sendError(res, 500, ERR.internal, e, 'lexicon:consumeUsage');
+  }
+  if (!usageResult.allowed) {
+    return res.status(429).json({
+      error: 'limit_reached', plan: usageResult.plan, used: usageResult.used, limit: usageResult.limit,
+      message: usageResult.plan === 'free'
+        ? `Alcanzaste tu límite de ${usageResult.limit} consultas al lexicón este mes. Actualiza a Premium para continuar.`
+        : `Alcanzaste tu límite de consultas este mes.`,
+    });
   }
 
   // 3 — Generate via AI from the Strong's code alone
@@ -338,24 +273,21 @@ Si el código no existe: {"found":false}`,
           method: 'POST',
           headers: { 'Prefer': 'resolution=merge-duplicates' },
           body: JSON.stringify({
-            word: cacheKey,
-            testament,
-            strongs: parsed.strongs,
-            lemma: parsed.lemma,
-            transliteration: parsed.transliteration,
-            pronunciation: parsed.pronunciation,
-            definition: parsed.definition,
-            language: parsed.language,
+            word: cacheKey, testament,
+            strongs: parsed.strongs, lemma: parsed.lemma,
+            transliteration: parsed.transliteration, pronunciation: parsed.pronunciation,
+            definition: parsed.definition, language: parsed.language,
           })
         });
       } catch(e) {}
-      if (userId) await incrementLexiconUsage(userId);
+    } else {
+      await releaseUsage(userId, 'lexicon');
     }
 
     return res.status(200).json(parsed);
 
   } catch(err) {
-    console.error('Strongs lookup error:', err.message);
-    return res.status(500).json({ found: false, error: err.message });
+    await releaseUsage(userId, 'lexicon');
+    return sendError(res, 500, ERR.internal, err, 'lexicon:strongs');
   }
 }

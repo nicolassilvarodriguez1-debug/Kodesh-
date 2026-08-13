@@ -1,12 +1,23 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+// KODESH — Stripe Checkout session creation (web only).
+// Identity comes ONLY from the verified Supabase JWT (requireUser) — never
+// from the request body. userId/userEmail in the body are ignored.
+import { requireUser } from './_auth.js';
+import { applyCors, handleOptions, sendError, ERR, clampString } from './_security.js';
 
-  const { userId, userEmail, userName } = req.body;
-  if (!userId || !userEmail) return res.status(400).json({ error: 'userId y userEmail requeridos' });
+export default async function handler(req, res) {
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
+
+  const user = await requireUser(req, res);
+  if (!user) return; // requireUser already sent 401
+
+  const userId = user.id;
+  const userEmail = user.email;
+  if (!userEmail) return sendError(res, 400, ERR.badRequest, null, 'checkout');
+
+  // Optional display name — sanitized, never used as an identity source.
+  const userName = clampString((req.body && typeof req.body.userName === 'string') ? req.body.userName : '', 120) || userEmail;
 
   const SB_URL = process.env.SUPABASE_URL;
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -21,7 +32,8 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Check existing plan
+    // Check existing plan — this row is keyed by the authenticated user's ID,
+    // so a caller can never read or touch another user's Stripe customer here.
     const planRes = await fetch(
       `${SB_URL}/rest/v1/user_plans?user_id=eq.${userId}&select=stripe_customer_id,plan,subscription_status&limit=1`,
       { headers: sbHeaders }
@@ -29,8 +41,9 @@ export default async function handler(req, res) {
     const planData = await planRes.json();
     const existingPlan = Array.isArray(planData) ? planData[0] : null;
 
-    // Already subscribed?
-    if (existingPlan?.plan === 'premium' && existingPlan?.subscription_status === 'active') {
+    // Already subscribed (active or in trial)?
+    if (existingPlan?.plan === 'premium' &&
+        (existingPlan?.subscription_status === 'active' || existingPlan?.subscription_status === 'trialing')) {
       return res.status(400).json({ error: 'already_subscribed', message: 'Ya tienes KODESH Premium activo.' });
     }
 
@@ -45,7 +58,7 @@ export default async function handler(req, res) {
 
       const customerBody = new URLSearchParams({
         email: userEmail,
-        name: userName || userEmail,
+        name: userName,
       });
       customerBody.append('metadata[supabase_user_id]', userId);
 
@@ -59,7 +72,7 @@ export default async function handler(req, res) {
       if (customer.error) throw new Error(`Stripe customer error: ${customer.error.message}`);
       customerId = customer.id;
 
-      // Save customer ID to Supabase
+      // Save customer ID to Supabase, tied to the authenticated user's row.
       await fetch(`${SB_URL}/rest/v1/user_plans`, {
         method: 'POST',
         headers: sbHeaders,
@@ -73,18 +86,23 @@ export default async function handler(req, res) {
       });
     }
 
-    // Create checkout session
+    // Create checkout session — client_reference_id and metadata both carry
+    // the verified Supabase user ID, so confirm.js and the webhook can prove
+    // this session belongs to this user without trusting anything the
+    // client sends.
     const sessionBody = new URLSearchParams({
       customer: customerId,
       mode: 'subscription',
       success_url: `https://kodeshbible.com/index.html?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `https://kodeshbible.com/index.html?upgrade=canceled`,
       locale: 'es',
+      client_reference_id: userId,
     });
     sessionBody.append('line_items[0][price]', PRICE_ID);
     sessionBody.append('line_items[0][quantity]', '1');
     sessionBody.append('subscription_data[metadata][supabase_user_id]', userId);
     sessionBody.append('subscription_data[trial_period_days]', '7');
+    sessionBody.append('metadata[supabase_user_id]', userId);
     sessionBody.append('payment_method_types[0]', 'card');
 
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -102,7 +120,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: session.url });
 
   } catch(err) {
-    console.error('Checkout error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return sendError(res, 500, ERR.internal, err, 'checkout');
   }
 }

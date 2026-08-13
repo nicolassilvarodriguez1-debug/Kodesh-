@@ -528,6 +528,24 @@ const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ── XSS-safe helpers ──
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
+
 // ── THEME ──
 function initTheme() {
   const saved = localStorage.getItem('kodesh_theme') || 'dark';
@@ -613,16 +631,22 @@ async function loadUserContext(userId) {
     const { data: plan } = await sb.from('user_plans').select('plan, subscription_status').eq('user_id', userId).single();
 
     const name = profile?.display_name || '';
-    const isPremium = plan?.plan === 'premium' && plan?.subscription_status === 'active';
+    const isPremium = plan?.plan === 'premium' &&
+      (plan?.subscription_status === 'active' || plan?.subscription_status === 'trialing');
 
     if (name) {
       const pill = document.getElementById('userPill');
       if (pill) {
         document.getElementById('pillName').textContent = name.split(' ')[0];
-        if (profile?.avatar_url) {
-          document.getElementById('pillAvatar').innerHTML = `<img src="${profile.avatar_url}" />`;
+        const pillAvatar = document.getElementById('pillAvatar');
+        const avatarUrl = safeUrl(profile?.avatar_url);
+        pillAvatar.innerHTML = '';
+        if (avatarUrl) {
+          const img = document.createElement('img');
+          img.src = avatarUrl;
+          pillAvatar.appendChild(img);
         } else {
-          document.getElementById('pillAvatar').textContent = name[0].toUpperCase();
+          pillAvatar.textContent = name[0].toUpperCase();
         }
       }
 
@@ -630,8 +654,19 @@ async function loadUserContext(userId) {
       const saludo = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
       const greetingBar = document.getElementById('greetingBar');
       greetingBar.style.display = 'flex';
-      document.getElementById('greetingText').innerHTML =
-        `${saludo}, <strong>${name.split(' ')[0]}</strong>${isPremium ? ' <span class="premium-pill">✦ Premium</span>' : ''}`;
+      const greetingText = document.getElementById('greetingText');
+      greetingText.innerHTML = '';
+      greetingText.appendChild(document.createTextNode(`${saludo}, `));
+      const strong = document.createElement('strong');
+      strong.textContent = name.split(' ')[0];
+      greetingText.appendChild(strong);
+      if (isPremium) {
+        const badge = document.createElement('span');
+        badge.className = 'premium-pill';
+        badge.textContent = '✦ Premium';
+        greetingText.appendChild(document.createTextNode(' '));
+        greetingText.appendChild(badge);
+      }
     }
 
     if (streak?.current_streak > 0) {
@@ -643,12 +678,28 @@ async function loadUserContext(userId) {
 function renderUserUI(user) {
   const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('topbarUser').innerHTML = `
-    <a href="/index.html" class="user-pill" id="userPill">
-      <div class="user-avatar" id="pillAvatar">${initials}</div>
-      <span class="user-name-pill" id="pillName">${name.split(' ')[0]}</span>
-    </a>
-  `;
+
+  const container = document.getElementById('topbarUser');
+  container.innerHTML = '';
+
+  const link = document.createElement('a');
+  link.href = '/index.html';
+  link.className = 'user-pill';
+  link.id = 'userPill';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'user-avatar';
+  avatar.id = 'pillAvatar';
+  avatar.textContent = initials;
+  link.appendChild(avatar);
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'user-name-pill';
+  nameSpan.id = 'pillName';
+  nameSpan.textContent = name.split(' ')[0];
+  link.appendChild(nameSpan);
+
+  container.appendChild(link);
 }
 
 function renderGuestUI() {
@@ -738,11 +789,17 @@ function addGaMessage(role, text) {
 
   const div = document.createElement('div');
   div.className = `ga-msg ga-msg-${role}`;
-  const formatted = text
+  // Escape first (text may be the user's own raw input or the AI reply),
+  // THEN apply the limited markdown-style formatting on top of the escaped
+  // string — so no HTML from the source text can ever reach the DOM.
+  const formatted = escHtml(text)
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n\n/g, '<br><br>')
     .replace(/\n/g, '<br>');
-  div.innerHTML = `<div class="ga-msg-bubble">${formatted}</div>`;
+  const bubble = document.createElement('div');
+  bubble.className = 'ga-msg-bubble';
+  bubble.innerHTML = formatted;
+  div.appendChild(bubble);
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
@@ -778,19 +835,31 @@ async function sendGaMessage() {
   showGaTyping();
 
   try {
+    if (!currentSession?.access_token) {
+      removeGaTyping();
+      location.href = '/login.html';
+      return;
+    }
+
     const response = await fetch('/api/assistant', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentSession.access_token}`,
+      },
       body: JSON.stringify({
         message,
         history: gaHistory,
-        userId: currentSession.user.id,
       })
     });
 
     if (!response.ok) {
-      const err = await response.json();
       removeGaTyping();
+      if (response.status === 401) {
+        addGaMessage('assistant', 'Tu sesión expiró. Vuelve a iniciar sesión.');
+        return;
+      }
+      const err = await response.json();
       addGaMessage('assistant', err.message || err.error || `Error ${response.status}`);
       return;
     }

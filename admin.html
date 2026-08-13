@@ -429,6 +429,29 @@ const ADMIN_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
 const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_ANON);
+
+// ── XSS-safe helpers ──
+// Escapes the 5 HTML-significant characters. Applied to every piece of
+// dynamic data (user/editor-submitted comments, titles, names, etc.)
+// interpolated into innerHTML templates below.
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// Only https: URLs (or empty) are allowed in href/src built from stored data —
+// rejects javascript:, data:, and anything else.
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
 const COST = { search:0.0005, assistant:0.003, lexicon:0.0004 };
 
 let currentUserId = null;
@@ -611,13 +634,13 @@ function renderTraduccionKodesh({ totalCached, totalChapters, books, reports, la
         <tbody>
           ${reports.map(r => `
             <tr>
-              <td class="name-cell">${r.book_name} ${r.chapter}</td>
-              <td>${r.verse || '—'}</td>
-              <td style="max-width:300px;white-space:normal;line-height:1.4">${r.comment || '<span style="color:var(--text-dim)">Sin comentario</span>'}</td>
+              <td class="name-cell">${escHtml(r.book_name)} ${Number(r.chapter)||''}</td>
+              <td>${escHtml(r.verse || '—')}</td>
+              <td style="max-width:300px;white-space:normal;line-height:1.4">${r.comment ? escHtml(r.comment) : '<span style="color:var(--text-dim)">Sin comentario</span>'}</td>
               <td style="color:var(--text-dim)">${new Date(r.created_at).toLocaleDateString('es')}</td>
               <td>
-                <button class="btn-plan" onclick="verCapituloTextual('${r.book_id}',${r.chapter})">Ver</button>
-                <button class="btn-plan down" onclick="borrarReporte(${r.id})">Borrar</button>
+                <button class="btn-plan" onclick="verCapituloTextual('${escHtml(r.book_id)}',${Number(r.chapter)||0})">Ver</button>
+                <button class="btn-plan down" onclick="borrarReporte(${Number(r.id)||0})">Borrar</button>
               </td>
             </tr>
           `).join('')}
@@ -631,14 +654,14 @@ function renderTraduccionKodesh({ totalCached, totalChapters, books, reports, la
     const bookPct = b.total ? (b.cached / b.total) * 100 : 0;
     const chips = b.chapters.map(c =>
       `<div class="chapter-chip ${c.cached ? 'cached' : ''}"
-        title="Capítulo ${c.chapter}${c.cached ? ' · generado' : ' · pendiente'}"
-        onclick="${c.cached ? `borrarCacheTextual('${b.id}',${c.chapter})` : ''}"
+        title="Capítulo ${Number(c.chapter)||''}${c.cached ? ' · generado' : ' · pendiente'}"
+        onclick="${c.cached ? `borrarCacheTextual('${escHtml(b.id)}',${Number(c.chapter)||0})` : ''}"
         style="${c.cached ? 'cursor:pointer' : 'cursor:default'}"
-      >${c.chapter}</div>`
+      >${Number(c.chapter)||''}</div>`
     ).join('');
     return `<div class="book-row" id="tk-book-${i}">
       <div class="book-row-head" onclick="toggleTKBookRow(${i})">
-        <div class="book-row-name">${b.name}</div>
+        <div class="book-row-name">${escHtml(b.name)}</div>
         <div class="book-row-stats">
           <div class="book-row-frac">${b.cached}/${b.total}</div>
           <div class="book-row-bar"><div class="book-row-bar-fill" style="width:${bookPct}%"></div></div>
@@ -694,11 +717,11 @@ function renderInterlinearCoverage({ totalCached, totalChapters, books }) {
   container.innerHTML = books.map((b, i) => {
     const bookPct = b.total ? (b.cached / b.total) * 100 : 0;
     const chips = b.chapters.map(c =>
-      `<div class="chapter-chip ${c.cached ? 'cached' : ''}" title="Capítulo ${c.chapter}${c.cached ? ' · cacheado' : ' · no cacheado'}">${c.chapter}</div>`
+      `<div class="chapter-chip ${c.cached ? 'cached' : ''}" title="Capítulo ${Number(c.chapter)||''}${c.cached ? ' · cacheado' : ' · no cacheado'}">${Number(c.chapter)||''}</div>`
     ).join('');
     return `<div class="book-row" id="book-row-${i}">
       <div class="book-row-head" onclick="toggleBookRow(${i})">
-        <div class="book-row-name">${b.name}</div>
+        <div class="book-row-name">${escHtml(b.name)}</div>
         <div class="book-row-stats">
           <div class="book-row-frac">${b.cached}/${b.total}</div>
           <div class="book-row-bar"><div class="book-row-bar-fill" style="width:${bookPct}%"></div></div>
@@ -798,11 +821,11 @@ function renderUsersTable() {
     const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('es') : '—';
     const registered = u.created_at ? new Date(u.created_at).toLocaleDateString('es') : '—';
     const planBtn = u.id===ADMIN_ID ? '' :
-      `<br><button class="btn-plan${isPremium?' down':''}" onclick="cambiarPlan('${u.id}','${isPremium?'free':'premium'}')">${isPremium?'↓ Bajar a free':'↑ Subir a premium'}</button>`;
+      `<br><button class="btn-plan${isPremium?' down':''}" onclick="cambiarPlan('${escHtml(u.id)}','${isPremium?'free':'premium'}')">${isPremium?'↓ Bajar a free':'↑ Subir a premium'}</button>`;
     rows += `<tr${u.id===ADMIN_ID?' style="background:rgba(201,168,76,0.04)"':''}>
       <td style="color:var(--text-dim)">${i+1}</td>
-      <td class="name-cell">${u.name}${u.id===ADMIN_ID?' 👑':''}</td>
-      <td style="font-size:0.68rem">${u.email||'—'}</td>
+      <td class="name-cell">${escHtml(u.name)}${u.id===ADMIN_ID?' 👑':''}</td>
+      <td style="font-size:0.68rem">${escHtml(u.email||'—')}</td>
       <td><span class="badge badge-${isPremium?'premium':'free'}">${planLabel}</span>${planBtn}</td>
       <td><span class="badge ${u.provider==='google'?'badge-google':'badge-free'}">${u.provider}</span></td>
       <td>${u.searches}/${sl}<div class="usage-bar"><div class="usage-fill ${sp>=90?'danger':''}" style="width:${sp}%"></div></div></td>
@@ -837,16 +860,52 @@ async function loadCanciones() {
   document.getElementById('countCanciones').textContent = `${list.length} canciones`;
   const container = document.getElementById('listCanciones');
   if (!list.length) { container.innerHTML = '<div class="loading">No hay canciones aún.</div>'; return; }
-  container.innerHTML = list.map(c => `
-    <div class="content-card">
-      ${c.imagen_url ? `<img src="${c.imagen_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : ''}
-      <div class="content-card-title">${c.titulo}</div>
-      <div class="content-card-meta">${c.personaje||''} ${c.descripcion ? '· '+c.descripcion : ''}</div>
-      <div class="content-card-actions">
-        <a class="btn-view" href="${c.archivo_url}" target="_blank">▶ Escuchar</a>
-        <button class="btn-del" onclick="eliminarCancion('${c.id}','${c.archivo_url}','${c.imagen_url||''}')">✕ Eliminar</button>
-      </div>
-    </div>`).join('');
+  container.innerHTML = '';
+  list.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'content-card';
+
+    const imgUrl = safeUrl(c.imagen_url);
+    if (imgUrl) {
+      const img = document.createElement('img');
+      img.src = imgUrl;
+      img.style.cssText = 'width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;';
+      card.appendChild(img);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'content-card-title';
+    title.textContent = c.titulo || '';
+    card.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'content-card-meta';
+    meta.textContent = `${c.personaje||''} ${c.descripcion ? '· '+c.descripcion : ''}`;
+    card.appendChild(meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'content-card-actions';
+
+    const archivoUrl = safeUrl(c.archivo_url);
+    if (archivoUrl) {
+      const a = document.createElement('a');
+      a.className = 'btn-view';
+      a.href = archivoUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = '▶ Escuchar';
+      actions.appendChild(a);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-del';
+    delBtn.textContent = '✕ Eliminar';
+    delBtn.addEventListener('click', () => eliminarCancion(c.id, c.archivo_url, c.imagen_url || ''));
+    actions.appendChild(delBtn);
+
+    card.appendChild(actions);
+    container.appendChild(card);
+  });
 }
 
 async function subirCancion() {
@@ -924,16 +983,52 @@ async function loadActividades() {
   document.getElementById('countActividades').textContent = `${list.length} actividades`;
   const container = document.getElementById('listActividades');
   if (!list.length) { container.innerHTML = '<div class="loading">No hay actividades aún.</div>'; return; }
-  container.innerHTML = list.map(a => `
-    <div class="content-card">
-      ${a.preview_url ? `<img src="${a.preview_url}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : ''}
-      <div class="content-card-title">${a.titulo}</div>
-      <div class="content-card-meta">${a.categoria||''} ${a.edad ? '· '+a.edad : ''} · ${a.tipo?.toUpperCase()||''}</div>
-      <div class="content-card-actions">
-        <a class="btn-view" href="${a.archivo_url}" target="_blank">⬇ Ver</a>
-        <button class="btn-del" onclick="eliminarActividad('${a.id}','${a.archivo_url}','${a.preview_url||''}')">✕ Eliminar</button>
-      </div>
-    </div>`).join('');
+  container.innerHTML = '';
+  list.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'content-card';
+
+    const previewUrl = safeUrl(a.preview_url);
+    if (previewUrl) {
+      const img = document.createElement('img');
+      img.src = previewUrl;
+      img.style.cssText = 'width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;';
+      card.appendChild(img);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'content-card-title';
+    title.textContent = a.titulo || '';
+    card.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'content-card-meta';
+    meta.textContent = `${a.categoria||''} ${a.edad ? '· '+a.edad : ''} · ${(a.tipo?.toUpperCase())||''}`;
+    card.appendChild(meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'content-card-actions';
+
+    const archivoUrl = safeUrl(a.archivo_url);
+    if (archivoUrl) {
+      const link = document.createElement('a');
+      link.className = 'btn-view';
+      link.href = archivoUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = '⬇ Ver';
+      actions.appendChild(link);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-del';
+    delBtn.textContent = '✕ Eliminar';
+    delBtn.addEventListener('click', () => eliminarActividad(a.id, a.archivo_url, a.preview_url || ''));
+    actions.appendChild(delBtn);
+
+    card.appendChild(actions);
+    container.appendChild(card);
+  });
 }
 
 async function subirActividad() {

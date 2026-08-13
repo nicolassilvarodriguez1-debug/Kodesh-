@@ -100,6 +100,24 @@ const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ── XSS-safe helpers ──
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
+
 let allActividades = [];
 let activeFilter = 'todos';
 const ICONS = { colorear:'🖍️', manualidad:'✂️', juego:'🎮', leccion:'📖', otro:'📄' };
@@ -132,21 +150,70 @@ function renderActividades() {
     grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-title">Sin actividades</div><div class="empty-sub">Pronto habrá contenido en esta categoría</div></div>`;
     return;
   }
-  grid.innerHTML = filtered.map(a => `
-    <div class="actividad-card">
-      <div class="actividad-preview">
-        ${a.preview_url ? `<img src="${a.preview_url}" alt="${a.titulo}">` : (ICONS[a.categoria] || '📄')}
-      </div>
-      <div class="actividad-body">
-        <div class="actividad-titulo">${a.titulo}</div>
-        ${a.edad ? `<div class="actividad-meta">${a.edad}</div>` : ''}
-        <div class="actividad-tags">
-          ${a.tipo ? `<span class="tag">${a.tipo.toUpperCase()}</span>` : ''}
-          ${a.categoria ? `<span class="tag">${a.categoria}</span>` : ''}
-        </div>
-        <a href="${a.archivo_url}" target="_blank" download class="btn-download">⬇ Descargar</a>
-      </div>
-    </div>`).join('');
+  grid.innerHTML = '';
+  filtered.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'actividad-card';
+
+    const preview = document.createElement('div');
+    preview.className = 'actividad-preview';
+    const previewUrl = safeUrl(a.preview_url);
+    if (previewUrl) {
+      const img = document.createElement('img');
+      img.src = previewUrl;
+      img.alt = a.titulo || '';
+      preview.appendChild(img);
+    } else {
+      preview.textContent = ICONS[a.categoria] || '📄';
+    }
+    card.appendChild(preview);
+
+    const body = document.createElement('div');
+    body.className = 'actividad-body';
+
+    const titulo = document.createElement('div');
+    titulo.className = 'actividad-titulo';
+    titulo.textContent = a.titulo || '';
+    body.appendChild(titulo);
+
+    if (a.edad) {
+      const meta = document.createElement('div');
+      meta.className = 'actividad-meta';
+      meta.textContent = a.edad;
+      body.appendChild(meta);
+    }
+
+    const tags = document.createElement('div');
+    tags.className = 'actividad-tags';
+    if (a.tipo) {
+      const t = document.createElement('span');
+      t.className = 'tag';
+      t.textContent = String(a.tipo).toUpperCase();
+      tags.appendChild(t);
+    }
+    if (a.categoria) {
+      const c = document.createElement('span');
+      c.className = 'tag';
+      c.textContent = a.categoria;
+      tags.appendChild(c);
+    }
+    body.appendChild(tags);
+
+    const archivoUrl = safeUrl(a.archivo_url);
+    if (archivoUrl) {
+      const link = document.createElement('a');
+      link.href = archivoUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('download', '');
+      link.className = 'btn-download';
+      link.textContent = '⬇ Descargar';
+      body.appendChild(link);
+    }
+
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
 }
 
 async function init() {

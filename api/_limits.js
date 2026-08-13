@@ -64,7 +64,8 @@ export async function getUserPlanAndUsage(userId) {
   });
 
   let plan = 'free';
-  if (planData?.plan && planData?.subscription_status === 'active') {
+  // 'active' and 'trialing' both count as premium while the period hasn't lapsed.
+  if (planData?.plan && (planData?.subscription_status === 'active' || planData?.subscription_status === 'trialing')) {
     if (!planData.current_period_end || new Date(planData.current_period_end) > new Date()) {
       plan = planData.plan;
     }
@@ -115,6 +116,10 @@ export async function incrementUsage(userId, type, month) {
   }
 }
 
+// Deprecated — kept only in case something still imports it. Has a
+// read-then-write race under concurrency. Use consumeUsage() instead, which
+// calls the atomic consume_ai_usage() Postgres RPC (row-locked check+increment
+// in a single transaction, see supabase/migrations/20260812_security_hardening.sql).
 export async function checkLimit(userId, type) {
   const { plan, limits, usage, month } = await getUserPlanAndUsage(userId);
   const used = type === 'search' ? usage.searches : type === 'lexicon' ? usage.lexicon : usage.assistant;
@@ -128,4 +133,45 @@ export async function checkLimit(userId, type) {
     plan,
     month,
   };
+}
+
+async function sbRpc(fn, args) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`RPC ${fn} failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  return res.json();
+}
+
+// Atomically checks the quota AND reserves one unit of usage in a single
+// Postgres transaction (row-locked), so concurrent requests from the same
+// user can never both slip past the limit. Call this BEFORE hitting
+// Anthropic; if `allowed` is false, do not call Anthropic.
+export async function consumeUsage(userId, type) {
+  const result = await sbRpc('consume_ai_usage', { p_user_id: userId, p_type: type });
+  return result; // { allowed, used, limit, remaining, plan, month }
+}
+
+// Releases (decrements) one unit of usage. Call this from a catch block if
+// the Anthropic call fails after quota was already reserved, so a failed
+// request doesn't permanently cost the user part of their monthly quota.
+export async function releaseUsage(userId, type) {
+  try { await sbRpc('release_ai_usage', { p_user_id: userId, p_type: type }); }
+  catch(e) { console.warn('releaseUsage failed:', e.message); }
+}
+
+// Generic short-window rate limiter, atomic via check_rate_limit() RPC.
+// Used for endpoints that don't have a monthly quota of their own
+// (textual translation, interlinear generation).
+export async function checkRateLimit(userId, endpoint, max, windowSeconds) {
+  return sbRpc('check_rate_limit', { p_user_id: userId, p_endpoint: endpoint, p_max: max, p_window_seconds: windowSeconds });
 }

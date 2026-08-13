@@ -180,6 +180,24 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = supabase.createClient(SB_URL, SB_KEY);
 let currentUserId = null;
 
+// ── XSS-safe helpers ──
+function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '';
+  try {
+    const parsed = new URL(u, window.location.href);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch(e) { return ''; }
+}
+
 function initTheme() {
   const t = localStorage.getItem('kodesh_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
@@ -220,20 +238,59 @@ async function loadCanciones() {
   const { data } = await sb.from('canciones').select('*').order('created_at', { ascending: false });
   const list = data || [];
   document.getElementById('countC').textContent = list.length;
-  document.getElementById('listC').innerHTML = list.length === 0
-    ? '<div class="loading">No hay canciones aún.</div>'
-    : list.map(c => `
-      <div class="content-item">
-        <div class="content-icon">${c.imagen_url ? `<img src="${c.imagen_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '🎵'}</div>
-        <div class="content-info">
-          <div class="content-name">${c.titulo}</div>
-          <div class="content-meta">${[c.personaje, c.descripcion].filter(Boolean).join(' · ')}</div>
-        </div>
-        <div class="content-actions">
-          <a class="btn-view" href="${c.archivo_url}" target="_blank">▶ Escuchar</a>
-          <button class="btn-del" onclick="eliminarCancion('${c.id}','${c.archivo_url}','${c.imagen_url||''}')">✕</button>
-        </div>
-      </div>`).join('');
+  const listEl = document.getElementById('listC');
+  if (list.length === 0) { listEl.innerHTML = '<div class="loading">No hay canciones aún.</div>'; return; }
+  listEl.innerHTML = '';
+  list.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'content-item';
+
+    const icon = document.createElement('div');
+    icon.className = 'content-icon';
+    const imgUrl = safeUrl(c.imagen_url);
+    if (imgUrl) {
+      const img = document.createElement('img');
+      img.src = imgUrl;
+      img.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:6px;';
+      icon.appendChild(img);
+    } else {
+      icon.textContent = '🎵';
+    }
+    item.appendChild(icon);
+
+    const info = document.createElement('div');
+    info.className = 'content-info';
+    const name = document.createElement('div');
+    name.className = 'content-name';
+    name.textContent = c.titulo || '';
+    const meta = document.createElement('div');
+    meta.className = 'content-meta';
+    meta.textContent = [c.personaje, c.descripcion].filter(Boolean).join(' · ');
+    info.appendChild(name);
+    info.appendChild(meta);
+    item.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'content-actions';
+    const archivoUrl = safeUrl(c.archivo_url);
+    if (archivoUrl) {
+      const a = document.createElement('a');
+      a.className = 'btn-view';
+      a.href = archivoUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = '▶ Escuchar';
+      actions.appendChild(a);
+    }
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-del';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => eliminarCancion(c.id, c.archivo_url, c.imagen_url || ''));
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+
+    listEl.appendChild(item);
+  });
 }
 
 async function subirCancion() {
@@ -306,20 +363,51 @@ async function loadActividades() {
   const list = data || [];
   const ICONS = { colorear:'🖍️', manualidad:'✂️', juego:'🎮', leccion:'📖', otro:'📄' };
   document.getElementById('countA').textContent = list.length;
-  document.getElementById('listA').innerHTML = list.length === 0
-    ? '<div class="loading">No hay actividades aún.</div>'
-    : list.map(a => `
-      <div class="content-item">
-        <div class="content-icon">${ICONS[a.categoria] || '📄'}</div>
-        <div class="content-info">
-          <div class="content-name">${a.titulo}</div>
-          <div class="content-meta">${[a.categoria, a.edad, a.tipo?.toUpperCase()].filter(Boolean).join(' · ')}</div>
-        </div>
-        <div class="content-actions">
-          <a class="btn-view" href="${a.archivo_url}" target="_blank">⬇ Ver</a>
-          <button class="btn-del" onclick="eliminarActividad('${a.id}','${a.archivo_url}')">✕</button>
-        </div>
-      </div>`).join('');
+  const listEl = document.getElementById('listA');
+  if (list.length === 0) { listEl.innerHTML = '<div class="loading">No hay actividades aún.</div>'; return; }
+  listEl.innerHTML = '';
+  list.forEach(a => {
+    const item = document.createElement('div');
+    item.className = 'content-item';
+
+    const icon = document.createElement('div');
+    icon.className = 'content-icon';
+    icon.textContent = ICONS[a.categoria] || '📄';
+    item.appendChild(icon);
+
+    const info = document.createElement('div');
+    info.className = 'content-info';
+    const name = document.createElement('div');
+    name.className = 'content-name';
+    name.textContent = a.titulo || '';
+    const meta = document.createElement('div');
+    meta.className = 'content-meta';
+    meta.textContent = [a.categoria, a.edad, a.tipo?.toUpperCase()].filter(Boolean).join(' · ');
+    info.appendChild(name);
+    info.appendChild(meta);
+    item.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'content-actions';
+    const archivoUrl = safeUrl(a.archivo_url);
+    if (archivoUrl) {
+      const link = document.createElement('a');
+      link.className = 'btn-view';
+      link.href = archivoUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = '⬇ Ver';
+      actions.appendChild(link);
+    }
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-del';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => eliminarActividad(a.id, a.archivo_url));
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+
+    listEl.appendChild(item);
+  });
 }
 
 async function subirActividad() {

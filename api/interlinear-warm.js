@@ -1,25 +1,40 @@
-// KODESH — Interlinear cache warmer (background, all users)
-// Called silently (fire-and-forget) when ANY user opens a chapter.
+// KODESH — Interlinear cache warmer (background, all logged-in users)
+// Called silently (fire-and-forget) when a logged-in user opens a chapter.
 // If the chapter isn't cached yet, generates it via Claude Haiku and saves
 // to interlinear_cache — so premium users get instant results later.
 //
 // No plan check here: this is infrastructure work, not a user-facing feature,
-// and does not count against any usage limits.
+// and does not count against any usage limits. It DOES require a verified
+// session (previously had none at all — anyone could trigger unlimited
+// generations anonymously) plus rate limiting and de-duplication to prevent
+// concurrent generations of the same chapter.
 
 import { sbGet, groupByVerse, generateChapter } from './_interlinearCore.js';
+import { requireUser } from './_auth.js';
+import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter } from './_security.js';
+import { checkRateLimit } from './_limits.js';
+
+// Cross-request (same server instance) de-dup guard — belt-and-suspenders
+// alongside the DB-backed rate limit, which is what actually protects
+// against multiple instances/cold starts.
+const warmingInProgress = new Set();
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { book, chapter } = req.body;
-  if (!book || !chapter) return res.status(400).json({ error: 'book y chapter requeridos' });
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const userId = user.id;
 
-  const bookU = book.toUpperCase();
-  const chapterN = Number(chapter);
+  const book = isValidBookId(req.body?.book) ? req.body.book.toUpperCase() : null;
+  const chapter = book && isValidChapter(req.body?.chapter) ? Number(req.body.chapter) : null;
+  if (!book || !chapter) return sendError(res, 400, ERR.badRequest, null, 'interlinear-warm');
+
+  const bookU = book;
+  const chapterN = chapter;
+  const warmKey = `${bookU}:${chapterN}`;
 
   try {
     // 1 — Already cached? Nothing to do.
@@ -30,7 +45,19 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'already_cached' });
     }
 
-    // 2 — Source words available for this book?
+    // 2 — Rate limit per user, and skip if this instance is already warming
+    // this exact chapter.
+    if (warmingInProgress.has(warmKey)) {
+      return res.status(200).json({ status: 'already_warming' });
+    }
+    try {
+      const rl = await checkRateLimit(userId, 'interlinear_warm', 30, 3600);
+      if (!rl.allowed) return res.status(200).json({ status: 'rate_limited' });
+    } catch(e) {
+      console.warn('[Interlinear warm] rate limit check failed (allowing):', e.message);
+    }
+
+    // 3 — Source words available for this book?
     const source = await sbGet(
       `bible_source_words?book=eq.${bookU}&chapter=eq.${chapterN}&select=verse,word_order,original_text,strongs,language&order=verse.asc,word_order.asc`
     );
@@ -38,14 +65,19 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'not_available' });
     }
 
-    // 3 — Generate and cache (lower concurrency: this runs silently for
+    // 4 — Generate and cache (lower concurrency: this runs silently for
     // free users too, so be a bit gentler on rate limits)
-    await generateChapter(bookU, chapterN, source, 5);
+    warmingInProgress.add(warmKey);
+    try {
+      await generateChapter(bookU, chapterN, source, 5);
+    } finally {
+      warmingInProgress.delete(warmKey);
+    }
 
     return res.status(200).json({ status: 'generated' });
   } catch(err) {
-    console.error('Interlinear warm error:', err);
+    console.error('Interlinear warm error:', err?.message || err);
     // Always 200 — this is a background task, failures shouldn't surface to users
-    return res.status(200).json({ status: 'error', error: err.message });
+    return res.status(200).json({ status: 'error' });
   }
 }

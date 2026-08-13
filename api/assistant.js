@@ -1,34 +1,45 @@
-import { checkLimit, incrementUsage, getCurrentMonth } from './_limits.js';
+import { requireUser } from './_auth.js';
+import { consumeUsage, releaseUsage } from './_limits.js';
+import { applyCors, handleOptions, sendError, ERR, isNonEmptyString, sanitizeHistory, isValidBookId, isValidChapter, isValidVerse, clampString } from './_security.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { message, history, book, chapter, verse, userName, userGoals, userId } = req.body;
-  if (!message) return res.status(400).json({ error: 'Mensaje requerido' });
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const userId = user.id;
 
-  // Check limits
-  let month;
-  if (userId) {
-    try {
-      const { allowed, used, limit, plan, month: m } = await checkLimit(userId, 'assistant');
-      month = m;
-      if (!allowed) {
-        return res.status(429).json({
-          error: 'limit_reached', plan, used, limit,
-          message: plan === 'free'
-            ? `Alcanzaste tu límite de ${limit} consultas al asistente este mes. Actualiza a Premium para continuar estudiando sin límites.`
-            : `Alcanzaste tu límite de ${limit} consultas este mes.`,
-        });
-      }
-    } catch(e) { console.warn('Limit check error:', e.message); month = getCurrentMonth(); }
+  const body = req.body || {};
+  const { message, book, chapter, verse } = body;
+  if (!isNonEmptyString(message, 2000)) return sendError(res, 400, ERR.badRequest, null, 'assistant');
+
+  const history = sanitizeHistory(body.history, { maxItems: 20, maxContentLen: 4000 });
+  const safeBook = isValidBookId(book) ? book.toUpperCase() : null;
+  const safeChapter = safeBook && isValidChapter(chapter) ? Number(chapter) : null;
+  const safeVerse = safeChapter && isValidVerse(verse) ? Number(verse) : null;
+  // Display-only fields — sanitized/clamped, never trusted as identity.
+  const userName = clampString(typeof body.userName === 'string' ? body.userName : '', 80);
+  const userGoals = Array.isArray(body.userGoals) ? body.userGoals.filter(g => typeof g === 'string').slice(0, 10).map(g => clampString(g, 80)) : [];
+
+  let usageResult;
+  try {
+    usageResult = await consumeUsage(userId, 'assistant');
+  } catch(e) {
+    return sendError(res, 500, ERR.internal, e, 'assistant:consumeUsage');
+  }
+  if (!usageResult.allowed) {
+    return res.status(429).json({
+      error: 'limit_reached', plan: usageResult.plan, used: usageResult.used, limit: usageResult.limit,
+      message: usageResult.plan === 'free'
+        ? `Alcanzaste tu límite de ${usageResult.limit} consultas al asistente este mes. Actualiza a Premium para continuar estudiando sin límites.`
+        : `Alcanzaste tu límite de ${usageResult.limit} consultas este mes.`,
+    });
   }
 
-  const context = book ? `El usuario lee: ${book} capítulo ${chapter}${verse ? ', versículo ' + verse : ''}.` : '';
-  const userCtx = userName ? `El nombre del usuario es ${userName}.${userGoals?.length ? ` Sus objetivos: ${userGoals.join(', ')}.` : ''} Llámalo por su nombre.` : '';
+  const context = safeBook ? `El usuario lee: ${safeBook} capítulo ${safeChapter}${safeVerse ? ', versículo ' + safeVerse : ''}.` : '';
+  const userCtx = userName ? `El nombre del usuario es ${userName}.${userGoals.length ? ` Sus objetivos: ${userGoals.join(', ')}.` : ''} Llámalo por su nombre.` : '';
 
   const SYSTEM = `Eres el Asistente de Estudio Bíblico de KODESH — plataforma Hebreo-Mesiánica hispanohablante.
 ${context}
@@ -46,23 +57,16 @@ FORMATO: español, máximo 4 párrafos, estructura: contexto → texto → conex
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: SYSTEM, messages: [...(history || []), { role: 'user', content: message }] })
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: SYSTEM, messages: [...history, { role: 'user', content: message }] })
     });
 
     if (!response.ok) throw new Error(`API error ${response.status}`);
     const data = await response.json();
     const reply = data.content?.[0]?.text || '';
 
-    // Increment usage
-    if (userId) {
-      try {
-        await incrementUsage(userId, 'assistant', month || getCurrentMonth());
-      } catch(e) { console.warn('Usage increment error:', e.message); }
-    }
-
     return res.status(200).json({ reply });
   } catch(err) {
-    console.error('Assistant error:', err);
-    return res.status(500).json({ error: err.message });
+    await releaseUsage(userId, 'assistant');
+    return sendError(res, 500, ERR.internal, err, 'assistant');
   }
 }

@@ -1,37 +1,36 @@
-import { checkLimit, incrementUsage, getCurrentMonth } from './_limits.js';
+import { requireUser } from './_auth.js';
+import { consumeUsage, releaseUsage } from './_limits.js';
+import { applyCors, handleOptions, sendError, ERR, isNonEmptyString } from './_security.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { query, userId } = req.body;
-  if (!query) return res.status(400).json({ error: 'Query requerida' });
+  const user = await requireUser(req, res);
+  if (!user) return; // 401 already sent, Anthropic never called
+  const userId = user.id;
 
-  // Check limits if user is logged in
-  let month;
-  if (userId) {
-    try {
-      const { allowed, used, limit, plan, month: m } = await checkLimit(userId, 'search');
-      month = m;
-      if (!allowed) {
-        return res.status(429).json({
-          error: 'limit_reached',
-          plan, used, limit,
-          message: plan === 'free'
-            ? `Alcanzaste tu límite de ${limit} búsquedas este mes. Actualiza a Premium para continuar.`
-            : `Alcanzaste tu límite de ${limit} búsquedas este mes.`,
-        });
-      }
-    } catch(e) {
-      console.warn('Limit check error:', e.message);
-      month = getCurrentMonth();
-    }
+  const { query } = req.body || {};
+  if (!isNonEmptyString(query, 500)) return sendError(res, 400, ERR.badRequest, null, 'search');
+
+  // Reserve quota atomically BEFORE calling Anthropic.
+  let usageResult;
+  try {
+    usageResult = await consumeUsage(userId, 'search');
+  } catch(e) {
+    return sendError(res, 500, ERR.internal, e, 'search:consumeUsage');
+  }
+  if (!usageResult.allowed) {
+    return res.status(429).json({
+      error: 'limit_reached',
+      plan: usageResult.plan, used: usageResult.used, limit: usageResult.limit,
+      message: usageResult.plan === 'free'
+        ? `Alcanzaste tu límite de ${usageResult.limit} búsquedas este mes. Actualiza a Premium para continuar.`
+        : `Alcanzaste tu límite de ${usageResult.limit} búsquedas este mes.`,
+    });
   }
 
-  // Call Anthropic
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -61,16 +60,9 @@ Responde SOLO en JSON: {"resultados":[{"referencia":"Juan 21:1","libro_id":"JHN"
     try { parsed = JSON.parse(text.trim()); }
     catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { resultados: [] }; }
 
-    // Increment usage
-    if (userId) {
-      try {
-        await incrementUsage(userId, 'search', month || getCurrentMonth());
-      } catch(e) { console.warn('Usage increment error:', e.message); }
-    }
-
     return res.status(200).json(parsed);
   } catch(err) {
-    console.error('Search error:', err);
-    return res.status(500).json({ error: err.message });
+    await releaseUsage(userId, 'search');
+    return sendError(res, 500, ERR.internal, err, 'search');
   }
 }
