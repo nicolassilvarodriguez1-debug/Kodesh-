@@ -107,6 +107,14 @@ async function onUserLoggedIn(user) {
   // (solo hace algo en nativo — ver definición en index.html).
   if (typeof initPushNotifications === 'function') initPushNotifications();
 
+  // Habilita Firebase Analytics y asocia el user_id (solo hace algo en
+  // nativo — ver definición en index.html).
+  if (typeof initAnalytics === 'function') initAnalytics(user.id);
+
+  // Habilita Firebase Crashlytics (solo hace algo en nativo — ver
+  // definición en index.html).
+  if (typeof initCrashlytics === 'function') initCrashlytics(user.id);
+
   // Show daily promise card
   if (typeof showDailyPromise === 'function') setTimeout(() => showDailyPromise(), 500);
 
@@ -606,4 +614,7 @@ function recordTodayChapter(bookId, bookName, chapter) {
   localStorage.setItem(todayKey, JSON.stringify(data));
   updateStreak();
   renderDailyPlan();
+  if (!alreadyRecorded && typeof trackEvent === 'function') {
+    trackEvent('chapter_read', { book_id: bookId, chapter: chapter });
+  }
 }

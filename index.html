@@ -3544,6 +3544,7 @@ const KAPI_BASE = 'https://kodeshbible.com';
 async function kapiFetch(url, options = {}) {
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const fullUrl = (url.startsWith('/') && isNative) ? KAPI_BASE + url : url;
+  if (typeof trackApiUsage === 'function') trackApiUsage(url);
   const hdrs = options.headers || {};
   const authValue = hdrs['Authorization'] || hdrs['authorization'];
   const hadAuthHeader = !!authValue;
@@ -3720,6 +3721,109 @@ async function savePushToken(token) {
   } catch(e) {
     console.warn('[Push] No se pudo guardar el token:', e.message);
   }
+}
+
+/* ════════════════════════════════════
+   FIREBASE — Analytics
+   Habilita la recolección y registra eventos clave de uso (lectura,
+   búsqueda, asistente, lexicón, interlineal, promesa del día). Solo hace
+   algo en nativo — en web no hay plugin FirebaseAnalytics.
+════════════════════════════════════ */
+async function initAnalytics(userId, plan) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  try {
+    const Analytics = window.Capacitor?.Plugins?.FirebaseAnalytics;
+    if (!Analytics) {
+      console.warn('[Analytics] Plugin FirebaseAnalytics no encontrado en Capacitor.Plugins');
+      return;
+    }
+    await Analytics.setCollectionEnabled({ enabled: true });
+    if (userId) await Analytics.setUserId({ userId });
+    if (plan) await Analytics.setUserProperty({ key: 'plan', value: plan });
+  } catch(e) {
+    console.warn('[Analytics] Init error:', e.message);
+  }
+}
+
+// Fire-and-forget — nunca bloquea ni afecta la llamada real a la API.
+// Mapea la ruta del endpoint a un nombre de evento de negocio legible.
+const ANALYTICS_ENDPOINT_EVENTS = [
+  ['/api/search', 'search_performed'],
+  ['/api/assistant', 'assistant_used'],
+  ['/api/lexicon', 'lexicon_used'],
+  ['/api/textual', 'interlineal_used'],
+  ['/api/checkout', 'checkout_started'],
+  ['/api/portal', 'billing_portal_opened'],
+];
+
+function trackApiUsage(url) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  const match = ANALYTICS_ENDPOINT_EVENTS.find(([path]) => url.includes(path));
+  if (!match) return;
+  try {
+    const Analytics = window.Capacitor?.Plugins?.FirebaseAnalytics;
+    if (!Analytics) return;
+    Analytics.logEvent({ name: match[1] }).catch(() => {});
+  } catch(e) { /* no interrumpir la llamada real por un fallo de analytics */ }
+}
+
+// Evento genérico para acciones puntuales que no pasan por kapiFetch (lectura
+// de capítulo, promesa del día, etc.) — usado desde auth.js e index.html.
+function trackEvent(name, params) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  try {
+    const Analytics = window.Capacitor?.Plugins?.FirebaseAnalytics;
+    if (!Analytics) return;
+    Analytics.logEvent({ name, params: params || {} }).catch(() => {});
+  } catch(e) { /* silencioso */ }
+}
+
+/* ════════════════════════════════════
+   FIREBASE — Crashlytics
+   Habilita la recolección de crashes nativos y también reenvía errores de
+   JS no capturados (window.onerror / unhandledrejection) como reportes no
+   fatales — la mayoría de los bugs reales de esta app viven en la capa web,
+   no en el código nativo, así que esto es lo que más valor va a dar.
+   Solo hace algo en nativo — requiere además el Run Script de subida de
+   símbolos configurado en Xcode (ver documentación del proyecto).
+════════════════════════════════════ */
+let crashlyticsListenersAttached = false;
+
+async function initCrashlytics(userId) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  try {
+    const Crashlytics = window.Capacitor?.Plugins?.FirebaseCrashlytics;
+    if (!Crashlytics) {
+      console.warn('[Crashlytics] Plugin FirebaseCrashlytics no encontrado en Capacitor.Plugins');
+      return;
+    }
+    await Crashlytics.setEnabled({ enabled: true }).catch(() =>
+      Crashlytics.setCrashlyticsCollectionEnabled({ enabled: true }).catch(() => {})
+    );
+    if (userId) await Crashlytics.setUserId({ userId }).catch(() => {});
+
+    if (!crashlyticsListenersAttached) {
+      crashlyticsListenersAttached = true;
+      window.addEventListener('error', (event) => {
+        recordJsExceptionToCrashlytics(event?.error?.message || event?.message || 'Error desconocido');
+      });
+      window.addEventListener('unhandledrejection', (event) => {
+        const reason = event?.reason;
+        const msg = (reason && reason.message) ? reason.message : String(reason);
+        recordJsExceptionToCrashlytics('Unhandled promise rejection: ' + msg);
+      });
+    }
+  } catch(e) {
+    console.warn('[Crashlytics] Init error:', e.message);
+  }
+}
+
+function recordJsExceptionToCrashlytics(message) {
+  try {
+    const Crashlytics = window.Capacitor?.Plugins?.FirebaseCrashlytics;
+    if (!Crashlytics) return;
+    Crashlytics.recordException({ message: String(message).slice(0, 500) }).catch(() => {});
+  } catch(e) { /* silencioso — no queremos que el reporte de errores cause otro error */ }
 }
 
 async function syncPremiumWithSupabase() {
@@ -5288,6 +5392,8 @@ function showDailyPromise() {
   setTimeout(() => {
     document.getElementById('promiseOverlay').classList.add('open');
   }, 1200);
+
+  if (typeof trackEvent === 'function') trackEvent('promise_viewed', { ref: promesa.ref });
 }
 
 function closePromise() {
