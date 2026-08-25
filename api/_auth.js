@@ -49,22 +49,6 @@ export async function requireUser(req, res) {
     authHeader = `Bearer ${body.__authToken}`;
   }
 
-  // TEMP DIAGNOSTIC (round 2) — remove once native 401s are confirmed fixed.
-  // Never logs the token itself, only shape/presence info.
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    try {
-      console.warn(
-        '[requireUser diag2] rejected',
-        '| header names:', Object.keys(req.headers).sort().join(','),
-        '| content-type:', req.headers['content-type'] || '(absent)',
-        '| raw body typeof:', typeof req.body, Buffer.isBuffer(req.body) ? '(buffer)' : '',
-        '| parsed body keys:', (body && typeof body === 'object') ? Object.keys(body).join(',') : '(not an object)',
-        '| debug flag:', (body && typeof body === 'object' && body.__debug) ? JSON.stringify(body.__debug) : '(absent)',
-        '| ua:', req.headers['user-agent'] || '(absent)'
-      );
-    } catch (e) { console.warn('[requireUser diag2] logging failed:', e.message); }
-  }
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'unauthorized' });
     return null;
