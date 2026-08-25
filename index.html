@@ -3826,29 +3826,6 @@ function recordJsExceptionToCrashlytics(message) {
   } catch(e) { /* silencioso — no queremos que el reporte de errores cause otro error */ }
 }
 
-// DEBUG TEMPORAL — botón para forzar un crash real y verificar que
-// Crashlytics lo reporta. Solo visible para la cuenta admin, en nativo.
-// Quitar una vez confirmado que funciona.
-function injectCrashTestButtonIfAdmin(email) {
-  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
-  if (email !== 'nic3025@gmail.com') return;
-  if (document.getElementById('crashTestBtn')) return;
-  const btn = document.createElement('button');
-  btn.id = 'crashTestBtn';
-  btn.textContent = '🧪 Crash de prueba';
-  btn.style.cssText = 'position:fixed;bottom:90px;right:16px;z-index:99999;background:#c0392b;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
-  btn.onclick = async () => {
-    try {
-      const Crashlytics = window.Capacitor?.Plugins?.FirebaseCrashlytics;
-      if (!Crashlytics) { alert('[Crashlytics DEBUG] Plugin no encontrado'); return; }
-      await Crashlytics.crash({ message: 'Prueba de Crashlytics — KODESH' });
-    } catch(e) {
-      alert('[Crashlytics DEBUG] Error: ' + e.message);
-    }
-  };
-  document.body.appendChild(btn);
-}
-
 async function syncPremiumWithSupabase() {
   const sbc = getSupabase();
   const { data: { session } } = await sbc.auth.getSession();

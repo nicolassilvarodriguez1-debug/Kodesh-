@@ -115,9 +115,6 @@ async function onUserLoggedIn(user) {
   // definición en index.html).
   if (typeof initCrashlytics === 'function') initCrashlytics(user.id);
 
-  // DEBUG TEMPORAL — botón de crash de prueba, solo visible para admin.
-  if (typeof injectCrashTestButtonIfAdmin === 'function') injectCrashTestButtonIfAdmin(user.email);
-
   // Show daily promise card
   if (typeof showDailyPromise === 'function') setTimeout(() => showDailyPromise(), 500);
 
