@@ -20,19 +20,25 @@ function decodeAal(token) {
 // On failure, writes the appropriate error response to `res` and returns null —
 // callers should `return` immediately when this returns null.
 export async function requireUser(req, res) {
-  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  let authHeader = req.headers['authorization'] || req.headers['Authorization'];
+
+  // Native-app fallback — confirmed via incident diagnostics (Aug 2026):
+  // on the current iOS build, the Authorization header never arrives at
+  // Vercel at all (verified server-side: header names received contain no
+  // "authorization" entry, on repeated real-device attempts, both via
+  // CapacitorHttp and the fetch() fallback). This isn't a bug in this file
+  // — the header is lost somewhere in the native networking stack before
+  // the request leaves the device. Rather than depend on a header that
+  // demonstrably doesn't survive the trip, index.html's kapiFetch() now
+  // also embeds the token in a reserved JSON body field for native calls;
+  // request bodies aren't affected by whatever is stripping headers. Only
+  // used when the header is missing/malformed, so web (which sends the
+  // header fine) is unaffected.
+  if ((!authHeader || !authHeader.startsWith('Bearer ')) && req.body && typeof req.body.__authToken === 'string' && req.body.__authToken) {
+    authHeader = `Bearer ${req.body.__authToken}`;
+  }
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // TEMP DIAGNOSTIC (incident: native app gets 401 on every AI endpoint,
-    // Supabase auth logs show zero matching attempts — meaning the request
-    // dies right here). Logs header NAMES only (never values, never the
-    // token) plus a safe-to-log prefix of the auth header if present, so we
-    // can see exactly what the native app is actually sending without
-    // exposing any credential. Remove once root-caused.
-    try {
-      const headerNames = Object.keys(req.headers).sort().join(',');
-      const authPreview = authHeader ? `${authHeader.slice(0, 12)}...(len ${authHeader.length})` : '(absent)';
-      console.warn(`[requireUser diag] rejected — header names: [${headerNames}] | authorization preview: ${authPreview} | ua: ${req.headers['user-agent'] || '(none)'}`);
-    } catch (e) { /* never let diagnostics break the real response */ }
     res.status(401).json({ error: 'unauthorized' });
     return null;
   }
