@@ -459,11 +459,22 @@ let isSuperAdmin = false;
 
 async function adminApi(body) {
   const { data: { session } } = await sb.auth.getSession();
+  if (!session?.access_token) {
+    // Previously this silently sent `Authorization: Bearer ` (empty token),
+    // which the server correctly rejects with 401 — but nothing told the
+    // admin WHY, so an expired session while the tab stayed open just
+    // looked like every panel action mysteriously breaking. Surface it
+    // clearly instead, and don't bother firing the request.
+    const msg = document.getElementById('authMsg');
+    if (msg) msg.textContent = 'Tu sesión expiró. Vuelve a iniciar sesión.';
+    console.warn('adminApi: no hay sesión activa (token expirado o ausente)');
+    return { ok: false, status: 401, json: async () => ({ error: 'session_expired' }) };
+  }
   return fetch('/api/admin', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.access_token || ''}`,
+      'Authorization': `Bearer ${session.access_token}`,
     },
     body: JSON.stringify(body),
   });
