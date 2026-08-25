@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@capacitor/app": "^7.0.0",
-    "@vercel/functions": "^3.7.1"
+    "@vercel/functions": "^3.7.1",
+    "firebase-admin": "^14.3.0"
   }
 }
