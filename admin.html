@@ -182,6 +182,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       <button class="btn-sm" onclick="toggleTheme()" id="themeBtn">☀️ Claro</button>
       <a href="/upload.html" class="btn-sm" style="text-decoration:none">↑ Subir contenido</a>
       <button class="btn-sm" onclick="loadAll()">↺ Actualizar</button>
+      <button class="btn-sm" onclick="sendTestPush()">🔔 Push de prueba</button>
     </div>
   </div>
 
@@ -478,6 +479,38 @@ async function adminApi(body) {
     },
     body: JSON.stringify(body),
   });
+}
+
+// ── PUSH DE PRUEBA (temporal, para verificar la integración de Firebase) ──
+// Manda un push real a los tokens FCM registrados por el propio admin que
+// llama (no expone tokens de otros usuarios) — ver api/push-test.js.
+async function sendTestPush() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.access_token) {
+    alert('Tu sesión expiró. Vuelve a iniciar sesión.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/push-test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (data.error === 'no_token_registered') {
+        alert('No hay ningún token de push guardado para tu usuario todavía.\n\nAbre la app en tu iPhone, inicia sesión con esta misma cuenta y acepta el permiso de notificaciones — eso registra el token. Luego intenta este botón de nuevo.');
+      } else {
+        alert('Error al mandar el push: ' + (data.error || res.status));
+      }
+      return;
+    }
+    alert(`Push enviado: ${data.sent}/${data.total} dispositivo(s). Revisa tu iPhone.`);
+  } catch (e) {
+    alert('Error al mandar el push: ' + e.message);
+  }
 }
 
 // ── THEME ──
