@@ -21,7 +21,19 @@ import { sbGet, getUserPlan, groupByVerse, generateChapter } from './_interlinea
 import { waitUntil } from '@vercel/functions';
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter } from './_security.js';
-import { checkRateLimit, acquireGenerationLock, releaseGenerationLock } from './_limits.js';
+import { checkRateLimit, acquireGenerationLock, releaseGenerationLock, startLockRenewal } from './_limits.js';
+
+// Third audit pass — Objective 6: a full-chapter interlinear generation
+// calls Anthropic once PER VERSE (concurrency-batched, see generateChapter
+// in _interlinearCore.js). A long chapter (e.g. Psalm 119, 176 verses) at
+// concurrency 8 is ~22 sequential batches — comfortably capable of taking
+// longer than the old fixed 180s lease under real-world Anthropic latency.
+// A generous base lease PLUS periodic renewal for as long as generation is
+// still actually running (startLockRenewal) means the lock can never
+// expire out from under a legitimately in-progress generation, while still
+// being reclaimable promptly if the instance genuinely crashes (renewal
+// simply stops).
+const GENERATION_LEASE_SECONDS = 300;
 
 const PAYWALL_MESSAGE = 'El Modo Interlineal es una función Premium. Actualiza tu plan para acceder al texto hebreo/griego original con análisis palabra por palabra.';
 
@@ -48,9 +60,15 @@ export default async function handler(req, res) {
   const chapterN = chapter;
   const warmKey = `${bookU}:${chapterN}`;
 
+  let plan;
   try {
-    const plan = await getUserPlan(userId);
+    plan = await getUserPlan(userId);
+  } catch (e) {
+    console.error('[Interlinear] plan lookup failed — failing closed:', e.message);
+    return sendError(res, 503, ERR.unavailable, e, 'interlinear:plan-unavailable');
+  }
 
+  try {
     // 1 — Check cache first, regardless of plan.
     const cached = await sbGet(
       `interlinear_cache?book=eq.${bookU}&chapter=eq.${chapterN}&select=verse,word_order,original_text,strongs,transliteration,gloss,language&order=verse.asc,word_order.asc`
@@ -108,7 +126,7 @@ export default async function handler(req, res) {
       const leaseToken = randomUUID();
       let lock;
       try {
-        lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, 180);
+        lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, GENERATION_LEASE_SECONDS);
       } catch(e) {
         console.error('[Interlinear] lock check failed — failing closed, no Anthropic call:', e.message);
         return sendError(res, 503, ERR.unavailable, e, 'interlinear:lock-unavailable');
@@ -117,11 +135,13 @@ export default async function handler(req, res) {
         return sendError(res, 409, ERR.conflict, null, 'interlinear:already-generating');
       }
       warmingInProgress.add(warmKey);
+      const stopLockRenewal = startLockRenewal('interlinear', bookU, chapterN, leaseToken, GENERATION_LEASE_SECONDS);
       try {
         const resultVerses = await generateChapter(bookU, chapterN, source, 8);
         return res.status(200).json({ book: bookU, chapter: chapterN, verses: resultVerses });
       } finally {
         warmingInProgress.delete(warmKey);
+        stopLockRenewal();
         try { await releaseGenerationLock('interlinear', bookU, chapterN, leaseToken); }
         catch(e) { console.warn('[Interlinear] lock release failed:', e.message); }
       }
@@ -137,11 +157,13 @@ export default async function handler(req, res) {
       const leaseToken = randomUUID();
       waitUntil((async () => {
         try {
-          const lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, 180);
+          const lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, GENERATION_LEASE_SECONDS);
           if (!lock.acquired) return;
+          const stopLockRenewal = startLockRenewal('interlinear', bookU, chapterN, leaseToken, GENERATION_LEASE_SECONDS);
           try {
             await generateChapter(bookU, chapterN, source, 8);
           } finally {
+            stopLockRenewal();
             try { await releaseGenerationLock('interlinear', bookU, chapterN, leaseToken); }
             catch(e) { console.warn('[Interlinear warm-bg] lock release failed:', e.message); }
           }

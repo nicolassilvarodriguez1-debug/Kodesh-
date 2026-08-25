@@ -267,15 +267,44 @@ export default async function handler(req, res) {
   }
 
   if (!claim.claimed) {
-    if (claim.status === 'completed') {
-      console.log(`[webhook] duplicate delivery of ${event.id} (${event.type}) — already completed, skipping`);
-      return res.status(200).json({ received: true, duplicate: true });
+    // Any resolved status other than 'processing' means this event is
+    // already settled and must never be silently reprocessed:
+    //   - 'completed'      — normal duplicate delivery of a fully-handled event.
+    //   - 'legacy_unknown' — a row inserted by the OLD (pre-redesign) webhook
+    //     code, which recorded an event as "done" merely because it saw the
+    //     id once — that is NOT proof the plan update actually succeeded.
+    //     We still must not blindly reprocess it here: replaying an old
+    //     event's stale payload could overwrite a user's CURRENT plan with
+    //     out-of-date data if later events have since superseded it. See
+    //     scripts/reconcile-stripe-subscriptions.mjs for the safe fix —
+    //     reconciling against Stripe's live subscription state, not this
+    //     event's historical payload.
+    //   - 'reconciled'     — a legacy row the reconciliation script has
+    //     already resolved against Stripe's live state.
+    if (claim.status !== 'processing') {
+      console.log(`[webhook] duplicate/settled delivery of ${event.id} (${event.type}), status=${claim.status} — skipping`);
+      return res.status(200).json({ received: true, duplicate: true, status: claim.status });
     }
-    // status === 'processing' with a fresh lease held by another instance —
-    // don't reprocess; that instance will complete or fail it, and Stripe
-    // will redeliver later if needed.
-    console.log(`[webhook] ${event.id} (${event.type}) already being processed by another instance — skipping`);
-    return res.status(200).json({ received: true, status: 'processing' });
+    // status === 'processing' with a fresh lease held by ANOTHER instance.
+    //
+    // We must NOT ack 200 here (this was the bug in the previous design).
+    // Stripe treats any 2xx as "delivered — never redeliver this event
+    // again". If we respond 200 while the other instance is still
+    // mid-flight, and that instance then crashes before it can call
+    // completeEvent()/failEvent(), there is no longer any in-flight
+    // request that will ever reclaim the event: it just sits at
+    // 'processing' until the lease quietly expires, with nobody left to
+    // notice. Stripe already gave up retrying because we told it "received".
+    //
+    // Responding with a non-2xx (409 — the event is in conflict with an
+    // in-progress attempt, try again) instead makes Stripe retry with
+    // backoff. By the time it does, one of two safe outcomes has happened:
+    // the other instance finished (this delivery becomes an ordinary
+    // duplicate-of-completed 200 above), or its lease expired (this
+    // delivery reclaims and processes the event itself, per claimEvent's
+    // reclaim logic). Either way the event can never be silently stranded.
+    console.log(`[webhook] ${event.id} (${event.type}) already being processed by another instance — asking Stripe to retry`);
+    return res.status(409).json({ received: false, status: 'processing' });
   }
 
   try {
@@ -292,23 +321,41 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal error processing webhook' });
   }
 
+  // processEvent() succeeded — the Stripe state has genuinely been applied
+  // (or there was nothing to do, e.g. an unhandled event type). We still
+  // must not ack 200 until we've CONFIRMED 'completed' was recorded: if we
+  // crashed right here, an unconfirmed event would be stuck 'processing'
+  // with no in-flight request left to reclaim it — the exact same failure
+  // mode as the race above, just triggered at a different point.
+  let completed;
   try {
-    const completed = await completeEvent(event.id, leaseToken);
-    if (!completed) {
-      // Our lease expired mid-processing and got reclaimed by another
-      // instance before we could mark completion. The update we just
-      // applied is a harmless, idempotent re-application of the same
-      // Stripe state (updateUserPlan always writes the same fields the
-      // reclaiming instance would also write), so this is not data loss —
-      // just log it loudly for visibility.
-      console.warn(`[webhook] lease lost for ${event.id} before completion could be recorded`);
-    }
+    completed = await completeEvent(event.id, leaseToken);
   } catch (err) {
-    console.error('[webhook] failed to mark event completed:', err?.message || err);
-    // We already successfully applied the plan update — do NOT return 500
-    // here, that would make Stripe retry a change we already made. Ack 200;
-    // if this write genuinely failed, the lease will simply expire and a
-    // retry will safely re-apply identical state.
+    console.error('[webhook] failed to mark event completed (RPC error):', err?.message || err);
+    // Deliberately do NOT call failEvent() here: we already correctly
+    // applied the real Stripe state via processEvent()/updateUserPlan(),
+    // which always writes the same target fields regardless of how many
+    // times it runs (idempotent). Marking this 'failed' would be a lie
+    // ("processing failed") when it didn't — and it's safe to simply let a
+    // retry re-run processEvent (a harmless no-op re-write) rather than
+    // guess at the event's status. 500 makes Stripe retry; the event stays
+    // 'processing' until either this retry succeeds in confirming
+    // completion, or the lease expires and another delivery reclaims it.
+    return res.status(500).json({ error: 'Internal error confirming webhook completion' });
+  }
+
+  if (!completed) {
+    // completeEvent() returned false: by the time we tried to confirm
+    // completion, we no longer held the lease (e.g. it expired mid-request
+    // and another instance already reclaimed the event and is reprocessing
+    // it). We already applied the correct Stripe state ourselves, but we
+    // cannot claim OUR attempt was the one recorded as 'completed' — the
+    // reclaiming instance owns that now. Do not ack 200: a 500 here lets
+    // Stripe retry, which will land on either 'completed' (if the
+    // reclaimer finished first) or a fresh 'processing' lease (409, retry
+    // again) — never on a silently-dropped event.
+    console.warn(`[webhook] lease lost for ${event.id} before completion could be recorded`);
+    return res.status(500).json({ error: 'Internal error confirming webhook completion' });
   }
 
   return res.status(200).json({ received: true });

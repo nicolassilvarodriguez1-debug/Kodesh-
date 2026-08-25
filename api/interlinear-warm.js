@@ -13,7 +13,13 @@ import { randomUUID } from 'crypto';
 import { sbGet, groupByVerse, generateChapter } from './_interlinearCore.js';
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter } from './_security.js';
-import { checkRateLimit, acquireGenerationLock, releaseGenerationLock } from './_limits.js';
+import { checkRateLimit, acquireGenerationLock, releaseGenerationLock, startLockRenewal } from './_limits.js';
+
+// See the matching constant/comment in api/interlinear.js — same reasoning:
+// a full chapter generation can outlast a short fixed lease; a generous
+// base lease plus periodic renewal keeps the lock alive for exactly as
+// long as generation is genuinely still running.
+const GENERATION_LEASE_SECONDS = 300;
 
 // Cross-request (same server instance) de-dup guard — belt-and-suspenders
 // alongside the DB-backed rate limit, which is what actually protects
@@ -80,7 +86,7 @@ export default async function handler(req, res) {
     const leaseToken = randomUUID();
     let lock;
     try {
-      lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, 180);
+      lock = await acquireGenerationLock('interlinear', bookU, chapterN, leaseToken, GENERATION_LEASE_SECONDS);
     } catch(e) {
       console.error('[Interlinear warm] lock check failed — failing closed, no Anthropic call:', e.message);
       return res.status(200).json({ status: 'lock_unavailable' });
@@ -92,10 +98,12 @@ export default async function handler(req, res) {
     // 4 — Generate and cache (lower concurrency: this runs silently for
     // free users too, so be a bit gentler on rate limits)
     warmingInProgress.add(warmKey);
+    const stopLockRenewal = startLockRenewal('interlinear', bookU, chapterN, leaseToken, GENERATION_LEASE_SECONDS);
     try {
       await generateChapter(bookU, chapterN, source, 5);
     } finally {
       warmingInProgress.delete(warmKey);
+      stopLockRenewal();
       try { await releaseGenerationLock('interlinear', bookU, chapterN, leaseToken); }
       catch(e) { console.warn('[Interlinear warm] lock release failed:', e.message); }
     }

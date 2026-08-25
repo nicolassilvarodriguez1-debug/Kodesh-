@@ -1,17 +1,26 @@
+// KODESH — Usage/plan lookup for the current logged-in user.
+//
+// Third audit pass finding: this endpoint previously took `userId` directly
+// from the request body with NO authentication at all — anyone could query
+// any other user's plan and usage counters by guessing/enumerating UUIDs
+// (an IDOR). It also echoed `err.message` straight to the client, which
+// could leak internal Supabase error details. Both fixed: identity now
+// comes only from the verified JWT (requireUser), matching every other
+// endpoint in this API, and errors return a generic message.
 import { getUserPlanAndUsage, PLAN_LIMITS } from './_limits.js';
+import { requireUser } from './_auth.js';
+import { applyCors, handleOptions, sendError, ERR } from './_security.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res, { headers: 'Content-Type, Authorization' });
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
 
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ error: 'userId requerido' });
+  const user = await requireUser(req, res);
+  if (!user) return;
 
   try {
-    const info = await getUserPlanAndUsage(userId);
+    const info = await getUserPlanAndUsage(user.id);
     return res.status(200).json({
       plan: info.plan,
       limits: info.limits,
@@ -23,6 +32,6 @@ export default async function handler(req, res) {
       }
     });
   } catch(err) {
-    return res.status(500).json({ error: err.message });
+    return sendError(res, 500, ERR.internal, err, 'usage');
   }
 }

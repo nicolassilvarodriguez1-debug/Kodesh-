@@ -22,6 +22,15 @@ async function sbGet(table, filters) {
       'Content-Type': 'application/json',
     }
   });
+  if (!res.ok) {
+    // Third audit pass — Objective 6: never treat a failed Supabase
+    // response as "no data" (which getUserPlanAndUsage's callers would
+    // silently read as 'free'/zero-usage). A down/erroring Supabase must be
+    // a visible failure, not indistinguishable from "this user has no
+    // rows".
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase GET ${table} failed (${res.status}): ${text.slice(0, 300)}`);
+  }
   const data = await res.json();
   return Array.isArray(data) ? data[0] : null;
 }
@@ -199,4 +208,44 @@ export async function releaseGenerationLock(kind, book, chapter, leaseToken) {
   return sbRpc('release_generation_lock', {
     p_kind: kind, p_book: book, p_chapter: chapter, p_lease_token: leaseToken,
   });
+}
+
+// Extends a lock's expiry — only succeeds if `leaseToken` still matches the
+// current holder (see supabase/migrations/20260814_self_sufficient_repair.sql).
+// Returns true if renewed, false if we no longer hold the lock (it was
+// already reclaimed by someone else, e.g. because we were too slow).
+export async function renewGenerationLock(kind, book, chapter, leaseToken, leaseSeconds) {
+  const result = await sbRpc('renew_generation_lock', {
+    p_kind: kind, p_book: book, p_chapter: chapter, p_lease_token: leaseToken, p_lease_seconds: leaseSeconds,
+  });
+  return result === true;
+}
+
+// Third audit pass — Objective 6: a chapter generation can legitimately run
+// longer than a lock's initial lease (many verses, slow Anthropic calls,
+// retries). Rather than picking one large fixed lease and hoping it's
+// always enough, keep renewing it periodically for as long as the
+// generation is actually still running — and stop as soon as it finishes
+// (success or failure). If a renewal ever fails (RPC error) or reports we
+// no longer hold the lock, we log loudly but don't throw: the caller's own
+// `finally` releaseGenerationLock() call is already a safe no-op in that
+// case, and a lost lock just means (at worst) a second instance may start
+// generating the same chapter concurrently — wasteful, but not unsafe,
+// since generateChapter()'s writes are idempotent upserts.
+export function startLockRenewal(kind, book, chapter, leaseToken, leaseSeconds) {
+  const renewEveryMs = Math.max(5000, Math.floor((leaseSeconds * 1000) / 2));
+  const interval = setInterval(async () => {
+    try {
+      const ok = await renewGenerationLock(kind, book, chapter, leaseToken, leaseSeconds);
+      if (!ok) {
+        console.warn(`[lock-renew] ${kind}:${book}:${chapter} — lease no longer held, stopping renewal`);
+        clearInterval(interval);
+      }
+    } catch (e) {
+      console.warn(`[lock-renew] ${kind}:${book}:${chapter} — renewal RPC failed: ${e.message}`);
+    }
+  }, renewEveryMs);
+  // Don't let this timer keep the serverless process alive on its own.
+  if (typeof interval.unref === 'function') interval.unref();
+  return () => clearInterval(interval);
 }

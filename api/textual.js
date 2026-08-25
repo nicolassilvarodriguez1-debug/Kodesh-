@@ -10,7 +10,16 @@
 import { randomUUID } from 'crypto';
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, sanitizeSourceVerses } from './_security.js';
-import { checkRateLimit, acquireGenerationLock, releaseGenerationLock } from './_limits.js';
+import { checkRateLimit, acquireGenerationLock, releaseGenerationLock, startLockRenewal } from './_limits.js';
+
+// How long the generation lock lasts before it needs renewing. A single
+// Anthropic call for a whole chapter (up to 176 verses) is normally fast,
+// but network retries/slow responses can push this longer than the old
+// fixed 120s lease allowed for — see Objective 6 (third audit pass): locks
+// must outlive the real generation time, or renew periodically. We do
+// both: a generous base lease, PLUS periodic renewal for as long as
+// generation is actually still running (see startLockRenewal in _limits.js).
+const GENERATION_LEASE_SECONDS = 300;
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -48,16 +57,23 @@ async function sbFetch(path, options = {}) {
   });
 }
 
+// Third audit pass — Objective 6: previously caught ANY failure (including
+// a down/erroring Supabase) and silently returned 'free'. Now throws on a
+// failed HTTP response so callers can fail closed (503) instead of
+// wrongly paywalling a premium user during a transient outage while
+// presenting it as a confident "not premium" answer.
 async function getPlan(userId) {
-  try {
-    const res = await sbFetch(`user_plans?user_id=eq.${userId}&select=plan,subscription_status,current_period_end&limit=1`);
-    const data = await res.json();
-    const row = data?.[0];
-    if (!row) return 'free';
-    const active = row.subscription_status === 'active' || row.subscription_status === 'trialing';
-    const notExpired = !row.current_period_end || new Date(row.current_period_end) > new Date();
-    return (active && notExpired) ? (row.plan || 'free') : 'free';
-  } catch(e) { return 'free'; }
+  const res = await sbFetch(`user_plans?user_id=eq.${userId}&select=plan,subscription_status,current_period_end&limit=1`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase user_plans lookup failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const row = data?.[0];
+  if (!row) return 'free';
+  const active = row.subscription_status === 'active' || row.subscription_status === 'trialing';
+  const notExpired = !row.current_period_end || new Date(row.current_period_end) > new Date();
+  return (active && notExpired) ? (row.plan || 'free') : 'free';
 }
 
 async function getCachedChapter(bookId, chapter) {
@@ -65,9 +81,17 @@ async function getCachedChapter(bookId, chapter) {
     const res = await sbFetch(
       `textual_cache?book_id=eq.${bookId}&chapter=eq.${chapter}&select=verses,verse_count,report_count&limit=1`
     );
+    // A failed HTTP response must not be treated as "nothing cached yet" —
+    // that would silently mask a Supabase outage as a normal cache miss
+    // and proceed straight into an expensive (and likely also-failing)
+    // Anthropic generation attempt instead of surfacing the real problem.
+    if (!res.ok) {
+      console.error(`[Textual] cache lookup failed (${res.status}) for ${bookId} ${chapter}`);
+      return null;
+    }
     const data = await res.json();
     return data?.[0] || null;
-  } catch(e) { return null; }
+  } catch(e) { console.error('[Textual] cache lookup error:', e.message); return null; }
 }
 
 async function saveChapter(bookId, chapter, verses, verseCount) {
@@ -106,8 +130,14 @@ export default async function handler(req, res) {
   if (cached) {
     // Aun así, esta traducción es contenido Premium — no servir el cuerpo
     // completo a cuentas free.
-    const plan = await getPlan(userId);
-    if (plan !== 'premium') return sendError(res, 403, ERR.forbidden, null, 'textual:not-premium');
+    let planForCache;
+    try {
+      planForCache = await getPlan(userId);
+    } catch (e) {
+      console.error('[Textual] plan lookup failed — failing closed:', e.message);
+      return sendError(res, 503, ERR.unavailable, e, 'textual:plan-unavailable');
+    }
+    if (planForCache !== 'premium') return sendError(res, 403, ERR.forbidden, null, 'textual:not-premium');
     return res.status(200).json({
       found: true,
       verses: cached.verses,
@@ -118,7 +148,13 @@ export default async function handler(req, res) {
   }
 
   // 2 — Generar un capítulo nuevo requiere plan Premium (activo o en trial).
-  const plan = await getPlan(userId);
+  let plan;
+  try {
+    plan = await getPlan(userId);
+  } catch (e) {
+    console.error('[Textual] plan lookup failed — failing closed:', e.message);
+    return sendError(res, 503, ERR.unavailable, e, 'textual:plan-unavailable');
+  }
   if (plan !== 'premium') return sendError(res, 403, ERR.forbidden, null, 'textual:not-premium');
 
   // 3 — Rate limit en generaciones nuevas (cache misses) — máx 20 capítulos
@@ -148,7 +184,7 @@ export default async function handler(req, res) {
   const leaseToken = randomUUID();
   let lock;
   try {
-    lock = await acquireGenerationLock('textual', bookId, chapter, leaseToken, 120);
+    lock = await acquireGenerationLock('textual', bookId, chapter, leaseToken, GENERATION_LEASE_SECONDS);
   } catch(e) {
     console.error('[Textual] lock check failed — failing closed, no Anthropic call:', e.message);
     return sendError(res, 503, ERR.unavailable, e, 'textual:lock-unavailable');
@@ -156,6 +192,7 @@ export default async function handler(req, res) {
   if (!lock.acquired) {
     return sendError(res, 409, ERR.conflict, null, 'textual:already-generating');
   }
+  const stopLockRenewal = startLockRenewal('textual', bookId, chapter, leaseToken, GENERATION_LEASE_SECONDS);
 
   const verseKeys = Object.keys(sourceVerses).sort((a, b) => parseInt(a) - parseInt(b));
   const verseCount = verseKeys.length;
@@ -293,6 +330,7 @@ Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, si
     return res.status(500).json({ error: 'No se pudo generar la traducción. Intenta de nuevo.' });
    }
   } finally {
+    stopLockRenewal();
     try { await releaseGenerationLock('textual', bookId, chapter, leaseToken); }
     catch(e) { console.warn('[Textual] lock release failed:', e.message); }
   }

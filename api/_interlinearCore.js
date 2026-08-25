@@ -13,6 +13,16 @@ export async function sbGet(path) {
       'Content-Type': 'application/json',
     }
   });
+  if (!res.ok) {
+    // Third audit pass — Objective 6: a failed Supabase response must never
+    // be silently treated as "empty result" (e.g. interlinear.js reads
+    // `Array.isArray(cached) && cached.length > 0` — a non-array error body
+    // would previously just look like "not cached", masking a real outage
+    // as a normal cache miss and potentially triggering an unnecessary
+    // (and expensive) generation attempt instead of failing loudly).
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase GET ${path.split('?')[0]} failed (${res.status}): ${text.slice(0, 300)}`);
+  }
   return res.json();
 }
 
@@ -33,21 +43,27 @@ export async function sbInsert(table, rows) {
   }
 }
 
+// Third audit pass — Objective 6: this used to catch ANY failure (including
+// a down/erroring Supabase, not just "no row for this user") and silently
+// return 'free'. That's fine when there's genuinely no row, but masking a
+// real Supabase outage as "this user is on the free plan" is a different
+// thing entirely — it's a fail-OPEN toward the wrong direction for a
+// premium user (paywalled by mistake during an outage) and, more
+// importantly, an unverifiable guess presented as a confident answer.
+// Callers must now catch this explicitly and fail closed (503, no
+// generation) rather than have the failure silently reinterpreted here.
 export async function getUserPlan(userId) {
   if (!userId) return 'free';
-  try {
-    const data = await sbGet(`user_plans?user_id=eq.${userId}&select=plan,subscription_status,current_period_end&limit=1`);
-    const row = data?.[0];
-    if (!row) return 'free';
-    // 'active' AND 'trialing' both count as premium while the period
-    // hasn't lapsed — matches _limits.js, textual.js, checkout.js, etc.
-    // (previously only 'active' counted here, incorrectly denying
-    // interlinear access to users in their 7-day free trial).
-    const isActiveStatus = row.subscription_status === 'active' || row.subscription_status === 'trialing';
-    const notExpired = !row.current_period_end || new Date(row.current_period_end) > new Date();
-    return (isActiveStatus && notExpired) ? (row.plan || 'free') : 'free';
-  } catch(e) {}
-  return 'free';
+  const data = await sbGet(`user_plans?user_id=eq.${userId}&select=plan,subscription_status,current_period_end&limit=1`);
+  const row = data?.[0];
+  if (!row) return 'free';
+  // 'active' AND 'trialing' both count as premium while the period
+  // hasn't lapsed — matches _limits.js, textual.js, checkout.js, etc.
+  // (previously only 'active' counted here, incorrectly denying
+  // interlinear access to users in their 7-day free trial).
+  const isActiveStatus = row.subscription_status === 'active' || row.subscription_status === 'trialing';
+  const notExpired = !row.current_period_end || new Date(row.current_period_end) > new Date();
+  return (isActiveStatus && notExpired) ? (row.plan || 'free') : 'free';
 }
 
 export function groupByVerse(rows, fields) {

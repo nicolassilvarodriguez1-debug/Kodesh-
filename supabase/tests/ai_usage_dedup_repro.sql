@@ -1,6 +1,14 @@
 -- KODESH — Reproducible test script for the ai_usage dedup repair
 -- (supabase/migrations/20260813_webhook_lifecycle_ai_usage_repair_locks.sql).
 --
+-- SUPERSEDED: the consolidation logic this file exercises (min(ctid) across
+-- separate SELECT/UPDATE/DELETE statements) has a real bug — UPDATE gives a
+-- row a NEW ctid, so a later "re-select min(ctid)" can pick a different row
+-- than the one just updated. The corrected logic lives in
+-- 20260814_self_sufficient_repair.sql; its test is
+-- ai_usage_dedup_repro_v2.sql. Kept here for history — do not use this
+-- version's consolidation approach for anything new.
+--
 -- Run this against a STAGING/TEST Supabase project, never production. It:
 --   1. Creates a scratch duplicate scenario for a fake user/month.
 --   2. Runs the exact consolidation logic from the migration.
