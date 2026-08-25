@@ -183,6 +183,8 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       <a href="/upload.html" class="btn-sm" style="text-decoration:none">↑ Subir contenido</a>
       <button class="btn-sm" onclick="loadAll()">↺ Actualizar</button>
       <button class="btn-sm" onclick="sendTestPush()">🔔 Push de prueba</button>
+      <button class="btn-sm" onclick="previewDailyReminder()">👁 Vista previa recordatorio</button>
+      <button class="btn-sm" onclick="sendDailyReminder()">📣 Mandar recordatorio ahora</button>
     </div>
   </div>
 
@@ -511,6 +513,59 @@ async function sendTestPush() {
   } catch (e) {
     alert('Error al mandar el push: ' + e.message);
   }
+}
+
+// ── RECORDATORIO DIARIO (racha / promesa del día) ──
+// Ver api/cron-daily-reminder.js — también corre solo, todos los días, vía
+// Vercel Cron. Estos botones son para probarlo (vista previa sin mandar
+// nada) o dispararlo a mano si el cron falla o quieres mandarlo ya.
+async function dailyReminderRequest(dryRun) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.access_token) {
+    alert('Tu sesión expiró. Vuelve a iniciar sesión.');
+    return null;
+  }
+  const res = await fetch('/api/cron-daily-reminder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ dryRun }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    alert('Error: ' + (data.error || res.status));
+    return null;
+  }
+  return data;
+}
+
+async function previewDailyReminder() {
+  const data = await dailyReminderRequest(true);
+  if (!data) return;
+  const cat = data.byCategory || {};
+  alert(
+    `Vista previa (no se mandó nada):\n\n` +
+    `Usuarios a notificar: ${data.usersToNotify}\n` +
+    `— Racha en riesgo: ${cat.streak_risk || 0}\n` +
+    `— Promesa del día: ${cat.daily_promise || 0}`
+  );
+}
+
+async function sendDailyReminder() {
+  const confirmSend = confirm('Esto manda una notificación real a todos los usuarios elegibles (los que no han leído hoy). ¿Seguro que quieres mandarla ahora?');
+  if (!confirmSend) return;
+  const data = await dailyReminderRequest(false);
+  if (!data) return;
+  const cat = data.byCategory || {};
+  alert(
+    `Recordatorio enviado.\n\n` +
+    `Usuarios notificados: ${data.usersNotified}\n` +
+    `Enviados OK: ${data.sent}  ·  Fallidos: ${data.failed}  ·  Tokens vencidos eliminados: ${data.staleRemoved}\n` +
+    `— Racha en riesgo: ${cat.streak_risk || 0}\n` +
+    `— Promesa del día: ${cat.daily_promise || 0}`
+  );
 }
 
 // ── THEME ──
