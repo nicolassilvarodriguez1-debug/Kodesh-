@@ -103,6 +103,10 @@ async function onUserLoggedIn(user) {
   // compra sea instantánea cuando el usuario toque "Comenzar prueba gratis".
   if (typeof initRevenueCat === 'function') initRevenueCat(user.id);
 
+  // Pide permiso de notificaciones y guarda el token FCM del dispositivo
+  // (solo hace algo en nativo — ver definición en index.html).
+  if (typeof initPushNotifications === 'function') initPushNotifications();
+
   // Show daily promise card
   if (typeof showDailyPromise === 'function') setTimeout(() => showDailyPromise(), 500);
 

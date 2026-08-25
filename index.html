@@ -3668,6 +3668,60 @@ async function initRevenueCat(userId) {
   }
 }
 
+/* ════════════════════════════════════
+   FIREBASE — Push notifications (FCM)
+   Pide permiso, obtiene el token del dispositivo y lo guarda en el backend
+   (api/save-push-token.js) para poder mandarle notificaciones más adelante.
+   Solo hace algo en nativo — en web no hay plugin FirebaseMessaging.
+════════════════════════════════════ */
+let pushListenersAttached = false;
+
+async function initPushNotifications() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+  try {
+    const Messaging = window.Capacitor?.Plugins?.FirebaseMessaging;
+    if (!Messaging) {
+      console.warn('[Push] Plugin FirebaseMessaging no encontrado en Capacitor.Plugins');
+      return;
+    }
+
+    const perm = await Messaging.requestPermissions();
+    if (perm?.receive !== 'granted') {
+      console.log('[Push] Permiso de notificaciones no concedido:', perm?.receive);
+      return;
+    }
+
+    const { token } = await Messaging.getToken();
+    if (token) await savePushToken(token);
+
+    // Si el token se refresca (reinstalación, cambio de dispositivo, etc.)
+    // mandamos el nuevo — el listener solo se agrega una vez por sesión.
+    if (!pushListenersAttached) {
+      pushListenersAttached = true;
+      Messaging.addListener('tokenReceived', async (event) => {
+        if (event?.token) await savePushToken(event.token);
+      });
+    }
+  } catch(e) {
+    console.warn('[Push] Init error:', e.message);
+  }
+}
+
+async function savePushToken(token) {
+  try {
+    const authH = await authHeaders();
+    if (!authH) return; // sin sesión, no hay a quién asociar el token
+    const platform = window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'ios';
+    await kapiFetch('/api/save-push-token', {
+      method: 'POST',
+      headers: authH,
+      body: JSON.stringify({ token, platform }),
+    });
+  } catch(e) {
+    console.warn('[Push] No se pudo guardar el token:', e.message);
+  }
+}
+
 async function syncPremiumWithSupabase() {
   const sbc = getSupabase();
   const { data: { session } } = await sbc.auth.getSession();
