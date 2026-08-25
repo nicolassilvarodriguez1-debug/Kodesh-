@@ -22,6 +22,17 @@ function decodeAal(token) {
 export async function requireUser(req, res) {
   const authHeader = req.headers['authorization'] || req.headers['Authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // TEMP DIAGNOSTIC (incident: native app gets 401 on every AI endpoint,
+    // Supabase auth logs show zero matching attempts — meaning the request
+    // dies right here). Logs header NAMES only (never values, never the
+    // token) plus a safe-to-log prefix of the auth header if present, so we
+    // can see exactly what the native app is actually sending without
+    // exposing any credential. Remove once root-caused.
+    try {
+      const headerNames = Object.keys(req.headers).sort().join(',');
+      const authPreview = authHeader ? `${authHeader.slice(0, 12)}...(len ${authHeader.length})` : '(absent)';
+      console.warn(`[requireUser diag] rejected — header names: [${headerNames}] | authorization preview: ${authPreview} | ua: ${req.headers['user-agent'] || '(none)'}`);
+    } catch (e) { /* never let diagnostics break the real response */ }
     res.status(401).json({ error: 'unauthorized' });
     return null;
   }
