@@ -3558,14 +3558,23 @@ async function kapiFetch(url, options = {}) {
   // fallback when the header is missing. The header is still sent too
   // (harmless, and works fine for the web build), this just adds a path
   // that doesn't depend on it surviving.
+  //
+  // TEMP DIAGNOSTIC (round 2): also embed __debug (always, for native
+  // calls) so the server can tell us whether the client even had a token
+  // to begin with (hadAuthHeader) versus having one that got lost in
+  // transit — the two look identical from the server's side otherwise.
+  // Never includes the token itself.
   let finalOptions = options;
-  if (isNative && hadAuthHeader && authValue.startsWith('Bearer ')) {
+  if (isNative) {
     try {
       const bodyObj = options.body ? JSON.parse(options.body) : {};
-      bodyObj.__authToken = authValue.slice('Bearer '.length);
+      bodyObj.__debug = { hadAuthHeader, tokenLen: hadAuthHeader ? authValue.length : 0 };
+      if (hadAuthHeader && authValue.startsWith('Bearer ')) {
+        bodyObj.__authToken = authValue.slice('Bearer '.length);
+      }
       finalOptions = { ...options, body: JSON.stringify(bodyObj) };
     } catch(e) {
-      console.warn('kapiFetch: no se pudo incrustar el token en el body (body no era JSON):', e);
+      console.warn('kapiFetch: no se pudo incrustar el token/debug en el body (body no era JSON):', e);
     }
   }
 
@@ -3582,15 +3591,14 @@ async function kapiFetch(url, options = {}) {
         });
         // Known CapacitorHttp/iOS issue: it can silently fail to forward the
         // Authorization header to the native request (no exception thrown —
-        // it just returns as if unauthenticated). A 401 on a call that WAS
-        // sent with an Authorization header is a strong signal of exactly
-        // this, so retry once via the plain fetch() path below (same path
-        // already used as the exception fallback, and already proven to
-        // work — see the CORS allowlist in api/_security.js which exists
-        // specifically to support this fetch() fallback from the WKWebView)
-        // instead of surfacing a false "unauthorized" to the user.
-        if (result.status === 401 && hadAuthHeader) {
-          console.warn('CapacitorHttp devolvió 401 en una llamada autenticada (posible fallo al reenviar el header Authorization); reintentando con fetch()');
+        // it just returns as if unauthenticated). Retry once via the plain
+        // fetch() path below on ANY 401 (not just when we know we sent a
+        // header) — during this diagnostic round we want a second, WebKit-UA
+        // data point in the server logs even on calls where the client had
+        // no session, to help tell apart "no token to begin with" from
+        // "token lost in transit".
+        if (result.status === 401) {
+          console.warn('CapacitorHttp devolvió 401; reintentando con fetch()');
         } else {
           return {
             ok: result.status >= 200 && result.status < 300,

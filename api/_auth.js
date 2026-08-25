@@ -24,18 +24,45 @@ export async function requireUser(req, res) {
 
   // Native-app fallback — confirmed via incident diagnostics (Aug 2026):
   // on the current iOS build, the Authorization header never arrives at
-  // Vercel at all (verified server-side: header names received contain no
-  // "authorization" entry, on repeated real-device attempts, both via
-  // CapacitorHttp and the fetch() fallback). This isn't a bug in this file
-  // — the header is lost somewhere in the native networking stack before
-  // the request leaves the device. Rather than depend on a header that
-  // demonstrably doesn't survive the trip, index.html's kapiFetch() now
-  // also embeds the token in a reserved JSON body field for native calls;
-  // request bodies aren't affected by whatever is stripping headers. Only
-  // used when the header is missing/malformed, so web (which sends the
-  // header fine) is unaffected.
-  if ((!authHeader || !authHeader.startsWith('Bearer ')) && req.body && typeof req.body.__authToken === 'string' && req.body.__authToken) {
-    authHeader = `Bearer ${req.body.__authToken}`;
+  // Vercel at all. index.html's kapiFetch() also embeds the token in a
+  // reserved JSON body field (__authToken) for native calls as a backup.
+  //
+  // Defensive body parsing: Vercel's automatic req.body parsing depends on
+  // the incoming Content-Type header arriving intact. If whatever strips
+  // Authorization on this native build also strips/mangles Content-Type,
+  // req.body can arrive as a raw string/Buffer instead of a parsed object,
+  // which would silently break the __authToken fallback (and the rest of
+  // the handler, which also reads req.body). Parse it ourselves if that
+  // happened, and normalize req.body so downstream handler code benefits
+  // too.
+  let body = req.body;
+  if (body && Buffer.isBuffer(body)) {
+    try { body = JSON.parse(body.toString('utf8')); } catch {}
+  } else if (typeof body === 'string' && body.length) {
+    try { body = JSON.parse(body); } catch {}
+  }
+  if (body && typeof body === 'object' && body !== req.body) {
+    req.body = body;
+  }
+
+  if ((!authHeader || !authHeader.startsWith('Bearer ')) && body && typeof body.__authToken === 'string' && body.__authToken) {
+    authHeader = `Bearer ${body.__authToken}`;
+  }
+
+  // TEMP DIAGNOSTIC (round 2) — remove once native 401s are confirmed fixed.
+  // Never logs the token itself, only shape/presence info.
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    try {
+      console.warn(
+        '[requireUser diag2] rejected',
+        '| header names:', Object.keys(req.headers).sort().join(','),
+        '| content-type:', req.headers['content-type'] || '(absent)',
+        '| raw body typeof:', typeof req.body, Buffer.isBuffer(req.body) ? '(buffer)' : '',
+        '| parsed body keys:', (body && typeof body === 'object') ? Object.keys(body).join(',') : '(not an object)',
+        '| debug flag:', (body && typeof body === 'object' && body.__debug) ? JSON.stringify(body.__debug) : '(absent)',
+        '| ua:', req.headers['user-agent'] || '(absent)'
+      );
+    } catch (e) { console.warn('[requireUser diag2] logging failed:', e.message); }
   }
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
