@@ -1,6 +1,7 @@
 // KODESH Admin API — only accessible by users with a role in admin_roles,
 // verified via JWT + 2FA (aal2). See api/_auth.js.
 import { requireAdmin } from './_auth.js';
+import { applyCors, handleOptions } from './_security.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -48,10 +49,18 @@ async function sbUpsert(table, body, onConflict) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  // Was previously hand-rolled with `Access-Control-Allow-Headers: Content-Type`
+  // only (missing Authorization) — the only authenticated POST endpoint in
+  // /api that diverged from the shared allowlist. A same-origin fetch()
+  // (the normal admin.html path) isn't affected by this, but any request
+  // that ends up cross-origin (e.g. the WKWebView fetch() fallback in
+  // index.html's kapiFetch, or a Vercel preview URL) would have its
+  // preflight silently strip the Authorization header, producing a 401 that
+  // looks identical to an expired/invalid token. Now matches every other
+  // protected endpoint (search.js, assistant.js, lexicon.js, textual.js,
+  // interlinear.js).
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const admin = await requireAdmin(req, res);

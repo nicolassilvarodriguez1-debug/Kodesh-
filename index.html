@@ -3544,6 +3544,8 @@ const KAPI_BASE = 'https://kodeshbible.com';
 async function kapiFetch(url, options = {}) {
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const fullUrl = (url.startsWith('/') && isNative) ? KAPI_BASE + url : url;
+  const hdrs = options.headers || {};
+  const hadAuthHeader = !!(hdrs['Authorization'] || hdrs['authorization']);
   if (isNative) {
     try {
       const http = window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
@@ -3555,11 +3557,24 @@ async function kapiFetch(url, options = {}) {
           headers: options.headers || { 'Content-Type': 'application/json' },
           data: body,
         });
-        return {
-          ok: result.status >= 200 && result.status < 300,
-          status: result.status,
-          json: async () => result.data,
-        };
+        // Known CapacitorHttp/iOS issue: it can silently fail to forward the
+        // Authorization header to the native request (no exception thrown —
+        // it just returns as if unauthenticated). A 401 on a call that WAS
+        // sent with an Authorization header is a strong signal of exactly
+        // this, so retry once via the plain fetch() path below (same path
+        // already used as the exception fallback, and already proven to
+        // work — see the CORS allowlist in api/_security.js which exists
+        // specifically to support this fetch() fallback from the WKWebView)
+        // instead of surfacing a false "unauthorized" to the user.
+        if (result.status === 401 && hadAuthHeader) {
+          console.warn('CapacitorHttp devolvió 401 en una llamada autenticada (posible fallo al reenviar el header Authorization); reintentando con fetch()');
+        } else {
+          return {
+            ok: result.status >= 200 && result.status < 300,
+            status: result.status,
+            json: async () => result.data,
+          };
+        }
       }
     } catch(e) {
       console.warn('CapacitorHttp falló, usando fetch:', e);
@@ -4810,10 +4825,15 @@ let userUsage = null;
 async function loadUsage() {
   if (!currentUser) return;
   try {
+    // /api/usage now derives identity from the verified JWT (requireUser),
+    // not from a client-supplied userId — matches every other protected
+    // endpoint (search, assistant, lexicon, textual, interlinear, checkout).
+    const authH = await authHeaders();
+    if (!authH) return;
     const res = await kapiFetch('/api/usage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id })
+      headers: authH,
+      body: JSON.stringify({})
     });
     if (res.ok) {
       userUsage = await res.json();
