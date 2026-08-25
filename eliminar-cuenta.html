@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eliminar Cuenta · KODESH</title>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim: #5a4820;
+  --gold-glow: rgba(201,168,76,0.15);
+  --bg: #05050a;
+  --bg2: #0a0a12;
+  --bg3: #0f0f1a;
+  --border: #1a1a2a;
+  --border2: #252538;
+  --text: #ede5d5;
+  --text-mid: #a09880;
+  --text-dim: #5a5870;
+}
+html.light {
+  --gold: #8a6010;
+  --gold-bright: #6a4808;
+  --gold-dim: #d4a855;
+  --gold-glow: rgba(138,96,16,0.10);
+  --bg: #faf8f4;
+  --bg2: #f3efe8;
+  --bg3: #ece7dc;
+  --border: #ddd6c8;
+  --border2: #cec5b4;
+  --text: #1a1610;
+  --text-mid: #5a4e38;
+  --text-dim: #9a8e78;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg2); position: sticky; top: 0; z-index: 10;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-hebrew { font-family: serif; font-size: 1.3rem; color: var(--gold); }
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 900; color: var(--gold); letter-spacing: 3px; }
+.topbar-spacer { flex: 1; }
+.theme-toggle {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center; font-size: 1rem;
+}
+.back-link {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+  border: 1px solid var(--border2); padding: 7px 14px; border-radius: 6px; transition: all 0.2s;
+}
+.back-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+.doc {
+  max-width: 760px; margin: 0 auto; padding: 40px 24px 80px;
+}
+.doc h1 {
+  font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900;
+  color: var(--gold); margin-bottom: 6px; letter-spacing: 1px;
+}
+.doc .updated {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim);
+  margin-bottom: 28px;
+}
+.doc h2 {
+  font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 700;
+  color: var(--gold-bright); margin: 32px 0 12px; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+.doc p { margin-bottom: 14px; font-size: 1rem; color: var(--text-mid); }
+.doc strong { color: var(--text); }
+.doc ul, .doc ol { margin: 0 0 14px 24px; color: var(--text-mid); }
+.doc li { margin-bottom: 6px; }
+.doc hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+.doc a { color: var(--gold); text-decoration: underline; }
+.doc a.cta {
+  display:inline-block; margin-top: 8px; font-family:'Cinzel',serif; font-size:0.7rem;
+  letter-spacing:1px; text-transform:uppercase; color: var(--bg) !important; background: var(--gold);
+  padding: 12px 22px; border-radius: 8px; text-decoration:none;
+}
+.doc a.cta:hover { background: var(--gold-bright); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="logo" href="/index.html">
+    <span class="logo-hebrew">קֹדֶשׁ</span>
+    <span class="logo-text">KODESH</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <a class="back-link" href="/index.html">← Volver</a>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+</header>
+
+<main class="doc">
+
+<h1>Eliminar mi cuenta de KODESH</h1>
+<div class="updated">Última actualización: 25 de agosto de 2026</div>
+
+<p>Puedes eliminar tu cuenta de <strong>KODESH</strong>, tanto desde la app móvil como desde la versión web, en cualquier momento. La eliminación es permanente e irreversible.</p>
+
+<h2>Cómo eliminar tu cuenta</h2>
+<ol>
+  <li>Inicia sesión en KODESH (app móvil o <a href="/login.html">kodeshbible.com</a>) con tu correo y contraseña.</li>
+  <li>Entra a tu <strong>Perfil</strong>.</li>
+  <li>Desplázate hasta el final y toca <strong>"Eliminar cuenta"</strong>.</li>
+  <li>Escribe <strong>ELIMINAR</strong> en el campo de confirmación y toca <strong>"Eliminar cuenta"</strong>.</li>
+</ol>
+
+<p>También puedes hacerlo directamente desde tu navegador entrando a tu perfil:</p>
+<a class="cta" href="/profile.html">Ir a mi perfil →</a>
+
+<p style="margin-top:20px">Si prefieres que lo hagamos nosotros por ti, escríbenos a <a href="mailto:kodeshbible@gmail.com">kodeshbible@gmail.com</a> desde el correo asociado a tu cuenta, indicando que solicitas la eliminación de tu cuenta.</p>
+
+<h2>Qué se elimina</h2>
+<ul>
+  <li>Tu cuenta de acceso (correo, autenticación)</li>
+  <li>Tu progreso de lectura de la Biblia</li>
+  <li>Tus marcadores y notas de estudio</li>
+  <li>Tu racha de lectura</li>
+  <li>Tu historial de uso de las funciones de IA (asistente, búsqueda, lexicón)</li>
+  <li>Tu plan/suscripción asociada</li>
+</ul>
+
+<h2>Qué se conserva y por cuánto tiempo</h2>
+<p>Si tuviste una suscripción Premium, es posible que conservemos los registros de facturación asociados (a través de Stripe) durante el periodo exigido por obligaciones legales y contables, incluso después de eliminar tu cuenta. Estos registros no se usan para ningún otro fin.</p>
+
+<p>Para más detalles sobre cómo tratamos tus datos, consulta nuestra <a href="/privacidad.html">Política de Privacidad</a>.</p>
+
+<hr>
+<p style="font-size:0.85rem"><a href="/privacidad.html">Política de Privacidad</a> · <a href="/terminos.html">Términos de Servicio</a></p>
+
+</main>
+
+<script>
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+}
+(function() {
+  const saved = localStorage.getItem('kodesh_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+})();
+</script>
+</body>
+</html>
