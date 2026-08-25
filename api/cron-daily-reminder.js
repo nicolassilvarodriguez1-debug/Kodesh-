@@ -1,17 +1,27 @@
-// KODESH — Recordatorio diario por push notification.
+// KODESH — Recordatorios diarios por push notification, en dos momentos:
+//
+//   type=promise  (mañana) — la promesa del día, a TODOS los que tienen un
+//                 token guardado. Es contenido devocional, no un recordatorio
+//                 condicional — sale todos los días sin importar el estado
+//                 de lectura del usuario.
+//
+//   type=reading  (tarde)  — a quien NO ha leído hoy todavía. Se ramifica en
+//                 tres categorías, mutuamente excluyentes por usuario:
+//                   - winback: no ha vuelto a abrir la app en exactamente
+//                     3, 7, 14 o 30 días desde su última lectura — "te
+//                     extrañamos". Los días exactos (no "3+") evitan
+//                     bombardear todos los días a alguien ya inactivo.
+//                   - streak_risk: tiene una racha activa (current_streak>0)
+//                     y no ha leído hoy — "no pierdas tu racha".
+//                   - reading_reminder: cualquier otro caso (sin racha,
+//                     nunca leyó, o lejos de los cortes de winback) —
+//                     recordatorio genérico de lectura.
 //
 // Se dispara de dos formas:
-//   1. Vercel Cron (GET, autenticado con CRON_SECRET — ver vercel.json).
-//   2. Botón manual en el panel admin (POST, autenticado como admin normal),
-//      para poder probarlo o dispararlo a mano sin esperar al cron.
-//
-// Lógica por usuario (solo a quienes tienen al menos un token push guardado):
-//   - Si ya leyó hoy (reading_streaks.last_read_date === hoy en UTC) → se
-//     omite, no lo molestamos.
-//   - Si tiene una racha activa (current_streak > 0) pero no ha leído hoy →
-//     "no pierdas tu racha".
-//   - Si no tiene racha activa → la promesa del día (misma fórmula que
-//     index.html, así coincide con lo que vería si abre la app).
+//   1. Vercel Cron (GET, autenticado con CRON_SECRET — ver vercel.json),
+//      una vez por tipo, en horarios distintos.
+//   2. Botones manuales en el panel admin (POST, autenticado como admin
+//      normal), para probar o disparar a mano sin esperar al cron.
 //
 // Nota sobre zonas horarias: last_read_date es una columna `date` sin huso
 // horario guardada desde el navegador del usuario (ver auth.js updateStreak).
@@ -26,8 +36,18 @@ import { getDailyPromiseForUser } from './_promises.js';
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+// Días exactos de inactividad en los que mandamos "te extrañamos" — no en
+// cada uno de forma continua, solo en estos cortes.
+const WINBACK_DAYS = [3, 7, 14, 30];
+
 function todayUTC() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function daysSince(dateStr, todayStr) {
+  const a = new Date(dateStr + 'T00:00:00Z');
+  const b = new Date(todayStr + 'T00:00:00Z');
+  return Math.round((b - a) / 86400000);
 }
 
 function getQueryParam(req, name) {
@@ -56,7 +76,36 @@ async function sbDeleteTokens(ids) {
   }).catch(() => {});
 }
 
-async function buildReminders() {
+function groupTokensByUser(tokens) {
+  const map = new Map();
+  for (const t of tokens) {
+    if (!map.has(t.user_id)) map.set(t.user_id, []);
+    map.get(t.user_id).push(t);
+  }
+  return map;
+}
+
+// ── type=promise — mañana, a todos ──
+async function buildPromiseReminders() {
+  const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
+  const tokensByUser = groupTokensByUser(tokens);
+
+  const jobs = [];
+  for (const [userId, userTokens] of tokensByUser) {
+    const promesa = getDailyPromiseForUser(userId);
+    jobs.push({
+      userId,
+      tokens: userTokens,
+      category: 'daily_promise',
+      title: '✨ Promesa de hoy',
+      body: `"${promesa.texto}" — ${promesa.ref}`,
+    });
+  }
+  return jobs;
+}
+
+// ── type=reading — tarde, condicional por usuario ──
+async function buildReadingReminders() {
   const [tokens, streaks] = await Promise.all([
     sbGet('user_push_tokens?select=id,user_id,token'),
     sbGet('reading_streaks?select=user_id,current_streak,last_read_date'),
@@ -64,12 +113,7 @@ async function buildReminders() {
 
   const streakByUser = new Map(streaks.map(s => [s.user_id, s]));
   const today = todayUTC();
-
-  const tokensByUser = new Map();
-  for (const t of tokens) {
-    if (!tokensByUser.has(t.user_id)) tokensByUser.set(t.user_id, []);
-    tokensByUser.get(t.user_id).push(t);
-  }
+  const tokensByUser = groupTokensByUser(tokens);
 
   const jobs = [];
   for (const [userId, userTokens] of tokensByUser) {
@@ -77,21 +121,28 @@ async function buildReminders() {
 
     if (streak && streak.last_read_date === today) continue; // ya leyó hoy
 
-    let title, body, category;
-    if (streak && streak.current_streak > 0) {
-      category = 'streak_risk';
-      title = '🔥 No pierdas tu racha';
-      body = `Llevas ${streak.current_streak} día${streak.current_streak === 1 ? '' : 's'} seguidos leyendo. Lee un capítulo hoy para no perderla.`;
+    const inactiveDays = streak?.last_read_date ? daysSince(streak.last_read_date, today) : null;
+
+    if (inactiveDays !== null && WINBACK_DAYS.includes(inactiveDays)) {
+      jobs.push({
+        userId, tokens: userTokens, category: 'winback',
+        title: '💛 Te extrañamos',
+        body: `Hace ${inactiveDays} días que no abres KODESH. Tu Biblia te está esperando.`,
+      });
+    } else if (streak && streak.current_streak > 0) {
+      jobs.push({
+        userId, tokens: userTokens, category: 'streak_risk',
+        title: '🔥 No pierdas tu racha',
+        body: `Llevas ${streak.current_streak} día${streak.current_streak === 1 ? '' : 's'} seguidos leyendo. Lee un capítulo hoy para no perderla.`,
+      });
     } else {
-      category = 'daily_promise';
-      const promesa = getDailyPromiseForUser(userId);
-      title = '✨ Promesa de hoy';
-      body = `"${promesa.texto}" — ${promesa.ref}`;
+      jobs.push({
+        userId, tokens: userTokens, category: 'reading_reminder',
+        title: '📖 Un momento para leer',
+        body: 'Aparta unos minutos hoy para leer tu Biblia.',
+      });
     }
-
-    jobs.push({ userId, tokens: userTokens, title, body, category });
   }
-
   return jobs;
 }
 
@@ -140,23 +191,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'method_not_allowed' });
   }
 
+  const type = req.method === 'GET' ? getQueryParam(req, 'type') : req.body?.type;
+  if (type !== 'promise' && type !== 'reading') {
+    return sendError(res, 400, ERR.badRequest, null, 'cron-daily-reminder');
+  }
+
   const dryRun = req.method === 'GET'
     ? getQueryParam(req, 'dry_run') === '1'
     : req.body?.dryRun === true;
 
   try {
-    const jobs = await buildReminders();
+    const jobs = type === 'promise' ? await buildPromiseReminders() : await buildReadingReminders();
 
     if (dryRun) {
       const byCategory = jobs.reduce((acc, j) => {
         acc[j.category] = (acc[j.category] || 0) + 1;
         return acc;
       }, {});
-      return res.status(200).json({ success: true, dryRun: true, usersToNotify: jobs.length, byCategory });
+      return res.status(200).json({ success: true, dryRun: true, type, usersToNotify: jobs.length, byCategory });
     }
 
     const result = await sendReminders(jobs);
-    return res.status(200).json({ success: true, ...result });
+    return res.status(200).json({ success: true, type, ...result });
   } catch (err) {
     return sendError(res, 500, ERR.internal, err, 'cron-daily-reminder');
   }
