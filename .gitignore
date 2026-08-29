@@ -3,3 +3,6 @@ node_modules/
 .env
 .env.local
 npm-debug.log*
+
+# Restos que el puente de archivos no puede borrar
+_to_delete/

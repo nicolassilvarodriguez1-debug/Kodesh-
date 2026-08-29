@@ -2,7 +2,9 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/app", "destination": "/index.html" }
+    { "source": "/study",        "destination": "https://kodesh-study.vercel.app/study" },
+    { "source": "/study/:path*", "destination": "https://kodesh-study.vercel.app/study/:path*" },
+    { "source": "/app",          "destination": "/index.html" }
   ],
   "functions": {
     "api/search.js":    { "memory": 256, "maxDuration": 30 },

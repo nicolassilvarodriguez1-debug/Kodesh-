@@ -42,6 +42,12 @@ self.addEventListener('fetch', event => {
   // Skip API calls — always need network
   if (url.pathname.startsWith('/api/')) return;
 
+  // Skip Kodesh Study: vive en /study y lo sirve Next.js a traves de un rewrite.
+  // Sus assets llevan hash y su propio cache-control, y sus paginas son privadas:
+  // guardarlas en la cache de la Biblia solo produce chunks obsoletos y un
+  // fallback offline que devolveria index.html en mitad de una leccion.
+  if (url.pathname === '/study' || url.pathname.startsWith('/study/')) return;
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
