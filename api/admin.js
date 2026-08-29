@@ -2,6 +2,7 @@
 // verified via JWT + 2FA (aal2). See api/_auth.js.
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions } from './_security.js';
+import { getFcm } from './_firebase.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -124,6 +125,55 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, plan });
     } catch(err) {
       console.error('set_plan error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── ACTION: send_user_push (mandar un push a un usuario específico) ──
+  // A diferencia de push-test.js (solo al propio admin) o cron-daily-reminder
+  // (masivo a todos), esto manda a los tokens de UN userId puntual — pensado
+  // para usarse junto con find_user (buscar por email en el panel) para
+  // resolver el targetUserId antes de llamar aquí.
+  if (action === 'send_user_push') {
+    const { targetUserId, title, body: pushBody } = req.body;
+    if (!targetUserId || !title || !pushBody) {
+      return res.status(400).json({ error: 'targetUserId, title y body son requeridos' });
+    }
+    try {
+      const tokens = await sbGet(`user_push_tokens?user_id=eq.${targetUserId}&select=id,token`);
+      if (!Array.isArray(tokens) || tokens.length === 0) {
+        return res.status(404).json({ error: 'no_token_registered' });
+      }
+
+      const fcm = getFcm();
+      const results = await Promise.allSettled(tokens.map(t =>
+        fcm.send({ token: t.token, notification: { title, body: pushBody } })
+      ));
+
+      let sent = 0;
+      const staleIds = [];
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          sent++;
+        } else {
+          const code = result.reason?.errorInfo?.code || result.reason?.code || '';
+          if (code.includes('registration-token-not-registered') || code.includes('invalid-argument')) {
+            staleIds.push(tokens[i].id);
+          }
+          console.warn('send_user_push: fallo al enviar a un token:', code || result.reason?.message);
+        }
+      });
+
+      if (staleIds.length) {
+        await fetch(`${SB_URL}/rest/v1/user_push_tokens?id=in.(${staleIds.join(',')})`, {
+          method: 'DELETE',
+          headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+        }).catch(() => {});
+      }
+
+      return res.status(200).json({ success: true, sent, total: tokens.length });
+    } catch (err) {
+      console.error('send_user_push error:', err);
       return res.status(500).json({ error: err.message });
     }
   }

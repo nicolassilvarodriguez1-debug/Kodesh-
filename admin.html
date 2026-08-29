@@ -182,13 +182,6 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       <button class="btn-sm" onclick="toggleTheme()" id="themeBtn">☀️ Claro</button>
       <a href="/upload.html" class="btn-sm" style="text-decoration:none">↑ Subir contenido</a>
       <button class="btn-sm" onclick="loadAll()">↺ Actualizar</button>
-      <button class="btn-sm" onclick="sendTestPush()">🔔 Push de prueba</button>
-      <button class="btn-sm" onclick="previewDailyReminder('promise')">👁 Vista previa: Promesa</button>
-      <button class="btn-sm" onclick="sendDailyReminder('promise')">📣 Mandar: Promesa</button>
-      <button class="btn-sm" onclick="previewDailyReminder('reading')">👁 Vista previa: Lectura</button>
-      <button class="btn-sm" onclick="sendDailyReminder('reading')">📣 Mandar: Lectura</button>
-      <button class="btn-sm" onclick="previewDailyReminder('night')">👁 Vista previa: Nocturna</button>
-      <button class="btn-sm" onclick="sendDailyReminder('night')">📣 Mandar: Nocturna</button>
     </div>
   </div>
 
@@ -199,6 +192,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     <button class="admin-tab" onclick="switchTab('actividades',this)">🎨 Actividades</button>
     <button class="admin-tab" onclick="switchTab('interlineal',this)">📜 Interlineal</button>
     <button class="admin-tab" onclick="switchTab('traduccion',this)">✦ Traducción Kodesh</button>
+    <button class="admin-tab" onclick="switchTab('notificaciones',this)">🔔 Notificaciones</button>
     <button class="admin-tab" id="tabRoles" onclick="switchTab('roles',this)" style="display:none">🔑 Editores</button>
   </div>
 
@@ -410,6 +404,66 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     </div>
   </div>
 
+  <!-- TAB: NOTIFICACIONES -->
+  <div class="tab-content" id="tab-notificaciones">
+    <div class="main">
+
+      <div class="section-title">Push a un usuario específico</div>
+      <div class="upload-card" style="max-width:480px">
+        <div class="form-group">
+          <label class="form-label">Email del usuario</label>
+          <input class="form-input" id="pushUserEmail" placeholder="email@ejemplo.com">
+        </div>
+        <button class="btn-upload" onclick="buscarUsuarioPush()">Buscar usuario</button>
+        <div class="upload-msg" id="msgPushUserSearch"></div>
+
+        <div id="pushUserForm" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="form-group">
+            <label class="form-label">Título</label>
+            <input class="form-input" id="pushUserTitle" placeholder="Título de la notificación">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mensaje</label>
+            <input class="form-input" id="pushUserBody" placeholder="Cuerpo de la notificación">
+          </div>
+          <button class="btn-upload" onclick="enviarPushUsuario()">📣 Enviar a este usuario</button>
+          <div class="upload-msg" id="msgPushUserSend"></div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:28px">Recordatorios masivos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <button class="btn-sm" onclick="sendTestPush()">🔔 Push de prueba (a mí)</button>
+      </div>
+      <div class="table-wrap" style="padding:16px">
+        <table>
+          <thead><tr><th>Recordatorio</th><th>Horario</th><th></th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td>✨ Promesa del día</td>
+              <td>Mañana</td>
+              <td><button class="btn-sm" onclick="previewDailyReminder('promise')">👁 Vista previa</button></td>
+              <td><button class="btn-sm" onclick="sendDailyReminder('promise')">📣 Mandar</button></td>
+            </tr>
+            <tr>
+              <td>📖 Lectura / Racha / Te extrañamos</td>
+              <td>Tarde</td>
+              <td><button class="btn-sm" onclick="previewDailyReminder('reading')">👁 Vista previa</button></td>
+              <td><button class="btn-sm" onclick="sendDailyReminder('reading')">📣 Mandar</button></td>
+            </tr>
+            <tr>
+              <td>🌙 Antes de dormir</td>
+              <td>Noche (9pm)</td>
+              <td><button class="btn-sm" onclick="previewDailyReminder('night')">👁 Vista previa</button></td>
+              <td><button class="btn-sm" onclick="sendDailyReminder('night')">📣 Mandar</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
   <!-- TAB: ROLES (solo superadmin) -->
   <div class="tab-content" id="tab-roles">
     <div class="main">
@@ -593,6 +647,70 @@ async function sendDailyReminder(type) {
     `Enviados OK: ${data.sent}  ·  Fallidos: ${data.failed}  ·  Tokens vencidos eliminados: ${data.staleRemoved}\n` +
     formatCategoryBreakdown(data.byCategory || {})
   );
+}
+
+// ── PUSH A UN USUARIO ESPECÍFICO ──
+// Busca por email (usa la misma acción find_user que la pestaña de Editores,
+// solo superadmin) y guarda el userId encontrado para el botón de enviar.
+let pushTargetUserId = null;
+let pushTargetEmail = null;
+
+async function buscarUsuarioPush() {
+  const email = document.getElementById('pushUserEmail').value.trim();
+  const msg = document.getElementById('msgPushUserSearch');
+  document.getElementById('pushUserForm').style.display = 'none';
+  pushTargetUserId = null;
+  if (!email) return;
+
+  msg.textContent = 'Buscando...'; msg.className = 'upload-msg';
+  try {
+    const res = await adminApi({ action: 'find_user', email });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.textContent = 'Error: ' + (data.error || res.status); msg.className = 'upload-msg err';
+      return;
+    }
+    if (!data.foundUser) {
+      msg.textContent = 'Usuario no encontrado.'; msg.className = 'upload-msg err';
+      return;
+    }
+    pushTargetUserId = data.foundUser.id;
+    pushTargetEmail = data.foundUser.email;
+    msg.textContent = `✓ Encontrado: ${data.foundUser.email}`; msg.className = 'upload-msg ok';
+    document.getElementById('pushUserForm').style.display = 'block';
+  } catch (e) {
+    msg.textContent = 'Error: ' + e.message; msg.className = 'upload-msg err';
+  }
+}
+
+async function enviarPushUsuario() {
+  const title = document.getElementById('pushUserTitle').value.trim();
+  const body = document.getElementById('pushUserBody').value.trim();
+  const msg = document.getElementById('msgPushUserSend');
+  if (!pushTargetUserId) { msg.textContent = 'Busca un usuario primero.'; msg.className = 'upload-msg err'; return; }
+  if (!title || !body) { msg.textContent = 'Título y mensaje son requeridos.'; msg.className = 'upload-msg err'; return; }
+
+  const confirmSend = confirm(`¿Mandar esta notificación a ${pushTargetEmail}?\n\n"${title}"\n${body}`);
+  if (!confirmSend) return;
+
+  msg.textContent = 'Enviando...'; msg.className = 'upload-msg';
+  try {
+    const res = await adminApi({ action: 'send_user_push', targetUserId: pushTargetUserId, title, body });
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.error === 'no_token_registered') {
+        msg.textContent = 'Este usuario no tiene ningún dispositivo con notificaciones activadas.';
+      } else {
+        msg.textContent = 'Error: ' + (data.error || res.status);
+      }
+      msg.className = 'upload-msg err';
+      return;
+    }
+    msg.textContent = `✓ Enviado: ${data.sent}/${data.total} dispositivo(s).`;
+    msg.className = 'upload-msg ok';
+  } catch (e) {
+    msg.textContent = 'Error: ' + e.message; msg.className = 'upload-msg err';
+  }
 }
 
 // ── THEME ──
