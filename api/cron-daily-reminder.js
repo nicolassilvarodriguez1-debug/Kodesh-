@@ -17,9 +17,10 @@
 //                     nunca leyó, o lejos de los cortes de winback) —
 //                     recordatorio genérico de lectura.
 //
-//   type=night    (noche)  — invitación a una lectura nocturna antes de
-//                 dormir, a quien no ha leído hoy todavía. Un solo mensaje,
-//                 sin ramificar por racha/inactividad como type=reading.
+//   type=night    (noche)  — devocional nocturno, invitación a cerrar el día
+//                 con la Palabra antes de dormir. Sale para TODOS los que
+//                 tienen un token guardado, igual que type=promise — no
+//                 depende de si el usuario ya leyó hoy.
 //
 // Se dispara de dos formas:
 //   1. Vercel Cron (GET, autenticado con CRON_SECRET — ver vercel.json),
@@ -150,25 +151,17 @@ async function buildReadingReminders() {
   return jobs;
 }
 
-// ── type=night — antes de dormir, a quien no ha leído hoy todavía ──
-// Invitación suave a cerrar el día con la Palabra. No se ramifica por
-// racha/inactividad como el recordatorio de la tarde — es un solo mensaje,
-// pensado para el momento de la noche antes de dormir.
+// ── type=night — devocional nocturno, a TODOS los que tienen un token ──
+// Invitación a cerrar el día con la Palabra antes de dormir. A diferencia de
+// type=reading, no depende de si el usuario ya leyó hoy — es un devocional
+// nocturno, no un recordatorio de racha/inactividad, así que sale para todos
+// por igual (mismo criterio que type=promise).
 async function buildNightReminders() {
-  const [tokens, streaks] = await Promise.all([
-    sbGet('user_push_tokens?select=id,user_id,token'),
-    sbGet('reading_streaks?select=user_id,last_read_date'),
-  ]);
-
-  const streakByUser = new Map(streaks.map(s => [s.user_id, s]));
-  const today = todayUTC();
+  const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
   const tokensByUser = groupTokensByUser(tokens);
 
   const jobs = [];
   for (const [userId, userTokens] of tokensByUser) {
-    const streak = streakByUser.get(userId);
-    if (streak && streak.last_read_date === today) continue; // ya leyó hoy
-
     jobs.push({
       userId, tokens: userTokens, category: 'night_reading',
       title: '🌙 Antes de dormir',
