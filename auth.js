@@ -153,6 +153,13 @@ async function checkTermsAccepted(userId) {
   const sb = getSupabase();
   if (!sb) return true; // fail-open if Supabase unreachable, to avoid bricking the app
   try {
+    // Sin sesion viva, la consulta sale como anonima: RLS devuelve cero filas y
+    // parece que el usuario no ha aceptado, aunque si lo haya hecho. Ese falso
+    // negativo mostraba el modal y luego la aceptacion fallaba, porque RLS
+    // tampoco deja insertar sin sesion. Se comprueba antes de decidir.
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session || session.user?.id !== userId) return true;
+
     const { data, error } = await sb
       .from('user_terms_acceptance')
       .select('id')
