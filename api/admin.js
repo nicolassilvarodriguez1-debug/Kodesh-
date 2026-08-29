@@ -63,6 +63,29 @@ async function sbUpsert(table, body, onConflict) {
   return res.ok;
 }
 
+// Fila en push_notification_log — ver también api/cron-daily-reminder.js,
+// que tiene su propia copia de esta función (los recordatorios masivos
+// corren en ese archivo, no aquí, y no vale la pena compartir un módulo
+// solo para esto).
+async function logNotification({ admin, kind, targetLabel, title, body, sent, failed }) {
+  const row = {
+    sent_by: admin?.id || null,
+    sent_by_email: admin?.email || null,
+    kind,
+    target_label: targetLabel,
+    title,
+    body: body || null,
+    sent_count: sent,
+    failed_count: failed,
+    total_count: sent + failed,
+  };
+  await fetch(`${SB_URL}/rest/v1/push_notification_log`, {
+    method: 'POST',
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(row),
+  }).catch(err => console.warn('logNotification: fallo al guardar en el historial:', err.message));
+}
+
 export default async function handler(req, res) {
   // Was previously hand-rolled with `Access-Control-Allow-Headers: Content-Type`
   // only (missing Authorization) — the only authenticated POST endpoint in
@@ -135,7 +158,7 @@ export default async function handler(req, res) {
   // para usarse junto con find_user (buscar por email en el panel) para
   // resolver el targetUserId antes de llamar aquí.
   if (action === 'send_user_push') {
-    const { targetUserId, title, body: pushBody } = req.body;
+    const { targetUserId, targetEmail, title, body: pushBody } = req.body;
     if (!targetUserId || !title || !pushBody) {
       return res.status(400).json({ error: 'targetUserId, title y body son requeridos' });
     }
@@ -171,9 +194,26 @@ export default async function handler(req, res) {
         }).catch(() => {});
       }
 
+      await logNotification({
+        admin, kind: 'individual', title, body: pushBody,
+        targetLabel: targetEmail || targetUserId,
+        sent, failed: tokens.length - sent,
+      });
+
       return res.status(200).json({ success: true, sent, total: tokens.length });
     } catch (err) {
       console.error('send_user_push error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── ACTION: notification_log (historial de push enviados) ──
+  if (action === 'notification_log') {
+    try {
+      const rows = await sbGet('push_notification_log?select=*&order=sent_at.desc&limit=50');
+      return res.status(200).json({ rows: Array.isArray(rows) ? rows : [] });
+    } catch (err) {
+      console.error('notification_log error:', err);
       return res.status(500).json({ error: err.message });
     }
   }

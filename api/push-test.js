@@ -61,6 +61,23 @@ export default async function handler(req, res) {
       }).catch(() => {});
     }
 
+    // Registro en el historial del panel — ver push_notification_log.
+    await fetch(`${SB_URL}/rest/v1/push_notification_log`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sent_by: admin.id,
+        sent_by_email: admin.email,
+        kind: 'test',
+        target_label: admin.email,
+        title: 'KODESH',
+        body: 'Push de prueba — si ves esto, la integración funciona ✅',
+        sent_count: sent,
+        failed_count: rows.length - sent,
+        total_count: rows.length,
+      }),
+    }).catch(err => console.warn('push-test: fallo al guardar en el historial:', err.message));
+
     return res.status(200).json({ success: true, sent, total: rows.length });
   } catch (err) {
     return sendError(res, 500, ERR.internal, err, 'push-test');

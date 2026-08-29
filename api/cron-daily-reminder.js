@@ -81,6 +81,34 @@ async function sbDeleteTokens(ids) {
   }).catch(() => {});
 }
 
+// Fila en push_notification_log para el historial visible en el panel admin.
+// admin es null cuando dispara Vercel Cron (no hay sesión) — se guarda como
+// "Vercel Cron" para que quede claro en el historial que no fue manual.
+async function logNotification({ admin, kind, targetLabel, title, body, result }) {
+  const row = {
+    sent_by: admin?.id || null,
+    sent_by_email: admin?.email || 'Vercel Cron',
+    kind,
+    target_label: targetLabel,
+    title,
+    body: body || null,
+    sent_count: result.sent,
+    failed_count: result.failed,
+    total_count: result.sent + result.failed,
+  };
+  await fetch(`${SB_URL}/rest/v1/push_notification_log`, {
+    method: 'POST',
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(row),
+  }).catch(err => console.warn('logNotification: fallo al guardar en el historial:', err.message));
+}
+
+const TYPE_TITLES = {
+  promise: 'Promesa del día',
+  reading: 'Lectura / Racha / Te extrañamos',
+  night: 'Antes de dormir',
+};
+
 function groupTokensByUser(tokens) {
   const map = new Map();
   for (const t of tokens) {
@@ -203,6 +231,7 @@ export default async function handler(req, res) {
   applyCors(req, res, { methods: 'GET, POST, OPTIONS' });
   if (handleOptions(req, res)) return;
 
+  let admin = null;
   if (req.method === 'GET') {
     const authHeader = req.headers['authorization'] || '';
     const secret = process.env.CRON_SECRET;
@@ -210,7 +239,7 @@ export default async function handler(req, res) {
       return sendError(res, 401, ERR.unauthorized, null, 'cron-daily-reminder');
     }
   } else if (req.method === 'POST') {
-    const admin = await requireAdmin(req, res);
+    admin = await requireAdmin(req, res);
     if (!admin) return; // requireAdmin ya mandó 401/403
   } else {
     return res.status(405).json({ error: 'method_not_allowed' });
@@ -239,6 +268,11 @@ export default async function handler(req, res) {
     }
 
     const result = await sendReminders(jobs);
+    await logNotification({
+      admin, kind: type, title: TYPE_TITLES[type] || type,
+      targetLabel: `${jobs.length} usuario${jobs.length === 1 ? '' : 's'} elegible${jobs.length === 1 ? '' : 's'}`,
+      result,
+    });
     return res.status(200).json({ success: true, type, ...result });
   } catch (err) {
     return sendError(res, 500, ERR.internal, err, 'cron-daily-reminder');

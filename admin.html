@@ -461,6 +461,14 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         </table>
       </div>
 
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:28px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div class="section-title" style="margin:0;padding:0;border:none">Historial de notificaciones enviadas</div>
+        <button class="btn-sm" onclick="loadNotificationLog()">↻ Actualizar</button>
+      </div>
+      <div class="table-wrap" id="notifLogWrap">
+        <div class="loading">Cargando...</div>
+      </div>
+
     </div>
   </div>
 
@@ -568,6 +576,7 @@ async function sendTestPush() {
       return;
     }
     alert(`Push enviado: ${data.sent}/${data.total} dispositivo(s). Revisa tu iPhone.`);
+    loadNotificationLog();
   } catch (e) {
     alert('Error al mandar el push: ' + e.message);
   }
@@ -647,6 +656,7 @@ async function sendDailyReminder(type) {
     `Enviados OK: ${data.sent}  ·  Fallidos: ${data.failed}  ·  Tokens vencidos eliminados: ${data.staleRemoved}\n` +
     formatCategoryBreakdown(data.byCategory || {})
   );
+  loadNotificationLog();
 }
 
 // ── PUSH A UN USUARIO ESPECÍFICO ──
@@ -695,7 +705,7 @@ async function enviarPushUsuario() {
 
   msg.textContent = 'Enviando...'; msg.className = 'upload-msg';
   try {
-    const res = await adminApi({ action: 'send_user_push', targetUserId: pushTargetUserId, title, body });
+    const res = await adminApi({ action: 'send_user_push', targetUserId: pushTargetUserId, targetEmail: pushTargetEmail, title, body });
     const data = await res.json();
     if (!res.ok) {
       if (data.error === 'no_token_registered') {
@@ -708,8 +718,46 @@ async function enviarPushUsuario() {
     }
     msg.textContent = `✓ Enviado: ${data.sent}/${data.total} dispositivo(s).`;
     msg.className = 'upload-msg ok';
+    loadNotificationLog();
   } catch (e) {
     msg.textContent = 'Error: ' + e.message; msg.className = 'upload-msg err';
+  }
+}
+
+// ── HISTORIAL DE NOTIFICACIONES ──
+const NOTIF_KIND_LABELS = {
+  promise: '✨ Promesa',
+  reading: '📖 Lectura',
+  night: '🌙 Nocturna',
+  individual: '👤 Individual',
+  test: '🔔 Prueba',
+};
+
+async function loadNotificationLog() {
+  const wrap = document.getElementById('notifLogWrap');
+  try {
+    const res = await adminApi({ action: 'notification_log' });
+    const data = await res.json();
+    if (!res.ok) { wrap.innerHTML = `<div class="loading">Error: ${escHtml(data.error || res.status)}</div>`; return; }
+
+    const rows = data.rows || [];
+    if (!rows.length) { wrap.innerHTML = '<div class="loading">Todavía no se ha mandado ninguna notificación.</div>'; return; }
+
+    wrap.innerHTML = `<table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Destino</th><th>Título</th><th>Enviados</th><th>Por</th></tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr>
+          <td>${escHtml(new Date(r.sent_at).toLocaleString('es'))}</td>
+          <td>${escHtml(NOTIF_KIND_LABELS[r.kind] || r.kind)}</td>
+          <td>${escHtml(r.target_label || '—')}</td>
+          <td>${escHtml(r.title || '—')}</td>
+          <td>${r.sent_count}/${r.total_count}${r.failed_count ? ` <span style="color:var(--red)">(${r.failed_count} fallidos)</span>` : ''}</td>
+          <td>${escHtml(r.sent_by_email || 'Vercel Cron')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  } catch (e) {
+    wrap.innerHTML = `<div class="loading">Error: ${escHtml(e.message)}</div>`;
   }
 }
 
@@ -836,7 +884,7 @@ async function verifyMfaChallenge() {
 
 async function loadAll() {
   document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
-  const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage(), loadTraduccionKodesh()];
+  const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage(), loadTraduccionKodesh(), loadNotificationLog()];
   if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles());
   await Promise.all(promises);
 }
