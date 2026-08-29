@@ -1,4 +1,4 @@
-// KODESH — Recordatorios diarios por push notification, en dos momentos:
+// KODESH — Recordatorios diarios por push notification, en tres momentos:
 //
 //   type=promise  (mañana) — la promesa del día, a TODOS los que tienen un
 //                 token guardado. Es contenido devocional, no un recordatorio
@@ -16,6 +16,10 @@
 //                   - reading_reminder: cualquier otro caso (sin racha,
 //                     nunca leyó, o lejos de los cortes de winback) —
 //                     recordatorio genérico de lectura.
+//
+//   type=night    (noche)  — invitación a una lectura nocturna antes de
+//                 dormir, a quien no ha leído hoy todavía. Un solo mensaje,
+//                 sin ramificar por racha/inactividad como type=reading.
 //
 // Se dispara de dos formas:
 //   1. Vercel Cron (GET, autenticado con CRON_SECRET — ver vercel.json),
@@ -146,6 +150,34 @@ async function buildReadingReminders() {
   return jobs;
 }
 
+// ── type=night — antes de dormir, a quien no ha leído hoy todavía ──
+// Invitación suave a cerrar el día con la Palabra. No se ramifica por
+// racha/inactividad como el recordatorio de la tarde — es un solo mensaje,
+// pensado para el momento de la noche antes de dormir.
+async function buildNightReminders() {
+  const [tokens, streaks] = await Promise.all([
+    sbGet('user_push_tokens?select=id,user_id,token'),
+    sbGet('reading_streaks?select=user_id,last_read_date'),
+  ]);
+
+  const streakByUser = new Map(streaks.map(s => [s.user_id, s]));
+  const today = todayUTC();
+  const tokensByUser = groupTokensByUser(tokens);
+
+  const jobs = [];
+  for (const [userId, userTokens] of tokensByUser) {
+    const streak = streakByUser.get(userId);
+    if (streak && streak.last_read_date === today) continue; // ya leyó hoy
+
+    jobs.push({
+      userId, tokens: userTokens, category: 'night_reading',
+      title: '🌙 Antes de dormir',
+      body: 'Cierra el día con la Palabra — un capítulo antes de dormir.',
+    });
+  }
+  return jobs;
+}
+
 async function sendReminders(jobs) {
   const fcm = getFcm();
   const staleIds = [];
@@ -192,7 +224,7 @@ export default async function handler(req, res) {
   }
 
   const type = req.method === 'GET' ? getQueryParam(req, 'type') : req.body?.type;
-  if (type !== 'promise' && type !== 'reading') {
+  if (type !== 'promise' && type !== 'reading' && type !== 'night') {
     return sendError(res, 400, ERR.badRequest, null, 'cron-daily-reminder');
   }
 
@@ -201,7 +233,9 @@ export default async function handler(req, res) {
     : req.body?.dryRun === true;
 
   try {
-    const jobs = type === 'promise' ? await buildPromiseReminders() : await buildReadingReminders();
+    const jobs = type === 'promise' ? await buildPromiseReminders()
+      : type === 'reading' ? await buildReadingReminders()
+      : await buildNightReminders();
 
     if (dryRun) {
       const byCategory = jobs.reduce((acc, j) => {

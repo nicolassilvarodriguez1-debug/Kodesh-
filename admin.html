@@ -187,6 +187,8 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       <button class="btn-sm" onclick="sendDailyReminder('promise')">📣 Mandar: Promesa</button>
       <button class="btn-sm" onclick="previewDailyReminder('reading')">👁 Vista previa: Lectura</button>
       <button class="btn-sm" onclick="sendDailyReminder('reading')">📣 Mandar: Lectura</button>
+      <button class="btn-sm" onclick="previewDailyReminder('night')">👁 Vista previa: Nocturna</button>
+      <button class="btn-sm" onclick="sendDailyReminder('night')">📣 Mandar: Nocturna</button>
     </div>
   </div>
 
@@ -548,6 +550,19 @@ const REMINDER_LABELS = {
   streak_risk: 'Racha en riesgo',
   reading_reminder: 'Recordatorio de lectura',
   winback: 'Te extrañamos',
+  night_reading: 'Antes de dormir',
+};
+
+const REMINDER_TYPE_LABELS = {
+  promise: 'Promesa — mañana',
+  reading: 'Lectura/Racha/Extrañamos — tarde',
+  night: 'Antes de dormir — noche',
+};
+
+const REMINDER_SEND_LABELS = {
+  promise: 'la promesa del día',
+  reading: 'el recordatorio de lectura/racha/extrañamos',
+  night: 'la invitación a leer antes de dormir',
 };
 
 function formatCategoryBreakdown(cat) {
@@ -560,14 +575,14 @@ async function previewDailyReminder(type) {
   const data = await dailyReminderRequest(type, true);
   if (!data) return;
   alert(
-    `Vista previa (${type === 'promise' ? 'Promesa — mañana' : 'Lectura/Racha/Extrañamos — tarde'}), no se mandó nada:\n\n` +
+    `Vista previa (${REMINDER_TYPE_LABELS[type] || type}), no se mandó nada:\n\n` +
     `Usuarios a notificar: ${data.usersToNotify}\n` +
     formatCategoryBreakdown(data.byCategory || {})
   );
 }
 
 async function sendDailyReminder(type) {
-  const label = type === 'promise' ? 'la promesa del día' : 'el recordatorio de lectura/racha/extrañamos';
+  const label = REMINDER_SEND_LABELS[type] || type;
   const confirmSend = confirm(`Esto manda ${label} de verdad a todos los usuarios elegibles. ¿Seguro que quieres mandarla ahora?`);
   if (!confirmSend) return;
   const data = await dailyReminderRequest(type, false);

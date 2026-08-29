@@ -21,7 +21,8 @@
   },
   "crons": [
     { "path": "/api/cron-daily-reminder?type=promise", "schedule": "0 12 * * *" },
-    { "path": "/api/cron-daily-reminder?type=reading", "schedule": "0 21 * * *" }
+    { "path": "/api/cron-daily-reminder?type=reading", "schedule": "0 21 * * *" },
+    { "path": "/api/cron-daily-reminder?type=night", "schedule": "0 1 * * *" }
   ],
   "headers": [
     {
