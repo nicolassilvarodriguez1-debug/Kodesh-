@@ -34,6 +34,20 @@ async function sbGetAll(path) {
   return all;
 }
 
+async function sbRpc(fn, args = {}) {
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) throw new Error(`sbRpc ${fn} -> ${res.status}`);
+  return res.json();
+}
+
 async function sbUpsert(table, body, onConflict) {
   const res = await fetch(`${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
     method: 'POST',
@@ -143,8 +157,13 @@ export default async function handler(req, res) {
     const BOOK_ORDER = Object.keys(BOOK_CHAPTERS);
 
     try {
-      // Fetch distinct (book, chapter) pairs that have cached data
-      const cached = await sbGetAll('interlinear_cache?select=book,chapter');
+      // interlinear_cache guarda una fila por PALABRA, no por capítulo (ya
+      // son ~238k filas para ~560 capítulos), así que traer la tabla entera
+      // con sbGetAll y deduplicar en JS se volvió demasiado lento (llegó a
+      // no cargar, por exceder el timeout de la función). En vez de eso,
+      // pedimos los pares (book, chapter) ya distintos vía una función SQL
+      // — ver migración interlinear_cached_chapters_rpc.
+      const cached = await sbRpc('interlinear_cached_chapters');
       const cachedSet = new Set((cached || []).map(r => `${r.book}:${r.chapter}`));
 
       let totalCached = 0;
