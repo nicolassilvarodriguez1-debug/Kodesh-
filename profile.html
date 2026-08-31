@@ -288,8 +288,11 @@ function safeUrl(u) {
   } catch(e) { return ''; }
 }
 
-// CapacitorHttp intercepts fetch() in the native app and needs an absolute URL
-const KAPI_BASE = 'https://kodeshbible.com';
+// CapacitorHttp intercepts fetch() in the native app and needs an absolute URL.
+// Tiene que ser el dominio canónico CON www: el apex responde 308 hacia www, y
+// CapacitorHttp en Android no sigue redirecciones en POST (falla con "error
+// 308"). Ver la nota más larga en index.html.
+const KAPI_BASE = 'https://www.kodeshbible.com';
 async function kapiFetch(url, options = {}) {
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const fullUrl = (url.startsWith('/') && isNative) ? KAPI_BASE + url : url;
