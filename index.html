@@ -3555,6 +3555,7 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
 </div>
 
 <!-- ══ SCRIPT ══ -->
+<script src="./oauth-deeplink.js"></script>
 <script>
 /* ── HTTP helper ──
    Web: usa URL relativa (mismo origen, sin CORS).
@@ -7241,6 +7242,8 @@ function initTheme() {
    INIT
 ════════════════════════════════════ */
 function init() {
+
+
   checkAppVersion();
   initTheme();
   updateBookList();
@@ -7306,6 +7309,15 @@ window.__STRONGS_INLINE__ = {"bereshit":{"h":"בְּרֵאשִׁית","t":"bər�
 <script>
   window.addEventListener('load', () => {
     initAuth();
+    // Si Android mato la app durante el login social, vuelve a arrancar aqui
+    // (no en login.html) con la sesion aun en la URL del deep link. Va en este
+    // bloque y no en init() porque auth.js —y por tanto getSupabase()— se
+    // carga despues de que init() ya corrio.
+    if (typeof initOAuthDeepLink === 'function') {
+      initOAuthDeepLink(function () { return getSupabase(); }, {
+        onSuccess: function () { window.location.reload(); },
+      });
+    }
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
