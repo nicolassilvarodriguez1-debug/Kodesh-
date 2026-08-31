@@ -3672,9 +3672,33 @@ async function authHeaders() {
    REVENUECAT — compra directa desde el modal Premium
    (evita el salto a profile.html + un segundo modal repetido)
 ════════════════════════════════════ */
-const RC_API_KEY = 'appl_vspUVvGMnobdbtulUhMZoDptiEK';
+// RevenueCat usa una clave PÚBLICA distinta por tienda (appl_ para App Store,
+// goog_ para Google Play). Configurar el SDK con la clave de la otra tienda
+// hace que no arranque, y la app solo dice "la tienda no está disponible".
+const RC_API_KEYS = {
+  ios: 'appl_vspUVvGMnobdbtulUhMZoDptiEK',
+  android: '', // ← clave goog_ del proyecto de RevenueCat (pendiente)
+};
+
+// El identificador del producto también es propio de cada tienda: Google Play
+// no reutiliza el de App Store, hay que crear la suscripción en Play Console.
+const PRODUCT_IDS = {
+  ios: 'com.iglesiafreedom.kodesh.premium.monthly',
+  android: '', // ← ID de la suscripción creada en Play Console (pendiente)
+};
+
+// El entitlement sí es compartido: RevenueCat unifica ambas tiendas bajo él,
+// así que un usuario premium se ve igual venga de iOS o de Android.
 const RC_ENTITLEMENT = 'KODESH Pro';
-const PRODUCT_ID = 'com.iglesiafreedom.kodesh.premium.monthly';
+
+function rcPlatform() {
+  return (window.Capacitor && window.Capacitor.getPlatform) ? window.Capacitor.getPlatform() : 'web';
+}
+function rcApiKey() { return RC_API_KEYS[rcPlatform()] || ''; }
+function rcProductId() { return PRODUCT_IDS[rcPlatform()] || ''; }
+// Nombre de la tienda para los mensajes al usuario — decir "Apple ID" en
+// Android confunde.
+function rcStoreName() { return rcPlatform() === 'android' ? 'cuenta de Google Play' : 'Apple ID'; }
 
 let rcConfigured = false;
 let PurchasesSDK = null;
@@ -3687,9 +3711,15 @@ async function initRevenueCat(userId) {
       console.warn('[RC] Plugin Purchases no encontrado en Capacitor.Plugins');
       return;
     }
-    await PurchasesSDK.configure({ apiKey: RC_API_KEY, appUserID: userId });
+    const apiKey = rcApiKey();
+    if (!apiKey) {
+      // Mejor un mensaje explícito que un fallo opaco del SDK más adelante.
+      console.warn('[RC] Sin clave de RevenueCat para la plataforma', rcPlatform(), '— las compras quedan deshabilitadas.');
+      return;
+    }
+    await PurchasesSDK.configure({ apiKey, appUserID: userId });
     rcConfigured = true;
-    console.log('[RC] RevenueCat configurado para:', userId);
+    console.log('[RC] RevenueCat configurado para:', userId, 'en', rcPlatform());
   } catch(e) {
     console.warn('[RC] Init error:', e.message);
   }
@@ -3899,12 +3929,13 @@ async function purchasePremiumDirect() {
 
     const preCheckInfo = await PurchasesSDK.getCustomerInfo();
     if (preCheckInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
-      throw new Error('Este Apple ID ya tiene una suscripción KODESH Premium activa asociada a otra cuenta. Si es tuya, inicia sesión con esa cuenta o contáctanos para transferirla.');
+      throw new Error(`Esta ${rcStoreName()} ya tiene una suscripción KODESH Premium activa asociada a otra cuenta. Si es tuya, inicia sesión con esa cuenta o contáctanos para transferirla.`);
     }
 
     const { current } = await PurchasesSDK.getOfferings();
     if (!current || !current.availablePackages?.length) throw new Error('No hay productos disponibles.');
-    const pkg = current.availablePackages.find(p => p.product?.identifier === PRODUCT_ID)
+    const wantedId = rcProductId();
+    const pkg = (wantedId && current.availablePackages.find(p => p.product?.identifier === wantedId))
       || current.monthly
       || current.availablePackages[0];
     if (!pkg) throw new Error('Producto no encontrado.');
