@@ -176,8 +176,14 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 <script>
 const ADMIN_ID = 'ce384f84-a3fd-41b9-a33c-163625e01804';
 const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
+// Clave de sesion fijada a mano. supabase-js la deduce del subdominio de la
+// URL, asi que el dia que apuntemos a un dominio propio (auth.kodeshbible.com)
+// pasaria a buscar "sb-auth-auth-token" y dejaria fuera a todas las sesiones ya
+// guardadas: todos los usuarios, web y nativo, quedarian deslogueados de golpe.
+// Fijandola al valor historico, cambiar de dominio no toca las sesiones.
+const SB_STORAGE_KEY = 'sb-fvknbqdsgqdmwirrgcvb-auth-token';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
-const sb = supabase.createClient(SB_URL, SB_KEY);
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: SB_STORAGE_KEY } });
 let currentUserId = null;
 
 // ── XSS-safe helpers ──

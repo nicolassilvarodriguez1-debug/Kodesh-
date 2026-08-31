@@ -2,6 +2,12 @@
 // Include this before the closing </body> tag in index.html
 
 const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
+// Clave de sesion fijada a mano. supabase-js la deduce del subdominio de la
+// URL, asi que el dia que apuntemos a un dominio propio (auth.kodeshbible.com)
+// pasaria a buscar "sb-auth-auth-token" y dejaria fuera a todas las sesiones ya
+// guardadas: todos los usuarios, web y nativo, quedarian deslogueados de golpe.
+// Fijandola al valor historico, cambiar de dominio no toca las sesiones.
+const SB_STORAGE_KEY = 'sb-fvknbqdsgqdmwirrgcvb-auth-token';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 
 // Versión actual de los Términos y Condiciones. Si actualizas terminos.html,
@@ -13,7 +19,7 @@ let currentUser = null;
 
 function getSupabase() {
   if (!_supabase && window.supabase) {
-    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: SB_STORAGE_KEY } });
   }
   return _supabase;
 }
