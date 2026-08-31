@@ -419,6 +419,48 @@ async function openOAuthInApp(provider) {
   }
 }
 
+// Al volver de Google, Supabase redirige a com.iglesiafreedom.kodesh://index
+// y Android reabre la app con esa URL. Sin este listener la sesion viaja en el
+// enlace pero nadie la recoge: la app queda igual que antes y el navegador se
+// ve "cargando para siempre". El flujo es implicit, asi que los tokens llegan
+// en el fragmento (#access_token=...), no como ?code=.
+function initOAuthDeepLink() {
+  if (!isNativeApp) return;
+  const AppPlugin = window.Capacitor?.Plugins?.App;
+  if (!AppPlugin?.addListener) {
+    console.warn('[OAuth] Plugin App no disponible — el retorno del login social no se podra procesar.');
+    return;
+  }
+
+  AppPlugin.addListener('appUrlOpen', async ({ url }) => {
+    if (!url || url.indexOf('com.iglesiafreedom.kodesh://') !== 0) return;
+
+    try {
+      const frag = url.split('#')[1] || '';
+      const p = new URLSearchParams(frag);
+      const access_token = p.get('access_token');
+      const refresh_token = p.get('refresh_token');
+
+      if (p.get('error_description')) {
+        showMsg('login-msg', 'error', p.get('error_description'));
+      } else if (access_token && refresh_token) {
+        const { error } = await sbClient.auth.setSession({ access_token, refresh_token });
+        if (error) throw error;
+        window.location.href = 'index.html';
+        return;
+      }
+    } catch (e) {
+      console.error('[OAuth] No se pudo establecer la sesion:', e);
+      showMsg('login-msg', 'error', 'No se pudo completar el inicio de sesion. Intenta de nuevo.');
+    } finally {
+      // Cerrar el navegador in-app aunque algo haya fallado, para no dejar al
+      // usuario atrapado en una pantalla en blanco.
+      try { await window.Capacitor?.Plugins?.Browser?.close?.(); } catch (_) {}
+    }
+  });
+}
+initOAuthDeepLink();
+
 async function loginGoogle() {
   await openOAuthInApp('google');
 }
