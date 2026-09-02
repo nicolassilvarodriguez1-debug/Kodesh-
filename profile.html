@@ -537,7 +537,8 @@ async function restorePurchases() {
 // GESTIONAR / CANCELAR SUSCRIPCIÓN
 // iOS: Apple no permite cancelar por API — se abre la pantalla nativa
 // de gestión de suscripciones (requerido por Apple para apps con
-// auto-renovables). Web: se abre el Customer Portal de Stripe, donde
+// auto-renovables). Android: la pantalla equivalente de Google Play.
+// Web: se abre el Customer Portal de Stripe, donde
 // el usuario cancela o cambia su método de pago sin intervención nuestra.
 // ══════════════════════════════════════════
 async function manageSubscription() {
@@ -545,7 +546,12 @@ async function manageSubscription() {
   const btn = document.getElementById('btnManageSub');
 
   if (isNative) {
-    const url = 'itms-apps://apps.apple.com/account/subscriptions';
+    /* Cada tienda gestiona sus propias suscripciones y ninguna permite
+       cancelar por API. Android mandado a itms-apps:// no abre nada. */
+    const platform = (window.Capacitor && window.Capacitor.getPlatform) ? window.Capacitor.getPlatform() : 'ios';
+    const url = platform === 'android'
+      ? 'https://play.google.com/store/account/subscriptions?package=com.iglesiafreedom.kodesh'
+      : 'itms-apps://apps.apple.com/account/subscriptions';
     try {
       const Browser = window.Capacitor?.Plugins?.Browser;
       if (Browser && Browser.open) { await Browser.open({ url }); return; }

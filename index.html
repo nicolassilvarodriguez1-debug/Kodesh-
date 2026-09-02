@@ -3980,6 +3980,26 @@ function compareVersions(a, b) {
 
 let _forceUpdateStoreUrl = null;
 
+/* Tienda por plataforma. Nunca mandes a un usuario de Android a la App Store:
+   se queda mirando una ficha donde no puede actualizar. */
+const STORE_URL_FALLBACK = {
+  ios:     'https://apps.apple.com/app/kodesh-bible/id6781083106',
+  android: 'https://play.google.com/store/apps/details?id=com.iglesiafreedom.kodesh',
+};
+
+function nativePlatform() {
+  try {
+    return (window.Capacitor && window.Capacitor.getPlatform) ? window.Capacitor.getPlatform() : 'ios';
+  } catch(e) { return 'ios'; }
+}
+
+function storeUrlForPlatform(data) {
+  const platform = nativePlatform();
+  return (data && data.storeUrl && data.storeUrl[platform])
+      || STORE_URL_FALLBACK[platform]
+      || STORE_URL_FALLBACK.ios;
+}
+
 async function checkAppVersion() {
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   if (!isNative) return;
@@ -3988,17 +4008,22 @@ async function checkAppVersion() {
     const AppPlugin = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (!AppPlugin || !AppPlugin.getInfo) return; // plugin no instalado aún — no bloquear
 
+    const platform = nativePlatform();
     const [info, res] = await Promise.all([
       AppPlugin.getInfo(),
-      kapiFetch('/api/app-version'),
+      kapiFetch('/api/app-version?platform=' + encodeURIComponent(platform)),
     ]);
     if (!res.ok) return;
     const data = await res.json();
-    if (!data.minVersion || !info.version) return;
 
-    if (compareVersions(info.version, data.minVersion) < 0) {
-      const platform = window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'ios';
-      _forceUpdateStoreUrl = (data.storeUrl && data.storeUrl[platform]) || data.storeUrl?.ios || 'https://apps.apple.com/app/kodesh-bible/id6781083106';
+    /* El mínimo de MI plataforma. iOS y Android se publican por separado y
+       llevan numeración propia: comparar contra el mínimo del otro deja a
+       toda una plataforma atrapada en el modal. */
+    const minVersion = (data.minVersions && data.minVersions[platform]) || data.minVersion;
+    if (!minVersion || !info.version) return;
+
+    if (compareVersions(info.version, minVersion) < 0) {
+      _forceUpdateStoreUrl = storeUrlForPlatform(data);
       document.getElementById('forceUpdateOverlay')?.classList.add('open');
     }
   } catch(e) {
@@ -4007,7 +4032,7 @@ async function checkAppVersion() {
 }
 
 async function goToAppStoreUpdate() {
-  const url = _forceUpdateStoreUrl || 'https://apps.apple.com/app/kodesh-bible/id6781083106';
+  const url = _forceUpdateStoreUrl || storeUrlForPlatform(null);
   try {
     const Browser = window.Capacitor?.Plugins?.Browser;
     if (Browser && Browser.open) {
