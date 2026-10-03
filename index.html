@@ -3503,7 +3503,7 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
         <option value="KJV">KJV</option>
       </select>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
-      <div class="streak-badge" id="streakBadge" style="display:none"></div>
+      <div class="streak-badge" id="streakBadge" style="display:none" role="button" tabindex="0" aria-label="Ver racha, maná y protectores" onclick="openManaSection()" onkeydown="if(event.key==='Enter')openManaSection()"></div>
       <div class="usage-indicator" id="planBadge" style="display:none"></div>
       <button class="user-btn" id="userBtn" onclick="window.location.href='login.html'">
         <span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px">Entrar</span>
@@ -5853,6 +5853,22 @@ function openProfile() {
   document.body.style.overflow = 'hidden';
 }
 
+// Tocar el 🔥 de la barra superior abre el perfil directo en Maná y protectores.
+function openManaSection() {
+  openProfile();
+  requestAnimationFrame(() => {
+    const el = document.getElementById('manaSection');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const title = el.querySelector('.stat-section-title');
+    if (title) {
+      title.style.transition = 'color 0.4s ease';
+      title.style.color = 'var(--gold-bright, #f0d080)';
+      setTimeout(() => { title.style.color = ''; }, 1400);
+    }
+  });
+}
+
 function closeProfile() {
   document.getElementById('profileOverlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -5897,7 +5913,7 @@ function renderManaSection() {
     : `Te faltan ${price - s.mana} de maná`;
   const atRisk = s.current > 0 && !s.readToday;
   return `
-    <div style="grid-column:span 2;margin-top:4px">
+    <div id="manaSection" style="grid-column:span 2;margin-top:4px;scroll-margin-top:12px">
       <div class="stat-section-title" style="padding:8px 0 10px;border-top:1px solid var(--border)">✨ Maná y protectores</div>
     </div>
     <div class="stat-card">
