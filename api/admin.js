@@ -35,6 +35,39 @@ async function sbGetAll(path) {
   return all;
 }
 
+// Count rows server-side (no rows downloaded, no 1000-row cap). PostgREST
+// returns the total in Content-Range: "*/1550".
+async function sbCount(path) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method: 'HEAD',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Prefer': 'count=exact',
+    }
+  });
+  if (!res.ok) throw new Error(`sbCount ${path} -> ${res.status}`);
+  const total = res.headers.get('content-range')?.split('/')[1];
+  return parseInt(total, 10) || 0;
+}
+
+// Fetch ALL auth users, paginating (GoTrue caps per_page; with a single
+// request of per_page=500, user #501+ silently disappeared from the panel).
+async function getAllAuthUsers() {
+  const PER_PAGE = 200;
+  const all = [];
+  for (let page = 1; page <= 500; page++) {
+    const r = await fetch(`${SB_URL}/auth/v1/admin/users?page=${page}&per_page=${PER_PAGE}`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if (!r.ok) throw new Error(`auth users page ${page} -> ${r.status}`);
+    const users = (await r.json()).users || [];
+    all.push(...users);
+    if (users.length < PER_PAGE) break;
+  }
+  return all;
+}
+
 async function sbRpc(fn, args = {}) {
   const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
@@ -118,11 +151,8 @@ export default async function handler(req, res) {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'email requerido' });
     try {
-      const authRes = await fetch(`${SB_URL}/auth/v1/admin/users?per_page=500`, {
-        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
-      });
-      const authData = await authRes.json();
-      const found = (authData.users || []).find(u => u.email?.toLowerCase() === email.toLowerCase());
+      const authUsers = await getAllAuthUsers();
+      const found = authUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
       return res.status(200).json({ foundUser: found ? { id: found.id, email: found.email } : null });
     } catch(err) {
       return res.status(500).json({ error: err.message });
@@ -375,21 +405,16 @@ export default async function handler(req, res) {
   const month = new Date().toISOString().slice(0, 7);
   try {
     // Get all auth users via admin API
-    const authRes = await fetch(`${SB_URL}/auth/v1/admin/users?per_page=500`, {
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': `Bearer ${SB_KEY}`,
-      }
-    });
-    const authData = await authRes.json();
-    const authUsers = authData.users || [];
-
-    // Get profiles, plans, usage
-    const [profiles, plans, usage, cache] = await Promise.all([
-      sbGet('user_profiles?select=id,display_name'),
-      sbGet('user_plans?select=user_id,plan,subscription_status,current_period_end'),
-      sbGet(`ai_usage?select=user_id,searches_used,assistant_used,lexicon_used&month=eq.${month}`),
-      sbGet('lexicon_cache?select=testament'),
+    // Get profiles, plans, usage — sbGetAll paginates past the 1000-row cap;
+    // order= makes offset pagination stable. Lexicon cache is counted in
+    // Postgres instead of downloading rows (it was stuck at exactly 1000).
+    const [authUsers, profiles, plans, usage, cacheAT, cacheNT] = await Promise.all([
+      getAllAuthUsers(),
+      sbGetAll('user_profiles?select=id,display_name&order=id'),
+      sbGetAll('user_plans?select=user_id,plan,subscription_status,current_period_end&order=user_id'),
+      sbGetAll(`ai_usage?select=user_id,searches_used,assistant_used,lexicon_used&month=eq.${month}&order=user_id`),
+      sbCount('lexicon_cache?testament=eq.AT'),
+      sbCount('lexicon_cache?testament=eq.NT'),
     ]);
 
     // Build maps
@@ -420,10 +445,6 @@ export default async function handler(req, res) {
         lexicon: use.lexicon_used || 0,
       };
     });
-
-    // Cache stats
-    const cacheAT = (cache || []).filter(c => c.testament === 'AT').length;
-    const cacheNT = (cache || []).filter(c => c.testament === 'NT').length;
 
     return res.status(200).json({
       users,
