@@ -193,6 +193,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     <button class="admin-tab" onclick="switchTab('interlineal',this)">📜 Interlineal</button>
     <button class="admin-tab" onclick="switchTab('traduccion',this)">✦ Traducción Kodesh</button>
     <button class="admin-tab" onclick="switchTab('notificaciones',this)">🔔 Notificaciones</button>
+    <button class="admin-tab" id="tabPremium" onclick="switchTab('premium',this)" style="display:none">💎 Premium</button>
     <button class="admin-tab" id="tabRoles" onclick="switchTab('roles',this)" style="display:none">🔑 Editores</button>
   </div>
 
@@ -473,6 +474,58 @@ tr:hover td { background:rgba(255,255,255,0.02); }
   </div>
 
   <!-- TAB: ROLES (solo superadmin) -->
+  <!-- TAB: PREMIUM — historial de quién tuvo Premium y cuánto tiempo (solo superadmin) -->
+  <div class="tab-content" id="tab-premium">
+    <div class="main">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Han tenido Premium</div>
+          <div class="stat-value" id="phTotal">—</div>
+          <div class="stat-sub" id="phSources">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Activos ahora</div>
+          <div class="stat-value green" id="phActive">—</div>
+          <div class="stat-sub" id="phEnded">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Duración promedio</div>
+          <div class="stat-value gold" id="phAvg">—</div>
+          <div class="stat-sub">por persona (pagado)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Meses Premium pagados</div>
+          <div class="stat-value" id="phMonths">—</div>
+          <div class="stat-sub">Stripe + tiendas, sin regalos</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div class="section-title" style="margin:0;padding:0;border:none">Registro de Premium</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <select class="form-select" id="phFilter" style="width:auto;min-width:160px" onchange="renderPremiumHistory()">
+            <option value="all">Todos</option>
+            <option value="active">Activos</option>
+            <option value="ended">Ya no son Premium</option>
+            <option value="paid">Solo pagados</option>
+            <option value="manual">Solo regalos</option>
+          </select>
+          <button class="btn-sm" onclick="syncPremiumHistory()" id="phSyncBtn">↻ Sincronizar con Stripe/Apple</button>
+          <button class="btn-sm" onclick="exportPremiumCsv()">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="upload-msg" id="phMsg" style="margin-bottom:10px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Nombre</th><th>Email</th><th>Estado</th><th>Vía</th><th>Desde</th><th>Hasta</th><th>Tiempo total</th><th>Períodos</th></tr>
+          </thead>
+          <tbody id="premiumHistoryTable"><tr><td colspan="9" class="loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-content" id="tab-roles">
     <div class="main">
       <div class="section-title">Editores con acceso para subir contenido</div>
@@ -834,6 +887,7 @@ async function init() {
 
   // Show roles tab only for superadmin
   if (isSuperAdmin) document.getElementById('tabRoles').style.display = 'block';
+  if (isSuperAdmin) document.getElementById('tabPremium').style.display = 'block';
   // Hide usuarios tab for editors
   if (!isSuperAdmin) {
     document.querySelector('[onclick="switchTab(\'usuarios\',this)"]').style.display = 'none';
@@ -891,8 +945,150 @@ async function verifyMfaChallenge() {
 async function loadAll() {
   document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
   const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage(), loadTraduccionKodesh(), loadNotificationLog()];
-  if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles());
+  if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles(), loadPremiumHistory());
   await Promise.all(promises);
+}
+
+// ── HISTORIAL PREMIUM ──
+// Cada fila de premium_periods es un período (una suscripción de Stripe, una
+// cadena de compras en la tienda o un regalo manual). Aquí se agrupan por
+// usuario para responder "quién tuvo Premium y por cuánto tiempo".
+let premiumPeriods = [];
+const PH_SOURCE = { stripe: 'Web', apple: 'iOS', google: 'Android', promo: 'Promo', manual: 'Regalo' };
+const DAY_MS = 86400000;
+
+function periodDays(p, now = Date.now()) {
+  const start = new Date(p.started_at).getTime();
+  const end = p.ended_at ? new Date(p.ended_at).getTime() : now;
+  return Math.max(0, (end - start) / DAY_MS);
+}
+function fmtDuration(days) {
+  if (days < 1) return 'menos de 1 día';
+  if (days < 60) return `${Math.round(days)} días`;
+  const m = days / 30.44;
+  return m < 24 ? `${m.toFixed(1)} meses` : `${(m / 12).toFixed(1)} años`;
+}
+const fmtDate = d => d ? new Date(d).toLocaleDateString('es') : '—';
+
+function groupPremiumByUser() {
+  const byUser = new Map();
+  for (const p of premiumPeriods) {
+    const key = p.user_id || `deleted:${p.started_at}`;
+    if (!byUser.has(key)) byUser.set(key, { user_id: p.user_id, name: p.name, email: p.email, periods: [] });
+    byUser.get(key).periods.push(p);
+  }
+  return [...byUser.values()].map(u => {
+    const paid = u.periods.filter(p => p.source !== 'manual');
+    const active = u.periods.some(p => !p.ended_at);
+    const starts = u.periods.map(p => new Date(p.started_at).getTime());
+    const ends = u.periods.map(p => p.ended_at ? new Date(p.ended_at).getTime() : null);
+    return {
+      ...u,
+      active,
+      paid: paid.length > 0,
+      days: u.periods.reduce((s, p) => s + periodDays(p), 0),
+      paidDays: paid.reduce((s, p) => s + periodDays(p), 0),
+      first: new Date(Math.min(...starts)).toISOString(),
+      last: active ? null : new Date(Math.max(...ends)).toISOString(),
+      sources: [...new Set(u.periods.map(p => PH_SOURCE[p.source] || p.source))],
+      trial: u.periods.some(p => p.had_trial),
+    };
+  });
+}
+
+async function loadPremiumHistory() {
+  try {
+    const res = await adminApi({ action: 'premium_history' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.status);
+    premiumPeriods = data.periods || [];
+    renderPremiumHistory();
+  } catch (e) {
+    document.getElementById('premiumHistoryTable').innerHTML =
+      `<tr><td colspan="9" class="loading">Error: ${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+function renderPremiumHistory() {
+  const users = groupPremiumByUser();
+  const paidUsers = users.filter(u => u.paid);
+  const bySource = {};
+  users.forEach(u => u.sources.forEach(s => { bySource[s] = (bySource[s] || 0) + 1; }));
+
+  document.getElementById('phTotal').textContent = users.length;
+  document.getElementById('phSources').textContent =
+    Object.entries(bySource).map(([k, v]) => `${v} ${k}`).join(' · ') || 'sin datos aún';
+  document.getElementById('phActive').textContent = users.filter(u => u.active).length;
+  document.getElementById('phEnded').textContent = `${users.filter(u => !u.active).length} ya no son Premium`;
+  const avg = paidUsers.length ? paidUsers.reduce((s, u) => s + u.paidDays, 0) / paidUsers.length : 0;
+  document.getElementById('phAvg').textContent = paidUsers.length ? fmtDuration(avg) : '—';
+  document.getElementById('phMonths').textContent =
+    (paidUsers.reduce((s, u) => s + u.paidDays, 0) / 30.44).toFixed(1);
+
+  const filter = document.getElementById('phFilter')?.value || 'all';
+  const shown = users.filter(u =>
+    filter === 'active' ? u.active :
+    filter === 'ended' ? !u.active :
+    filter === 'paid' ? u.paid :
+    filter === 'manual' ? !u.paid : true)
+    .sort((a, b) => (b.active - a.active) || (b.days - a.days));
+
+  const rows = shown.map((u, i) => {
+    const detail = u.periods.map(p =>
+      `${PH_SOURCE[p.source] || p.source}: ${fmtDate(p.started_at)} → ${p.ended_at ? fmtDate(p.ended_at) : 'hoy'} (${fmtDuration(periodDays(p))}, ${p.status})`
+    ).join('<br>');
+    return `<tr>
+      <td style="color:var(--text-dim)">${i + 1}</td>
+      <td class="name-cell">${escHtml(u.name || '—')}</td>
+      <td style="font-size:0.68rem">${escHtml(u.email || '—')}</td>
+      <td><span class="badge badge-${u.active ? 'premium' : 'free'}">${u.active ? 'activo' : 'terminó'}</span>${u.trial ? ' <span style="font-size:0.6rem;color:var(--text-dim)">· tuvo prueba</span>' : ''}</td>
+      <td>${escHtml(u.sources.join(' + '))}</td>
+      <td style="font-size:0.65rem">${fmtDate(u.first)}</td>
+      <td style="font-size:0.65rem">${u.active ? 'hoy' : fmtDate(u.last)}</td>
+      <td style="color:var(--text);font-weight:600">${fmtDuration(u.days)}</td>
+      <td style="font-size:0.62rem;color:var(--text-dim)">${escHtml(detail).replace(/&lt;br&gt;/g, '<br>')}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('premiumHistoryTable').innerHTML = rows ||
+    `<tr><td colspan="9" class="loading">${premiumPeriods.length ? 'Nadie en este filtro' : 'Aún no hay historial — pulsa “Sincronizar con Stripe/Apple”.'}</td></tr>`;
+}
+
+async function syncPremiumHistory() {
+  const btn = document.getElementById('phSyncBtn');
+  const msg = document.getElementById('phMsg');
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.access_token) { msg.textContent = 'Tu sesión expiró. Vuelve a iniciar sesión.'; msg.className = 'upload-msg err'; return; }
+  btn.disabled = true; msg.className = 'upload-msg'; msg.textContent = 'Consultando Stripe y RevenueCat… (puede tardar un minuto)';
+  try {
+    const res = await fetch('/api/cron-reconcile-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({}),
+    });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error || res.status);
+    msg.className = 'upload-msg ok';
+    msg.textContent = `✓ ${r.checked} usuarios revisados · ${r.periods} períodos · ${r.downgraded.length} bajados a free · ${r.updated.length} actualizados`
+      + (r.errors.length ? ` · ${r.errors.length} con error (se reintentará)` : '');
+    await Promise.all([loadPremiumHistory(), loadUsuarios()]);
+  } catch (e) {
+    msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message;
+  } finally { btn.disabled = false; }
+}
+
+function exportPremiumCsv() {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const head = ['nombre', 'email', 'via', 'estado', 'tuvo_prueba', 'inicio', 'fin', 'dias', 'producto'];
+  const lines = premiumPeriods.map(p => [
+    p.name, p.email, PH_SOURCE[p.source] || p.source, p.status, p.had_trial ? 'si' : 'no',
+    p.started_at, p.ended_at || '', Math.round(periodDays(p)), p.product || '',
+  ].map(q).join(','));
+  const blob = new Blob(['\ufeff' + [head.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `kodesh-premium-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ── TRADUCCIÓN KODESH COVERAGE ──

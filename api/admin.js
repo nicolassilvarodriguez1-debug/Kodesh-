@@ -3,6 +3,7 @@
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions } from './_security.js';
 import { getFcm } from './_firebase.js';
+import { openManualPeriod, closeManualPeriods } from './_premiumHistory.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -140,7 +141,7 @@ export default async function handler(req, res) {
   const { action } = req.body;
 
   // Actions that touch billing/PII (plans, user list, lookups by email) are superadmin-only.
-  const SUPERADMIN_ONLY_ACTIONS = new Set(['find_user', 'set_plan']);
+  const SUPERADMIN_ONLY_ACTIONS = new Set(['find_user', 'set_plan', 'premium_history']);
   const isDashboard = !action; // default (no action) branch = full user dashboard
   if (admin.role !== 'superadmin' && (SUPERADMIN_ONLY_ACTIONS.has(action) || isDashboard)) {
     return res.status(403).json({ error: 'forbidden_role' });
@@ -155,6 +156,33 @@ export default async function handler(req, res) {
       const found = authUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
       return res.status(200).json({ foundUser: found ? { id: found.id, email: found.email } : null });
     } catch(err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── ACTION: premium_history (quién tuvo Premium y cuánto tiempo) ──
+  if (action === 'premium_history') {
+    try {
+      const [periods, authUsers, profiles] = await Promise.all([
+        sbGetAll('premium_periods?select=user_id,source,product,status,had_trial,started_at,ended_at&order=started_at.desc,id.desc'),
+        getAllAuthUsers(),
+        sbGetAll('user_profiles?select=id,display_name&order=id'),
+      ]);
+      const nameMap = {};
+      (profiles || []).forEach(p => { nameMap[p.id] = p.display_name; });
+      const userMap = {};
+      authUsers.forEach(u => { userMap[u.id] = u; });
+      const rows = (periods || []).map(p => {
+        const u = userMap[p.user_id];
+        return {
+          ...p,
+          email: u?.email || null,
+          name: nameMap[p.user_id] || u?.user_metadata?.full_name || u?.email?.split('@')[0] || '(cuenta eliminada)',
+        };
+      });
+      return res.status(200).json({ periods: rows });
+    } catch (err) {
+      console.error('premium_history error:', err);
       return res.status(500).json({ error: err.message });
     }
   }
@@ -175,6 +203,12 @@ export default async function handler(req, res) {
       };
       const ok = await sbUpsert('user_plans', body, 'user_id');
       if (!ok) throw new Error('No se pudo actualizar el plan');
+      // Historial Premium: el regalo manual abre/cierra su propio período.
+      // Si falla no se revierte el cambio de plan — el cron diario lo repara.
+      try {
+        if (plan === 'premium') await openManualPeriod(targetUserId);
+        else await closeManualPeriods(targetUserId);
+      } catch (e) { console.warn('premium_periods (set_plan):', e.message); }
       return res.status(200).json({ success: true, plan });
     } catch(err) {
       console.error('set_plan error:', err);

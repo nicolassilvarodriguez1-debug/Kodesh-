@@ -67,3 +67,50 @@ describe('decidePlan', () => {
     assert.equal(d.patch.plan, 'premium');
   });
 });
+
+// ── Historial (api/_premiumHistory.js) ──
+const { periodsFromStripe, periodsFromRc } = await import('../api/_premiumHistory.js');
+
+describe('periodsFromStripe', () => {
+  const U = 'user-1';
+  test('suscripción activa → período abierto', () => {
+    const [p] = periodsFromStripe([{ id: 'sub_a', status: 'active', start_date: ts('2026-06-13T00:00:00Z'), trial_start: 1 }], U);
+    assert.equal(p.source, 'stripe');
+    assert.equal(p.external_id, 'sub_a');
+    assert.equal(p.started_at, '2026-06-13T00:00:00.000Z');
+    assert.equal(p.ended_at, null);
+    assert.equal(p.had_trial, true);
+  });
+  test('cancelada → cerrada en ended_at', () => {
+    const [p] = periodsFromStripe([{ id: 's', status: 'canceled', start_date: ts('2026-06-01T00:00:00Z'), ended_at: ts('2026-08-01T00:00:00Z') }], U);
+    assert.equal(p.ended_at, '2026-08-01T00:00:00.000Z');
+  });
+  test('nunca cobrada (incomplete / incomplete_expired) → no cuenta', () => {
+    assert.equal(periodsFromStripe([{ id: 'x', status: 'incomplete_expired', start_date: 1 }, { id: 'y', status: 'incomplete', start_date: 1 }], U).length, 0);
+  });
+});
+
+describe('periodsFromRc', () => {
+  const U = 'user-2';
+  const data = s => ({ subscriber: { subscriptions: { 'com.iglesiafreedom.kodesh.premium.monthly': s } } });
+  test('vigente → abierto, fuente apple', () => {
+    const [p] = periodsFromRc(data({ store: 'app_store', original_purchase_date: '2026-09-03T13:47:38Z', expires_date: '2026-11-03T13:47:38Z', period_type: 'normal' }), U, NOW);
+    assert.equal(p.source, 'apple');
+    assert.equal(p.ended_at, null);
+    assert.equal(p.status, 'active');
+  });
+  test('vencida → cerrada en expires_date', () => {
+    const [p] = periodsFromRc(data({ store: 'app_store', original_purchase_date: '2026-08-01T00:00:00Z', expires_date: '2026-09-01T00:00:00Z' }), U, NOW);
+    assert.equal(p.status, 'expired');
+    assert.equal(p.ended_at, '2026-09-01T00:00:00Z');
+  });
+  test('reembolsada → cerrada en refunded_at', () => {
+    const [p] = periodsFromRc(data({ store: 'app_store', original_purchase_date: '2026-08-01T00:00:00Z', expires_date: '2026-12-01T00:00:00Z', refunded_at: '2026-08-05T00:00:00Z' }), U, NOW);
+    assert.equal(p.status, 'refunded');
+    assert.equal(p.ended_at, '2026-08-05T00:00:00Z');
+  });
+  test('sandbox y compras vía Stripe se ignoran', () => {
+    assert.equal(periodsFromRc(data({ store: 'app_store', is_sandbox: true, original_purchase_date: '2026-08-01T00:00:00Z' }), U, NOW).length, 0);
+    assert.equal(periodsFromRc(data({ store: 'stripe', original_purchase_date: '2026-08-01T00:00:00Z' }), U, NOW).length, 0);
+  });
+});

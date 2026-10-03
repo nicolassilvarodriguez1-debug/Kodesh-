@@ -21,12 +21,17 @@
 //   - Cualquier error consultando una fuente     → ese usuario se salta (nunca
 //                                                  se quita Premium por un fallo de red).
 //
+// Además llena premium_periods (historial de quién tuvo Premium y cuánto
+// tiempo) con todas las suscripciones que Stripe y RevenueCat conocen de cada
+// usuario — por eso recorre TODAS las filas de user_plans, no solo las Premium.
+//
 // Disparo:
 //   GET  (Vercel Cron, Authorization: Bearer CRON_SECRET)  ?dry_run=1 para simular
 //   POST (admin, JWT + 2FA)  body { dryRun: true } para simular
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR } from './_security.js';
 import { stripeVerdict, rcVerdict, decidePlan } from './_planSync.js';
+import { periodsFromStripe, periodsFromRc, upsertPeriods, openManualPeriod, closeManualPeriods } from './_premiumHistory.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -87,13 +92,13 @@ function differs(row, patch) {
 
 export async function reconcile({ dryRun = false } = {}) {
   const res = await fetch(
-    `${SB_URL}/rest/v1/user_plans?select=user_id,plan,subscription_status,current_period_end,stripe_customer_id,stripe_subscription_id`
-    + `&or=(plan.eq.premium,subscription_status.in.(active,trialing))&order=user_id&limit=5000`,
+    `${SB_URL}/rest/v1/user_plans?select=user_id,plan,subscription_status,current_period_end,stripe_customer_id,stripe_subscription_id,updated_at`
+    + `&order=user_id&limit=5000`,
     { headers: sbHeaders() });
   if (!res.ok) throw new Error(`user_plans -> ${res.status}`);
   const rows = await res.json();
 
-  const report = { checked: rows.length, downgraded: [], updated: [], manual: [], errors: [] };
+  const report = { checked: rows.length, downgraded: [], updated: [], manual: [], periods: 0, errors: [] };
 
   for (const row of rows) {
     try {
@@ -102,8 +107,25 @@ export async function reconcile({ dryRun = false } = {}) {
         getRcData(row.user_id),
       ]);
       const decision = decidePlan(stripeVerdict(subs), rcVerdict(rcData));
+      const isPremiumNow = row.plan === 'premium'
+        && (row.subscription_status === 'active' || row.subscription_status === 'trialing');
 
-      if (decision.action === 'keep_manual') { report.manual.push(row.user_id); continue; }
+      // Historial: todas las suscripciones conocidas de este usuario.
+      const periods = [...periodsFromStripe(subs, row.user_id), ...periodsFromRc(rcData, row.user_id)];
+      report.periods += periods.length;
+      if (!dryRun) await upsertPeriods(periods);
+
+      if (decision.action === 'keep_manual') {
+        if (isPremiumNow) report.manual.push(row.user_id);
+        if (!dryRun) {
+          // Regalo manual: abre período (fecha aproximada = última modificación
+          // del plan si se descubre ahora) o lo cierra si ya no es Premium.
+          if (isPremiumNow) await openManualPeriod(row.user_id, row.updated_at || undefined);
+          else await closeManualPeriods(row.user_id);
+        }
+        continue;
+      }
+      if (!dryRun) await closeManualPeriods(row.user_id);
       if (!differs(row, decision.patch)) continue;
 
       const entry = { user_id: row.user_id, from: { plan: row.plan, status: row.subscription_status }, to: decision.patch };
