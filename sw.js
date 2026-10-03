@@ -1,8 +1,10 @@
-const CACHE_NAME = 'kodesh-v1';
+const CACHE_NAME = 'kodesh-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/parashot.html',
+  '/parashot-data.json',
+  '/parashot-calendar.json',
   '/login.html',
   '/onboarding.html',
   '/auth.js',

@@ -297,10 +297,10 @@ html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9
 <!-- HERO -->
 <section class="hero">
   <div class="hero-eyebrow">Ciclo Anual de Estudio Bíblico</div>
-  <div class="hero-title">Las <span>52 Porciones</span></div>
+  <div class="hero-title">Las <span>54 Porciones</span></div>
   <div class="hero-sub">Porciones semanales de la Torah con lecturas proféticas y conexiones al Nuevo Pacto — el hilo rojo que une toda la Escritura.</div>
   <div class="hero-stats">
-    <div class="stat"><div class="stat-num">52</div><div class="stat-label">Porciones</div></div>
+    <div class="stat"><div class="stat-num">54</div><div class="stat-label">Porciones</div></div>
     <div class="stat"><div class="stat-num">5</div><div class="stat-label">Libros de Moisés</div></div>
     <div class="stat"><div class="stat-num" id="statLeidas">0</div><div class="stat-label">Estudiadas</div></div>
   </div>
@@ -347,7 +347,7 @@ html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9
       <div class="intro-card">
         <div class="intro-card-icon">🗓️</div>
         <div class="intro-card-title">¿Cómo funciona el ciclo?</div>
-        <div class="intro-card-text">Los cinco libros de Moisés se dividen en <strong>52 porciones semanales</strong> — una por cada semana del año. El ciclo comienza en otoño con Bereshit ("En el principio" — Génesis 1) y termina 52 semanas después con Vezot HaBerakhá ("Esta es la bendición" — Deuteronomio 33-34). Luego comienza de nuevo.</div>
+        <div class="intro-card-text">Los cinco libros de Moisés se dividen en <strong>54 porciones semanales</strong>. Como el año tiene menos Shabatot disponibles que porciones, algunas semanas se leen dos juntas (porción combinada), y cuáles se combinan cambia cada año. El ciclo comienza en otoño con Bereshit ("En el principio" — Génesis 1) y termina en Simjat Torá con Vezot HaBerakhá ("Esta es la bendición" — Deuteronomio 33-34). Luego comienza de nuevo.</div>
       </div>
 
       <div class="intro-card">
@@ -410,7 +410,7 @@ let studiedParashot = JSON.parse(localStorage.getItem('kodesh_parashot') || '{}'
 
 /* ── BOOK RANGES ── */
 const BOOK_RANGES = {
-  GEN: [1,12], EXO: [13,23], LEV: [24,33], NUM: [34,43], DEU: [44,52]
+  GEN: [1,12], EXO: [13,23], LEV: [24,33], NUM: [34,43], DEU: [44,54]
 };
 const BOOK_NAMES = {
   GEN:'Génesis', EXO:'Éxodo', LEV:'Levítico', NUM:'Números', DEU:'Deuteronomio'
@@ -430,25 +430,40 @@ function getBookId(num) {
   return 'GEN';
 }
 
-/* ── CURRENT PARASHA — Fechas reales 5786 (corregidas contra el calendario judío oficial) ── */
-const PARASHA_DATES = {"1":"2025-10-18","2":"2025-10-25","3":"2025-11-01","4":"2025-11-08","5":"2025-11-15","6":"2025-11-22","7":"2025-11-29","8":"2025-12-06","9":"2025-12-13","10":"2025-12-20","11":"2025-12-27","12":"2026-01-03","13":"2026-01-10","14":"2026-01-17","15":"2026-01-24","16":"2026-01-31","17":"2026-02-07","18":"2026-02-14","19":"2026-02-21","20":"2026-02-28","21":"2026-03-07","22":"2026-03-14","23":"2026-03-14","24":"2026-03-21","25":"2026-03-28","26":"2026-04-11","27":"2026-04-18","28":"2026-04-18","29":"2026-04-25","30":"2026-04-25","31":"2026-05-02","32":"2026-05-09","33":"2026-05-09","34":"2026-05-16","35":"2026-05-30","36":"2026-06-06","37":"2026-06-13","38":"2026-06-20","39":"2026-06-27","40":"2026-06-27","41":"2026-07-04","42":"2026-07-11","43":"2026-07-11","44":"2026-07-18","45":"2026-07-25","46":"2026-08-01","47":"2026-08-08","48":"2026-08-15","49":"2026-08-22","50":"2026-08-29","51":"2026-09-05","52":"2026-10-03"};
+/* ── CURRENT PARASHA ──
+   parashot-calendar.json: { "YYYY-MM-DD": [num, ...] } generado con
+   scripts/gen-parashot-calendar.py (diáspora, 2025-2056). Dos números =
+   porción combinada. Antes había una tabla de fechas fija del ciclo 5786
+   que caducaba en octubre de 2026. */
+let PARASHA_CALENDAR = {};
 
-function getCurrentParashaNum() {
+// "2026-09-05" como fecha LOCAL (new Date("2026-09-05") es UTC y en Nueva
+// York corre la porción un día hacia atrás).
+function localDate(s) {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Porción(es) de la próxima lectura: la de este Shabat (o la de Simjat Torá).
+function getCurrentParashaNums() {
   const today = new Date();
   today.setHours(0,0,0,0);
-  let current = 1;
-  for (const [num, dateStr] of Object.entries(PARASHA_DATES)) {
-    const shabbat = new Date(dateStr);
-    // Week of this parasha: from Sunday before to Shabbat
-    const weekStart = new Date(shabbat);
-    weekStart.setDate(shabbat.getDate() - 6);
-    if (today >= weekStart && today <= shabbat) {
-      return parseInt(num);
-    }
-    if (today > shabbat) current = parseInt(num);
+  for (const dateStr of Object.keys(PARASHA_CALENDAR).sort()) {
+    if (localDate(dateStr) >= today) return PARASHA_CALENDAR[dateStr];
   }
-  return current;
+  return [1];
 }
+function getCurrentParashaNum() { return getCurrentParashaNums()[0]; }
+
+// Las porciones de Deuteronomio pasaron de 52 a 54 (faltaban Vayelej y
+// Haazinu): Vezot HaBerajá era la 52 y ahora es la 54. Mover la marca de
+// "estudiada" una sola vez para no atribuírsela a Vayelej.
+(function migrateStudied54() {
+  if (localStorage.getItem('kodesh_parashot_v54')) return;
+  if (studiedParashot[52]) { studiedParashot[54] = studiedParashot[52]; delete studiedParashot[52]; }
+  localStorage.setItem('kodesh_parashot', JSON.stringify(studiedParashot));
+  localStorage.setItem('kodesh_parashot_v54', '1');
+})();
 
 /* ── NAVIGATE TO BIBLE ── */
 // Maps torah reference like "Génesis 1:1–6:8" to book/chapter
@@ -479,8 +494,12 @@ function goToBible(torahRef) {
 }
 async function loadData() {
   try {
-    const res = await fetch('./parashot-data.json');
+    const [res, calRes] = await Promise.all([
+      fetch('./parashot-data.json'),
+      fetch('./parashot-calendar.json'),
+    ]);
     PARASHOT = await res.json();
+    PARASHA_CALENDAR = calRes.ok ? await calRes.json() : {};
     renderCurrentParasha();
     renderGrid();
     updateStats();
@@ -491,12 +510,15 @@ async function loadData() {
 
 /* ── RENDER CURRENT ── */
 function renderCurrentParasha() {
-  const num = getCurrentParashaNum();
-  const p = PARASHOT.find(x => x.num === num) || PARASHOT[0];
+  const ps = getCurrentParashaNums().map(n => PARASHOT.find(x => x.num === n)).filter(Boolean);
+  if (!ps.length) ps.push(PARASHOT[0]);
+  const p = ps[0];
   if (!p) return;
-  document.getElementById('currentName').textContent = `${p.nombre} — ${p.sig}`;
-  document.getElementById('currentRefs').textContent = p.torah;
-  document.getElementById('currentHeb').textContent = p.heb;
+  document.getElementById('currentName').textContent = ps.length > 1
+    ? `${ps.map(x => x.nombre).join('–')} — porción combinada`
+    : `${p.nombre} — ${p.sig}`;
+  document.getElementById('currentRefs').textContent = ps.map(x => x.torah).join(' · ');
+  document.getElementById('currentHeb').textContent = ps.map(x => x.heb).join(' – ');
   document.getElementById('btnCurrentStudy').onclick = () => goToBible(p.torah);
 }
 
@@ -526,7 +548,7 @@ function renderGrid() {
   }
 
   let lastBook = '';
-  const currentNum = getCurrentParashaNum();
+  const currentNums = getCurrentParashaNums();
 
   filtered.forEach((p, idx) => {
     const bookId = getBookId(p.num);
@@ -544,7 +566,7 @@ function renderGrid() {
       lastBook = bookId;
     }
 
-    const isCurrent = p.num === currentNum;
+    const isCurrent = currentNums.includes(p.num);
     const isStudied = !!studiedParashot[p.num];
     const color = BOOK_COLORS[bookId];
 
@@ -596,7 +618,7 @@ function openModal(idx) {
   const p = PARASHOT[idx];
   if (!p) return;
 
-  document.getElementById('modalNum').textContent = `Pará­shá ${String(p.num).padStart(2,'0')} de 52`;
+  document.getElementById('modalNum').textContent = `Pará­shá ${String(p.num).padStart(2,'0')} de 54`;
   document.getElementById('modalName').textContent = p.nombre;
   document.getElementById('modalSig').textContent = p.sig + ' · ' + p.translit;
   document.getElementById('modalHeb').textContent = p.heb;
