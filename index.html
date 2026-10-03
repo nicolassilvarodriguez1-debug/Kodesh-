@@ -5884,6 +5884,46 @@ function renderDailyPlan() {
   }
 }
 
+// Maná y protectores de racha (ver auth.js — todo lo calcula el servidor).
+function renderManaSection() {
+  if (typeof userStreak === 'undefined') return '';
+  const s = userStreak;
+  const price = s.shieldPrice || 200, max = s.maxShields || 2;
+  const canBuy = s.shields < max && s.mana >= price;
+  const shieldIcons = Array.from({ length: max }, (_, i) =>
+    `<span style="opacity:${i < s.shields ? 1 : 0.2};font-size:1.3rem">🛡️</span>`).join('');
+  const btnLabel = s.shields >= max ? 'Máximo de protectores'
+    : s.mana >= price ? `Comprar protector · ${price} maná`
+    : `Te faltan ${price - s.mana} de maná`;
+  const atRisk = s.current > 0 && !s.readToday;
+  return `
+    <div style="grid-column:span 2;margin-top:4px">
+      <div class="stat-section-title" style="padding:8px 0 10px;border-top:1px solid var(--border)">✨ Maná y protectores</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num" style="color:var(--gold)">${s.mana.toLocaleString('es')}</div>
+      <div class="stat-card-label">Maná</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num" style="display:flex;gap:4px;justify-content:center">${shieldIcons}</div>
+      <div class="stat-card-label">Protectores ${s.shields}/${max}</div>
+    </div>
+    <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+      <div style="font-size:0.8rem;color:var(--text-dim);line-height:1.5;margin-bottom:12px">
+        ${atRisk ? `<div style="color:#f0a040;margin-bottom:6px">🔥 Lee un capítulo hoy para mantener tu racha de ${s.current} día${s.current === 1 ? '' : 's'}${s.shields ? ' (si no, se usará un protector)' : ''}.</div>` : ''}
+        Ganas <b style="color:var(--gold)">10 maná</b> por capítulo (hasta 5 al día), <b style="color:var(--gold)">+20</b> al cumplir tu meta diaria y bonos a los 7, 30, 100 y 365 días seguidos.
+        Un protector cubre un día sin leer y se usa solo.${s.premium ? ' Con Premium recibes 1 gratis cada mes 💎' : ''}
+      </div>
+      <button onclick="buyStreakShield()" ${canBuy ? '' : 'disabled'}
+        style="width:100%;background:${canBuy ? 'var(--gold-glow)' : 'transparent'};border:1px solid ${canBuy ? 'var(--gold)' : 'var(--border)'};
+        color:${canBuy ? 'var(--gold)' : 'var(--text-dim)'};font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1.5px;
+        text-transform:uppercase;padding:10px;border-radius:8px;cursor:${canBuy ? 'pointer' : 'default'}">
+        🛡️ ${btnLabel}
+      </button>
+    </div>
+  `;
+}
+
 function buildReadingCalendar() {
   // Get local date string safely
   const now = new Date();
@@ -5928,6 +5968,10 @@ function buildReadingCalendar() {
         let textColor = 'var(--text-dim)';
         let opacity = isFuture ? '0.25' : '1';
 
+        if (!isFuture && count === 0 && day.dayData.shielded) {
+          // Día cubierto por un protector de racha
+          bg = 'rgba(90,160,200,0.15)'; border = 'rgba(90,160,200,0.6)'; textColor = 'rgb(110,175,215)';
+        }
         if (!isFuture && count > 0) {
           const ratio = count / goalChapters;
           if (ratio >= 1) {
@@ -5953,7 +5997,7 @@ function buildReadingCalendar() {
           opacity:${opacity};${todayStyle}${cursor}transition:transform 0.1s;"
           onmouseover="if(${!isFuture})this.style.transform='scale(1.15)'"
           onmouseout="this.style.transform='scale(1)'">
-          <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;color:${textColor};line-height:1">${dayNum(day)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;color:${textColor};line-height:1">${(!isFuture && count === 0 && day.dayData.shielded) ? '🛡️' : dayNum(day)}</span>
         </div>`;
       }).join('')}
     </div>
@@ -6113,6 +6157,8 @@ function renderProfileStats() {
       <div class="stat-card-num">${goalChapters}</div>
       <div class="stat-card-label">Meta diaria</div>
     </div>
+
+    ${renderManaSection()}
 
     <!-- Calendario de lectura -->
     <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">

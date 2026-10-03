@@ -11,7 +11,8 @@
 //                     3, 7, 14 o 30 días desde su última lectura — "te
 //                     extrañamos". Los días exactos (no "3+") evitan
 //                     bombardear todos los días a alguien ya inactivo.
-//                   - streak_risk: tiene una racha activa (current_streak>0)
+//                   - streak_risk: tiene una racha activa (current_streak>0, valor
+//                     verdadero mantenido por el servidor)
 //                     y no ha leído hoy — "no pierdas tu racha".
 //                   - reading_reminder: cualquier otro caso (sin racha,
 //                     nunca leyó, o lejos de los cortes de winback) —
@@ -141,7 +142,7 @@ async function buildPromiseReminders() {
 async function buildReadingReminders() {
   const [tokens, streaks] = await Promise.all([
     sbGet('user_push_tokens?select=id,user_id,token'),
-    sbGet('reading_streaks?select=user_id,current_streak,last_read_date'),
+    sbGet('reading_streaks?select=user_id,current_streak,last_read_date,shields'),
   ]);
 
   const streakByUser = new Map(streaks.map(s => [s.user_id, s]));
@@ -163,10 +164,17 @@ async function buildReadingReminders() {
         body: `Hace ${inactiveDays} días que no abres KODESH. Tu Biblia te está esperando.`,
       });
     } else if (streak && streak.current_streak > 0) {
+      // current_streak ya es verdadero: lo mantiene el servidor (trigger +
+      // settle_all_streaks cada hora, ver migración 20261002_racha_mana).
+      // Antes se le decía "llevas N días" a gente que no leía hacía semanas.
+      const n = streak.current_streak;
+      const dias = `${n} día${n === 1 ? '' : 's'}`;
       jobs.push({
         userId, tokens: userTokens, category: 'streak_risk',
-        title: '🔥 No pierdas tu racha',
-        body: `Llevas ${streak.current_streak} día${streak.current_streak === 1 ? '' : 's'} seguidos leyendo. Lee un capítulo hoy para no perderla.`,
+        title: streak.shields > 0 ? '🔥 Mantén viva tu racha' : '🔥 Tu racha termina a medianoche',
+        body: streak.shields > 0
+          ? `Llevas ${dias} seguidos. Lee un capítulo hoy y guarda tu protector 🛡️ para otro día.`
+          : `Llevas ${dias} seguidos y no tienes protector. Lee un capítulo hoy para no perderla.`,
       });
     } else {
       jobs.push({

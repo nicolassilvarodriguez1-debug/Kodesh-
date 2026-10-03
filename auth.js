@@ -412,15 +412,22 @@ async function saveChapterToCloud(bookId, chapter) {
   const sb = getSupabase();
   if (!sb || !currentUser) return;
 
-  try {
-    await sb.from('reading_progress').upsert({
-      user_id: currentUser.id,
-      book_id: bookId,
-      chapter: chapter,
-    }, { onConflict: 'user_id,book_id,chapter' });
-  } catch (e) {
-    console.warn('Save error:', e.message);
-  }
+  // La racha y el maná los calcula la base de datos al insertar aquí
+  // (trigger trg_kodesh_progress_streak). updateStreak() espera esta promesa
+  // antes de pedir el estado nuevo.
+  const p = (async () => {
+    try {
+      await sb.from('reading_progress').upsert({
+        user_id: currentUser.id,
+        book_id: bookId,
+        chapter: chapter,
+      }, { onConflict: 'user_id,book_id,chapter' });
+    } catch (e) {
+      console.warn('Save error:', e.message);
+    }
+  })();
+  window.__kodeshLastChapterSave = p;
+  return p;
 }
 
 async function removeChapterFromCloud(bookId, chapter) {
@@ -439,95 +446,155 @@ async function removeChapterFromCloud(bookId, chapter) {
 }
 
 /* ════════════════════════════════════
-   READING STREAK SYSTEM
+   READING STREAK SYSTEM — racha, maná y protectores
+   ────────────────────────────────────
+   Todo se calcula en el servidor (supabase/migrations/20261002_racha_mana.sql):
+   - Marcar un capítulo inserta en reading_progress y un trigger actualiza
+     la racha, el calendario (reading_days) y el maná.
+   - Cada hora un proceso cierra las rachas vencidas o gasta un protector.
+   - Aquí solo se LEE el estado con get_my_streak_state(), que además
+     devuelve avisos pendientes ("tu protector salvó la racha", etc.).
+   Antes la racha se calculaba en el navegador y solo al marcar un capítulo,
+   así que al abrir la app se veía una racha vieja que ya no existía.
 ════════════════════════════════════ */
 let userStreak = {
   current: 0,
   longest: 0,
   lastReadDate: null,
   totalDays: 0,
+  mana: 0,
+  shields: 0,
+  maxShields: 2,
+  shieldPrice: 200,
+  readToday: false,
+  premium: false,
+};
+// Días leídos/protegidos según el servidor: { 'YYYY-MM-DD': { count, shielded } }
+let serverReadingDays = {};
+
+function userTimezone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (e) { return null; }
+}
+
+const STREAK_NOTICE_TEXT = {
+  shield_used: n => `🛡️ Tu protector salvó tu racha de ${n.streak} día${n.streak === 1 ? '' : 's'}` +
+    (n.days > 1 ? ` (${n.days} días cubiertos)` : ''),
+  streak_lost: n => `Tu racha de ${n.streak} día${n.streak === 1 ? '' : 's'} terminó. ¡Hoy empieza una nueva! 📖`,
+  milestone: n => `🎉 ¡${n.streak} días seguidos! +${n.mana} maná`,
+  premium_shield: () => '💎 Premium: recibiste tu protector de racha del mes',
 };
 
-async function loadStreak() {
+function showStreakNotices(notices) {
+  (notices || []).forEach((n, i) => {
+    const fn = STREAK_NOTICE_TEXT[n?.type];
+    if (fn && typeof showToast === 'function') setTimeout(() => showToast(fn(n)), 600 + i * 3200);
+  });
+}
+
+async function loadStreak({ silent = false } = {}) {
   const sb = getSupabase();
   if (!sb || !currentUser) return;
   try {
-    const { data } = await sb
-      .from('reading_streaks')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .single();
-    if (data) {
-      userStreak = {
-        current: data.current_streak || 0,
-        longest: data.longest_streak || 0,
-        lastReadDate: data.last_read_date,
-        totalDays: data.total_days_read || 0,
-      };
+    const [{ data, error }, cal] = await Promise.all([
+      sb.rpc('get_my_streak_state', { p_tz: userTimezone() }),
+      sb.rpc('get_reading_calendar', { p_days: 40 }),
+    ]);
+    if (error) throw error;
+    userStreak = {
+      current: data.current || 0,
+      longest: data.longest || 0,
+      lastReadDate: data.last_read_date,
+      totalDays: data.total_days || 0,
+      mana: data.mana || 0,
+      shields: data.shields || 0,
+      maxShields: data.max_shields || 2,
+      shieldPrice: data.shield_price || 200,
+      readToday: !!data.read_today,
+      premium: !!data.premium,
+    };
+    if (!cal.error) {
+      serverReadingDays = {};
+      (cal.data || []).forEach(d => { serverReadingDays[d.day] = { count: d.chapters || 0, shielded: !!d.shielded }; });
     }
-  } catch(e) { /* no streak yet */ }
-}
-
-async function updateStreak() {
-  const sb = getSupabase();
-  if (!sb || !currentUser) return;
-
-  const today = getLocalDateStr();
-  const last = userStreak.lastReadDate;
-
-  if (last === today) return;
-
-  // Calculate yesterday in local time
-  const now = new Date();
-  const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  const yesterday = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth()+1).padStart(2,'0')}-${String(yesterdayDate.getDate()).padStart(2,'0')}`;
-
-  let newCurrent;
-  if (last === yesterday) {
-    newCurrent = userStreak.current + 1;
-  } else if (!last || last < yesterday) {
-    newCurrent = 1;
-  } else {
-    return;
+    if (!silent) showStreakNotices(data.notices);
+  } catch (e) {
+    // Respaldo: leer la fila directamente (ya es verdadera: la mantiene el servidor).
+    try {
+      const { data } = await sb.from('reading_streaks').select('*').eq('user_id', currentUser.id).single();
+      if (data) {
+        userStreak = { ...userStreak,
+          current: data.current_streak || 0, longest: data.longest_streak || 0,
+          lastReadDate: data.last_read_date, totalDays: data.total_days_read || 0,
+          mana: data.mana || 0, shields: data.shields || 0 };
+      }
+    } catch (e2) { /* sin racha todavía */ }
   }
-
-  const newLongest = Math.max(newCurrent, userStreak.longest);
-  const newTotal = userStreak.totalDays + 1;
-
-  userStreak = {
-    current: newCurrent,
-    longest: newLongest,
-    lastReadDate: today,
-    totalDays: newTotal,
-  };
-
-  try {
-    await sb.from('reading_streaks').upsert({
-      user_id: currentUser.id,
-      current_streak: newCurrent,
-      longest_streak: newLongest,
-      last_read_date: today,
-      total_days_read: newTotal,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
-
-    // Show streak toast
-    if (newCurrent > 1) {
-      showToast(`🔥 ¡${newCurrent} días seguidos leyendo!`);
-    } else {
-      showToast('✨ ¡Nuevo día de lectura!');
-    }
-    // Update streak display
-    renderStreakBadge();
-  } catch(e) { console.warn('Streak update error:', e); }
 }
+
+// Se llama después de marcar un capítulo: espera a que el servidor lo
+// registre y muestra lo que cambió (racha nueva, maná ganado).
+async function updateStreak() {
+  if (!currentUser) return;
+  const before = { ...userStreak };
+  try { await window.__kodeshLastChapterSave; } catch (e) {}
+  await loadStreak();
+  const gained = userStreak.mana - before.mana;
+  if (userStreak.current > before.current || (!before.readToday && userStreak.readToday)) {
+    showToast(userStreak.current > 1
+      ? `🔥 ¡${userStreak.current} días seguidos leyendo!${gained > 0 ? ` · +${gained} maná` : ''}`
+      : `✨ ¡Nuevo día de lectura!${gained > 0 ? ` · +${gained} maná` : ''}`);
+  } else if (gained > 0) {
+    showToast(`✨ +${gained} maná`);
+  }
+  renderStreakBadge();
+  if (document.getElementById('profileOverlay')?.classList.contains('open') && typeof renderProfileStats === 'function') {
+    try { renderProfileStats(); } catch (e) {}
+  }
+}
+
+async function buyStreakShield() {
+  const sb = getSupabase();
+  if (!sb || !currentUser) return;
+  try {
+    const { data, error } = await sb.rpc('buy_streak_shield');
+    if (error) throw error;
+    if (!data.ok) {
+      showToast(data.error === 'max_shields'
+        ? `Ya tienes el máximo de ${userStreak.maxShields} protectores 🛡️`
+        : `Te faltan ${userStreak.shieldPrice - (data.mana || 0)} de maná. ¡Sigue leyendo! 📖`);
+      return;
+    }
+    userStreak.mana = data.mana;
+    userStreak.shields = data.shields;
+    showToast(`🛡️ ¡Protector comprado! Tienes ${data.shields}`);
+    if (typeof renderProfileStats === 'function') { try { renderProfileStats(); } catch (e) {} }
+  } catch (e) {
+    showToast('No se pudo comprar el protector. Intenta de nuevo.');
+  }
+}
+
+// Al volver a la app (segundo plano → primer plano, p. ej. al día siguiente)
+// se refresca la racha: sin esto el número se quedaba como al abrirla.
+let _streakRefreshAt = 0;
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || !currentUser) return;
+  if (Date.now() - _streakRefreshAt < 60000) return;
+  _streakRefreshAt = Date.now();
+  await loadStreak();
+  renderStreakBadge();
+});
 
 function renderStreakBadge() {
   const badge = document.getElementById('streakBadge');
   if (!badge) return;
   if (userStreak.current > 0) {
+    // Sin leer hoy, la racha está "en riesgo": se ve atenuada.
     badge.textContent = `🔥 ${userStreak.current}`;
     badge.style.display = 'flex';
+    badge.style.opacity = userStreak.readToday ? '1' : '0.6';
+    badge.title = userStreak.readToday ? 'Racha de lectura' : 'Lee un capítulo hoy para mantener tu racha';
+  } else {
+    badge.style.display = 'none';
   }
 }
 
@@ -600,12 +667,10 @@ function getLocalDateStr() {
 }
 
 function getTodayProgress() {
-  const todayKey = 'kodesh_today_' + getLocalDateStr();
-  const data = JSON.parse(localStorage.getItem(todayKey) || '{"count":0,"chapters":[]}');
-  return typeof data === 'number' ? data : (data.count || 0);
+  return getDayData(getLocalDateStr()).count || 0;
 }
 
-function getDayData(dateStr) {
+function getLocalDayData(dateStr) {
   const key = 'kodesh_today_' + dateStr;
   const raw = localStorage.getItem(key);
   if (!raw) return { count: 0, chapters: [] };
@@ -616,9 +681,22 @@ function getDayData(dateStr) {
   } catch(e) { return { count: 0, chapters: [] }; }
 }
 
+// Día del calendario: lo guardado en este dispositivo + lo que sabe el
+// servidor (otros dispositivos, historial, días protegidos).
+function getDayData(dateStr) {
+  const local = getLocalDayData(dateStr);
+  const server = (typeof serverReadingDays !== 'undefined' && serverReadingDays[dateStr]) || null;
+  if (!server) return local;
+  return {
+    ...local,
+    count: Math.max(local.count || 0, server.count || 0),
+    shielded: !!server.shielded && !(local.count > 0),
+  };
+}
+
 function recordTodayChapter(bookId, bookName, chapter) {
   const todayKey = 'kodesh_today_' + getLocalDateStr();
-  const data = getDayData(getLocalDateStr());
+  const data = getLocalDayData(getLocalDateStr());
   const alreadyRecorded = data.chapters.some(c => c.bookId === bookId && c.chapter === chapter);
   if (!alreadyRecorded) {
     data.chapters.push({ bookId, bookName, chapter });
