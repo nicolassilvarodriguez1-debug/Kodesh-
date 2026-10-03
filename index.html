@@ -3419,7 +3419,7 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
       </div>
 
       <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px">
-        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">📅 52 Porciones Torah + más</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--gold);letter-spacing:1px;margin-bottom:4px">📅 54 Porciones Torah + más</div>
         <div style="font-size:0.85rem;color:var(--text-mid);line-height:1.5">Ciclo de estudio completo con lecturas de Torah, Haftarah y Brit Hadashá. Acceso anticipado a nuevas funciones.</div>
       </div>
 
@@ -4168,13 +4168,19 @@ async function loadParashot() {
   return PARASHOT_DATA;
 }
 
+// Un capítulo puede pertenecer a dos porciones (p. ej. Génesis 6: Bereshit
+// termina en 6:8 y Noaj empieza en 6:9). Devuelve la primera y, si otra
+// empieza a mitad del capítulo, la anota en .nextInChapter para el banner.
 async function getParashaForChapter(bookId, chapter) {
   const data = await loadParashot();
-  return data.find(p =>
+  const matches = data.filter(p =>
     p.book === bookId &&
     chapter >= p.startChapter &&
     chapter <= p.endChapter
-  ) || null;
+  );
+  if (!matches.length) return null;
+  const next = matches.find(p => p !== matches[0] && p.startChapter === chapter && (p.startVerse || 1) > 1);
+  return next ? { ...matches[0], nextInChapter: next } : matches[0];
 }
 
 loadParashot();
@@ -4241,7 +4247,7 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
         <div class="parasha-banner-info">
           <div class="parasha-banner-label">Ciclo de Estudio · Porción ${parasha.num}</div>
           <div class="parasha-banner-name">${parasha.nombre} — ${parasha.sig}</div>
-          <div class="parasha-banner-range">${parasha.torah}</div>
+          <div class="parasha-banner-range">${parasha.torah}${parasha.nextInChapter ? ` · <a href="parashot.html" style="color:inherit">${parasha.nextInChapter.nombre}</a> desde ${chapterNum}:${parasha.nextInChapter.startVerse}` : ''}</div>
         </div>
         <div class="parasha-progress">
           <div class="parasha-chap-dots">${dots}</div>

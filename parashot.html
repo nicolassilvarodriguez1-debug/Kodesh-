@@ -143,6 +143,9 @@ html.light .intro-highlight{background:linear-gradient(135deg,#f5efe0,#ede4cc);}
 .card-body{padding:16px;}
 .card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
 .card-num{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim);}
+.card-date{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-mid);margin:6px 0 2px;}
+.card-date .combo{color:var(--gold);border:1px solid var(--gold-dim);border-radius:10px;padding:1px 7px;text-transform:none;letter-spacing:0;font-family:inherit;}
+.current-date{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-mid);margin-top:6px;}
 .card-heb{font-family:serif;font-size:1.4rem;color:var(--gold);direction:rtl;line-height:1;}
 .card-name{font-family:'Cinzel',serif;font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:2px;}
 .card-sig{font-size:0.82rem;color:var(--text-dim);font-style:italic;margin-bottom:12px;}
@@ -220,6 +223,11 @@ html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9
   .modal{margin:0;border-radius:12px 12px 0 0;max-height:92vh;}
   .modal-overlay{align-items:flex-end;padding:0;}
   .grid-container{grid-template-columns:1fr;}
+  /* La barra se salía de la pantalla en teléfonos (scroll horizontal). */
+  .topbar{padding:0 14px;gap:10px;}
+  .topbar .nav-link{font-size:0.55rem;letter-spacing:1px;}
+  .topbar .btn-gold{display:none;}
+  .logo-sep,.logo-txt{display:none;}
 }
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -308,10 +316,11 @@ html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9
 
 <!-- CURRENT PARASHA -->
 <div class="current-banner" id="currentBanner">
-  <div class="current-badge">📅 Porción de esta semana</div>
+  <div class="current-badge" id="currentBadge">📅 Porción de esta semana</div>
   <div class="current-info">
     <div class="current-name" id="currentName">Cargando...</div>
     <div class="current-refs" id="currentRefs"></div>
+    <div class="current-date" id="currentDate"></div>
   </div>
   <div class="current-heb" id="currentHeb"></div>
   <button class="btn-study" id="btnCurrentStudy">Leer en Biblia →</button>
@@ -455,6 +464,28 @@ function getCurrentParashaNums() {
 }
 function getCurrentParashaNum() { return getCurrentParashaNums()[0]; }
 
+// Próxima fecha (hoy o después) en que se lee la porción `num`, y con cuál
+// se combina ese año: { date: "2026-10-10", nums: [22, 23] } o null.
+function getNextReading(num) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (const dateStr of Object.keys(PARASHA_CALENDAR).sort()) {
+    if (localDate(dateStr) < today) continue;
+    const nums = PARASHA_CALENDAR[dateStr];
+    if (nums.includes(num)) return { date: dateStr, nums };
+  }
+  return null;
+}
+
+// "Shabat 10 oct 2026" / "Simjat Torá · dom 4 oct 2026"
+function formatReadingDate(reading, { long = false } = {}) {
+  if (!reading) return '';
+  const d = localDate(reading.date);
+  const opts = long ? { day: 'numeric', month: 'long', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' };
+  const fecha = d.toLocaleDateString('es', opts).replace('.', '');
+  if (reading.nums.includes(54)) return `Simjat Torá · ${d.toLocaleDateString('es', { weekday: long ? 'long' : 'short' }).replace('.', '')} ${fecha}`;
+  return `Shabat ${fecha}`;
+}
+
 // Las porciones de Deuteronomio pasaron de 52 a 54 (faltaban Vayelej y
 // Haazinu): Vezot HaBerajá era la 52 y ahora es la 54. Mover la marca de
 // "estudiada" una sola vez para no atribuírsela a Vayelej.
@@ -517,6 +548,13 @@ function renderCurrentParasha() {
   document.getElementById('currentName').textContent = ps.length > 1
     ? `${ps.map(x => x.nombre).join('–')} — porción combinada`
     : `${p.nombre} — ${p.sig}`;
+  const reading = getNextReading(p.num);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const isToday = reading && localDate(reading.date).getTime() === today.getTime();
+  document.getElementById('currentBadge').textContent = p.num === 54
+    ? '🎉 Simjat Torá — fin del ciclo'
+    : (isToday ? '📅 Porción de hoy' : '📅 Porción de esta semana');
+  document.getElementById('currentDate').textContent = reading ? formatReadingDate(reading, { long: true }) : '';
   document.getElementById('currentRefs').textContent = ps.map(x => x.torah).join(' · ');
   document.getElementById('currentHeb').textContent = ps.map(x => x.heb).join(' – ');
   document.getElementById('btnCurrentStudy').onclick = () => goToBible(p.torah);
@@ -567,6 +605,12 @@ function renderGrid() {
     }
 
     const isCurrent = currentNums.includes(p.num);
+    const reading = getNextReading(p.num);
+    const partner = reading && reading.nums.length > 1
+      ? PARASHOT.find(x => x.num === reading.nums.find(n => n !== p.num)) : null;
+    const dateHtml = reading
+      ? `<div class="card-date">📅 ${isCurrent ? '' : 'Próxima: '}${formatReadingDate(reading)}${partner ? `<span class="combo">junto con ${partner.nombre}</span>` : ''}</div>`
+      : '';
     const isStudied = !!studiedParashot[p.num];
     const color = BOOK_COLORS[bookId];
 
@@ -578,9 +622,10 @@ function renderGrid() {
       <div class="card-body">
         <div class="card-top">
           <div>
-            <div class="card-num">${String(p.num).padStart(2,'0')} ${isCurrent ? '· 📅 Esta semana' : ''}</div>
+            <div class="card-num">${String(p.num).padStart(2,'0')} ${isCurrent ? (p.num === 54 ? '· 🎉 Simjat Torá' : '· 📅 Esta semana') : ''}</div>
             <div class="card-name">${p.nombre}</div>
             <div class="card-sig">${p.sig}</div>
+            ${dateHtml}
           </div>
           <div class="card-heb">${p.heb}</div>
         </div>
@@ -618,7 +663,9 @@ function openModal(idx) {
   const p = PARASHOT[idx];
   if (!p) return;
 
-  document.getElementById('modalNum').textContent = `Pará­shá ${String(p.num).padStart(2,'0')} de 54`;
+  const reading = getNextReading(p.num);
+  document.getElementById('modalNum').textContent = `Parashá ${String(p.num).padStart(2,'0')} de 54`
+    + (reading ? ` · ${formatReadingDate(reading)}` : '');
   document.getElementById('modalName').textContent = p.nombre;
   document.getElementById('modalSig').textContent = p.sig + ' · ' + p.translit;
   document.getElementById('modalHeb').textContent = p.heb;
