@@ -5940,12 +5940,17 @@ function buildReadingCalendar() {
         }
 
         const todayStyle = day.isToday ? 'outline:2px solid var(--gold);outline-offset:2px;' : '';
-        const clickable = (!isFuture && count > 0) ? `onclick="showDayDetail('${day.dateStr}')" style="cursor:pointer;"` : '';
+        // Un solo atributo style: antes los días con lectura llevaban DOS
+        // (style="cursor:pointer" + el de diseño) y el navegador ignoraba el
+        // segundo — la celda perdía tamaño, fondo y borde y descuadraba la fila.
+        const isClickable = !isFuture && count > 0;
+        const clickAttr = isClickable ? `onclick="showDayDetail('${day.dateStr}')"` : '';
+        const cursor = isClickable ? 'cursor:pointer;' : '';
 
-        return `<div ${clickable} style="flex:1;aspect-ratio:1;border-radius:6px;
+        return `<div ${clickAttr} style="flex:1 1 0;min-width:0;aspect-ratio:1;border-radius:6px;box-sizing:border-box;
           background:${bg};border:1px solid ${border};
           display:flex;align-items:center;justify-content:center;
-          opacity:${opacity};${todayStyle}transition:transform 0.1s;"
+          opacity:${opacity};${todayStyle}${cursor}transition:transform 0.1s;"
           onmouseover="if(${!isFuture})this.style.transform='scale(1.15)'"
           onmouseout="this.style.transform='scale(1)'">
           <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;color:${textColor};line-height:1">${dayNum(day)}</span>
