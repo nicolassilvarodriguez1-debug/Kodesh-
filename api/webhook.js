@@ -35,6 +35,7 @@
 //      real Supabase/Stripe HTTP responses, not assumed.
 
 import nodeCrypto from 'crypto';
+import { stripePeriodEnd } from './_planSync.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -151,6 +152,7 @@ export async function failEvent(eventId, leaseToken, errorMsg) {
 // as success, and "the update didn't actually affect the expected user row"
 // is treated as a failure too (both cases bubble up so the caller marks the
 // event 'failed' and lets Stripe retry, instead of silently losing it).
+// periodEnd: ISO string (o null). Usa stripePeriodEnd(sub) para obtenerlo.
 async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
   const SB_URL = process.env.SUPABASE_URL;
 
@@ -186,7 +188,7 @@ async function updateUserPlan(customerId, status, subscriptionId, periodEnd) {
       plan: isPremiumStatus ? 'premium' : 'free',
       subscription_status: status,
       stripe_subscription_id: subscriptionId,
-      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      current_period_end: periodEnd || null,
       updated_at: new Date().toISOString(),
     })
   });
@@ -212,11 +214,11 @@ async function processEvent(event) {
   switch (event.type) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
-      await updateUserPlan(obj.customer, obj.status, obj.id, obj.current_period_end);
+      await updateUserPlan(obj.customer, obj.status, obj.id, stripePeriodEnd(obj));
       break;
 
     case 'customer.subscription.deleted':
-      await updateUserPlan(obj.customer, 'canceled', obj.id, null);
+      await updateUserPlan(obj.customer, 'canceled', obj.id, stripePeriodEnd(obj));
       break;
 
     case 'invoice.payment_succeeded':
@@ -228,7 +230,7 @@ async function processEvent(event) {
           throw new Error(`Stripe subscription fetch failed (${subRes.status}) for ${obj.subscription}`);
         }
         const sub = await subRes.json();
-        await updateUserPlan(obj.customer, sub.status, sub.id, sub.current_period_end);
+        await updateUserPlan(obj.customer, sub.status, sub.id, stripePeriodEnd(sub));
       }
       break;
 

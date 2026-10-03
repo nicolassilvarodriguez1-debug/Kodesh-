@@ -5,6 +5,7 @@
 // client asserts; it always re-verifies ownership against Stripe itself.
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR } from './_security.js';
+import { stripePeriodEnd } from './_planSync.js';
 
 export default async function handler(req, res) {
   applyCors(req, res);
@@ -82,7 +83,7 @@ export default async function handler(req, res) {
       subscription_status: sub.status,
       stripe_subscription_id: sub.id,
       stripe_customer_id: session.customer || undefined,
-      current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+      current_period_end: stripePeriodEnd(sub),
       updated_at: new Date().toISOString(),
     };
     // Never write another user's row — filter is always on the authenticated userId.
