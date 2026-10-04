@@ -7051,10 +7051,26 @@ let assistantBook = '';
 let assistantBookId = '';
 let assistantChapter = 0;
 
-async function openAssistant(bookName, chapter, bookIdOverride) {
+// Al abrir el asistente se empieza una conversación nueva. Las anteriores
+// están en "Mis estudios" (🕐) y se abren desde ahí con { resume: true }.
+// Excepción: si se cerró hace poco en este mismo capítulo (p. ej. se deslizó
+// sin querer), se conserva la conversación en curso.
+let assistantSession = { key: null, closedAt: 0 };
+const ASSISTANT_KEEP_MS = 30 * 60 * 1000;
+
+async function openAssistant(bookName, chapter, bookIdOverride, { resume = false } = {}) {
+  if (!bookName) {   // llamado sin argumentos: el capítulo que se está leyendo
+    bookName = getAllBooks().find(b => b.id === state.currentBook)?.name || state.currentBook;
+    chapter = state.currentChapter;
+  }
+  const bookId = bookIdOverride || state.currentBook;
+  const key = `${bookId}:${chapter}`;
+  const keepCurrent = !resume && assistantSession.key === key && assistantHistory.length > 0
+    && Date.now() - assistantSession.closedAt < ASSISTANT_KEEP_MS;
   assistantBook = bookName;
-  assistantBookId = bookIdOverride || state.currentBook;
+  assistantBookId = bookId;
   assistantChapter = chapter;
+  assistantSession.key = key;
   document.getElementById('assistantContext').textContent = `${bookName} · Capítulo ${chapter}`;
   document.getElementById('assistantOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -7064,7 +7080,8 @@ async function openAssistant(bookName, chapter, bookIdOverride) {
     setTimeout(() => document.getElementById('assistantInput').focus(), 300);
   }
 
-  await loadAssistantThread();
+  if (resume) await loadAssistantThread();
+  else if (!keepCurrent) clearAssistant();
 }
 
 async function loadAssistantThread() {
@@ -7175,7 +7192,7 @@ async function openStudyFromHistory(bookId, chapter) {
   closeStudyHistory();
 
   if (bookId === '_GENERAL') {
-    await openAssistant('Preguntas generales', 0, '_GENERAL');
+    await openAssistant('Preguntas generales', 0, '_GENERAL', { resume: true });
     return;
   }
 
@@ -7184,12 +7201,13 @@ async function openStudyFromHistory(bookId, chapter) {
   if (state.currentBook !== bookId || state.currentChapter !== chapter) {
     await loadChapter(bookId, chapter);
   }
-  await openAssistant(bookName, chapter);
+  await openAssistant(bookName, chapter, bookId, { resume: true });
 }
 
 function closeAssistant() {
   const ov = document.getElementById('assistantOverlay');
   ov.classList.remove('open', 'kb-open');
+  assistantSession.closedAt = Date.now();
   ov.style.top = ov.style.height = ov.style.bottom = '';
   document.getElementById('assistantInput').blur();
   document.body.style.overflow = '';
@@ -7384,6 +7402,7 @@ async function sendMessage() {
         message,
         history: assistantHistory,
         book: assistantBook,
+        bookId: assistantBookId && assistantBookId !== '_GENERAL' ? assistantBookId : null,
         chapter: assistantChapter,
         userName: (typeof userProfile !== 'undefined' && userProfile?.display_name) || null,
         userGoals: (typeof userProfile !== 'undefined' && userProfile?.study_goals) || [],

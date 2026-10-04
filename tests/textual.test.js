@@ -125,3 +125,21 @@ describe('pre-generación de capítulos', () => {
     assert.equal(costUSD(2_700_000, 1_000_000), 3.85);
   });
 });
+
+// ── Asistente: saber qué capítulo se está leyendo ──
+import { resolveBookId, buildAssistantSystem } from '../api/assistant.js';
+describe('asistente — capítulo actual', () => {
+  test('acepta id o nombre en español (apps ya instaladas mandan el nombre)', () => {
+    assert.equal(resolveBookId(undefined, 'Génesis'), 'GEN');
+    assert.equal(resolveBookId('JHN', 'lo que sea'), 'JHN');
+    assert.equal(resolveBookId(null, '1 Corintios'), '1CO');
+    assert.equal(resolveBookId(null, 'Cantares'), 'SNG');
+    assert.equal(resolveBookId('_GENERAL', 'Preguntas generales'), null);
+  });
+  test('el prompt indica el capítulo y no pide aclararlo', () => {
+    const sys = buildAssistantSystem({ bookId: 'GEN', chapter: 1, verse: null, userName: '', userGoals: [] });
+    assert.match(sys, /está leyendo Génesis 1/);
+    assert.match(sys, /sin preguntarle cuál es/);
+    assert.doesNotMatch(buildAssistantSystem({ bookId: null, userName: '', userGoals: [] }), /CAPÍTULO ACTUAL/);
+  });
+});
