@@ -2,6 +2,7 @@
 import { requireUser } from './_auth.js';
 import { consumeUsage, releaseUsage } from './_limits.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, isValidVerse, clampString } from './_security.js';
+import { getEntry, verifyEntry, lemmaMatches, transliterateGreek, normalizeCode } from './_strongs.js';
 
 const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH',
   'PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
@@ -96,26 +97,38 @@ export default async function handler(req, res) {
   const wordClean = word.toLowerCase().trim();
   const isContextSensitive = CONTEXT_SENSITIVE.has(wordClean);
 
-  // 1 — Check cache (free — doesn't touch quota)
+  // 1 — Check cache (free — doesn't touch quota). Cada entrada se verifica
+  // contra el diccionario Strong's: si el número no corresponde al lema, se
+  // corrige (y se guarda corregida) o se descarta y se vuelve a generar.
   const cached = await getCached(wordClean, testament, bookId, chapter, verse);
+  let healing = false;
   if (cached) {
-    return res.status(200).json({
-      found: true, strongs: cached.strongs, lemma: cached.lemma,
-      transliteration: cached.transliteration, pronunciation: cached.pronunciation,
-      definition: cached.definition, language: cached.language, fromCache: true,
-    });
+    const v = verifyEntry({ found: true, ...cached }, testament);
+    if (v) {
+      if (v.strongs !== cached.strongs || v.lemma !== cached.lemma) {
+        await saveCache(wordClean, testament, v, bookId, chapter, verse);
+      }
+      return res.status(200).json({
+        found: true, strongs: v.strongs, lemma: v.lemma,
+        transliteration: v.transliteration, pronunciation: v.pronunciation,
+        definition: v.definition, language: v.language, fromCache: true,
+      });
+    }
+    healing = true; // entrada mala en caché: se regenera sin cobrar al usuario
   }
   if (isContextSensitive && !(bookId && chapter && verse)) {
     // context-sensitive word with no verse ref — nothing more we can safely cache/serve
   }
 
   // 2 — Reserve quota atomically before calling Anthropic.
-  let usageResult;
-  try {
-    usageResult = await consumeUsage(userId, 'lexicon');
-  } catch(e) {
-    // Fail closed: if we can't verify/reserve quota, don't call Anthropic.
-    return sendError(res, 503, ERR.unavailable, e, 'lexicon:consumeUsage');
+  let usageResult = { allowed: true };
+  if (!healing) {
+    try {
+      usageResult = await consumeUsage(userId, 'lexicon');
+    } catch(e) {
+      // Fail closed: if we can't verify/reserve quota, don't call Anthropic.
+      return sendError(res, 503, ERR.unavailable, e, 'lexicon:consumeUsage');
+    }
   }
   if (!usageResult.allowed) {
     return res.status(429).json({
@@ -125,6 +138,7 @@ export default async function handler(req, res) {
         : `Alcanzaste tu límite de consultas este mes.`,
     });
   }
+  const release = () => (healing ? Promise.resolve() : releaseUsage(userId, 'lexicon'));
 
   // 3 — Call AI with verse-precise context
   const lang = isNT ? 'griego' : 'hebreo';
@@ -152,6 +166,8 @@ REGLAS CRÍTICAS:
 - En Juan 21:15-17: Yeshúa usa ἀγαπάω (agapao/agape, G25) y Pedro responde con φιλέω (phileo, G5368) — son DIFERENTES
 - No asumas — lee el contexto. Si Yeshúa pregunta = agape. Si Pedro responde = fileo.
 - Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj
+- "lemma" debe ser la forma de DICCIONARIO (infinitivo/nominativo), no la forma conjugada del versículo
+- El número Strong's debe corresponder EXACTAMENTE a ese lema. Si no estás seguro del número, pon el lema correcto igualmente: el sistema verifica y corrige el número contra el diccionario Strong's
 
 EJEMPLOS CRÍTICOS:
 - "¿Me amas?" preguntado por Yeshúa en Juan 21 → ἀγαπάω G25
@@ -182,48 +198,72 @@ Identifica la palabra ${lang} EXACTA usada en este versículo específico. Si ha
     try { parsed = JSON.parse(text.trim()); }
     catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { found: false }; }
 
-    if (parsed.found) {
-      await saveCache(wordClean, testament, parsed, bookId, chapter, verse);
-    } else {
-      await releaseUsage(userId, 'lexicon');
+    if (!parsed.found) {
+      await release();
+      return res.status(200).json(parsed);
     }
 
-    return res.status(200).json(parsed);
+    // Verificar número ↔ lema contra el diccionario antes de mostrar o guardar.
+    const verified = verifyEntry(parsed, testament);
+    if (verified) {
+      await saveCache(wordClean, testament, verified, bookId, chapter, verse);
+      return res.status(200).json(verified);
+    }
+    // No se pudo verificar: se muestra la explicación SIN número Strong's
+    // (mejor sin número que con uno equivocado) y no se guarda en caché.
+    return res.status(200).json({ ...parsed, strongs: '', unverified: true });
 
   } catch(err) {
-    await releaseUsage(userId, 'lexicon');
+    await release();
     return sendError(res, 500, ERR.internal, err, 'lexicon');
   }
 }
 
 // Direct Strong's code lookup — used by the Interlinear panel.
 // Cached separately under word = "strongs_<code>" (e.g. "strongs_h776").
+//
+// El número y el lema salen SIEMPRE del diccionario (api/_strongs.js). Antes
+// se le pedía a la IA "genera la entrada para G458" y devolvía una palabra
+// vecina (ἀνόητος en vez de ἀνομία). Ahora la IA solo redacta en español la
+// explicación del lema correcto, partiendo de la definición de Strong.
 async function handleStrongsLookup(strongsCode, userId, res) {
-  const isNT = strongsCode.toUpperCase().startsWith('G');
-  const testament = isNT ? 'NT' : 'AT';
-  const cacheKey = `strongs_${strongsCode.toLowerCase()}`;
+  const code = normalizeCode(strongsCode);
+  const entry = code ? getEntry(code) : null;
+  if (!entry) return res.status(200).json({ found: false });
 
-  // 1 — Check cache (free)
+  const isNT = code.startsWith('G');
+  const testament = isNT ? 'NT' : 'AT';
+  const cacheKey = `strongs_${code.toLowerCase()}`;
+  const translit = entry.xlit || (isNT ? transliterateGreek(entry.lemma) : '');
+  const build = (definition, pronunciation) => ({
+    found: true, strongs: code, lemma: entry.lemma,
+    transliteration: translit, pronunciation: pronunciation || entry.pron || '',
+    definition, language: isNT ? 'griego' : 'hebreo',
+  });
+
+  // 1 — Cache (gratis). Solo vale si corresponde al número pedido.
+  let healing = false;
   try {
     const w = encodeURIComponent(cacheKey);
     const cacheRes = await sbFetch(`lexicon_cache?word=eq.${w}&testament=eq.${testament}&limit=1`);
-    const cacheData = await cacheRes.json();
-    if (cacheData?.[0]?.strongs) {
-      return res.status(200).json({
-        found: true, strongs: cacheData[0].strongs, lemma: cacheData[0].lemma,
-        transliteration: cacheData[0].transliteration, pronunciation: cacheData[0].pronunciation,
-        definition: cacheData[0].definition, language: cacheData[0].language, fromCache: true,
-      });
+    const row = (await cacheRes.json())?.[0];
+    if (row?.definition) {
+      if (normalizeCode(row.strongs) === code && lemmaMatches(code, row.lemma)) {
+        return res.status(200).json({ ...build(row.definition, row.pronunciation), fromCache: true });
+      }
+      healing = true; // entrada equivocada guardada antes del arreglo: regenerar sin cobrar
     }
   } catch(e) {}
 
   // 2 — Reserve quota atomically (same pool as word lookups)
-  let usageResult;
-  try {
-    usageResult = await consumeUsage(userId, 'lexicon');
-  } catch(e) {
-    // Fail closed: if we can't verify/reserve quota, don't call Anthropic.
-    return sendError(res, 503, ERR.unavailable, e, 'lexicon:consumeUsage');
+  let usageResult = { allowed: true };
+  if (!healing) {
+    try {
+      usageResult = await consumeUsage(userId, 'lexicon');
+    } catch(e) {
+      // Fail closed: if we can't verify/reserve quota, don't call Anthropic.
+      return sendError(res, 503, ERR.unavailable, e, 'lexicon:consumeUsage');
+    }
   }
   if (!usageResult.allowed) {
     return res.status(429).json({
@@ -233,10 +273,10 @@ async function handleStrongsLookup(strongsCode, userId, res) {
         : `Alcanzaste tu límite de consultas este mes.`,
     });
   }
+  const release = () => (healing ? Promise.resolve() : releaseUsage(userId, 'lexicon'));
 
-  // 3 — Generate via AI from the Strong's code alone
+  // 3 — La IA redacta la explicación del lema verificado.
   const lang = isNT ? 'griego' : 'hebreo';
-
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -250,13 +290,14 @@ async function handleStrongsLookup(strongsCode, userId, res) {
         max_tokens: 400,
         system: `Eres un experto en léxico bíblico ${lang} para KODESH (plataforma Hebreo-Mesiánica). Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj.
 
-Responde SOLO JSON:
-{"found":true,"strongs":"H776","lemma":"אֶרֶץ","transliteration":"erets","pronunciation":"eh'-rets","definition":"Tierra, suelo, país. Palabra muy frecuente que designa tanto la tierra física como una nación o territorio específico.","language":"hebreo"}
+Te damos la entrada YA VERIFICADA del diccionario Strong's (número, lema y definición original en inglés). Tu tarea es SOLO explicarla en español, fiel a esa definición: 2-3 oraciones, significado principal y matices de uso bíblico. No cambies de palabra ni de número, no inventes otro significado.
 
-Si el código no existe: {"found":false}`,
+Responde SOLO JSON: {"definition":"...","pronunciation":"..."}`,
         messages: [{
           role: 'user',
-          content: `Genera la entrada léxica completa para el número Strong's ${strongsCode.toUpperCase()} (${lang} bíblico).`
+          content: `Strong's ${code}
+Lema (${lang}): ${entry.lemma}${translit ? `\nTransliteración: ${translit}` : ''}
+Definición de Strong (inglés): ${entry.definition || '—'}`
         }]
       })
     });
@@ -267,29 +308,27 @@ Si el código no existe: {"found":false}`,
 
     let parsed;
     try { parsed = JSON.parse(text.trim()); }
-    catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { found: false }; }
+    catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : {}; }
+    if (!parsed.definition) throw new Error('respuesta sin definición');
 
-    if (parsed.found) {
-      try {
-        await sbFetch('lexicon_cache', {
-          method: 'POST',
-          headers: { 'Prefer': 'resolution=merge-duplicates' },
-          body: JSON.stringify({
-            word: cacheKey, testament,
-            strongs: parsed.strongs, lemma: parsed.lemma,
-            transliteration: parsed.transliteration, pronunciation: parsed.pronunciation,
-            definition: parsed.definition, language: parsed.language,
-          })
-        });
-      } catch(e) {}
-    } else {
-      await releaseUsage(userId, 'lexicon');
-    }
+    const result = build(parsed.definition, parsed.pronunciation);
+    try {
+      await sbFetch('lexicon_cache', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          word: cacheKey, testament,
+          strongs: result.strongs, lemma: result.lemma,
+          transliteration: result.transliteration, pronunciation: result.pronunciation,
+          definition: result.definition, language: result.language,
+        })
+      });
+    } catch(e) {}
 
-    return res.status(200).json(parsed);
+    return res.status(200).json(result);
 
   } catch(err) {
-    await releaseUsage(userId, 'lexicon');
+    await release();
     return sendError(res, 500, ERR.internal, err, 'lexicon:strongs');
   }
 }
