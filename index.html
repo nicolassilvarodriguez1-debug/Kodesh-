@@ -4353,6 +4353,15 @@ async function loadChapter(bookId, chapterNum) {
   updateChapterGrid();
   updateBookList();
 
+  // Modo Kodesh con el capítulo ya guardado en el teléfono: se muestra
+  // directo en Kodesh, sin pintar primero la RV (antes se veía un destello).
+  if (textualActive && !_textualLoading && getLocalTextual(bookId, chapterNum)) {
+    textualActive = false; // loadTextualVersion lo vuelve a activar
+    await loadTextualVersion();
+    if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+    return;
+  }
+
   try {
     const [chapterObj, parasha] = await Promise.all([
       fetchChapter(bookId, chapterNum),
@@ -4429,6 +4438,82 @@ applyFontSize();
 let textualActive = false;
 let _textualLoading = false; // previene re-entrada del observer
 
+// ── Caché local de la Traducción Kodesh ──
+// Cada capítulo ya abierto se guarda en el teléfono: reabrirlo es
+// instantáneo, sin esperar al servidor. Una vez al día se revisa en segundo
+// plano si el servidor tiene una versión corregida (p. ej. Filipenses 2:2).
+// Subir TEXTUAL_LOCAL_VERSION invalida todo lo guardado en los teléfonos.
+const TEXTUAL_LOCAL_VERSION = 1;
+const TEXTUAL_LOCAL_MAX = 80;               // capítulos guardados como máximo
+const TEXTUAL_REVALIDATE_MS = 24 * 3600 * 1000;
+const textualMemCache = new Map();
+
+function textualLocalKey(bookId, chapter) { return `kodesh_textual_v${TEXTUAL_LOCAL_VERSION}:${bookId}:${chapter}`; }
+
+function getLocalTextual(bookId, chapter) {
+  const k = textualLocalKey(bookId, chapter);
+  if (textualMemCache.has(k)) return textualMemCache.get(k);
+  try {
+    const raw = localStorage.getItem(k);
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    if (!entry?.verses) return null;
+    textualMemCache.set(k, entry);
+    return entry;
+  } catch (e) { return null; }
+}
+
+function setLocalTextual(bookId, chapter, verses) {
+  const k = textualLocalKey(bookId, chapter);
+  const entry = { verses, savedAt: Date.now() };
+  textualMemCache.set(k, entry);
+  try {
+    const idxKey = `kodesh_textual_v${TEXTUAL_LOCAL_VERSION}:index`;
+    let idx = JSON.parse(localStorage.getItem(idxKey) || '[]').filter(x => x !== k);
+    idx.push(k);
+    while (idx.length > TEXTUAL_LOCAL_MAX) localStorage.removeItem(idx.shift());
+    localStorage.setItem(k, JSON.stringify(entry));
+    localStorage.setItem(idxKey, JSON.stringify(idx));
+  } catch (e) { /* almacenamiento lleno: queda solo en memoria */ }
+}
+
+async function fetchTextualFromServer(bookId, chapter) {
+  const sourceChapterObj = await fetchChapter(bookId, chapter);
+  const authH = await authHeaders();
+  if (!authH) return { needsLogin: true };
+  const res = await kapiFetch('/api/textual', {
+    method: 'POST',
+    headers: authH,
+    body: JSON.stringify({ bookId, chapter, sourceVerses: sourceChapterObj })
+  });
+  // kapiFetch() en nativo (CapacitorHttp) no expone res.headers — en ese
+  // caso asumimos JSON, ya que nuestra propia API siempre responde JSON.
+  const contentType = (res.headers && typeof res.headers.get === 'function')
+    ? (res.headers.get('content-type') || '')
+    : 'application/json';
+  if (!contentType.includes('application/json')) {
+    const textResponse = await res.text();
+    console.error('[Textual] Respuesta no-JSON:', textResponse.slice(0, 500));
+    throw new Error('El servidor respondió con formato inesperado (status ' + res.status + ')');
+  }
+  let data;
+  try { data = await res.json(); }
+  catch (jsonErr) { throw new Error('La respuesta del servidor no es JSON válido'); }
+  if (!data.found) throw new Error(data.error || 'Error desconocido');
+  // Solo se guarda en el teléfono lo que el servidor guardó (no los
+  // capítulos "parciales" que todavía se van a reintentar).
+  if (!data.partial) setLocalTextual(bookId, chapter, data.verses);
+  return data;
+}
+
+// Revisión silenciosa: si el servidor tiene otra versión, se guarda para la
+// próxima apertura (no se redibuja ahora para no mover al lector).
+function revalidateTextualInBackground(bookId, chapter) {
+  const entry = getLocalTextual(bookId, chapter);
+  if (!entry || Date.now() - entry.savedAt < TEXTUAL_REVALIDATE_MS) return;
+  fetchTextualFromServer(bookId, chapter).catch(() => {});
+}
+
 function toggleTextualVersion() {
   if (_textualLoading) return;
   if (textualActive) {
@@ -4476,51 +4561,27 @@ async function loadTextualVersion() {
   }
 
   var bibleTextDiv = document.querySelector('.bible-text');
-  if (bibleTextDiv) {
-    bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;"><div style="margin-bottom:8px;">✦</div>Generando Traducción Kodesh...</div>';
-  }
+  var local = getLocalTextual(state.currentBook, state.currentChapter);
 
   try {
-    var sourceChapterObj = await fetchChapter(state.currentBook, state.currentChapter);
-
-    var authH = await authHeaders();
-    if (!authH) {
-      if (bibleTextDiv) {
-        bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;">Inicia sesión para ver la Traducción Kodesh.</div>';
-      }
-      return;
-    }
-
-    var res = await kapiFetch('/api/textual', {
-      method: 'POST',
-      headers: authH,
-      body: JSON.stringify({
-        bookId: state.currentBook,
-        chapter: state.currentChapter,
-        sourceVerses: sourceChapterObj,
-      })
-    });
-
-    // Verificar que la respuesta sea JSON válido.
-    // kapiFetch() en nativo (CapacitorHttp) no expone res.headers — en ese
-    // caso asumimos JSON, ya que nuestra propia API siempre responde JSON.
-    var contentType = (res.headers && typeof res.headers.get === 'function')
-      ? (res.headers.get('content-type') || '')
-      : 'application/json';
-    if (!contentType.includes('application/json')) {
-      var textResponse = await res.text();
-      console.error('[Textual] Respuesta no-JSON:', textResponse.slice(0, 500));
-      throw new Error('El servidor respondió con formato inesperado (status ' + res.status + ')');
-    }
-
     var data;
-    try {
-      data = await res.json();
-    } catch(jsonErr) {
-      console.error('[Textual] JSON parse error del servidor:', jsonErr);
-      throw new Error('La respuesta del servidor no es JSON válido');
+    if (local) {
+      // Ya leído antes: se muestra al instante desde el teléfono.
+      data = { found: true, verses: local.verses, fromCache: true };
+      revalidateTextualInBackground(state.currentBook, state.currentChapter);
+    } else {
+      if (bibleTextDiv) {
+        bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;"><div style="margin-bottom:8px;">✦</div>Cargando Traducción Kodesh...</div>';
+      }
+      data = await fetchTextualFromServer(state.currentBook, state.currentChapter);
+      if (data.needsLogin) {
+        if (bibleTextDiv) {
+          bibleTextDiv.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--text-dim);font-style:italic;">Inicia sesión para ver la Traducción Kodesh.</div>';
+        }
+        _textualLoading = false;
+        return;
+      }
     }
-    if (!data.found) throw new Error(data.error || 'Error desconocido');
 
     var verses = parseLocalChapter(data.verses);
     var bookData = getAllBooks().find(function(b) { return b.id === state.currentBook; });
@@ -6613,7 +6674,7 @@ function verseSheetSave() {
   saveBookmarksLocal();
   saveBookmarkToCloud(state.bookmarks[key]);
   closeVerseSheet();
-  loadChapter(state.currentBook, state.currentChapter);
+  refreshVerseBookmark(book, chapter, verse);
   renderBookmarkList();
   showToast(`${BOOKMARK_CATEGORIES[selectedColor].emoji} Marcador guardado`);
 }
@@ -6625,7 +6686,7 @@ function verseSheetRemove() {
   saveBookmarksLocal();
   removeBookmarkFromCloud(book, chapter, verse);
   closeVerseSheet();
-  loadChapter(state.currentBook, state.currentChapter);
+  refreshVerseBookmark(book, chapter, verse);
   renderBookmarkList();
   showToast('Marcador eliminado');
 }
@@ -6756,8 +6817,7 @@ function saveBookmark() {
   saveBookmarksLocal();
   saveBookmarkToCloud(state.bookmarks[key]);
   closeBookmarkMenu();
-  // Re-render current chapter to show highlight
-  loadChapter(state.currentBook, state.currentChapter);
+  refreshVerseBookmark(bmState.book, bmState.chapter, bmState.verse);
   renderBookmarkList();
   showToast(`${BOOKMARK_CATEGORIES[bmState.selectedColor].emoji} Marcador guardado`);
 }
@@ -6768,9 +6828,29 @@ function removeBookmark() {
   saveBookmarksLocal();
   removeBookmarkFromCloud(bmState.book, bmState.chapter, bmState.verse);
   closeBookmarkMenu();
-  loadChapter(state.currentBook, state.currentChapter);
+  refreshVerseBookmark(bmState.book, bmState.chapter, bmState.verse);
   renderBookmarkList();
   showToast('Marcador eliminado');
+}
+
+// Actualiza SOLO el versículo marcado/desmarcado, sin recargar el capítulo.
+// Antes se llamaba a loadChapter(): en la Traducción Kodesh eso volvía a
+// pedir el capítulo al servidor (destello + "Generando…") y en ambas
+// versiones la vista saltaba al principio.
+function refreshVerseBookmark(book, chapter, verse) {
+  if (book !== state.currentBook || Number(chapter) !== Number(state.currentChapter)) return;
+  const el = document.getElementById(`v-${verse}`);
+  if (!el) return;
+  el.classList.forEach(c => { if (c.startsWith('bookmark-')) el.classList.remove(c); });
+  el.querySelector(':scope > .bookmark-dot')?.remove();
+  const bm = state.bookmarks[`${book}:${chapter}:${verse}`];
+  if (bm) {
+    el.classList.add(`bookmark-${bm.color}`);
+    const dot = document.createElement('span');
+    dot.className = `bookmark-dot bm-${bm.color}`;
+    dot.title = BOOKMARK_CATEGORIES[bm.color]?.name || '';
+    el.insertBefore(dot, el.firstChild);
+  }
 }
 
 function saveBookmarksLocal() {
