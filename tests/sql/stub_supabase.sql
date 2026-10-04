@@ -22,3 +22,7 @@ grant usage on schema public, auth to anon, authenticated, service_role;
 grant select, insert, update, delete on all tables in schema public to anon, authenticated, service_role;
 alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated, service_role;
 grant execute on function auth.uid(), auth.role() to anon, authenticated;
+create table public.ai_usage (user_id uuid, month text, searches_used int not null default 0,
+  assistant_used int not null default 0, lexicon_used int not null default 0, updated_at timestamptz,
+  primary key (user_id, month));
+grant select, insert, update, delete on public.ai_usage to anon, authenticated, service_role;

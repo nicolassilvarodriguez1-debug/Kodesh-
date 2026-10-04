@@ -3353,6 +3353,7 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
     <div class="limit-icon">✦</div>
     <div class="limit-title" id="limitTitle">Límite alcanzado</div>
     <div class="limit-msg" id="limitMsg"></div>
+    <div id="limitManaOffer" style="display:none;background:var(--bg3);border:1px solid var(--gold-dim);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center"></div>
     <div class="limit-plans" style="grid-template-columns:1fr">
       <div class="limit-plan-card limit-plan-highlight">
         <div class="limit-plan-name">✦ KODESH PREMIUM</div>
@@ -5146,8 +5147,34 @@ function updateUsageDisplay() {
 function showLimitModal(type, err) {
   document.getElementById('limitMsg').textContent = err.message;
   document.getElementById('limitTitle').textContent =
-    type === 'search' ? 'Límite de búsquedas alcanzado' : 'Límite del asistente alcanzado';
+    type === 'search' ? 'Límite de búsquedas alcanzado'
+    : type === 'lexicon' ? 'Límite del lexicón alcanzado' : 'Límite del asistente alcanzado';
+  renderLimitManaOffer(type);
   document.getElementById('limitOverlay').classList.add('open');
+}
+
+// Dentro del aviso de límite: ofrecer una consulta extra a cambio de maná.
+function renderLimitManaOffer(type) {
+  const box = document.getElementById('limitManaOffer');
+  if (!box) return;
+  const s = (typeof userStreak !== 'undefined') ? userStreak : null;
+  const price = s?.creditPrices?.[type];
+  if (!s || !price || !currentUser) { box.style.display = 'none'; return; }
+  const can = s.mana >= price;
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">✨ O usa tu maná</div>
+    <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px">1 consulta más por <b style="color:var(--gold)">${price} maná</b> · tienes ${s.mana.toLocaleString('es')}</div>
+    <button ${can ? '' : 'disabled'} style="width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;padding:11px;border-radius:8px;cursor:${can ? 'pointer' : 'default'};${can ? '' : 'opacity:0.45;'}"
+      onclick="redeemFromLimit('${type}')">${can ? `Canjear ${price} maná` : `Te faltan ${price - s.mana} de maná`}</button>`;
+}
+
+async function redeemFromLimit(type) {
+  const ok = await buyAiCredit(type);
+  if (ok) {
+    document.getElementById('limitOverlay').classList.remove('open');
+    showToast('✨ Listo: vuelve a intentarlo, se usará tu consulta extra');
+  }
 }
 
 function closeLimitModal(e) {
@@ -5917,7 +5944,50 @@ function renderManaSection() {
   const btnLabel = s.shields >= max ? 'Máximo de protectores'
     : s.mana >= price ? `Comprar protector · ${price} maná`
     : `Te faltan ${price - s.mana} de maná`;
-  const atRisk = s.current > 0 && !s.readToday;
+  const atRisk = s.current > 0 && !s.readToday && !s.isShabbat;
+  const restingShabbat = s.isShabbat && !s.readToday;
+  // Parashá de la semana
+  const pa = s.parasha;
+  let parashaHtml = '';
+  if (pa && pa.total) {
+    const pct = Math.round((pa.read / pa.total) * 100);
+    const names = (pa.names || []).join('–');
+    const missing = (pa.missing || []).slice(0, 6).map(k => {
+      const [b, c] = k.split(':');
+      return `<button onclick="goToBookmark('${b}',${c},1);closeProfile()" style="background:none;border:1px solid var(--border2);color:var(--text-dim);border-radius:6px;padding:3px 7px;font-size:0.7rem;cursor:pointer">${(typeof BOOK_NAMES_MAP !== 'undefined' && BOOK_NAMES_MAP[b]) || b} ${c}</button>`;
+    }).join(' ');
+    parashaHtml = `
+      <div style="grid-column:span 2;background:var(--bg3);border:1px solid ${pa.done ? 'var(--green)' : 'var(--border)'};border-radius:10px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px">
+          <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">📜 Parashá de la semana</div>
+          <div style="font-size:0.75rem;color:${pa.done ? 'var(--green)' : 'var(--gold)'}">${pa.done ? '✓ completada' : `+${pa.reward} maná`}</div>
+        </div>
+        <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--text);margin-bottom:8px">${names} · ${pa.read}/${pa.total} capítulos</div>
+        <div style="background:var(--bg2);border-radius:6px;height:6px;overflow:hidden;margin-bottom:${pa.done ? 0 : 10}px">
+          <div style="height:100%;width:${pct}%;background:${pa.done ? 'var(--green)' : 'linear-gradient(90deg,var(--gold-dim),var(--gold))'};border-radius:6px"></div>
+        </div>
+        ${pa.done ? '' : `<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:6px">Léela completa antes del ${new Date(pa.reading_day + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short' })}. Te faltan:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${missing}${(pa.missing || []).length > 6 ? ` <span style="font-size:0.7rem;color:var(--text-dim)">+${pa.missing.length - 6}</span>` : ''}</div>`}
+      </div>`;
+  }
+  // Canje de maná por consultas de IA
+  const cp = s.creditPrices || { assistant: 50, search: 30, lexicon: 20 };
+  const cr = s.credits || {};
+  const creditBtn = (type, label) => {
+    const ok = s.mana >= cp[type] && (cr[type] || 0) < 10;
+    return `<button onclick="buyAiCredit('${type}')" ${ok ? '' : 'disabled'}
+      style="flex:1;min-width:0;background:${ok ? 'var(--gold-glow)' : 'transparent'};border:1px solid ${ok ? 'var(--gold-dim)' : 'var(--border)'};
+      color:${ok ? 'var(--gold)' : 'var(--text-dim)'};border-radius:8px;padding:8px 4px;cursor:${ok ? 'pointer' : 'default'};line-height:1.3">
+      <div style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:1px;text-transform:uppercase">${label}</div>
+      <div style="font-size:0.7rem">${cp[type]} maná${cr[type] ? ` · tienes ${cr[type]}` : ''}</div>
+    </button>`;
+  };
+  const creditsHtml = `
+    <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+      <div style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">✨ Canjea maná por consultas de IA</div>
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px;line-height:1.5">Se guardan y se usan solas cuando se acaba tu límite del mes.</div>
+      <div style="display:flex;gap:6px">${creditBtn('assistant', 'Asistente')}${creditBtn('search', 'Búsqueda')}${creditBtn('lexicon', 'Lexicón')}</div>
+    </div>`;
   return `
     <div id="manaSection" style="grid-column:span 2;margin-top:4px;scroll-margin-top:12px">
       <div class="stat-section-title" style="padding:8px 0 10px;border-top:1px solid var(--border)">✨ Maná y protectores</div>
@@ -5933,8 +6003,10 @@ function renderManaSection() {
     <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
       <div style="font-size:0.8rem;color:var(--text-dim);line-height:1.5;margin-bottom:12px">
         ${atRisk ? `<div style="color:#f0a040;margin-bottom:6px">🔥 Lee un capítulo hoy para mantener tu racha de ${s.current} día${s.current === 1 ? '' : 's'}${s.shields ? ' (si no, se usará un protector)' : ''}.</div>` : ''}
+        ${restingShabbat && s.current > 0 ? `<div style="color:var(--gold);margin-bottom:6px">🕯️ Shabat shalom. Hoy tu racha descansa contigo: no se pierde aunque no leas.</div>` : ''}
         Ganas <b style="color:var(--gold)">10 maná</b> por capítulo (hasta 5 al día), <b style="color:var(--gold)">+20</b> al cumplir tu meta diaria y bonos a los 7, 30, 100 y 365 días seguidos.
         Un protector cubre un día sin leer y se usa solo.${s.premium ? ' Con Premium recibes 1 gratis cada mes 💎' : ''}
+        El Shabat nunca rompe tu racha 🕯️ y completar la parashá de la semana da maná extra.
       </div>
       <button onclick="buyStreakShield()" ${canBuy ? '' : 'disabled'}
         style="width:100%;background:${canBuy ? 'var(--gold-glow)' : 'transparent'};border:1px solid ${canBuy ? 'var(--gold)' : 'var(--border)'};
@@ -5943,6 +6015,8 @@ function renderManaSection() {
         🛡️ ${btnLabel}
       </button>
     </div>
+    ${parashaHtml}
+    ${creditsHtml}
   `;
 }
 

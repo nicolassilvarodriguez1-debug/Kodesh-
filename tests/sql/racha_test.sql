@@ -45,7 +45,8 @@ select pg_temp.eq((pg_temp.st(:A)).current_streak, 2, 'día 2 racha');
 select pg_temp.eq((pg_temp.st(:A)).last_read_date, '2026-10-02'::date, 'fecha local, no UTC');
 
 -- 5. Faltó 1 día sin protector → el proceso horario pone la racha en 0 y deja aviso
-select pg_temp.at('2026-10-04 08:00-04');
+--    (vie 2 → lun 5: el sáb 3 no cuenta, el dom 4 sí)
+select pg_temp.at('2026-10-05 08:00-04');
 select pg_temp.eq(public.settle_all_streaks(), 1, 'settle procesa 1 usuario');
 select pg_temp.eq((pg_temp.st(:A)).current_streak, 0, 'racha perdida');
 select pg_temp.eq((pg_temp.st(:A)).longest_streak, 2, 'mejor racha se conserva');
@@ -63,17 +64,17 @@ select pg_temp.eq((pg_temp.st(:A)).mana, 600, 'maná descontado');
 
 -- 7. Con 2 protectores: lee hoy (racha 1), mañana (2), falta 1 día → protector, sigue en 2
 select pg_temp.read(:A,'LEV',1);
-select pg_temp.at('2026-10-05 09:00-04'); select pg_temp.read(:A,'LEV',2);
-select pg_temp.at('2026-10-07 09:00-04');
+select pg_temp.at('2026-10-06 09:00-04'); select pg_temp.read(:A,'LEV',2);
+select pg_temp.at('2026-10-08 09:00-04');
 select public.settle_all_streaks();
 select pg_temp.eq((pg_temp.st(:A)).current_streak, 2, 'protector salva la racha');
 select pg_temp.eq((pg_temp.st(:A)).shields, 1, 'se gastó 1 protector');
-select pg_temp.eq((select shielded from public.reading_days where user_id=:A and day='2026-10-06'), true, 'día protegido en calendario');
+select pg_temp.eq((select shielded from public.reading_days where user_id=:A and day='2026-10-07'), true, 'día protegido en calendario');
 select pg_temp.read(:A,'LEV',3);
 select pg_temp.eq((pg_temp.st(:A)).current_streak, 3, 'continúa tras el protector');
 
--- 8. Faltan 3 días con 1 protector → se pierde la racha y NO se gasta el protector
-select pg_temp.at('2026-10-11 09:00-04');
+-- 8. Faltan 2 días (vie 9, dom 11; el sáb no cuenta) con 1 protector → se pierde y NO se gasta
+select pg_temp.at('2026-10-12 09:00-04');
 select public.settle_all_streaks();
 select pg_temp.eq((pg_temp.st(:A)).current_streak, 0, 'más días que protectores');
 select pg_temp.eq((pg_temp.st(:A)).shields, 1, 'protector no se gasta en vano');
@@ -115,7 +116,7 @@ select pg_temp.eq(has_function_privilege('authenticated', 'public.settle_all_str
 select pg_temp.eq(has_function_privilege('authenticated', 'public._kodesh_record_chapter(uuid,text,int)', 'execute'), false, 'record no es público');
 
 -- 14. Calendario
-select pg_temp.as_user(:A); select pg_temp.at('2026-10-11 09:00-04');
-select pg_temp.eq((select count(*)::int from public.get_reading_calendar(35)), 6, 'calendario de A: 1,2,4,5,6(protegido),7');
+select pg_temp.as_user(:A); select pg_temp.at('2026-10-12 09:00-04');
+select pg_temp.eq((select count(*)::int from public.get_reading_calendar(35)), 6, 'calendario de A: 1,2,5,6,7(protegido),8');
 
 \echo 'TODOS LOS ESCENARIOS OK'

@@ -468,6 +468,10 @@ let userStreak = {
   shieldPrice: 200,
   readToday: false,
   premium: false,
+  isShabbat: false,
+  credits: { search: 0, assistant: 0, lexicon: 0 },
+  creditPrices: { search: 30, assistant: 50, lexicon: 20 },
+  parasha: null,   // progreso de la parashá de la semana (ver _kodesh_parasha_progress)
 };
 // Días leídos/protegidos según el servidor: { 'YYYY-MM-DD': { count, shielded } }
 let serverReadingDays = {};
@@ -482,6 +486,7 @@ const STREAK_NOTICE_TEXT = {
   streak_lost: n => `Tu racha de ${n.streak} día${n.streak === 1 ? '' : 's'} terminó. ¡Hoy empieza una nueva! 📖`,
   milestone: n => `🎉 ¡${n.streak} días seguidos! +${n.mana} maná`,
   premium_shield: () => '💎 Premium: recibiste tu protector de racha del mes',
+  parasha: n => `📜 ¡Completaste ${(n.names || []).join('–')}! +${n.mana} maná`,
 };
 
 function showStreakNotices(notices) {
@@ -511,6 +516,10 @@ async function loadStreak({ silent = false } = {}) {
       shieldPrice: data.shield_price || 200,
       readToday: !!data.read_today,
       premium: !!data.premium,
+      isShabbat: !!data.is_shabbat,
+      credits: data.credits || { search: 0, assistant: 0, lexicon: 0 },
+      creditPrices: data.credit_prices || { search: 30, assistant: 50, lexicon: 20 },
+      parasha: data.parasha || null,
     };
     if (!cal.error) {
       serverReadingDays = {};
@@ -584,6 +593,34 @@ document.addEventListener('visibilitychange', async () => {
   renderStreakBadge();
 });
 
+// Canjear maná por una consulta extra de IA. Se usa sola cuando se acaba
+// el límite del mes (consume_ai_usage en el servidor).
+const AI_CREDIT_LABEL = { assistant: 'asistente', search: 'búsqueda IA', lexicon: 'lexicón' };
+async function buyAiCredit(type) {
+  const sb = getSupabase();
+  if (!sb || !currentUser) return false;
+  try {
+    const { data, error } = await sb.rpc('buy_ai_credit', { p_type: type });
+    if (error) throw error;
+    if (!data.ok) {
+      showToast(data.error === 'max_credits'
+        ? 'Ya tienes 10 consultas guardadas de ese tipo'
+        : `Te faltan ${(data.price || 0) - (data.mana || 0)} de maná. ¡Sigue leyendo! 📖`);
+      return false;
+    }
+    userStreak.mana = data.mana;
+    userStreak.credits = { ...userStreak.credits, [type]: data.credits };
+    showToast(`✨ +1 consulta de ${AI_CREDIT_LABEL[type]} (tienes ${data.credits})`);
+    if (typeof renderProfileStats === 'function' && document.getElementById('profileOverlay')?.classList.contains('open')) {
+      try { renderProfileStats(); } catch (e) {}
+    }
+    return true;
+  } catch (e) {
+    showToast('No se pudo canjear. Intenta de nuevo.');
+    return false;
+  }
+}
+
 function renderStreakBadge() {
   const badge = document.getElementById('streakBadge');
   if (!badge) return;
@@ -591,8 +628,10 @@ function renderStreakBadge() {
     // Sin leer hoy, la racha está "en riesgo": se ve atenuada.
     badge.textContent = `🔥 ${userStreak.current}`;
     badge.style.display = 'flex';
-    badge.style.opacity = userStreak.readToday ? '1' : '0.6';
-    badge.title = userStreak.readToday ? 'Racha de lectura' : 'Lee un capítulo hoy para mantener tu racha';
+    const safeToday = userStreak.readToday || userStreak.isShabbat;
+    badge.style.opacity = safeToday ? '1' : '0.6';
+    badge.title = userStreak.isShabbat && !userStreak.readToday ? 'Shabat: hoy tu racha descansa'
+      : userStreak.readToday ? 'Racha de lectura' : 'Lee un capítulo hoy para mantener tu racha';
   } else {
     badge.style.display = 'none';
   }

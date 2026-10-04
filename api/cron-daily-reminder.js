@@ -139,7 +139,15 @@ async function buildPromiseReminders() {
 }
 
 // ── type=reading — tarde, condicional por usuario ──
+// Shabat (sábado en Nueva York, donde está casi toda la comunidad): no se
+// manda el recordatorio de lectura ni el de racha. El Shabat ya no rompe la
+// racha (ver 20261003_recompensas.sql) y no tiene sentido presionar ese día.
+export function isShabbatNY(now = new Date()) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short' }).format(now) === 'Sat';
+}
+
 async function buildReadingReminders() {
+  if (isShabbatNY()) return [];
   const [tokens, streaks] = await Promise.all([
     sbGet('user_push_tokens?select=id,user_id,token'),
     sbGet('reading_streaks?select=user_id,current_streak,last_read_date,shields'),

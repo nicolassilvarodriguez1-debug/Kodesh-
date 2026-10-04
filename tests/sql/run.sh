@@ -14,4 +14,6 @@ P="psql -h $TMP -p 55432 -U postgres -q -v ON_ERROR_STOP=1"
 $P -d postgres -c 'create database t' >/dev/null
 $P -d t -f "$DIR/stub_supabase.sql" >/dev/null
 $P -d t -f "$DIR/../../supabase/migrations/20261002_racha_mana.sql" >/dev/null
+$P -d t -f "$DIR/../../supabase/migrations/20261003_recompensas.sql" >/dev/null
 $P -d t -t -f "$DIR/racha_test.sql" | grep -v "^\s*$"
+$P -d t -t -f "$DIR/recompensas_test.sql" | grep -v "^\s*$"
