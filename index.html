@@ -2446,11 +2446,25 @@ html.light .assistant-header { background: var(--head-grad); }
   border: 1px solid var(--gold-dim);
   color: var(--text); border-radius: 12px 12px 3px 12px;
 }
+/* La respuesta del asistente se lee como texto sobre el panel (no como una
+   tarjeta encima de otra), con una etiqueta discreta arriba. */
 .msg-assistant .msg-bubble {
-  background: var(--bg3); border: 1px solid var(--border2);
-  color: var(--text); border-radius: 12px 12px 12px 3px;
+  background: none; border: none; box-shadow: none;
+  max-width: 100%; padding: 2px 2px 4px;
+  color: var(--text); font-size: 0.98rem; line-height: 1.7;
+}
+.msg-assistant:not(#typingIndicator)::before {
+  content: '✦ Kodesh';
+  font-family: 'Cinzel', serif; font-size: 0.56rem; letter-spacing: 1.6px;
+  text-transform: uppercase; color: var(--gold-dim);
 }
 .msg-assistant .msg-bubble strong { color: var(--gold); }
+.msg-li { display: block; position: relative; padding-left: 16px; margin: 3px 0; }
+.msg-li::before {
+  content: ''; position: absolute; left: 3px; top: 0.72em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--gold-dim);
+}
+.msg-h { display: block; margin-top: 6px; font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 1px; color: var(--gold); }
 .typing-indicator {
   display: flex; gap: 4px; padding: 12px 14px;
   background: var(--bg3); border: 1px solid var(--border2);
@@ -2470,24 +2484,25 @@ html.light .assistant-header { background: var(--head-grad); }
 
 /* Input */
 .assistant-input-area {
-  padding: 12px 14px;
+  padding: 10px 12px calc(10px + var(--safe-area-inset-bottom));
   border-top: 1px solid var(--border);
+  background: var(--bg2);
   display: flex; gap: 8px; align-items: flex-end;
   flex-shrink: 0;
 }
 .assistant-input {
   flex: 1; background: var(--bg3); border: 1px solid var(--border2);
-  color: var(--text); font-family: 'Crimson Pro', serif; font-size: 0.95rem;
-  padding: 10px 12px; border-radius: var(--radius-sm); outline: none; resize: none;
+  color: var(--text); font-family: 'Crimson Pro', serif; font-size: 1rem;
+  padding: 10px 16px; border-radius: 22px; outline: none; resize: none;
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
-  line-height: 1.5; max-height: 120px;
+  line-height: 1.4; min-height: 44px; max-height: 120px; overflow-y: auto;
 }
 .assistant-input:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 3px var(--gold-soft); }
 .assistant-input::placeholder { color: var(--text-dim); font-style: italic; }
 .assistant-send {
   background: linear-gradient(150deg, var(--gold-deep), var(--gold-dim));
   border: 1px solid var(--gold-deep); color: var(--gold-bright);
-  width: 40px; height: 40px; border-radius: var(--radius-sm); font-size: 1.1rem;
+  width: 44px; height: 44px; border-radius: 50%; font-size: 1.1rem;
   cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transition: box-shadow var(--dur-fast) ease, transform var(--dur-fast) ease;
@@ -2870,15 +2885,27 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
   /* ── Assistant panel ── */
   .assistant-overlay { justify-content: flex-end; align-items: flex-end; }
   .assistant-panel {
-    width: 100%;
-    height: 85vh;
+    position: relative;
+    width: 100%; max-width: 100%;   /* antes quedaba en 95vw: franja suelta a la izquierda */
+    height: 88%;
     border-left: none;
     border-top: 1px solid var(--gold-dim);
     border-radius: 22px 22px 0 0;
+    overflow: hidden;
     transform: translateY(100%);
-    transition: transform 0.38s var(--ease-sheet);
+    transition: transform 0.38s var(--ease-sheet), height 0.2s ease;
   }
+  .assistant-panel::before {       /* agarradera de hoja */
+    content: ''; position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+    width: 38px; height: 4px; border-radius: 2px; background: var(--border2); z-index: 1;
+  }
+  .assistant-header { padding: 20px 16px 12px; }
   .assistant-overlay.open .assistant-panel { transform: translateY(0); }
+  /* Con el teclado abierto el panel ocupa todo el espacio visible y se apoya
+     justo sobre el teclado (sin hueco por donde se vea lo de atrás). */
+  .assistant-overlay.kb-open .assistant-panel { height: calc(100% - 8px); }
+  .assistant-overlay.kb-open .assistant-input-area { padding-bottom: 10px; }
+  .assistant-input { font-size: 16px; } /* < 16px hace que iOS haga zoom al escribir */
 
   /* ── Notes panel ── */
   .notes-overlay { justify-content: flex-end; align-items: flex-end; }
@@ -3281,7 +3308,9 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
         class="assistant-input"
         id="assistantInput"
         placeholder="Pregunta sobre este capítulo..."
-        rows="2"
+        rows="1"
+        enterkeyhint="send"
+        oninput="autoGrowAssistantInput(this)"
         onkeydown="handleAssistantKey(event)"
       ></textarea>
       <button class="assistant-send" id="assistantSend" onclick="sendMessage()">→</button>
@@ -7028,7 +7057,11 @@ async function openAssistant(bookName, chapter, bookIdOverride) {
   document.getElementById('assistantContext').textContent = `${bookName} · Capítulo ${chapter}`;
   document.getElementById('assistantOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('assistantInput').focus(), 300);
+  fitAssistantToViewport();
+  // En el teléfono no se abre el teclado solo: primero se ve la conversación.
+  if (!window.matchMedia('(pointer: coarse)').matches) {
+    setTimeout(() => document.getElementById('assistantInput').focus(), 300);
+  }
 
   await loadAssistantThread();
 }
@@ -7154,8 +7187,40 @@ async function openStudyFromHistory(bookId, chapter) {
 }
 
 function closeAssistant() {
-  document.getElementById('assistantOverlay').classList.remove('open');
+  const ov = document.getElementById('assistantOverlay');
+  ov.classList.remove('open', 'kb-open');
+  ov.style.top = ov.style.height = ov.style.bottom = '';
+  document.getElementById('assistantInput').blur();
   document.body.style.overflow = '';
+}
+
+// iOS no achica la página al abrir el teclado: la desplaza. Sin esto, el
+// panel quedaba anclado abajo (detrás del teclado) y en el hueco se veía lo
+// que hay detrás (p. ej. el selector de libros). Ajustamos el overlay al área
+// realmente visible (visualViewport).
+function fitAssistantToViewport() {
+  const ov = document.getElementById('assistantOverlay');
+  const vv = window.visualViewport;
+  if (!ov || !vv || !ov.classList.contains('open')) return;
+  ov.style.top = vv.offsetTop + 'px';
+  ov.style.height = vv.height + 'px';
+  ov.style.bottom = 'auto';
+  const kbOpen = window.innerHeight - vv.height > 120;
+  if (kbOpen !== ov.classList.contains('kb-open')) {
+    ov.classList.toggle('kb-open', kbOpen);
+    const msgs = document.getElementById('assistantMessages');
+    if (kbOpen && msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitAssistantToViewport);
+  window.visualViewport.addEventListener('scroll', fitAssistantToViewport);
+}
+
+// El cuadro de texto crece con lo que se escribe (hasta 120px).
+function autoGrowAssistantInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight + 2, 120) + 'px';
 }
 
 function closeAssistantOutside(e) {
@@ -7205,6 +7270,8 @@ function addMessage(role, text) {
   // on top of the escaped string, so no HTML from the source text can ever
   // reach the DOM.
   const formatted = escHtml(text)
+    .replace(/^#{1,4}\s+(.*)(?:\n|$)/gm, '<span class="msg-h">$1</span>')
+    .replace(/^\s*(?:-|•|\*)\s+(.*)(?:\n|$)/gm, '<span class="msg-li">$1</span>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n\n/g, '<br><br>')
     .replace(/\n/g, '<br>');
