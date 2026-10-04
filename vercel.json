@@ -55,7 +55,7 @@
     },
     "api/textual.js": {
       "memory": 512,
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/app-version.js": {
       "memory": 128,

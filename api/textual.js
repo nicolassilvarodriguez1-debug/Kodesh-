@@ -2,7 +2,8 @@
 // Genera traducción de equivalencia formal anclada al texto RVR60 + hebreo/griego original
 // Formato de salida IDÉNTICO a biblia-rvr.json para compatibilidad con renderBibleText()
 //
-// This is a Premium-only, expensive (max_tokens 4096) generation endpoint.
+// This is a Premium-only, expensive generation endpoint (max_tokens según el
+// tamaño del capítulo, ver _textualCheck.maxTokensFor).
 // Previously had NO authentication at all — anyone could POST arbitrary
 // sourceVerses and trigger generation. Now requires a verified Supabase
 // session with an active/trialing premium plan, plus input validation and
@@ -11,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { requireUser } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, sanitizeSourceVerses } from './_security.js';
 import { checkRateLimit, acquireGenerationLock, releaseGenerationLock } from './_limits.js';
+import { applyManuscriptRules, validateChapter, maxTokensFor } from './_textualCheck.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -72,7 +74,7 @@ async function getCachedChapter(bookId, chapter) {
 
 async function saveChapter(bookId, chapter, verses, verseCount) {
   try {
-    await sbFetch('textual_cache', {
+    await sbFetch('textual_cache?on_conflict=book_id,chapter', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({
@@ -168,17 +170,10 @@ export default async function handler(req, res) {
 
   try {
    try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
-        system: `Eres un traductor bíblico experto en ${lang} para KODESH, una plataforma de estudio bíblico Hebreo-Mesiánica.
+    // Prompt del sistema (reglas KODESH de traducción y manuscritos).
+    const systemPrompt = `Eres un traductor bíblico experto en ${lang} para KODESH, una plataforma de estudio bíblico Hebreo-Mesiánica.
+
+IDIOMA: Escribe TODO en español. Nunca respondas un versículo en inglés ni mezcles palabras en inglés, aunque pienses en otro idioma.
 
 MISIÓN: A partir del texto bíblico en español (RVR60) que te proporciono como referencia, producir una traducción NUEVA al español de EQUIVALENCIA FORMAL — lo más cercana posible al texto original en ${lang}.
 
@@ -215,7 +210,8 @@ Pasajes extensos disputados (traducir pero con nota al inicio del pasaje):
 Adiciones dentro de versículos (palabras o frases añadidas por copistas):
 - Cuando una palabra o frase dentro de un versículo NO está en el texto original más antiguo pero sí aparece en la RVR60, OMÍTELA de tu traducción. Traduce solo lo que el manuscrito más antiguo contiene.
 - Ejemplo: Mateo 6:13 — la doxología final ("porque tuyo es el reino, y el poder, y la gloria, por todos los siglos. Amén") NO está en los manuscritos más antiguos del NT. No la incluyas.
-- Ejemplo: 1 Juan 5:7-8 — el Comma Johanneum ("en el cielo: el Padre, el Verbo y el Espíritu Santo; y estos tres son uno. Y tres son los que dan testimonio en la tierra") es una adición tardía. Traduce solo lo que está en el texto griego original.
+- Ejemplo: 1 Juan 5:7-8 — el Comma Johanneum ("en el cielo: el Padre, el Verbo y el Espíritu Santo; y estos tres son uno. Y tres son los que dan testimonio en la tierra") es una adición tardía. El versículo 7 SÍ existe: tradúcelo como "Porque tres son los que dan testimonio:" y el 8 como "el Espíritu, el agua y la sangre; y los tres concuerdan en uno." NO pongas la nota de "no aparece" en el 5:7.
+- La nota de "[Este versículo no aparece…]" va SOLO en los versículos de la lista de arriba, nunca en otros.
 
 REGLA CRÍTICA DE ESTRUCTURA:
 - El texto RVR60 tiene EXACTAMENTE ${verseCount} versículos (del ${verseKeys[0]} al ${verseKeys[verseKeys.length - 1]}).
@@ -224,58 +220,63 @@ REGLA CRÍTICA DE ESTRUCTURA:
 
 FORMATO DE RESPUESTA:
 Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, sin texto adicional):
-{"1":"traducción del verso 1","2":"traducción del verso 2",...,"${verseKeys[verseKeys.length - 1]}":"traducción del último verso"}`,
-        messages: [
-          {
+{"1":"traducción del verso 1","2":"traducción del verso 2",...,"${verseKeys[verseKeys.length - 1]}":"traducción del último verso"}`;
+
+    // Hasta 2 intentos. Un capítulo solo se guarda en caché si pasa la
+    // validación (api/_textualCheck.js): todos los versículos presentes, en
+    // español y sin notas de manuscritos donde no corresponden.
+    let verses = null;
+    let problems = [{ type: 'not_generated' }];
+    for (let attempt = 1; attempt <= 2 && problems.length; attempt++) {
+      const retryNote = attempt === 1 ? '' : `\n\nATENCIÓN: el intento anterior tuvo errores (${problems.map(p => `${p.verse ? 'v' + p.verse + ' ' : ''}${p.type}`).join(', ')}). Devuelve los ${verseCount} versículos completos, TODO en español.`;
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: maxTokensFor(verseCount),
+          system: systemPrompt,
+          messages: [{
             role: 'user',
-            content: `Aquí está ${bookName} ${chapter} en RVR60 (${verseCount} versículos). Tradúcelo según las reglas:\n\n${sourceText}`
-          }
-        ],
-      })
-    });
+            content: `Aquí está ${bookName} ${chapter} en RVR60 (${verseCount} versículos). Tradúcelo según las reglas:\n\n${sourceText}${retryNote}`,
+          }],
+        })
+      });
 
-    const data = await response.json();
-    const raw = data?.content?.[0]?.text || '';
+      const data = await response.json();
+      const raw = data?.content?.[0]?.text || '';
+      let cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cleaned = jsonMatch[0];
 
-    // Parseo robusto: limpiar backticks, extraer primer objeto JSON válido
-    let cleaned = raw
-      .replace(/```json\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
-    // Si hay texto antes o después del JSON, extraer solo el objeto {}
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) cleaned = jsonMatch[0];
-
-    let verses;
-    try {
-      verses = JSON.parse(cleaned);
-    } catch(parseErr) {
-      console.error('[Textual] JSON parse error:', parseErr.message, 'Raw:', raw.slice(0, 300));
-      // Fallback: devolver el texto RVR60 original con nota
-      verses = {};
-      for (const key of verseKeys) {
-        verses[key] = sourceVerses[key];
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (parseErr) {
+        console.error(`[Textual] JSON parse error (intento ${attempt}, stop_reason ${data?.stop_reason}):`, parseErr.message);
+        problems = [{ type: data?.stop_reason === 'max_tokens' ? 'truncated' : 'bad_json' }];
+        continue;
       }
-      console.warn('[Textual] Usando fallback RVR60 para', bookId, chapter);
+      // Solo las claves del capítulo, con las reglas de manuscritos aplicadas.
+      const only = {};
+      for (const k of verseKeys) if (parsed[k] != null) only[k] = String(parsed[k]);
+      verses = applyManuscriptRules(bookId, chapter, only);
+      problems = validateChapter(bookId, chapter, verses, verseKeys);
+      if (problems.length) console.warn(`[Textual] ${bookId} ${chapter} intento ${attempt}:`, JSON.stringify(problems).slice(0, 300));
     }
 
-    // Validar que tenga exactamente el mismo número de versículos
-    const generatedKeys = Object.keys(verses);
-    if (generatedKeys.length !== verseCount) {
-      console.warn(`[Textual] Verse count mismatch: expected ${verseCount}, got ${generatedKeys.length} for ${bookId} ${chapter}`);
-      // Intentar rescatar: si faltan pocos, rellenar con el texto RVR60 original
-      for (const key of verseKeys) {
-        if (!verses[key]) {
-          verses[key] = sourceVerses[key]; // fallback al original
-        }
-      }
-      // Si sobran, eliminar los extras
-      for (const key of generatedKeys) {
-        if (!verseKeys.includes(key)) {
-          delete verses[key];
-        }
-      }
+    if (problems.length) {
+      // No se guarda en caché. Se muestra lo que sí salió bien y, en los
+      // versículos con problema, el texto RVR60 (para no dejar huecos ni
+      // mostrar inglés). La próxima apertura vuelve a intentar.
+      const bad = new Set(problems.map(p => p.verse).filter(Boolean));
+      const shown = {};
+      for (const k of verseKeys) shown[k] = (verses && verses[k] && !bad.has(k)) ? verses[k] : sourceVerses[k];
+      console.warn(`[Textual] ${bookId} ${chapter} NO se guarda en caché (${problems.length} problemas)`);
+      return res.status(200).json({ found: true, verses: shown, verseCount, reportCount: 0, fromCache: false, partial: true });
     }
 
     // Guardar en caché
