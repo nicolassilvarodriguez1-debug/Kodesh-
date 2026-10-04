@@ -2899,7 +2899,8 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
     content: ''; position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
     width: 38px; height: 4px; border-radius: 2px; background: var(--border2); z-index: 1;
   }
-  .assistant-header { padding: 20px 16px 12px; }
+  .assistant-header { padding: 20px 16px 12px; touch-action: none; cursor: grab; }
+  .assistant-overlay { overscroll-behavior: contain; }
   .assistant-overlay.open .assistant-panel { transform: translateY(0); }
   /* Con el teclado abierto el panel ocupa todo el espacio visible y se apoya
      justo sobre el teclado (sin hueco por donde se vea lo de atrás). */
@@ -7216,6 +7217,56 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fitAssistantToViewport);
   window.visualViewport.addEventListener('scroll', fitAssistantToViewport);
 }
+
+// ── Hojas inferiores (asistente, historial): arrastrar para cerrar ──
+// Se arrastra desde la cabecera (donde está la agarradera). Además, mientras
+// la hoja está abierta, los gestos fuera de una zona con scroll propio no
+// mueven el capítulo que está detrás.
+function attachSheetDrag(overlayId, closeFn) {
+  const ov = document.getElementById(overlayId);
+  const panel = ov && ov.querySelector('.assistant-panel');
+  const handle = panel && panel.querySelector('.assistant-header');
+  if (!handle) return;
+  let startY = null, dy = 0, t0 = 0;
+  handle.addEventListener('touchstart', e => {
+    if (e.target.closest('button')) return;
+    startY = e.touches[0].clientY; dy = 0; t0 = Date.now();
+    panel.style.transition = 'none';
+  }, { passive: true });
+  handle.addEventListener('touchmove', e => {
+    if (startY == null) return;
+    e.preventDefault();
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    panel.style.transform = `translateY(${dy}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (startY == null) return;
+    startY = null;
+    panel.style.transition = '';
+    const flick = dy > 50 && Date.now() - t0 < 300;
+    panel.style.transform = '';
+    if (dy > panel.offsetHeight * 0.22 || flick) closeFn();
+  };
+  handle.addEventListener('touchend', end);
+  handle.addEventListener('touchcancel', end);
+
+  // Bloquear el scroll del fondo: solo se permite dentro de elementos que
+  // realmente tienen scroll (mensajes, lista, cuadro de texto).
+  ov.addEventListener('touchmove', e => {
+    if (!ov.classList.contains('open')) return;
+    for (let el = e.target; el && el !== ov; el = el.parentElement) {
+      const oy = getComputedStyle(el).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+}
+function initSheetDrags() {
+  attachSheetDrag('assistantOverlay', closeAssistant);
+  attachSheetDrag('studyHistoryOverlay', closeStudyHistory);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSheetDrags);
+else initSheetDrags();
 
 // El cuadro de texto crece con lo que se escribe (hasta 120px).
 function autoGrowAssistantInput(el) {
