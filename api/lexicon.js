@@ -2,7 +2,7 @@
 import { requireUser } from './_auth.js';
 import { consumeUsage, releaseUsage } from './_limits.js';
 import { applyCors, handleOptions, sendError, ERR, isValidBookId, isValidChapter, isValidVerse, clampString } from './_security.js';
-import { getEntry, verifyEntry, lemmaMatches, transliterateGreek, normalizeCode } from './_strongs.js';
+import { getEntry, verifyEntry, lemmaMatches, normalizeCode, strongsCacheKey, strongsPromptParams, parseStrongsReply, strongsCacheRow } from './_strongs.js';
 
 const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH',
   'PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
@@ -54,7 +54,7 @@ async function saveCache(word, testament, entry, bookId, chapter, verse) {
     ? `${word.toLowerCase()}_${bookId}_${chapter}_${verse}`
     : word.toLowerCase();
   try {
-    await sbFetch('lexicon_cache', {
+    await sbFetch('lexicon_cache?on_conflict=word,testament', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({
@@ -231,14 +231,12 @@ async function handleStrongsLookup(strongsCode, userId, res) {
   const entry = code ? getEntry(code) : null;
   if (!entry) return res.status(200).json({ found: false });
 
-  const isNT = code.startsWith('G');
-  const testament = isNT ? 'NT' : 'AT';
-  const cacheKey = `strongs_${code.toLowerCase()}`;
-  const translit = entry.xlit || (isNT ? transliterateGreek(entry.lemma) : '');
-  const build = (definition, pronunciation) => ({
+  const testament = code.startsWith('G') ? 'NT' : 'AT';
+  const cacheKey = strongsCacheKey(code);
+  const respond = (row, extra = {}) => res.status(200).json({
     found: true, strongs: code, lemma: entry.lemma,
-    transliteration: translit, pronunciation: pronunciation || entry.pron || '',
-    definition, language: isNT ? 'griego' : 'hebreo',
+    transliteration: row.transliteration, pronunciation: row.pronunciation,
+    definition: row.definition, language: row.language, ...extra,
   });
 
   // 1 — Cache (gratis). Solo vale si corresponde al número pedido.
@@ -249,7 +247,7 @@ async function handleStrongsLookup(strongsCode, userId, res) {
     const row = (await cacheRes.json())?.[0];
     if (row?.definition) {
       if (normalizeCode(row.strongs) === code && lemmaMatches(code, row.lemma)) {
-        return res.status(200).json({ ...build(row.definition, row.pronunciation), fromCache: true });
+        return respond(strongsCacheRow(entry, row), { fromCache: true });
       }
       healing = true; // entrada equivocada guardada antes del arreglo: regenerar sin cobrar
     }
@@ -275,8 +273,7 @@ async function handleStrongsLookup(strongsCode, userId, res) {
   }
   const release = () => (healing ? Promise.resolve() : releaseUsage(userId, 'lexicon'));
 
-  // 3 — La IA redacta la explicación del lema verificado.
-  const lang = isNT ? 'griego' : 'hebreo';
+  // 3 — La IA redacta la explicación del lema verificado (ver strongsPromptParams).
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -285,47 +282,22 @@ async function handleStrongsLookup(strongsCode, userId, res) {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        system: `Eres un experto en léxico bíblico ${lang} para KODESH (plataforma Hebreo-Mesiánica). Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj.
-
-Te damos la entrada YA VERIFICADA del diccionario Strong's (número, lema y definición original en inglés). Tu tarea es SOLO explicarla en español, fiel a esa definición: 2-3 oraciones, significado principal y matices de uso bíblico. No cambies de palabra ni de número, no inventes otro significado.
-
-Responde SOLO JSON: {"definition":"...","pronunciation":"..."}`,
-        messages: [{
-          role: 'user',
-          content: `Strong's ${code}
-Lema (${lang}): ${entry.lemma}${translit ? `\nTransliteración: ${translit}` : ''}
-Definición de Strong (inglés): ${entry.definition || '—'}`
-        }]
-      })
+      body: JSON.stringify(strongsPromptParams(entry)),
     });
-
     if (!response.ok) throw new Error(`API error ${response.status}`);
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const reply = parseStrongsReply(data.content?.[0]?.text);
+    if (!reply) throw new Error('respuesta sin definición');
 
-    let parsed;
-    try { parsed = JSON.parse(text.trim()); }
-    catch(e) { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : {}; }
-    if (!parsed.definition) throw new Error('respuesta sin definición');
-
-    const result = build(parsed.definition, parsed.pronunciation);
+    const row = strongsCacheRow(entry, reply);
     try {
-      await sbFetch('lexicon_cache', {
+      await sbFetch('lexicon_cache?on_conflict=word,testament', {
         method: 'POST',
         headers: { 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({
-          word: cacheKey, testament,
-          strongs: result.strongs, lemma: result.lemma,
-          transliteration: result.transliteration, pronunciation: result.pronunciation,
-          definition: result.definition, language: result.language,
-        })
+        body: JSON.stringify(row),
       });
     } catch(e) {}
-
-    return res.status(200).json(result);
+    return respond(row);
 
   } catch(err) {
     await release();

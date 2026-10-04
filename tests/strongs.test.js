@@ -153,3 +153,42 @@ describe('verifyEntry: homógrafos hebreos', () => {
     assert.equal(verifyEntry(e('H1961', 'היה'), 'AT').strongs, 'H1961');
   });
 });
+
+// ── Pre-generación por lotes (api/lexicon-pregen.js) ──
+const { buildBatchRequests, resultLineToRow } = await import('../api/lexicon-pregen.js');
+import { allStrongsCodes } from '../api/_strongs.js';
+
+describe('pre-generación del diccionario', () => {
+  test('todos los códigos: ~14.200, sin repetir, formato válido para custom_id', () => {
+    const codes = allStrongsCodes();
+    assert.ok(codes.length > 14000, `solo ${codes.length}`);
+    assert.equal(new Set(codes).size, codes.length);
+    codes.forEach(c => assert.match(c, /^[GH]\d{1,5}$/));
+  });
+  test('la petición lleva el lema correcto del diccionario', () => {
+    const [r] = buildBatchRequests(['G458']);
+    assert.equal(r.custom_id, 'G458');
+    assert.match(r.params.messages[0].content, /ἀνομία/);
+    assert.equal(r.params.model, 'claude-haiku-4-5-20251001');
+  });
+  test('línea de resultado → fila de caché con número y lema del diccionario', () => {
+    const line = JSON.stringify({ custom_id: 'H1882', result: { type: 'succeeded',
+      message: { content: [{ text: '{"definition":"Decreto, ley.","pronunciation":"dat"}' }] } } });
+    const row = resultLineToRow(line);
+    assert.equal(row.word, 'strongs_h1882');
+    assert.equal(row.testament, 'AT');
+    assert.equal(row.strongs, 'H1882');
+    assert.equal(row.definition, 'Decreto, ley.');
+  });
+  test('resultados con error, JSON roto o código inexistente se ignoran', () => {
+    assert.equal(resultLineToRow(JSON.stringify({ custom_id: 'G1', result: { type: 'errored' } })), null);
+    assert.equal(resultLineToRow('no es json'), null);
+    assert.equal(resultLineToRow(JSON.stringify({ custom_id: 'G99999', result: { type: 'succeeded', message: { content: [{ text: '{"definition":"x"}' }] } } })), null);
+    assert.equal(resultLineToRow(JSON.stringify({ custom_id: 'G1', result: { type: 'succeeded', message: { content: [{ text: 'sin json' }] } } })), null);
+  });
+  test('tamaño del lote muy por debajo del límite de 256 MB', () => {
+    const size = JSON.stringify({ requests: buildBatchRequests(allStrongsCodes()) }).length;
+    assert.ok(size < 60 * 1024 * 1024, `${(size / 1048576).toFixed(1)} MB`);
+    console.log(`    lote: ${allStrongsCodes().length} peticiones, ${(size / 1048576).toFixed(1)} MB`);
+  });
+});

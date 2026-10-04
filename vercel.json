@@ -72,6 +72,11 @@
     "api/cron-reconcile-plans.js": {
       "memory": 256,
       "maxDuration": 60
+    },
+    "api/lexicon-pregen.js": {
+      "memory": 1024,
+      "maxDuration": 60,
+      "includeFiles": "strongs-{greek,hebrew}.json"
     }
   },
   "crons": [

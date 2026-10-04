@@ -256,6 +256,20 @@ tr:hover td { background:rgba(255,255,255,0.02); }
           <tbody id="cacheTable"><tr><td colspan="4" class="loading">Cargando...</td></tr></tbody>
         </table>
       </div>
+
+      <!-- Pre-generación del diccionario Strong's completo (api/lexicon-pregen.js) -->
+      <div class="table-wrap" style="padding:16px;margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Diccionario Strong's completo</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Genera de una vez las ~14.200 entradas (griego y hebreo) para que el interlineal abra al instante. Lote de Anthropic: ~$5–6 una sola vez, suele tardar menos de 1 hora.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" id="pregenBtn" onclick="pregenAction()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="pregenMsg" style="margin-top:10px"></div>
+      </div>
     </div>
   </div>
 
@@ -945,8 +959,72 @@ async function verifyMfaChallenge() {
 async function loadAll() {
   document.getElementById('lastUpdated').textContent = `Actualizado: ${new Date().toLocaleTimeString('es')}`;
   const promises = [loadCanciones(), loadActividades(), loadInterlinearCoverage(), loadTraduccionKodesh(), loadNotificationLog()];
-  if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles(), loadPremiumHistory());
+  if (isSuperAdmin) promises.push(loadUsuarios(), loadRoles(), loadPremiumHistory(), loadPregenStatus());
   await Promise.all(promises);
+}
+
+// ── PRE-GENERACIÓN DEL DICCIONARIO STRONG'S ──
+async function pregenApi(action) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+  const res = await fetch('/api/lexicon-pregen', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok && res.status !== 409) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+}
+
+let pregenNext = 'status';
+function renderPregen(d) {
+  const btn = document.getElementById('pregenBtn');
+  const msg = document.getElementById('pregenMsg');
+  const job = d.job, b = d.batch;
+  msg.className = 'upload-msg';
+  if (!job || job.status === 'failed') {
+    msg.textContent = 'Aún no se ha generado. Pulsa "Generar todo" para empezar.';
+    btn.textContent = 'Generar todo'; pregenNext = 'submit';
+  } else if (job.status === 'in_progress') {
+    const c = b?.request_counts;
+    const done = c ? c.succeeded + c.errored + c.canceled + c.expired : 0;
+    msg.textContent = `⏳ Anthropic está generando: ${done.toLocaleString('es')} de ${job.request_count.toLocaleString('es')}. Vuelve a revisar en unos minutos.`;
+    btn.textContent = 'Revisar'; pregenNext = 'status';
+  } else if (job.status === 'ended') {
+    msg.textContent = `✓ Generado (${job.succeeded.toLocaleString('es')} entradas). Guardando en la caché: ${job.processed.toLocaleString('es')} de ${(job.succeeded + job.errored).toLocaleString('es')}…`;
+    btn.textContent = 'Guardar en caché'; pregenNext = 'process';
+  } else if (job.status === 'processed') {
+    msg.className = 'upload-msg ok';
+    msg.textContent = `✓ Diccionario completo: ${job.saved.toLocaleString('es')} entradas guardadas` + (job.errored ? ` (${job.errored} fallaron; se generan al tocarlas).` : '.');
+    btn.textContent = 'Revisar'; pregenNext = 'status';
+  }
+}
+
+async function pregenAction() {
+  const btn = document.getElementById('pregenBtn');
+  const msg = document.getElementById('pregenMsg');
+  if (pregenNext === 'submit' && !confirm('¿Generar las ~14.200 entradas del diccionario Strong\'s? Costo aproximado: $5–6 una sola vez.')) return;
+  btn.disabled = true;
+  try {
+    let d = await pregenApi(pregenNext);
+    if (d.nothing_to_do) { msg.className = 'upload-msg ok'; msg.textContent = '✓ Todas las entradas ya estaban en caché.'; return; }
+    // Guardar en caché por tramos hasta terminar.
+    while (pregenNext === 'process' && d.remaining > 0) {
+      renderPregen(d);
+      d = await pregenApi('process');
+    }
+    if (pregenNext === 'process' || pregenNext === 'submit') d = await pregenApi('status');
+    renderPregen(d);
+    if (typeof loadUsuarios === 'function') loadUsuarios();
+  } catch (e) {
+    msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message;
+  } finally { btn.disabled = false; }
+}
+
+async function loadPregenStatus() {
+  try { renderPregen(await pregenApi('status')); }
+  catch (e) { const m = document.getElementById('pregenMsg'); if (m) m.textContent = ''; }
 }
 
 // ── HISTORIAL PREMIUM ──

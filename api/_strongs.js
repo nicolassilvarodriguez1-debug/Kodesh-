@@ -171,3 +171,65 @@ export function verifyEntry(entry, testament) {
     language: code[0] === 'G' ? 'griego' : 'hebreo',
   };
 }
+
+// ── Entrada para la caché del lexicón (búsqueda por número) ──
+// La usan api/lexicon.js (al vuelo) y api/lexicon-pregen.js (por lotes),
+// para que ambos produzcan exactamente lo mismo.
+export const LEXICON_MODEL = 'claude-haiku-4-5-20251001';
+
+export function strongsCacheKey(code) { return `strongs_${code.toLowerCase()}`; }
+
+export function strongsTranslit(entry) {
+  return entry.xlit || (entry.code[0] === 'G' ? transliterateGreek(entry.lemma) : '');
+}
+
+export function strongsPromptParams(entry) {
+  const lang = entry.code[0] === 'G' ? 'griego' : 'hebreo';
+  const translit = strongsTranslit(entry);
+  return {
+    model: LEXICON_MODEL,
+    max_tokens: 400,
+    system: `Eres un experto en léxico bíblico ${lang} para KODESH (plataforma Hebreo-Mesiánica). Usa nombres mesiánicos: YHWH, Yeshúa, Mashíaj.
+
+Te damos la entrada YA VERIFICADA del diccionario Strong's (número, lema y definición original en inglés). Tu tarea es SOLO explicarla en español, fiel a esa definición: 2-3 oraciones, significado principal y matices de uso bíblico. No cambies de palabra ni de número, no inventes otro significado.
+
+Responde SOLO JSON: {"definition":"...","pronunciation":"..."}`,
+    messages: [{
+      role: 'user',
+      content: `Strong's ${entry.code}
+Lema (${lang}): ${entry.lemma}${translit ? `\nTransliteración: ${translit}` : ''}
+Definición de Strong (inglés): ${entry.definition || '—'}`,
+    }],
+  };
+}
+
+// Texto de la IA → { definition, pronunciation } o null.
+export function parseStrongsReply(text) {
+  let parsed = null;
+  try { parsed = JSON.parse(String(text || '').trim()); }
+  catch (e) { const m = String(text || '').match(/\{[\s\S]*\}/); try { parsed = m ? JSON.parse(m[0]) : null; } catch (e2) {} }
+  return parsed && typeof parsed.definition === 'string' && parsed.definition.trim() ? parsed : null;
+}
+
+// Fila de lexicon_cache para un número Strong's.
+export function strongsCacheRow(entry, reply) {
+  return {
+    word: strongsCacheKey(entry.code),
+    testament: entry.code[0] === 'G' ? 'NT' : 'AT',
+    strongs: entry.code,
+    lemma: entry.lemma,
+    transliteration: strongsTranslit(entry),
+    pronunciation: reply.pronunciation || entry.pron || '',
+    definition: reply.definition.trim(),
+    language: entry.code[0] === 'G' ? 'griego' : 'hebreo',
+  };
+}
+
+// Todos los códigos del diccionario (para la pre-generación).
+export function allStrongsCodes() {
+  load();
+  const sortKey = c => (c[0] === 'G' ? 0 : 1e6) + Number(c.slice(1));
+  return [...new Set([...Object.keys(GREEK), ...Object.keys(HEBREW)].map(normalizeCode).filter(Boolean))]
+    .filter(c => getEntry(c))   // G0026 (nota añadida) → G26, que sí existe
+    .sort((a, b) => sortKey(a) - sortKey(b));
+}
