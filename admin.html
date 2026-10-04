@@ -265,7 +265,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
             <div style="font-size:0.72rem;color:var(--text-dim)">Genera de una vez las ~14.200 entradas (griego y hebreo) para que el interlineal abra al instante. Lote de Anthropic: ~$5–6 una sola vez, suele tardar menos de 1 hora.</div>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn-sm" id="pregenBtn" onclick="pregenAction()">Revisar</button>
+            <button class="btn-sm" id="pregenBtn" onclick="PREGEN.strongs.action()">Revisar</button>
           </div>
         </div>
         <div class="upload-msg" id="pregenMsg" style="margin-top:10px"></div>
@@ -407,6 +407,20 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       <div class="section-title" style="margin-top:8px">Reportes de usuarios</div>
       <div class="table-wrap" id="tkReportsWrap">
         <div class="loading">Cargando reportes...</div>
+      </div>
+
+      <!-- Pre-generación de toda la Traducción Kodesh (api/textual-pregen.js) -->
+      <div class="table-wrap" id="tpregenWrap" style="display:none;padding:16px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Biblia Kodesh completa</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Genera de una vez los capítulos que faltan (de 1.189) para que Kodesh abra al instante. Cada capítulo pasa los mismos controles; los que fallen se pueden reintentar. Lote de Anthropic: ~$4–6 una sola vez, suele tardar menos de 1 hora.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" id="tpregenBtn" onclick="PREGEN.textual.action()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="tpregenMsg" style="margin-top:10px"></div>
       </div>
 
       <!-- Cobertura por libro -->
@@ -963,11 +977,11 @@ async function loadAll() {
   await Promise.all(promises);
 }
 
-// ── PRE-GENERACIÓN DEL DICCIONARIO STRONG'S ──
-async function pregenApi(action) {
+// ── PRE-GENERACIÓN POR LOTES (Strong's y Traducción Kodesh) ──
+async function pregenApi(endpoint, action) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
-  const res = await fetch('/api/lexicon-pregen', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
     body: JSON.stringify({ action }),
@@ -977,54 +991,82 @@ async function pregenApi(action) {
   return data;
 }
 
-let pregenNext = 'status';
-function renderPregen(d) {
-  const btn = document.getElementById('pregenBtn');
-  const msg = document.getElementById('pregenMsg');
-  const job = d.job, b = d.batch;
-  msg.className = 'upload-msg';
-  if (!job || job.status === 'failed') {
-    msg.textContent = 'Aún no se ha generado. Pulsa "Generar todo" para empezar.';
-    btn.textContent = 'Generar todo'; pregenNext = 'submit';
-  } else if (job.status === 'in_progress') {
-    const c = b?.request_counts;
-    const done = c ? c.succeeded + c.errored + c.canceled + c.expired : 0;
-    msg.textContent = `⏳ Anthropic está generando: ${done.toLocaleString('es')} de ${job.request_count.toLocaleString('es')}. Vuelve a revisar en unos minutos.`;
-    btn.textContent = 'Revisar'; pregenNext = 'status';
-  } else if (job.status === 'ended') {
-    msg.textContent = `✓ Generado (${job.succeeded.toLocaleString('es')} entradas). Guardando en la caché: ${job.processed.toLocaleString('es')} de ${(job.succeeded + job.errored).toLocaleString('es')}…`;
-    btn.textContent = 'Guardar en caché'; pregenNext = 'process';
-  } else if (job.status === 'processed') {
-    msg.className = 'upload-msg ok';
-    msg.textContent = `✓ Diccionario completo: ${job.saved.toLocaleString('es')} entradas guardadas` + (job.errored ? ` (${job.errored} fallaron; se generan al tocarlas).` : '.');
-    btn.textContent = 'Revisar'; pregenNext = 'status';
-  }
-}
-
-async function pregenAction() {
-  const btn = document.getElementById('pregenBtn');
-  const msg = document.getElementById('pregenMsg');
-  if (pregenNext === 'submit' && !confirm('¿Generar las ~14.200 entradas del diccionario Strong\'s? Costo aproximado: $5–6 una sola vez.')) return;
-  btn.disabled = true;
-  try {
-    let d = await pregenApi(pregenNext);
-    if (d.nothing_to_do) { msg.className = 'upload-msg ok'; msg.textContent = '✓ Todas las entradas ya estaban en caché.'; return; }
-    // Guardar en caché por tramos hasta terminar.
-    while (pregenNext === 'process' && d.remaining > 0) {
-      renderPregen(d);
-      d = await pregenApi('process');
+function makePregen(cfg) {
+  const p = { next: 'status' };
+  const n = x => Number(x || 0).toLocaleString('es');
+  p.render = function(d) {
+    const btn = document.getElementById(cfg.btnId);
+    const msg = document.getElementById(cfg.msgId);
+    if (!btn || !msg) return;
+    const job = d.job, b = d.batch;
+    const have = d.cached != null ? ` Ya hay ${n(d.cached)} de ${n(d.total)} ${cfg.unit} en caché.` : '';
+    msg.className = 'upload-msg';
+    if (!job || job.status === 'failed') {
+      msg.textContent = 'Aún no se ha generado. Pulsa "Generar todo" para empezar.' + have;
+      btn.textContent = 'Generar todo'; p.next = 'submit';
+    } else if (job.status === 'in_progress') {
+      const c = b?.request_counts;
+      const done = c ? c.succeeded + c.errored + c.canceled + c.expired : 0;
+      msg.textContent = `⏳ Anthropic está generando: ${n(done)} de ${n(job.request_count)}. Vuelve a revisar en unos minutos.`;
+      btn.textContent = 'Revisar'; p.next = 'status';
+    } else if (job.status === 'ended') {
+      msg.textContent = `✓ Generado (${n(job.succeeded)} ${cfg.unit}). Guardando en la caché: ${n(job.processed)} de ${n(job.succeeded + job.errored)}…`;
+      btn.textContent = 'Guardar en caché'; p.next = 'process';
+    } else if (job.status === 'processed') {
+      const pending = d.cached != null ? d.total - d.cached : 0;
+      const cost = job.cost_usd != null ? ` Costo real: $${job.cost_usd.toFixed(2)}.` : '';
+      msg.className = 'upload-msg ok';
+      msg.textContent = `✓ ${n(job.saved)} ${cfg.unit} guardados.` + cost + have
+        + (cfg.retry && pending > 0 ? ` Faltan ${n(pending)} (no pasaron los controles): puedes reintentarlos.` : '')
+        + (!cfg.retry && job.errored ? ` (${job.errored} fallaron; se generan al tocarlas).` : '');
+      if (cfg.retry && pending > 0) { btn.textContent = 'Reintentar faltantes'; p.next = 'submit'; }
+      else { btn.textContent = 'Revisar'; p.next = 'status'; }
     }
-    if (pregenNext === 'process' || pregenNext === 'submit') d = await pregenApi('status');
-    renderPregen(d);
-    if (typeof loadUsuarios === 'function') loadUsuarios();
-  } catch (e) {
-    msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message;
-  } finally { btn.disabled = false; }
+  };
+  p.action = async function() {
+    const btn = document.getElementById(cfg.btnId);
+    const msg = document.getElementById(cfg.msgId);
+    if (p.next === 'submit' && !confirm(cfg.confirmText)) return;
+    btn.disabled = true;
+    try {
+      let d = await pregenApi(cfg.endpoint, p.next);
+      if (d.nothing_to_do) { msg.className = 'upload-msg ok'; msg.textContent = cfg.nothingText; return; }
+      // Guardar en caché por tramos hasta terminar.
+      while (p.next === 'process' && d.remaining > 0) {
+        p.render(d);
+        d = await pregenApi(cfg.endpoint, 'process');
+      }
+      if (p.next === 'process' || p.next === 'submit') d = await pregenApi(cfg.endpoint, 'status');
+      p.render(d);
+      if (cfg.after) cfg.after();
+    } catch (e) {
+      msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message;
+    } finally { btn.disabled = false; }
+  };
+  p.load = async function() {
+    try { p.render(await pregenApi(cfg.endpoint, 'status')); }
+    catch (e) { const m = document.getElementById(cfg.msgId); if (m) m.textContent = ''; }
+  };
+  return p;
 }
 
+const PREGEN = {
+  strongs: makePregen({
+    endpoint: '/api/lexicon-pregen', btnId: 'pregenBtn', msgId: 'pregenMsg', unit: 'entradas',
+    confirmText: '¿Generar las ~14.200 entradas del diccionario Strong\'s? Costo aproximado: $5–6 una sola vez.',
+    nothingText: '✓ Todas las entradas ya estaban en caché.',
+    after: () => { if (typeof loadUsuarios === 'function') loadUsuarios(); },
+  }),
+  textual: makePregen({
+    endpoint: '/api/textual-pregen', btnId: 'tpregenBtn', msgId: 'tpregenMsg', unit: 'capítulos', retry: true,
+    confirmText: '¿Generar todos los capítulos de Kodesh que faltan? Costo aproximado: $4–6 una sola vez (menos si es un reintento).',
+    nothingText: '✓ Toda la Biblia Kodesh ya está en caché.',
+    after: () => { if (typeof loadTraduccionKodesh === 'function') loadTraduccionKodesh(); },
+  }),
+};
 async function loadPregenStatus() {
-  try { renderPregen(await pregenApi('status')); }
-  catch (e) { const m = document.getElementById('pregenMsg'); if (m) m.textContent = ''; }
+  const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load()]);
 }
 
 // ── HISTORIAL PREMIUM ──

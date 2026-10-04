@@ -58,3 +58,70 @@ test('max_tokens alcanza para el Salmo 119 y no baja de 4096 en capítulos media
   assert.ok(maxTokensFor(176) >= 16000);
   assert.ok(maxTokensFor(31) >= 4096);
 });
+
+// ── Prompt compartido y pre-generación por lotes (api/textual-pregen.js) ──
+import { buildTextualParams, parseTextualReply, sortedVerseKeys } from '../api/_textualPrompt.js';
+import {
+  chapterId, parseChapterId, pendingChapters, buildBatchRequests, resultLineToRow, costUSD,
+} from '../api/textual-pregen.js';
+
+const BIBLE = JSON.parse(fs.readFileSync(new URL('../biblia-rvr.json', import.meta.url), 'utf8'));
+
+describe('prompt de la Traducción Kodesh', () => {
+  test('incluye reglas, número de versículos y nota de reintento', () => {
+    const src = BIBLE.GEN['1'];
+    const p = buildTextualParams('GEN', 1, src);
+    assert.equal(p.model, 'claude-haiku-4-5-20251001');
+    assert.match(p.system, /EXACTAMENTE 31 versículos \(del 1 al 31\)/);
+    assert.match(p.system, /hebreo bíblico/);
+    assert.match(p.messages[0].content, /^Aquí está Génesis 1 en RVR60 \(31 versículos\)/);
+    assert.doesNotMatch(p.messages[0].content, /ATENCIÓN/);
+    const retry = buildTextualParams('GEN', 1, src, [{ verse: '2', type: 'english' }]);
+    assert.match(retry.messages[0].content, /ATENCIÓN: el intento anterior tuvo errores \(v2 english\)/);
+    assert.match(buildTextualParams('JHN', 3, BIBLE.JHN['3']).system, /griego koiné/);
+  });
+  test('parseTextualReply valida y aplica reglas de manuscritos', () => {
+    const keys = sortedVerseKeys(BIBLE['1JN']['5']);
+    const reply = {}; for (const k of keys) reply[k] = 'Texto en español ' + k;
+    const ok = parseTextualReply('1JN', 5, '```json\n' + JSON.stringify(reply) + '\n```', keys, 'end_turn');
+    assert.deepEqual(ok.problems, []);
+    assert.equal(ok.verses['7'], 'Porque tres son los que dan testimonio:');
+    assert.deepEqual(parseTextualReply('1JN', 5, '{"1":"a"', keys, 'max_tokens').problems, [{ type: 'truncated' }]);
+  });
+});
+
+describe('pre-generación de capítulos', () => {
+  test('ids de capítulo válidos para la API de lotes', () => {
+    assert.equal(chapterId('1SA', 17), '1SA_17');
+    assert.deepEqual(parseChapterId('1SA_17'), { bookId: '1SA', chapter: 17 });
+    assert.equal(parseChapterId('../x'), null);
+  });
+  test('toda la Biblia: 1.189 capítulos, se saltan los que ya están', () => {
+    assert.equal(pendingChapters(BIBLE, new Set()).length, 1189);
+    const pend = pendingChapters(BIBLE, new Set(['GEN_1', 'PSA_119']));
+    assert.equal(pend.length, 1187);
+    assert.ok(!pend.some(c => c.bookId === 'PSA' && c.chapter === 119));
+    const reqs = buildBatchRequests(BIBLE, pendingChapters(BIBLE, new Set()));
+    assert.equal(reqs.length, 1189);
+    assert.ok(reqs.every(r => /^[a-zA-Z0-9_-]{1,64}$/.test(r.custom_id)));
+  });
+  test('resultado válido → fila; con inglés o error → fallido (no se guarda)', () => {
+    const keys = sortedVerseKeys(BIBLE.PHP['2']);
+    const good = {}; for (const k of keys) good[k] = 'Completad mi gozo, sintiendo lo mismo ' + k;
+    const line = (verses, type = 'succeeded') => JSON.stringify({
+      custom_id: 'PHP_2',
+      result: { type, message: { stop_reason: 'end_turn', usage: { input_tokens: 2000, output_tokens: 1500 }, content: [{ type: 'text', text: JSON.stringify(verses) }] } },
+    });
+    const ok = resultLineToRow(BIBLE, line(good));
+    assert.equal(ok.failed, null);
+    assert.equal(ok.row.book_id, 'PHP'); assert.equal(ok.row.chapter, 2); assert.equal(ok.row.verse_count, keys.length);
+    assert.deepEqual(ok.usage, { input: 2000, output: 1500 });
+    const english = { ...good, 2: 'Complete my joy, that you think the same thing, having the same love.' };
+    const bad = resultLineToRow(BIBLE, line(english));
+    assert.equal(bad.row, null); assert.equal(bad.failed, 'PHP_2');
+    assert.equal(resultLineToRow(BIBLE, line(good, 'errored')).failed, 'PHP_2');
+  });
+  test('costo con precio de lote de Haiku 4.5', () => {
+    assert.equal(costUSD(2_700_000, 1_000_000), 3.85);
+  });
+});
