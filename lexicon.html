@@ -198,6 +198,23 @@ html, body {
 }
 .empty-sub { font-size: 0.9rem; font-style: italic; }
 
+/* ── MODOS (Palabras / Diccionario Strong's) ── */
+.mode-tabs { display: flex; gap: 6px; padding: 0 20px 12px; max-width: 900px; margin: 0 auto; }
+.mode-tab {
+  flex: 1; background: none; border: 1px solid var(--border, rgba(201,168,76,0.2)); color: var(--text-dim);
+  font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 10px 8px; border-radius: 10px; cursor: pointer;
+}
+.mode-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+.mode-tab .n { display: block; font-family: 'Crimson Pro', serif; font-size: 0.75rem; letter-spacing: 0; text-transform: none; margin-top: 2px; opacity: 0.8; }
+.load-more {
+  display: block; margin: 8px auto 40px; background: none; border: 1px solid var(--gold-dim, #8a6d2b);
+  color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 12px 22px; border-radius: 10px; cursor: pointer;
+}
+.load-more:disabled { opacity: 0.5; }
+.result-note { text-align: center; font-size: 0.8rem; color: var(--text-dim); font-style: italic; margin: 4px 0 14px; }
+
 /* ── LOADING ── */
 .loading { text-align: center; padding: 40px; color: var(--text-dim); font-style: italic; }
 
@@ -227,8 +244,14 @@ html, body {
     <span style="color:var(--text-dim);font-size:1rem">🔍</span>
     <input class="search-input" id="searchInput" type="text"
       placeholder="Buscar palabra en español, hebreo, griego o Strong's..."
-      oninput="filterWords()">
+      oninput="onSearchInput()">
   </div>
+</div>
+
+<!-- MODOS -->
+<div class="mode-tabs">
+  <button class="mode-tab active" data-mode="words" onclick="setMode('words')">Palabras<span class="n" id="nWords">—</span></button>
+  <button class="mode-tab" data-mode="strongs" onclick="setMode('strongs')">Diccionario Strong's<span class="n" id="nStrongs">—</span></button>
 </div>
 
 <!-- FILTERS -->
@@ -258,9 +281,16 @@ const SB_STORAGE_KEY = 'sb-fvknbqdsgqdmwirrgcvb-auth-token';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: SB_STORAGE_KEY } });
 
-let allWords = [];
+let allWords = [];          // palabras en español (pocas: se cargan todas)
 let activeFilter = 'all';
 let activeLetter = null;
+let mode = 'words';          // 'words' | 'strongs'
+const PAGE = 60;
+let strongsRows = [], strongsDone = false, strongsLoading = false, strongsReq = 0, searchTimer = null;
+const LEX_COLS = 'word, testament, strongs, lemma, transliteration, pronunciation, definition, language';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => Number(n || 0).toLocaleString('es');
 
 // ── THEME ──
 function initTheme() {
@@ -277,30 +307,121 @@ function toggleTheme() {
 }
 
 // ── LOAD DATA ──
-async function loadLexicon() {
+// PostgREST devuelve como máximo 1000 filas por consulta: por eso el
+// contador marcaba "1000 palabras". Ahora se cuenta en el servidor, las
+// palabras en español se cargan por tramos y el diccionario Strong's
+// (~14.000 entradas) se pagina y se busca en el servidor.
+async function countRows(isStrongs) {
+  const q = sb.from('lexicon_cache').select('word', { count: 'exact', head: true });
+  const { count, error } = await (isStrongs ? q.like('word', 'strongs\\_%') : q.not('word', 'like', 'strongs\\_%'));
+  if (error) throw error;
+  return count || 0;
+}
+
+async function loadCounts() {
   try {
-    // Load all cached words
-    const { data, error } = await sb
-      .from('lexicon_cache')
-      .select('word, testament, strongs, lemma, transliteration, pronunciation, definition, language')
-      .order('word', { ascending: true });
+    const [w, st] = await Promise.all([countRows(false), countRows(true)]);
+    document.getElementById('nWords').textContent = fmt(w);
+    document.getElementById('nStrongs').textContent = fmt(st);
+    document.getElementById('countBadge').textContent = `${fmt(w + st)} entradas`;
+  } catch (e) { console.warn('count', e); }
+}
 
-    if (error) throw error;
-
-    allWords = (data || []).filter(w => w.strongs && w.lemma);
-    document.getElementById('countBadge').textContent = `${allWords.length} palabra${allWords.length !== 1 ? 's' : ''}`;
-
+async function loadLexicon() {
+  loadCounts();
+  try {
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await sb.from('lexicon_cache').select(LEX_COLS)
+        .not('word', 'like', 'strongs\\_%')
+        .order('word', { ascending: true }).range(from, from + 999);
+      if (error) throw error;
+      rows.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+    allWords = rows.filter(w => w.strongs && w.lemma);
     buildAlphaBar();
-    renderWords();
+    render();
   } catch(e) {
     console.error(e);
     document.getElementById('mainContent').innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📚</div>
-        <div class="empty-title">El lexicón está vacío</div>
-        <div class="empty-sub">Las palabras se agregan automáticamente cuando los usuarios<br>hacen clic en ellas mientras leen la Biblia.</div>
+        <div class="empty-title">No se pudo cargar el lexicón</div>
+        <div class="empty-sub">Revisa tu conexión e intenta de nuevo.</div>
       </div>`;
   }
+}
+
+// ── MODO / BÚSQUEDA ──
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  document.getElementById('alphaBar').style.display = m === 'words' ? '' : 'none';
+  if (m === 'strongs') resetStrongs(); else render();
+}
+
+function onSearchInput() {
+  const q = document.getElementById('searchInput').value.trim();
+  // Un número Strong's (H413, g26) lleva directo al diccionario.
+  if (mode === 'words' && /^[hg]\d+$/i.test(q)) { setMode('strongs'); return; }
+  if (mode === 'strongs') {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(resetStrongs, 300);
+  } else render();
+}
+
+function render() {
+  if (mode === 'strongs') return renderStrongs();
+  renderWords();
+}
+
+function resetStrongs() {
+  strongsRows = []; strongsDone = false;
+  document.getElementById('mainContent').innerHTML = '<div class="loading">Buscando…</div>';
+  loadMoreStrongs();
+}
+
+async function loadMoreStrongs() {
+  if (strongsLoading || strongsDone) return;
+  strongsLoading = true;
+  const req = ++strongsReq;
+  const raw = document.getElementById('searchInput').value.trim();
+  let q = sb.from('lexicon_cache').select(LEX_COLS).like('word', 'strongs\\_%');
+  if (activeFilter === 'heb') q = q.eq('testament', 'AT');
+  if (activeFilter === 'grk') q = q.eq('testament', 'NT');
+  const code = raw.match(/^([hg])0*(\d+)$/i);
+  if (code) {
+    q = q.eq('strongs', code[1].toUpperCase() + code[2]);
+  } else if (raw.length >= 2) {
+    const term = raw.replace(/[%,()*\\]/g, ' ').trim();
+    q = q.or(`lemma.ilike.*${term}*,transliteration.ilike.*${term}*,definition.ilike.*${term}*`);
+  }
+  try {
+    const { data, error } = await q.order('testament', { ascending: true }).order('strongs_num', { ascending: true })
+      .range(strongsRows.length, strongsRows.length + PAGE - 1);
+    if (req !== strongsReq) return;   // llegó una búsqueda más nueva
+    if (error) throw error;
+    strongsRows.push(...(data || []));
+    strongsDone = !data || data.length < PAGE;
+    renderStrongs();
+  } catch (e) {
+    console.error(e);
+    if (req === strongsReq) document.getElementById('mainContent').innerHTML = '<div class="loading">No se pudo cargar. Intenta de nuevo.</div>';
+  } finally {
+    if (req === strongsReq) strongsLoading = false;
+  }
+}
+
+function renderStrongs() {
+  const main = document.getElementById('mainContent');
+  if (!strongsRows.length) {
+    main.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div>
+      <div class="empty-sub">Prueba con un número (H430, G26), una palabra hebrea o griega, su transliteración o una palabra de la definición.</div></div>`;
+    return;
+  }
+  main.innerHTML = `<div class="word-grid">${strongsRows.map(renderWordCard).join('')}</div>`
+    + (strongsDone ? '' : `<button class="load-more" onclick="this.disabled=true;loadMoreStrongs()">Cargar más</button>`);
 }
 
 function normalizeFirstLetter(word) {
@@ -325,18 +446,14 @@ function setLetter(letter, btn) {
   activeLetter = letter;
   document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderWords();
+  render();
 }
 
 function setFilter(filter, btn) {
   activeFilter = filter;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderWords();
-}
-
-function filterWords() {
-  renderWords();
+  if (mode === 'strongs') resetStrongs(); else render();
 }
 
 function getFilteredWords() {
@@ -368,7 +485,7 @@ function renderWords() {
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
         <div class="empty-title">Sin resultados</div>
-        <div class="empty-sub">No se encontraron palabras con ese filtro.<br>El lexicón crece con el uso diario.</div>
+        <div class="empty-sub">No se encontraron palabras con ese filtro.<br>Prueba en el Diccionario Strong's.</div>
       </div>`;
     return;
   }
@@ -397,20 +514,24 @@ function renderWordCard(w) {
   const langClass = isGreek ? 'grk' : 'heb';
   const langLabel = isGreek ? 'Griego' : 'Hebreo';
   const testamentLabel = w.testament === 'NT' ? 'Nuevo Testamento' : 'Antiguo Testamento';
+  const isStrongsEntry = String(w.word).startsWith('strongs_');
+  // Las entradas del diccionario se guardan como "strongs_h413": se muestra
+  // el número, no la clave interna.
+  const title = isStrongsEntry ? (w.strongs || '') : w.word;
 
   return `
     <div class="word-card">
       <div class="word-card-top">
-        <div class="word-original ${isGreek ? 'greek' : ''}">${w.lemma || '—'}</div>
+        <div class="word-original ${isGreek ? 'greek' : ''}">${esc(w.lemma || '—')}</div>
         <div class="word-badges">
           <span class="lang-badge ${langClass}">${langLabel}</span>
           <span class="word-testament">${testamentLabel}</span>
         </div>
       </div>
-      <div class="word-spanish">${w.word}</div>
-      ${w.transliteration ? `<div class="word-translit">${w.transliteration}${w.pronunciation ? ` · ${w.pronunciation}` : ''}</div>` : ''}
-      <div class="word-strongs">${w.strongs || ''}</div>
-      <div class="word-definition">${w.definition || '—'}</div>
+      <div class="word-spanish">${esc(title)}</div>
+      ${w.transliteration ? `<div class="word-translit">${esc(w.transliteration)}${w.pronunciation ? ` · ${esc(w.pronunciation)}` : ''}</div>` : ''}
+      ${isStrongsEntry ? '' : `<div class="word-strongs">${esc(w.strongs || '')}</div>`}
+      <div class="word-definition">${esc(w.definition || '—')}</div>
     </div>
   `;
 }
