@@ -128,9 +128,15 @@ export default async function handler(req, res) {
   // FAIL CLOSED: si no podemos verificar el límite (p.ej. la RPC de
   // Supabase falla), NO llamamos a Anthropic — devolvemos 503 en vez de
   // continuar silenciosamente sin protección de costos.
+  // Las precargas (capítulo anterior/siguiente en segundo plano) tienen su
+  // propio cupo, para que nunca le quiten al lector el cupo del capítulo que
+  // realmente quiere leer. Si se agota, el cliente simplemente no precarga.
+  const isPrefetch = req.body?.prefetch === true;
   let rl;
   try {
-    rl = await checkRateLimit(userId, 'textual_generate', 20, 3600);
+    rl = isPrefetch
+      ? await checkRateLimit(userId, 'textual_prefetch', 30, 3600)
+      : await checkRateLimit(userId, 'textual_generate', 20, 3600);
   } catch(e) {
     console.error('[Textual] rate limit check failed — failing closed, no Anthropic call:', e.message);
     return sendError(res, 503, ERR.unavailable, e, 'textual:rate-limit-unavailable');

@@ -4477,14 +4477,14 @@ function setLocalTextual(bookId, chapter, verses) {
   } catch (e) { /* almacenamiento lleno: queda solo en memoria */ }
 }
 
-async function fetchTextualFromServer(bookId, chapter) {
+async function fetchTextualFromServer(bookId, chapter, { prefetch = false } = {}) {
   const sourceChapterObj = await fetchChapter(bookId, chapter);
   const authH = await authHeaders();
   if (!authH) return { needsLogin: true };
   const res = await kapiFetch('/api/textual', {
     method: 'POST',
     headers: authH,
-    body: JSON.stringify({ bookId, chapter, sourceVerses: sourceChapterObj })
+    body: JSON.stringify({ bookId, chapter, sourceVerses: sourceChapterObj, prefetch })
   });
   // kapiFetch() en nativo (CapacitorHttp) no expone res.headers — en ese
   // caso asumimos JSON, ya que nuestra propia API siempre responde JSON.
@@ -4499,11 +4499,49 @@ async function fetchTextualFromServer(bookId, chapter) {
   let data;
   try { data = await res.json(); }
   catch (jsonErr) { throw new Error('La respuesta del servidor no es JSON válido'); }
-  if (!data.found) throw new Error(data.error || 'Error desconocido');
+  if (!data.found) {
+    const err = new Error(data.error || 'Error desconocido');
+    err.status = res.status;
+    throw err;
+  }
   // Solo se guarda en el teléfono lo que el servidor guardó (no los
   // capítulos "parciales" que todavía se van a reintentar).
   if (!data.partial) setLocalTextual(bookId, chapter, data.verses);
   return data;
+}
+
+// Precarga en segundo plano del capítulo siguiente y del anterior (dentro
+// del mismo libro, como los botones de navegación), para que cambiar de
+// capítulo en Kodesh no tenga espera. Si el servidor aún no los tenía, se
+// generan y quedan guardados para todos. Uno a la vez, primero el siguiente.
+// Si el servidor dice que se agotó el cupo de precargas (429) o que otro ya
+// lo está generando (409), se deja para después sin molestar al lector.
+const textualPrefetching = new Set();
+let textualPrefetchPausedUntil = 0;
+
+async function prefetchAdjacentTextual(bookId, chapter) {
+  if (!textualActive || Date.now() < textualPrefetchPausedUntil) return;
+  if (navigator.connection?.saveData) return; // modo ahorro de datos
+  const book = getAllBooks().find(b => b.id === bookId);
+  if (!book) return;
+  const targets = [chapter + 1, chapter - 1].filter(c => c >= 1 && c <= book.chapters);
+  for (const ch of targets) {
+    const key = `${bookId}:${ch}`;
+    if (getLocalTextual(bookId, ch) || textualPrefetching.has(key)) continue;
+    // Si el lector ya se movió de capítulo, no seguir precargando lo viejo.
+    if (state.currentBook !== bookId || Math.abs(state.currentChapter - chapter) > 1) return;
+    textualPrefetching.add(key);
+    try {
+      await fetchTextualFromServer(bookId, ch, { prefetch: true });
+    } catch (e) {
+      if (e.status === 429 || /429|rate_limit/i.test(e.message || '')) {
+        textualPrefetchPausedUntil = Date.now() + 10 * 60 * 1000;
+        return;
+      }
+    } finally {
+      textualPrefetching.delete(key);
+    }
+  }
 }
 
 // Revisión silenciosa: si el servidor tiene otra versión, se guarda para la
@@ -4610,6 +4648,10 @@ async function loadTextualVersion() {
 
     // Re-inyectar el botón toggle (renderBibleText reemplazó mainContent)
     restoreTextualToggleButton();
+
+    // Dejar listos el capítulo anterior y el siguiente (sin bloquear).
+    var pfBook = state.currentBook, pfChapter = state.currentChapter;
+    setTimeout(function() { prefetchAdjacentTextual(pfBook, pfChapter); }, 600);
 
   } catch(e) {
     console.error('[Textual] Error completo:', e, e.stack);
