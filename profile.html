@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
+<script src="/recovery-guard.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · Mi Perfil</title>
@@ -798,6 +799,7 @@ async function loadProfile(user) {
       <div class="profile-actions">
         <a href="/index.html" class="btn-read">📖 Abrir Biblia</a>
         <button class="btn-logout" onclick="signOut()">Cerrar sesión</button>
+        <button class="btn-logout" onclick="window.location.href='/login.html?reset=1'" style="font-size:0.48rem;">Cambiar contraseña</button>
         ${isNative ? `<button id="btnRestore" class="btn-logout" onclick="restorePurchases()" style="font-size:0.48rem;">Restaurar compras</button>` : ''}
         ${isPremium ? `<button id="btnManageSub" class="btn-logout" onclick="manageSubscription()" style="font-size:0.48rem;">Gestionar / cancelar suscripción</button>` : ''}
         <button class="btn-delete" onclick="showDeleteAccountModal()">Eliminar cuenta</button>

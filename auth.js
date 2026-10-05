@@ -38,6 +38,13 @@ async function initAuth() {
   }
 
   sb.auth.onAuthStateChange((event, session) => {
+    // Enlace de recuperación (también con el flujo PKCE, ?code=…): en vez de
+    // dejar a la persona dentro de la app, la llevamos a elegir la nueva
+    // contraseña.
+    if (event === 'PASSWORD_RECOVERY') {
+      window.location.href = '/login.html?reset=1';
+      return;
+    }
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
       onUserLoggedIn(currentUser);

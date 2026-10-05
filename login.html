@@ -225,23 +225,54 @@ const SUPABASE_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 // Fijandola al valor historico, cambiar de dominio no toca las sesiones.
 const SB_STORAGE_KEY = 'sb-fvknbqdsgqdmwirrgcvb-auth-token';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
+// Hay que leer la URL ANTES de crear el cliente: supabase-js procesa el
+// enlace del correo al crearse, inicia la sesión y borra el hash. Antes,
+// getSession() veía esa sesión y redirigía a la app sin pedir la contraseña.
+const initialHash = new URLSearchParams(window.location.hash.substring(1));
+const initialQuery = new URLSearchParams(window.location.search);
+const RECOVERY_LINK = initialHash.get('type') === 'recovery' || initialQuery.get('type') === 'recovery';
+const RESET_REQUESTED = initialQuery.get('reset') === '1';   // desde Perfil o desde auth.js
+const LINK_ERROR = initialHash.get('error_code') || initialQuery.get('error_code');
+
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: SB_STORAGE_KEY } });
 
 const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
 // Flag para evitar que onAuthStateChange redirija cuando estamos procesando un recovery
-let isProcessingRecovery = false;
+let isProcessingRecovery = RECOVERY_LINK || RESET_REQUESTED;
 
 sbClient.auth.getSession().then(({ data: { session } }) => {
+  if (isProcessingRecovery) {
+    if (session) showResetPasswordForm();
+    else if (!RECOVERY_LINK) showLinkProblem();   // ?reset=1 sin sesión
+    return;
+  }
   if (session) checkAndRedirect(session.user);
 });
 
 sbClient.auth.onAuthStateChange((event, session) => {
-  if (isProcessingRecovery) return; // ignorar durante recovery
+  if (event === 'PASSWORD_RECOVERY') {
+    isProcessingRecovery = true;
+    showResetPasswordForm();
+    return;
+  }
+  if (isProcessingRecovery) {
+    if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) showResetPasswordForm();
+    return;
+  }
   if (event === 'SIGNED_IN' && session) {
     checkAndRedirect(session.user);
   }
 });
+
+// Enlace vencido o ya usado (Supabase vuelve con #error_code=otp_expired…).
+function showLinkProblem() {
+  isProcessingRecovery = false;
+  switchTab('login');
+  showMsg('login-msg', 'error', 'El enlace para cambiar la contraseña venció o ya se usó. Escribe tu correo y toca "¿Olvidaste tu contraseña?" para recibir uno nuevo.');
+  if (window.location.hash || window.location.search) window.history.replaceState(null, '', window.location.pathname);
+}
+if (LINK_ERROR) setTimeout(showLinkProblem, 0);
 
 // En app nativa: manejar deep link del URL scheme via evento nativo
 if (isNativeApp) {
@@ -303,7 +334,8 @@ if (!isNativeApp && window.location.hash) {
     sbClient.auth.setSession({
       access_token: hashToken,
       refresh_token: hashParams.get('refresh_token') || '',
-    }).then(() => {
+    }).then(({ data, error }) => {
+      if (error || !data?.session) return showLinkProblem();
       showResetPasswordForm();
       // Limpiar el hash de la URL para no revelar el token
       window.history.replaceState(null, '', window.location.pathname);
@@ -439,8 +471,11 @@ async function loginApple() {
 async function forgotPassword() {
   const email = document.getElementById('login-email').value.trim();
   if (!email) return showMsg('login-msg', 'error', 'Escribe tu correo primero');
+  // Siempre al dominio web canónico: en la app nativa window.location.origin
+  // es capacitor://localhost, que Supabase no acepta y lo cambiaba por la
+  // Site URL (la app, con la sesión ya iniciada y sin formulario).
   const { error } = await sbClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/login.html'
+    redirectTo: 'https://www.kodeshbible.com/login.html'
   });
   if (error) {
     showMsg('login-msg', 'error', error.message);
@@ -450,6 +485,7 @@ async function forgotPassword() {
 }
 
 function showResetPasswordForm() {
+  if (document.getElementById('form-reset')?.classList.contains('active')) return;
   // Ocultar todas las tabs y formularios
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
@@ -486,6 +522,7 @@ async function saveNewPassword() {
     showMsg('reset-msg', 'error', 'Error: ' + error.message);
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar nueva contraseña'; }
   } else {
+    isProcessingRecovery = false;
     showMsg('reset-msg', 'success', '✓ Contraseña actualizada correctamente');
     // Redirigir a la app después de 2 segundos
     setTimeout(() => {
