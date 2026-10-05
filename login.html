@@ -202,6 +202,13 @@ body::before {
         <input class="form-input" type="password" id="reset-password-confirm" placeholder="Repite tu contraseña"
           onkeydown="if(event.key==='Enter') saveNewPassword()" />
       </div>
+      <!-- Solo para cuentas con verificación en dos pasos (p. ej. admins) -->
+      <div class="form-group" id="reset-mfa-group" style="display:none">
+        <label class="form-label">Código de verificación (2 pasos)</label>
+        <input class="form-input" type="text" id="reset-mfa-code" inputmode="numeric" autocomplete="one-time-code"
+          maxlength="6" placeholder="6 dígitos de tu app autenticadora"
+          onkeydown="if(event.key==='Enter') saveNewPassword()" />
+      </div>
       <button class="btn-primary" id="btn-reset" onclick="saveNewPassword()">
         Guardar nueva contraseña
       </button>
@@ -514,12 +521,38 @@ async function saveNewPassword() {
   }
 
   const btn = document.getElementById('btn-reset');
+  const resetBtn = () => { if (btn) { btn.disabled = false; btn.textContent = 'Guardar nueva contraseña'; } };
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  // Cuentas con verificación en dos pasos: Supabase exige confirmar el código
+  // (sesión AAL2) antes de cambiar la contraseña.
+  try {
+    const { data: aal } = await sbClient.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+      const group = document.getElementById('reset-mfa-group');
+      const code = (document.getElementById('reset-mfa-code').value || '').replace(/\D/g, '');
+      if (group.style.display === 'none' || code.length !== 6) {
+        group.style.display = '';
+        document.getElementById('reset-mfa-code').focus();
+        resetBtn();
+        return showMsg('reset-msg', 'error', 'Tu cuenta tiene verificación en dos pasos: escribe el código de 6 dígitos de tu app autenticadora.');
+      }
+      const { data: factors } = await sbClient.auth.mfa.listFactors();
+      const factor = (factors?.totp || []).find(f => f.status === 'verified') || factors?.totp?.[0];
+      if (!factor) { resetBtn(); return showMsg('reset-msg', 'error', 'No se encontró tu método de verificación en dos pasos.'); }
+      const { error: mfaErr } = await sbClient.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+      if (mfaErr) { resetBtn(); return showMsg('reset-msg', 'error', 'Código incorrecto o vencido. Escribe el código actual de tu app.'); }
+    }
+  } catch (e) { console.warn('[MFA] ', e); }
 
   const { error } = await sbClient.auth.updateUser({ password: pwd });
 
   if (error) {
-    showMsg('reset-msg', 'error', 'Error: ' + error.message);
+    const msg = /AAL2|MFA/i.test(error.message)
+      ? 'Tu cuenta tiene verificación en dos pasos: escribe el código de tu app autenticadora y vuelve a intentar.'
+      : 'Error: ' + error.message;
+    if (/AAL2|MFA/i.test(error.message)) document.getElementById('reset-mfa-group').style.display = '';
+    showMsg('reset-msg', 'error', msg);
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar nueva contraseña'; }
   } else {
     isProcessingRecovery = false;
