@@ -169,6 +169,9 @@ html.light .page { box-shadow: 0 10px 30px rgba(70,52,18,0.16); }
 .tpl-box { position: absolute; border: 1.5px solid var(--tpl-border); border-radius: 12px; }
 .tpl-box.lined { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 35px, var(--lines) 35px, var(--lines) 36px); background-position: 0 34px; }
 .tpl-box.dashed { border-style: dashed; }
+.tpl-acts { position: absolute; transform: translateX(-100%); display: flex; gap: 6px; z-index: 7; }
+.tpl-act { height: 30px; padding: 0 12px; white-space: nowrap; line-height: 1; border-radius: 15px; border: 1px solid var(--gold-line); background: var(--bg2); color: var(--gold); font: inherit; font-size: 14px; cursor: pointer; touch-action: manipulation; }
+.tpl-act[data-act="bq-del"] { color: var(--text-mid); border-color: var(--border2); }
 .tpl-label { position: absolute; left: 14px; top: 10px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
 .tpl-sub { position: absolute; left: 14px; top: 32px; font-size: 18px; color: var(--text-mid); }
 .tpl-line { position: absolute; height: 3px; background: var(--gold); border-radius: 2px; }
@@ -346,6 +349,7 @@ html.light .el-card { background: #fbf6ea; }
 
 /* ── Imprimir / PDF ── */
 @media print {
+  .tpl-acts { display: none !important; }
   @page { size: 8.5in 11in; margin: 0; }
   :root, html.light { --page: #fff; --text: #1a1610; --text-mid: #4f4636; --text-dim: #6b604c; --ink: #1a1610; --hand: #2e3e7a; --gold: #7a5c14; --tpl-border: #d9cdb2; --lines: #ece3d0; --bg3: #faf6ec; --border2: #e0d5bd; --blue: #1f5a9e; --purple: #5b3aa0; --dots: #e7dfcc; }
   html, body { height: auto; overflow: visible; background: #fff; }

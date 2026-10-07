@@ -174,10 +174,124 @@ const TEMPLATES = [
       { x: 56, y: 375, w: 704, h: 150, label: 'I.', lined: true },
       { x: 56, y: 540, w: 704, h: 150, label: 'II.', lined: true },
       { x: 56, y: 705, w: 704, h: 150, label: 'III.', lined: true },
-      { x: 56, y: 870, w: 704, h: 135, label: 'Conclusión', lined: true },
+      { x: 56, y: 870, w: 704, h: 150, label: 'Conclusión', lined: true },
     ] },
+  // Hojas de continuación del bosquejo (se crean solas al agregar puntos)
+  { id: 'bosquejo_cont', hidden: true, name: 'Bosquejo (continuación)', desc: '', kicker: 'Bosquejo de enseñanza · continuación', boxes: [] },
 ];
 const tplById = id => TEMPLATES.find(t => t.id === id) || TEMPLATES[0];
+
+/* ── Bosquejo extensible ──
+   La primera hoja tiene Tema, Texto base y 4 espacios; cada hoja de
+   continuación tiene 5. Los puntos (I., II., …) y la Conclusión se reparten
+   en orden; la Conclusión siempre va al final. */
+const BQ_FIRST = [375, 540, 705, 870], BQ_CONT = [140, 305, 470, 635, 800], BQ_H = 150, BQ_MAX = 20;
+function roman(n) {
+  const m = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let r = ''; for (const [v, sym] of m) while (n >= v) { r += sym; n -= v; } return r;
+}
+function bosquejoLayout(n) {
+  const items = [];
+  for (let i = 1; i <= n; i++) items.push({ label: roman(i) + '.', point: i });
+  items.push({ label: 'Conclusión', conclusion: true });
+  const pages = [[{ x: 56, y: 140, w: 704, h: 90, label: 'Tema' }, { x: 56, y: 250, w: 704, h: 110, label: 'Texto base', dashed: true, cls: 'c-gold' }]];
+  let k = 0, slots = BQ_FIRST;
+  for (const it of items) {
+    if (!slots.length) { pages.push([]); slots = BQ_CONT; }
+    pages[pages.length - 1].push({ x: 56, y: slots[0], w: 704, h: BQ_H, label: it.label, lined: true, point: it.point, conclusion: it.conclusion });
+    slots = slots.slice(1); k++;
+  }
+  return pages;
+}
+function bosquejoHead(page) {
+  if (page.template === 'bosquejo') return page;
+  if (page.template === 'bosquejo_cont' && study) return pageById(page.tpl && page.tpl.series) || null;
+  return null;
+}
+function bosquejoSeries(head) {
+  return [head, ...study.pages.filter(p => p.template === 'bosquejo_cont' && p.tpl && p.tpl.series === head.id).sort((a, b) => a.tpl.idx - b.tpl.idx)];
+}
+function tplBoxes(page) {
+  const t = tplById(page.template);
+  if (t.id === 'bosquejo') return bosquejoLayout((page.tpl && page.tpl.points) || 3)[0];
+  if (t.id === 'bosquejo_cont') {
+    const head = bosquejoHead(page);
+    return head ? (bosquejoLayout(head.tpl.points || 3)[page.tpl.idx] || []) : [];
+  }
+  return t.boxes;
+}
+const inBox = (e, b) => e.type === 'stroke'
+  ? e.pts.length && e.pts[0][0] >= b.x - 4 && e.pts[0][0] < b.x + b.w && e.pts[0][1] >= b.y && e.pts[0][1] < b.y + b.h
+  : e.x >= b.x - 4 && e.x < b.x + b.w && e.y >= b.y && e.y < b.y + b.h;
+function findBq(layout, pred) {
+  for (let k = 0; k < layout.length; k++) { const b = layout[k].find(pred); if (b) return { k, b }; }
+  return null;
+}
+// Mueve el contenido de la Conclusión a su nuevo lugar (puede cambiar de hoja).
+function moveConclusion(series, from, to) {
+  const src = series[from.k], dst = series[to.k];
+  const moving = src.els.filter(e => inBox(e, from.b));
+  if (!moving.length) return;
+  const dy = to.b.y - from.b.y;
+  src.els = src.els.filter(e => !moving.includes(e));
+  for (const e of moving) {
+    if (e.type === 'stroke') e.pts = e.pts.map(p => [p[0], r2(p[1] + dy), p[2]]); else e.y += dy;
+    dst.els.push(e);
+  }
+}
+function bosquejoAddPoint(pageId) {
+  const head = bosquejoHead(pageById(pageId));
+  if (!head) return;
+  const n = head.tpl.points || 3;
+  if (n >= BQ_MAX) { toast('Máximo ' + BQ_MAX + ' puntos'); return; }
+  snapshot();
+  const from = findBq(bosquejoLayout(n), b => b.conclusion);
+  head.tpl = { ...head.tpl, points: n + 1 };
+  const L = bosquejoLayout(n + 1);
+  let series = bosquejoSeries(head);
+  // Crear hojas de continuación si hacen falta, justo después de la última de la serie
+  while (series.length < L.length) {
+    const last = series[series.length - 1];
+    const cont = { id: uid(), template: 'bosquejo_cont', tpl: { series: head.id, idx: series.length }, els: [] };
+    study.pages.splice(study.pages.indexOf(last) + 1, 0, cont);
+    series = bosquejoSeries(head);
+  }
+  moveConclusion(series, from, findBq(L, b => b.conclusion));
+  renderPages(); markDirty(); updateUndoButtons();
+  toast(`Punto ${roman(n + 1)} agregado`);
+  const at = findBq(L, b => b.point === n + 1);
+  const wrap = at && document.querySelector(`[data-wrap="${series[at.k].id}"]`);
+  if (wrap && at.k > 0) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function bosquejoRemovePoint(pageId) {
+  const head = bosquejoHead(pageById(pageId));
+  if (!head) return;
+  const n = head.tpl.points || 3;
+  if (n <= 1) return;
+  const Lold = bosquejoLayout(n);
+  let series = bosquejoSeries(head);
+  const last = findBq(Lold, b => b.point === n);
+  if (series[last.k] && series[last.k].els.some(e => inBox(e, last.b))) { toast(`El punto ${roman(n)} tiene contenido; bórralo primero`); return; }
+  snapshot();
+  const from = findBq(Lold, b => b.conclusion);
+  head.tpl = { ...head.tpl, points: n - 1 };
+  const L = bosquejoLayout(n - 1);
+  moveConclusion(series, from, findBq(L, b => b.conclusion));
+  // Quitar hojas de continuación que sobran si quedaron vacías
+  for (const p of series.slice(L.length)) if (!p.els.length) study.pages.splice(study.pages.indexOf(p), 1);
+  renderPages(); markDirty(); updateUndoButtons();
+}
+function tplActionsHtml(page) {
+  if (!study || study.format === 'free') return '';
+  const head = bosquejoHead(page);
+  if (!head) return '';
+  const conc = tplBoxes(page).find(b => b.conclusion);
+  if (!conc) return '';
+  const n = head.tpl.points || 3;
+  return `<div class="tpl-acts" style="left:${conc.x + conc.w - 12}px;top:${conc.y + 8}px">
+    ${n > 1 ? `<button class="tpl-act" data-act="bq-del" title="Quitar el último punto">− Punto</button>` : ''}
+    <button class="tpl-act" data-act="bq-add" title="Agregar un punto antes de la conclusión">+ Punto</button></div>`;
+}
 
 function renderTemplate(page, study) {
   if (study.format === 'free') return '';
@@ -189,7 +303,7 @@ function renderTemplate(page, study) {
     const heb = t.id === 'parasha' ? (d.heb || '') : '';
     html += `<div class="tpl-head"><div><div class="tpl-kicker">${esc(t.kicker || t.name)}</div><div class="tpl-title">${esc(title)}</div></div>${heb ? `<span class="tpl-heb" lang="he">${esc(heb)}</span>` : ''}</div>`;
   }
-  for (const b of t.boxes) {
+  for (const b of tplBoxes(page)) {
     const sub = b.sub && d[b.sub] ? `<span class="tpl-sub">${esc(d[b.sub])}</span>` : '';
     const cls = ['tpl-box', b.lined ? 'lined' : '', b.dashed ? 'dashed' : ''].join(' ');
     const style = `left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;${b.plain ? 'border-color:transparent;' : ''}`;
@@ -208,7 +322,7 @@ function preferredBox(page, type) {
   if (!names) return null;
   const t = tplById(page.template);
   for (const name of names) {
-    const b = t.boxes.find(x => x.label === name);
+    const b = tplBoxes(page).find(x => x.label === name);
     if (!b) continue;
     const used = page.els.some(e => e.type !== 'stroke' && e.x >= b.x - 4 && e.x < b.x + b.w && e.y >= b.y && e.y < b.y + b.h);
     if (!used || FILLABLE.has(type)) return b;
@@ -243,7 +357,7 @@ function snapText(page, el, down = false) {
 }
 function boxAt(page, x, y) {
   const t = tplById(page.template);
-  return t.boxes.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) || null;
+  return tplBoxes(page).find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) || null;
 }
 
 /* Porción de esta semana (para la plantilla de parashá) */
@@ -402,7 +516,7 @@ function renderPicker() {
     return;
   }
   const fake = { format: 'notebook', title: '' };
-  grid.innerHTML = TEMPLATES.map(t => {
+  grid.innerHTML = TEMPLATES.filter(t => !t.hidden).map(t => {
     const page = { template: t.id, tpl: t.id === 'parasha' ? { nombre: 'Parashá', heb: 'פָּרָשָׁה' } : {} };
     return `<button class="tcard ${pickedTpl === t.id ? 'on' : ''}" onclick="pickTemplate('${t.id}')" aria-pressed="${pickedTpl === t.id}">
       <span class="tprev" style="position:relative;overflow:hidden;background:var(--bg-sunk)">
@@ -638,7 +752,7 @@ function renderPages() {
 function renderPage(page) {
   const node = $('page-' + page.id);
   if (!node) return;
-  node.innerHTML = `<div class="tpl">${renderTemplate(page, study)}</div><div class="els">${page.els.filter(e => e.type !== 'stroke').map(elHtml).join('')}</div>${inkSvg(page)}${selBarHtml(page)}`;
+  node.innerHTML = `<div class="tpl">${renderTemplate(page, study)}</div><div class="els">${page.els.filter(e => e.type !== 'stroke').map(elHtml).join('')}</div>${inkSvg(page)}${tplActionsHtml(page)}${selBarHtml(page)}`;
   if (editingId) {
     const e = node.querySelector(`[data-el="${editingId}"]`);
     if (e) startEditingNode(e);
@@ -752,7 +866,7 @@ function bindPages() {
 }
 // El Apple Pencil no debe desplazar la página: se bloquea el scroll solo para el lápiz.
 document.addEventListener('touchstart', e => {
-  if (!study || !e.target.closest || !e.target.closest('.page')) return;
+  if (!study || !e.target.closest || !e.target.closest('.page') || e.target.closest('.tpl-act')) return;
   const stylus = [...e.touches].some(t => t.touchType === 'stylus');
   if (stylus) { penSeen = true; if (['pen', 'hl', 'eraser'].includes(tool)) e.preventDefault(); }
 }, { passive: false });
@@ -767,6 +881,14 @@ function onPointerDown(ev) {
   const node = ev.currentTarget;
   const page = pageById(node.dataset.page);
   if (!page) return;
+  const act = ev.target.closest && ev.target.closest('.tpl-act');
+  if (act) {
+    ev.preventDefault(); ev.stopPropagation();
+    commitEditing();
+    if (act.dataset.act === 'bq-add') bosquejoAddPoint(page.id);
+    else if (act.dataset.act === 'bq-del') bosquejoRemovePoint(page.id);
+    return;
+  }
   const pt = pagePoint(node, ev);
 
   if (['pen', 'hl', 'eraser'].includes(tool)) {
