@@ -92,7 +92,10 @@ a { color: var(--gold); }
   background: radial-gradient(120% 90% at 100% 0%, var(--gold-glow), transparent 60%), var(--bg2);
   padding: 18px 18px 16px;
 }
-.week-watermark { position: absolute; right: -8px; top: -14px; font-size: 108px; color: var(--gold); opacity: 0.1; line-height: 1; pointer-events: none; white-space: nowrap; }
+/* Marca de agua: dentro de la tarjeta (antes se salía por la derecha y arriba
+   y cortaba la primera letra y los puntos vocálicos). El tamaño se ajusta en
+   fitWatermark() para que el nombre completo quepa. */
+.week-watermark { position: absolute; right: 18px; top: 4px; font-size: 104px; color: var(--gold); opacity: 0.09; line-height: 1.3; pointer-events: none; white-space: nowrap; direction: rtl; unicode-bidi: isolate; }
 .week-kicker { display: flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); position: relative; }
 .week-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 4px; background: var(--gold); flex-shrink: 0; }
 .week-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; position: relative; }
@@ -415,6 +418,16 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
    parashot-calendar.json: { "YYYY-MM-DD": [num, ...] } (diáspora, 2025-2056).
    Dos números = porción combinada. */
 function localDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function fitWatermark() {
+  const w = document.getElementById('weekWatermark'), card = document.getElementById('week');
+  if (!w || !card) return;
+  w.style.fontSize = '';
+  const max = card.clientWidth - 36;
+  const fs = parseFloat(getComputedStyle(w).fontSize);
+  if (w.scrollWidth > max) w.style.fontSize = Math.max(48, Math.floor(fs * max / w.scrollWidth)) + 'px';
+}
+window.addEventListener('resize', fitWatermark);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitWatermark);
 function today0() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
 function getCurrentParashaNums() {
   const t = today0();
@@ -487,6 +500,7 @@ function renderWeek() {
   document.getElementById('weekSig').textContent = ps.map(x => x.sig).join(' · ');
   document.getElementById('weekHeb').textContent = p.heb;
   document.getElementById('weekWatermark').textContent = p.heb;
+  fitWatermark();
   document.getElementById('weekTema').textContent = p.tema;
   const combo = document.getElementById('weekCombo');
   combo.hidden = ps.length < 2;
