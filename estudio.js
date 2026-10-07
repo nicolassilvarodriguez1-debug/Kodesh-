@@ -76,6 +76,47 @@ function toggleTheme() {
    PLANTILLAS (coordenadas de una hoja carta: 816 × 1056)
 ════════════════════════════════════ */
 const PAGE = { notebook: { w: 816, h: 1056 }, free: { w: 2400, h: 1600 } };
+/* El lienzo libre crece solo: al escribir, dibujar o soltar algo cerca del
+   borde derecho o inferior, la hoja se amplía. Tope para no volver lenta la app. */
+const FREE_GROW = 800, FREE_EDGE = 260, FREE_MAX = { w: 9600, h: 6400 };
+function pageSize(page) {
+  const b = PAGE[study.format];
+  return study.format === 'free' && page ? { w: page.w || b.w, h: page.h || b.h } : b;
+}
+function growPage(page, x, y) {
+  if (!study || study.format !== 'free' || !page) return false;
+  const cur = pageSize(page);
+  let { w, h } = cur;
+  while (x > w - FREE_EDGE && w < FREE_MAX.w) w = Math.min(FREE_MAX.w, w + FREE_GROW);
+  while (y > h - FREE_EDGE && h < FREE_MAX.h) h = Math.min(FREE_MAX.h, h + FREE_GROW);
+  if (w === cur.w && h === cur.h) return false;
+  page.w = w; page.h = h;
+  applyPageSize(page);
+  markDirty();
+  return true;
+}
+function applyPageSize(page) {
+  const node = $('page-' + page.id);
+  if (!node) return;
+  const { w, h } = pageSize(page), s = scale();
+  node.style.width = w + 'px'; node.style.height = h + 'px';
+  const wrap = node.parentElement;
+  if (wrap) { wrap.style.width = w * s + 'px'; wrap.style.height = h * s + 'px'; }
+  const svg = node.querySelector('svg.ink');
+  if (svg) { svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('width', w); svg.setAttribute('height', h); }
+}
+// Ajusta la hoja libre a lo que contiene (texto que creció, elementos soltados…)
+function growToContent(page) {
+  if (study.format !== 'free') return;
+  let mx = 0, my = 0;
+  for (const e of page.els) {
+    if (e.type === 'stroke') { for (const p of e.pts) { if (p[0] > mx) mx = p[0]; if (p[1] > my) my = p[1]; } continue; }
+    const sc = e.s || 1;
+    mx = Math.max(mx, e.x + (e.w || 200) * sc);
+    my = Math.max(my, e.y + elHeight(e.id));
+  }
+  growPage(page, mx, my);
+}
 const TEMPLATES = [
   { id: 'blank', name: 'En blanco', desc: 'Hoja libre para escribir y dibujar', boxes: [] },
   { id: 'lined', name: 'Renglones', desc: 'Como un cuaderno de notas', boxes: [{ x: 56, y: 140, w: 704, h: 860, lined: true, plain: true }] },
@@ -575,14 +616,13 @@ function pageById(id) { return study.pages.find(p => p.id === id); }
 
 function renderPages() {
   const s = scale();
-  const pg = PAGE[study.format];
   $('zoomLabel').textContent = Math.round(zoom * 100) + '%';
   const free = study.format === 'free';
-  $('pages').innerHTML = study.pages.map((p, i) => `
+  $('pages').innerHTML = study.pages.map((p, i) => { const pg = pageSize(p); return `
     <div class="page-wrap" style="width:${pg.w * s}px;height:${pg.h * s}px" data-wrap="${p.id}">
       <div class="page ${free ? 'free' : ''}" id="page-${p.id}" data-page="${p.id}" style="width:${pg.w}px;height:${pg.h}px;transform:scale(${s})"></div>
       ${free ? '' : `<span class="page-num">Página ${i + 1} de ${study.pages.length}</span>`}
-    </div>`).join('') + (free ? '' : `
+    </div>`; }).join('') + (free ? '' : `
     <div class="add-page">
       <button class="pill" onclick="addPage('lined')">+ Página</button>
       <button class="pill" onclick="openTemplatePicker('page')">+ Página con plantilla</button>
@@ -600,6 +640,7 @@ function renderPage(page) {
     const e = node.querySelector(`[data-el="${editingId}"]`);
     if (e) startEditingNode(e);
   }
+  growToContent(page);
 }
 
 function elHtml(e) {
@@ -677,7 +718,7 @@ function strokeEl(e) {
   return `<path data-stroke="${e.id}" d="${p}" style="fill:${colorCss(e.color)};${hl ? 'opacity:0.32;' : ''}"></path>`;
 }
 function inkSvg(page) {
-  const pg = PAGE[study.format];
+  const pg = pageSize(page);
   const strokes = page.els.filter(e => e.type === 'stroke');
   // Resaltador debajo de la pluma
   const ordered = [...strokes.filter(s => s.tool === 'hl'), ...strokes.filter(s => s.tool !== 'hl')];
@@ -770,6 +811,8 @@ function onPointerMove(ev) {
       const pt = pagePoint(live.node, e2);
       live.el.pts.push([r2(pt.x), r2(pt.y), live.el.pressure ? r2(e2.pressure || 0.5) : 0.5]);
     }
+    const last = live.el.pts[live.el.pts.length - 1];
+    growPage(live.page, last[0], last[1]);
     drawLive();
     return;
   }
@@ -779,20 +822,23 @@ function onPointerMove(ev) {
     const dx = pt.x - drag.start.x, dy = pt.y - drag.start.y;
     if (!drag.moved && Math.hypot(dx, dy) < 4) return;
     if (!drag.moved) { snapshot(); drag.moved = true; }
-    const pg = PAGE[study.format];
+    const pg = pageSize(drag.page);
     if (drag.mode === 'resize') {
       drag.el.w = clamp(Math.round(drag.orig.w + dx / drag.orig.s), 120, (pg.w - drag.el.x) / drag.orig.s);
       drag.elNode.style.width = drag.el.w + 'px';
+      growPage(drag.page, drag.el.x + drag.el.w * drag.orig.s, 0);
     } else if (drag.mode === 'scale') {
       const visual = drag.orig.w * drag.orig.s + dx;
       drag.el.s = Math.round(clamp(visual / drag.orig.w, 0.35, 3) * 100) / 100;
       drag.elNode.style.transform = `scale(${drag.el.s})`;
+      growPage(drag.page, drag.el.x + drag.el.w * drag.el.s, drag.el.y + drag.elNode.offsetHeight * drag.el.s);
       drag.elNode.style.setProperty('--inv', 1 / drag.el.s);
     } else {
       drag.el.x = Math.round(clamp(drag.orig.x + dx, -drag.el.w + 40, pg.w - 40));
       drag.el.y = Math.round(clamp(drag.orig.y + dy, 0, pg.h - 30));
       drag.elNode.style.left = drag.el.x + 'px';
       drag.elNode.style.top = drag.el.y + 'px';
+      growPage(drag.page, drag.el.x + Math.min(drag.el.w * drag.orig.s, 240), drag.el.y + Math.min(drag.elNode.offsetHeight * drag.orig.s, 120));
       const bar = drag.node.querySelector('.sel-bar'); if (bar) bar.style.display = 'none';
     }
   }
@@ -948,7 +994,8 @@ function updateFmtBar() {
 }
 function createTextAt(page, pt) {
   const box = boxAt(page, pt.x, pt.y);
-  const pg = PAGE[study.format];
+  growPage(page, pt.x + 300, pt.y + 120);
+  const pg = pageSize(page);
   let x = pt.x - 8, y = pt.y - 22, w = Math.min(420, pg.w - x - 20);
   if (box) {
     x = box.x + 12; w = box.w - 24; y = Math.max(box.y + 34, pt.y - 22);
@@ -997,6 +1044,7 @@ function startEditingNode(node) {
   }, 0);
   span.addEventListener('blur', () => setTimeout(commitEditing, 0), { once: true });
   span.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); span.blur(); } });
+  span.addEventListener('input', () => { const f = findEl(node.dataset.el); if (f) growPage(f.page, f.el.x + f.el.w * (f.el.s || 1), f.el.y + node.offsetHeight * (f.el.s || 1)); });
 }
 function commitEditing() {
   if (!editingId) return;
@@ -1034,13 +1082,15 @@ function visiblePageAndPoint() {
   const page = pageById(best.dataset.page);
   const r = best.getBoundingClientRect();
   const s = scale();
-  return { page, x: clamp((cx - r.left) / s, 0, PAGE[study.format].w), y: clamp((cy - r.top) / s, 20, PAGE[study.format].h - 80) };
+  const sz = pageSize(page);
+  return { page, x: clamp((cx - r.left) / s, 0, sz.w), y: clamp((cy - r.top) / s, 20, sz.h - 80) };
 }
 function insertElement(el, at) {
   if (!study) return;
   const target = at || visiblePageAndPoint();
   if (!target) return;
-  const pg = PAGE[study.format];
+  growPage(target.page, target.x + (el.w || 460) / 2, target.y + 200);
+  const pg = pageSize(target.page);
   el.id = uid();
   el.w = Math.min(el.w, pg.w - 40);
   el.x = Math.round(clamp(target.x - el.w / 2, 16, pg.w - el.w - 16));
@@ -1073,7 +1123,7 @@ function insertElement(el, at) {
 // Empuja hacia abajo el elemento recién insertado mientras se encime con otro.
 function elHeight(id) { const n = document.querySelector(`[data-el="${id}"]`); const f = findEl(id); return n ? n.offsetHeight * ((f && f.el.s) || 1) : 80; }
 function avoidOverlap(page, el) {
-  const pg = PAGE[study.format];
+  const pg = pageSize(page);
   const h = elHeight(el.id);
   let moved = false;
   for (let i = 0; i < 20; i++) {
@@ -1083,7 +1133,7 @@ function avoidOverlap(page, el) {
     el.y = Math.round(hit.y + elHeight(hit.id) + 12);
     moved = true;
   }
-  if (moved) { el.y = Math.min(el.y, pg.h - Math.min(h, pg.h - 20) - 10); renderPage(page); }
+  if (moved) { if (study.format !== 'free') el.y = Math.min(el.y, pg.h - Math.min(h, pg.h - 20) - 10); renderPage(page); }
 }
 function onDrop(ev) {
   const raw = ev.dataTransfer && ev.dataTransfer.getData('application/x-kodesh');
