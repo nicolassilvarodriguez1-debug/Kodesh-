@@ -100,6 +100,21 @@ export const LIBRARY = [
   { key: 'oleaje', kind: 'sfx', seconds: 5, label: 'Oleaje del mar', prompt: 'Large ocean waves rolling and crashing on the shore' },
   { key: 'llanto_hombre', kind: 'sfx', seconds: 4, label: 'Lamento de un hombre', prompt: 'A man crying out in anguish, then sobbing, distant echo' },
   { key: 'cuchillo', kind: 'sfx', seconds: 2, label: 'Cuchillo', prompt: 'A knife raised and gripped, metallic scrape' },
+  // Acciones que se narran (para los momentos «hold» en toda la Biblia)
+  { key: 'carruaje', kind: 'sfx', seconds: 6, label: 'Carros y carruajes', prompt: 'Ancient wooden chariots rolling fast on a rocky road, wheels rumbling, horses hooves, reins snapping' },
+  { key: 'caravana', kind: 'sfx', seconds: 6, label: 'Caravana de camellos', prompt: 'A caravan of camels walking through the desert, bells, grunts, footsteps in sand, wind' },
+  { key: 'ejercito_marcha', kind: 'sfx', seconds: 6, label: 'Ejército en marcha', prompt: 'Ancient army marching in step, armor clanking, spears, heavy footsteps, distant war drums' },
+  { key: 'gritos_batalla', kind: 'sfx', seconds: 6, label: 'Gritos de guerra', prompt: 'Soldiers shouting war cries and charging into battle, chaotic, indistinct, no clear words' },
+  { key: 'huida', kind: 'sfx', seconds: 5, label: 'Gente que huye', prompt: 'Crowd of people fleeing in panic, running footsteps, frightened cries, indistinct' },
+  { key: 'construccion', kind: 'sfx', seconds: 6, label: 'Construcción', prompt: 'Ancient construction site, stones being cut and stacked, hammers and chisels, workers, ropes' },
+  { key: 'remos', kind: 'sfx', seconds: 5, label: 'Barca a remo', prompt: 'Wooden boat rowed across water, oars splashing rhythmically, wood creaking' },
+  { key: 'fuego_ciudad', kind: 'sfx', seconds: 6, label: 'Ciudad en llamas', prompt: 'A city consumed by roaring fire falling from the sky, burning buildings collapsing, intense' },
+  { key: 'derrumbe', kind: 'sfx', seconds: 6, label: 'Muros que caen', prompt: 'Massive stone walls collapsing and crumbling, rumble and debris, cinematic' },
+  { key: 'agua_roca', kind: 'sfx', seconds: 5, label: 'Agua que brota de la roca', prompt: 'Water bursting out of a rock and gushing onto the ground, powerful stream' },
+  { key: 'mar_abierto', kind: 'sfx', seconds: 6, label: 'El mar se abre', prompt: 'A strong east wind howling as a sea splits apart, walls of water roaring on both sides' },
+  { key: 'rebano', kind: 'sfx', seconds: 5, label: 'Rebaño en movimiento', prompt: 'Large flock of sheep and goats driven along a path, bleating, bells, shepherd whistles' },
+  { key: 'banquete', kind: 'sfx', seconds: 5, label: 'Banquete', prompt: 'Ancient feast, clay cups and plates, people eating and talking indistinctly, laughter' },
+  { key: 'lucha_cuerpo', kind: 'sfx', seconds: 5, label: 'Lucha cuerpo a cuerpo', prompt: 'Two men wrestling and struggling on the ground, grunts, dust, heavy breathing' },
   // ── Radionovela ──
   // Sintonía de entrada y cierre (identidad de la serie)
   { key: 'sintonia', kind: 'theme', seconds: 30, label: 'Sintonía de entrada', prompt: 'Opening theme of an epic biblical radio drama series: solemn majestic orchestral fanfare with noble horns, soaring strings and deep frame drums, ancient Middle Eastern color, memorable heroic melody, builds to a climax in the first 12 seconds then settles into a soft sustained chord, no vocals' },
@@ -127,7 +142,7 @@ export const MUSIC_KINDS = ['music', 'theme', 'bridge', 'motif'];
 export const MUSIC_SECONDS = 120;
 
 // ── Banda sonora del capítulo (la propone la IA, como director de radionovela) ──
-export const SOUNDTRACK_VERSION = 3;
+export const SOUNDTRACK_VERSION = 4;
 export function soundtrackPrompt(bookName, chapter, segments) {
   const byV = {};
   for (const s of segments) (byV[s.v] = byV[s.v] || []).push(`${s.character === 'narrador' ? '' : s.character + ': '}${s.text}`);
@@ -146,8 +161,8 @@ EL LENGUAJE DE LA RADIONOVELA
 1. ESCENAS: divide el capítulo en escenas. Hay escena nueva cuando cambia el lugar, el tiempo (otro día, «después de esto», años después) o el bloque de la historia. En Génesis 1 cada día de la creación es una escena. Marca en "scenes" el versículo donde EMPIEZA cada escena (no el primero del capítulo) y la cortina que la anuncia según el ánimo de lo que viene. Entre escenas habrá un silencio de voces de unos segundos lleno por esa cortina. De 2 a 10 escenas por capítulo si la historia lo permite.
 2. MÚSICA DE FONDO SIEMPRE: la radionovela casi nunca queda en silencio musical. Cubre TODO el capítulo con tramos seguidos de música, cambiando de tema cuando cambia el ánimo o la escena (hasta 8 tramos): la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), batallas (m_batalla), promesas de Elohim (m_alianza), viajes (m_viaje), tensión (m_tension), tristeza (m_tristeza), triunfo (m_triunfo), asombro (m_asombro), paz (m_paz), reverencia (m_reverente). En genealogías o leyes usa m_reverente o m_paz.
 3. AMBIENTES: pinta cada lugar con su ambiente (hasta 8 tramos). Si el lugar se intuye, úsalo.
-4. EFECTOS: generosos, como en la radio: cada acción que se pueda oír lleva su sonido (la luz que irrumpe, las aguas, la tierra, las aves, los animales, el aliento de vida, pasos, puertas, golpes, fuego, espadas, llanto, el trueno). Hasta 16 por capítulo. "when": "start" (al comenzar el versículo) o "end" (al terminar).
-4b. EFECTOS QUE HACEN SOÑAR («hold»): en los momentos visuales grandes la narración se DETIENE y el efecto suena solo, fuerte, 2 a 4 segundos, para que el oyente imagine lo que pasa; luego sigue la voz. Úsalo cuando algo sucede ante los ojos: cada acto de la creación al cumplirse («y fue así», «y fue la luz», «creó Elohim…»), las aguas del diluvio, un trueno de juicio, una batalla, una puerta que se cierra para siempre. Ponle "hold" (segundos) y "after" con las ÚLTIMAS palabras EXACTAS del texto tras las cuales debe sonar (cópialas tal cual del versículo). Hasta 10 por capítulo. Ejemplo: {"v":9,"key":"aguas_separan","hold":3,"after":"y fue así"}.
+4. EFECTOS: generosos, como en la radio: cada acción que se pueda oír lleva su sonido (además de las escenas «hold») (la luz que irrumpe, las aguas, la tierra, las aves, los animales, el aliento de vida, pasos, puertas, golpes, fuego, espadas, llanto, el trueno). Hasta 16 por capítulo. "when": "start" (al comenzar el versículo) o "end" (al terminar).
+4b. ESCENAS SONORAS PARA IMAGINAR («hold») — LO MÁS IMPORTANTE: cada vez que el texto narra una acción que se puede oír, la narración se DETIENE y el oyente escucha la escena unos segundos, sin voz, para imaginarla y soñarla; luego sigue la voz. Aplícalo en CUALQUIER libro y tema: una batalla o pelea (5–6 s de espadas, gritos de guerra, ambiente de batalla), alguien que parte a caballo, en carro o en caravana (4–5 s), un ejército que marcha, una huida, el mar que se abre, una ciudad que arde, muros que caen, una tormenta, un banquete, una construcción, una lucha, una barca que rema, un rebaño que avanza, y cada acto de la creación al cumplirse («y fue así», «y fue la luz»). Duración "hold": 2–3 s para algo breve (una puerta, un golpe), 4–6 s para escenas largas (batallas, viajes, diluvio, huidas). Para combinar varios sonidos en la misma escena repite el mismo "v" y "after" con otra "key" (por ejemplo choque_espadas + gritos_batalla + el ambiente batalla). En un hold también puedes usar un ambiente. "after" = las ÚLTIMAS palabras EXACTAS del texto tras las cuales empieza la escena (cópialas tal cual). Hasta 12 escenas así por capítulo. Ejemplos: {"v":9,"key":"aguas_separan","hold":3,"after":"y fue así"} · {"v":15,"key":"choque_espadas","hold":6,"after":"y pelearon contra ellos"} · {"v":15,"key":"gritos_batalla","hold":6,"after":"y pelearon contra ellos"} · {"v":3,"key":"caravana","hold":4,"after":"y partió con sus siervos"}.
 5. GOLPES MUSICALES: en los instantes que cortan la respiración (una revelación, un juicio, una muerte, una traición, una victoria, una bendición solemne). Hasta 6 por capítulo.
 6. SILENCIOS DRAMÁTICOS: el silencio también es lenguaje. En "pauses" indica antes de qué versículo hace falta un silencio de 1 a 2 segundos para que el momento respire (después de un golpe, antes de una frase decisiva). Hasta 6.
 7. Nunca tapes las palabras de Yeshúa con efectos salvo que el texto lo pida.
@@ -179,11 +194,12 @@ export function cleanSoundtrack(raw, verseNumbers) {
     const out = [];
     for (const e of Array.isArray(arr) ? arr : []) {
       const key = String(e?.key || ''); const v = Math.round(Number(e?.v));
-      if (!okKey(key, kind) || !(v >= min && v <= max)) continue;
+      const asAmb = kind === 'sfx' && Number(e?.hold) > 0 && okKey(key, 'amb');
+      if ((!okKey(key, kind) && !asAmb) || !(v >= min && v <= max)) continue;
       const item = { v, key, when: e.when === 'end' ? 'end' : 'start' };
       // «hold»: la narración se detiene y el efecto suena solo unos segundos
-      if (kind === 'sfx' && Number(e?.hold) > 0 && out.filter(x => x.hold).length < 10) {
-        item.hold = Math.round(Math.min(4, Math.max(1.5, Number(e.hold))) * 10) / 10;
+      if (kind === 'sfx' && Number(e?.hold) > 0 && out.filter(x => x.hold).length < 14) {
+        item.hold = Math.round(Math.min(6, Math.max(1.5, Number(e.hold))) * 10) / 10;
         const after = String(e?.after || '').trim().slice(0, 140);
         if (after) item.after = after;
       }
@@ -194,7 +210,8 @@ export function cleanSoundtrack(raw, verseNumbers) {
   };
   const ambience = ranges(raw?.ambience, 'amb', 8);
   const music = ranges(raw?.music, 'music', 8);
-  const sfx = points(raw?.sfx, 'sfx', 16);
+  const sfx = points(raw?.sfx, 'sfx', 24).filter(x => !x.hold || okKey(x.key, 'sfx') || okKey(x.key, 'amb'));
+  for (let k = sfx.length - 1, plain = sfx.filter(x => !x.hold).length; k >= 0 && plain > 16; k--) if (!sfx[k].hold) { sfx.splice(k, 1); plain--; }
   const out = { ambience, music, sfx };
   if (raw && (raw.scenes || raw.stings || raw.pauses || raw.v === SOUNDTRACK_VERSION)) {
     // Música de fondo siempre: los tramos se tocan entre sí y cubren todo el capítulo
@@ -270,7 +287,7 @@ export function radioTimeline(timings, total, st, opts = {}) {
   const cuts = [];
   for (const [v, start] of t) if (inserts[v] && start > 0.2) cuts.push({ v, at: Math.max(0, start - 0.05), ...inserts[v] });
   // Efectos con «hold»: la voz se abre en ese punto exacto (opts.holds trae el segundo)
-  for (const h of opts.holds || []) if (h.at > 0.2 && h.at < total - 0.1) cuts.push({ v: h.v, at: h.at, dur: h.dur, kind: 'hold', key: h.key });
+  for (const h of opts.holds || []) if (h.at > 0.2 && h.at < total - 0.1) cuts.push({ v: h.v, at: h.at, dur: h.dur, kind: 'hold', keys: h.keys || [h.key] });
   // Un hold justo antes de un cambio de escena va primero; luego la cortina
   cuts.sort((a, b) => a.at - b.at || (a.kind === 'hold' ? -1 : 1));
   const pieces = []; const gaps = [];
@@ -278,7 +295,7 @@ export function radioTimeline(timings, total, st, opts = {}) {
   for (const c of cuts) {
     if (c.at < from - 1e-6) continue;
     if (c.at > from + 1e-6) pieces.push({ from: round(from), to: round(c.at), at: round(from + shift) });
-    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge, key: c.key, src: c.at });
+    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge, keys: c.keys, src: c.at });
     shift += c.dur; from = c.at;
   }
   pieces.push({ from: round(from), to: round(total), at: round(from + shift) });
@@ -324,8 +341,15 @@ export function holdPoints(st, segments, timings, total, silences) {
     const at = best ? best.at : (Math.abs(est - sp.end) < Math.abs(est - sp.start) ? sp.end - 0.05 : sp.start - 0.05);
     out.push({ v: e.v, key: e.key, dur: e.hold, at: round(Math.max(0.25, Math.min(total - 0.2, at))) });
   }
-  // dos holds casi en el mismo sitio → uno solo
-  return out.sort((a, b) => a.at - b.at).filter((h, i, arr) => !i || h.at - arr[i - 1].at > 0.5);
+  // Varios sonidos en el mismo punto forman UNA escena (dura lo que el más largo)
+  out.sort((a, b) => a.at - b.at);
+  const merged = [];
+  for (const h of out) {
+    const last = merged[merged.length - 1];
+    if (last && h.at - last.at <= 0.6) { if (!last.keys.includes(h.key)) last.keys.push(h.key); last.dur = Math.max(last.dur, h.dur); }
+    else merged.push({ v: h.v, keys: [h.key], dur: h.dur, at: h.at });
+  }
+  return merged;
 }
 
 // Dónde habla Elohim (segundos del audio de voz). Si la grabación guardó los
@@ -359,9 +383,15 @@ export function radioPlan(st, tl, divine, sfxSeconds = {}) {
   const layers = mixPlan({ ...st, sfx: (st?.sfx || []).filter(e => !e.hold) }, tl.timings, body, sfxSeconds);
   // Efectos para imaginar: suenan en el silencio que abrió la voz
   for (const g of tl.gaps) {
-    if (g.kind !== 'hold' || !g.key) continue;
-    const len = Math.max(sfxSeconds[g.key] || LIB[g.key]?.seconds || 3, g.dur + 1.2);
-    layers.push({ key: g.key, kind: 'sfx', start: round(Math.max(0, g.at - 0.25)), dur: round(len), fade: 0.4, loop: false, gain: LEVELS.hold });
+    if (g.kind !== 'hold') continue;
+    const n = (g.keys || []).length;
+    for (const key of g.keys || []) {
+      const amb = LIB[key]?.kind === 'amb';
+      // un ambiente llena toda la escena (en bucle); un efecto suena entero
+      const len = amb ? g.dur + 1.5 : Math.max(sfxSeconds[key] || LIB[key]?.seconds || 3, Math.min(g.dur + 1.2, 6));
+      const gain = (amb ? LEVELS.hold * 0.7 : LEVELS.hold) / Math.sqrt(Math.max(1, n));
+      layers.push({ key, kind: amb ? 'amb' : 'sfx', start: round(Math.max(0, g.at - 0.25)), dur: round(len), fade: amb ? 0.8 : 0.4, loop: amb, gain: round(gain) });
+    }
   }
   const spans = verseSpans(tl.timings, body);
   // Sintonía: sola al principio y se esconde bajo la voz del narrador

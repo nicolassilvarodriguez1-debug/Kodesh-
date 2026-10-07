@@ -177,13 +177,29 @@ test('radionovela: el efecto «hold» detiene la voz tras las palabras indicadas
   const segs = [{ v: 1, character: 'narrador', text: 'Y dijo Elohim: júntense las aguas, y fue así.' }, { v: 1, character: 'narrador', text: 'Y vio Elohim que era bueno.' }];
   const st = cleanSoundtrack({ scenes: [], sfx: [{ v: 1, key: 'aguas_separan', hold: 3, after: 'y fue así' }, { v: 1, key: 'gallo', hold: 9 }] }, [1, 2]);
   assert.deepEqual(st.sfx[0], { v: 1, key: 'aguas_separan', when: 'start', hold: 3, after: 'y fue así' });
-  assert.equal(st.sfx[1].hold, 4);
+  assert.equal(st.sfx[1].hold, 6);
   const holds = holdPoints({ sfx: [st.sfx[0]] }, segs, [[1, 0], [2, 10]], 15, sil);
-  assert.deepEqual(holds, [{ v: 1, key: 'aguas_separan', dur: 3, at: 5.3 }]);
+  assert.deepEqual(holds, [{ v: 1, keys: ['aguas_separan'], dur: 3, at: 5.3 }]);
   const tl = radioTimeline([[1, 0], [2, 10]], 15, { scenes: [{ v: 2, bridge: 'puente_solemne' }] }, { holds });
   assert.deepEqual(tl.gaps.map(g => [g.kind, g.at, g.dur]), [['hold', 12.3, 3], ['scene', 19.95, 3.5]]);
   assert.deepEqual(tl.timings, [[1, 7], [2, 23.5]]);
   const layers = radioPlan({ sfx: st.sfx.slice(0, 1) }, tl, [], { aguas_separan: 6 });
   const fx = layers.find(l => l.key === 'aguas_separan');
   assert.equal(fx.start, 12.05); assert.equal(fx.gain, 0.85);
+});
+
+test('radionovela: varias capas en una misma escena «hold» (batalla de 6 s)', () => {
+  const st = cleanSoundtrack({ scenes: [], sfx: [
+    { v: 2, key: 'choque_espadas', hold: 6, after: 'y pelearon' }, { v: 2, key: 'gritos_batalla', hold: 6, after: 'y pelearon' }, { v: 2, key: 'batalla', hold: 5, after: 'y pelearon' },
+  ] }, [1, 2, 3]);
+  assert.equal(st.sfx.length, 3);
+  const segs = [{ v: 2, character: 'narrador', text: 'Salieron los reyes y pelearon. Y huyeron.' }];
+  const holds = holdPoints(st, segs, [[1, 0], [2, 4], [3, 12]], 20, [[8.5, 9.1]]);
+  assert.deepEqual(holds.map(h => [h.keys, h.dur]), [[['choque_espadas', 'gritos_batalla', 'batalla'], 6]]);
+  const tl = radioTimeline([[1, 0], [2, 4], [3, 12]], 20, st, { holds });
+  const layers = radioPlan(st, tl, [], { choque_espadas: 4, gritos_batalla: 6 }).filter(l => ['choque_espadas', 'gritos_batalla', 'batalla'].includes(l.key));
+  assert.equal(layers.length, 3);
+  assert.ok(layers.find(l => l.key === 'batalla').loop);
+  assert.deepEqual(tl.timings.map(x => x[0]), [1, 2, 3]);
+  assert.equal(tl.timings[2][1], 12 + 7 + 6);
 });
