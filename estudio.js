@@ -160,7 +160,8 @@ function renderTemplate(page, study) {
 }
 const PREFERRED = { verse: ['Versículo clave', 'Pasaje', 'Escritura', 'Texto base'], word: ['Palabra clave', 'Palabra'],
   ai: ['Lo que aprendí', 'Interpreta · ¿qué significa?', 'Observación', 'Usos en la Escritura', 'Lecciones para mí', 'Notas', 'I.'] };
-const FILLABLE = new Set(['ai']);   // estas cajas admiten varios elementos (se apilan)
+PREFERRED.inter = ['Pasaje', 'Escritura', 'Texto base', 'Lo que aprendí', 'Usos en la Escritura', 'Observa · ¿qué dice?', 'Observación', 'Notas', 'Período o tema'];
+const FILLABLE = new Set(['ai', 'inter']);   // estas cajas admiten varios elementos (se apilan)
 function preferredBox(page, type) {
   const names = PREFERRED[type];
   if (!names) return null;
@@ -560,8 +561,9 @@ function renderPage(page) {
 
 function elHtml(e) {
   const sel = e.id === selectedId ? ' selected' : '';
-  const base = `class="el el-${e.type}${sel}" data-el="${e.id}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px"`;
-  const handle = e.id === selectedId ? '<span class="el-handle" data-handle="w" aria-hidden="true"></span>' : '';
+  const sc = e.s && e.s !== 1 ? e.s : 1;
+  const base = `class="el el-${e.type}${sel}" data-el="${e.id}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;${sc !== 1 ? `transform:scale(${sc});` : ''}--inv:${1 / sc}"`;
+  const handle = e.id === selectedId ? '<span class="el-handle" data-handle="w" aria-hidden="true" title="Ancho"></span><span class="el-corner" data-handle="s" aria-hidden="true" title="Tamaño"></span>' : '';
   if (e.type === 'text') {
     return `<div ${base.replace('class="el el-text', `class="el el-text${e.font === 'hand' ? ' hand' : ''}`)} ${e.color ? `data-color="${e.color}"` : ''}><span class="txt" style="color:${e.color ? colorCss(e.color) : ''}">${esc(e.text)}</span>${handle}</div>`;
   }
@@ -574,6 +576,11 @@ function elHtml(e) {
   if (e.type === 'ai') {
     return `<div ${base.replace('el-ai', 'el-card el-ai')}><div class="el-kicker">Del asistente</div><div class="el-body">${esc(e.text)}</div>${handle}</div>`;
   }
+  if (e.type === 'inter') {
+    const verses = (e.verses || []).map(v => `<div class="il-v" dir="${e.rtl ? 'rtl' : 'ltr'}"><span class="il-n">${v.n}</span><div class="il-words" dir="${e.rtl ? 'rtl' : 'ltr'}">${(v.words || []).map(w =>
+      `<span class="il-w"><span class="il-s">${esc(w.s || '')}</span><span class="il-o" lang="${e.rtl ? 'he' : 'grc'}">${esc(w.o)}</span><span class="il-t">${esc(w.t || '')}</span><span class="il-g">${esc(w.g || '')}</span></span>`).join('')}</div></div>`).join('');
+    return `<div ${base.replace('el-inter', 'el-card el-inter')}><div class="el-kicker">${esc(e.ref)} · Interlineal</div>${verses}${handle}</div>`;
+  }
   return '';
 }
 function selBarHtml(page) {
@@ -584,6 +591,8 @@ function selBarHtml(page) {
   return `<div class="sel-bar" style="left:${f.x}px;top:${Math.max(4, f.y - 54 * inv)}px;transform:scale(${inv})">
     ${isText ? `<button class="ibtn" onclick="editSelected()" aria-label="Editar texto">${ICON('M4 20l4-1 11-11-3-3L5 16z')}</button>
     <button class="ibtn" onclick="toggleHand()" aria-label="Cambiar letra" title="Letra manuscrita / de libro"><span style="font-family:var(--font-hand);font-size:20px">Aa</span></button>` : ''}
+    <button class="ibtn" onclick="resizeSelected(1 / 1.15)" aria-label="Más pequeño" title="Más pequeño"><span style="font-size:13px">A−</span></button>
+    <button class="ibtn" onclick="resizeSelected(1.15)" aria-label="Más grande" title="Más grande"><span style="font-size:17px">A+</span></button>
     <button class="ibtn" onclick="duplicateSelected()" aria-label="Duplicar">${ICON('M8 8h11v12H8zM5 16V4h11')}</button>
     <button class="ibtn" onclick="deleteSelected()" aria-label="Borrar" style="color:var(--red)">${ICON('M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13')}</button>
   </div>`;
@@ -694,7 +703,7 @@ function onPointerDown(ev) {
     if (!wasSelected) select(f.el.id, false);
     ev.preventDefault();
     node.setPointerCapture(ev.pointerId);
-    drag = { page: f.page, node, el: f.el, start: pt, orig: { x: f.el.x, y: f.el.y, w: f.el.w }, mode: handle ? 'resize' : 'move', moved: false, wasSelected,
+    drag = { page: f.page, node, el: f.el, start: pt, orig: { x: f.el.x, y: f.el.y, w: f.el.w, s: f.el.s || 1 }, mode: handle ? (handle.dataset.handle === 's' ? 'scale' : 'resize') : 'move', moved: false, wasSelected,
       elNode: node.querySelector(`[data-el="${f.el.id}"]`) || elNode };
     return;
   }
@@ -725,8 +734,13 @@ function onPointerMove(ev) {
     if (!drag.moved) { snapshot(); drag.moved = true; }
     const pg = PAGE[study.format];
     if (drag.mode === 'resize') {
-      drag.el.w = clamp(Math.round(drag.orig.w + dx), 120, pg.w - drag.el.x);
+      drag.el.w = clamp(Math.round(drag.orig.w + dx / drag.orig.s), 120, (pg.w - drag.el.x) / drag.orig.s);
       drag.elNode.style.width = drag.el.w + 'px';
+    } else if (drag.mode === 'scale') {
+      const visual = drag.orig.w * drag.orig.s + dx;
+      drag.el.s = Math.round(clamp(visual / drag.orig.w, 0.35, 3) * 100) / 100;
+      drag.elNode.style.transform = `scale(${drag.el.s})`;
+      drag.elNode.style.setProperty('--inv', 1 / drag.el.s);
     } else {
       drag.el.x = Math.round(clamp(drag.orig.x + dx, -drag.el.w + 40, pg.w - 40));
       drag.el.y = Math.round(clamp(drag.orig.y + dy, 0, pg.h - 30));
@@ -806,6 +820,13 @@ function deleteSelected() {
   snapshot();
   f.page.els = f.page.els.filter(e => e.id !== f.el.id);
   selectedId = null; editingId = null;
+  renderPage(f.page); markDirty();
+}
+function resizeSelected(k) {
+  const f = selectedId && findEl(selectedId);
+  if (!f) return;
+  snapshot();
+  f.el.s = Math.round(clamp((f.el.s || 1) * k, 0.35, 3) * 100) / 100;
   renderPage(f.page); markDirty();
 }
 function duplicateSelected() {
@@ -928,14 +949,14 @@ function insertElement(el, at) {
   toast('Insertado en la página');
 }
 // Empuja hacia abajo el elemento recién insertado mientras se encime con otro.
-function elHeight(id) { const n = document.querySelector(`[data-el="${id}"]`); return n ? n.offsetHeight : 80; }
+function elHeight(id) { const n = document.querySelector(`[data-el="${id}"]`); const f = findEl(id); return n ? n.offsetHeight * ((f && f.el.s) || 1) : 80; }
 function avoidOverlap(page, el) {
   const pg = PAGE[study.format];
   const h = elHeight(el.id);
   let moved = false;
   for (let i = 0; i < 20; i++) {
     const hit = page.els.find(o => o !== el && o.type !== 'stroke' &&
-      el.x < o.x + o.w && el.x + el.w > o.x && el.y < o.y + elHeight(o.id) && el.y + h > o.y);
+      el.x < o.x + o.w * (o.s || 1) && el.x + el.w * (el.s || 1) > o.x && el.y < o.y + elHeight(o.id) && el.y + h > o.y);
     if (!hit) break;
     el.y = Math.round(hit.y + elHeight(hit.id) + 12);
     moved = true;
@@ -1024,8 +1045,10 @@ function loadBibleChapter() {
   const ch = BIBLE && BIBLE[bibleBook] && BIBLE[bibleBook][String(bibleChapter)];
   if (!ch) { $('bibleList').innerHTML = '<div class="hint">Capítulo no disponible.</div>'; return; }
   const nums = Object.keys(ch).map(Number).sort((a, b) => a - b);
+  const words = t => esc(t).replace(/([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)/g, '<span class="w">$1</span>');
   $('bibleList').innerHTML = `<div class="bheading">${esc(bookName(bibleBook))} ${bibleChapter}</div>` + nums.map(n =>
-    `<div class="bverse" data-v="${n}" draggable="true" onclick="toggleVerse(${n})" ondragstart="dragVerse(event, ${n})"><span class="n">${n}</span><span>${esc(ch[String(n)])}</span></div>`).join('');
+    `<div class="bverse" data-v="${n}" draggable="true" onclick="onVerseTap(event, ${n})" ondragstart="dragVerse(event, ${n})"><span class="n">${n}</span><span>${words(ch[String(n)])}</span></div>`).join('');
+  closeWordPop();
   $('bibleList').scrollTop = 0;
 }
 function goToRefInput() {
@@ -1040,6 +1063,86 @@ function goToRefInput() {
     document.querySelector(`.bverse[data-v="${r.verse}"]`)?.scrollIntoView({ block: 'center' });
   }
 }
+// Tocar una palabra la busca en el original (hebreo/griego). Tocar el número
+// del versículo —o cualquier parte si ya hay versículos seleccionados— lo
+// selecciona para insertarlo o verlo en interlineal.
+function onVerseTap(ev, n) {
+  const w = ev.target.closest('.w');
+  if (w && !verseSel.size) { lookupBibleWord(n, w); return; }
+  closeWordPop();
+  toggleVerse(n);
+}
+let wordPopReq = 0, wordPopData = null;
+function closeWordPop() {
+  $('wordPop').hidden = true;
+  document.querySelectorAll('.bverse .w.on').forEach(x => x.classList.remove('on'));
+  wordPopData = null;
+}
+async function lookupBibleWord(n, span) {
+  document.querySelectorAll('.bverse .w.on').forEach(x => x.classList.remove('on'));
+  span.classList.add('on');
+  const word = span.textContent;
+  const pop = $('wordPop');
+  pop.hidden = false;
+  pop.innerHTML = `<div class="wp-head"><span>«${esc(word)}» · ${esc(bookName(bibleBook))} ${bibleChapter}:${n}</span><button class="ibtn" onclick="closeWordPop()" aria-label="Cerrar">✕</button></div><div class="hint" style="padding:8px">Buscando en el original…</div>`;
+  const req = ++wordPopReq;
+  const session = await getSession();
+  if (!session) { pop.querySelector('.hint').textContent = 'Inicia sesión para buscar palabras en el original.'; return; }
+  try {
+    const verseText = BIBLE[bibleBook][String(bibleChapter)][String(n)];
+    const res = await kapiFetch('/api/lexicon', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify({ word: word.toLowerCase(), bookId: bibleBook, chapter: bibleChapter, verse: n, verseContext: verseText }),
+    });
+    const d = await res.json();
+    if (req !== wordPopReq) return;
+    if (res.status === 429) throw new Error(d.message || 'Alcanzaste tu límite de consultas al lexicón este mes.');
+    if (!res.ok || !d || d.found === false || !d.lemma) throw new Error(`«${word}» no tiene una palabra propia en el original (suele pasar con artículos y conectores).`);
+    const nt = window.KodeshRef && ['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV'].includes(bibleBook);
+    wordPopData = { type: 'word', w: 360, lemma: d.lemma, translit: d.transliteration || '', strongs: d.strongs || '', def: String(d.definition || '').slice(0, 400), lang: d.language || (nt ? 'griego' : 'hebreo'), word: word.toLowerCase() };
+    pop.innerHTML = `<div class="wp-head"><span>«${esc(word)}» · ${esc(bookName(bibleBook))} ${bibleChapter}:${n}</span><button class="ibtn" onclick="closeWordPop()" aria-label="Cerrar">✕</button></div>
+      <div class="w-top"><span class="w-orig" lang="${wordPopData.lang === 'griego' ? 'grc' : 'he'}">${esc(d.lemma)}</span><span class="w-code">${esc(d.strongs || '')} · ${esc(wordPopData.lang)}</span></div>
+      <div class="w-tr">${esc(d.transliteration || '')}</div>
+      <p>${esc(String(d.definition || '').slice(0, 200))}${String(d.definition || '').length > 200 ? '…' : ''}</p>
+      <div style="display:flex;gap:6px"><button class="btn-gold" style="height:38px;flex:1;padding:0 12px" onclick="insertPopWord()">+ Insertar</button><button class="btn-line" style="height:38px;flex:1;padding:0 12px;white-space:nowrap" onclick="closeWordPop(); toggleVerse(${n})">Elegir versículo</button></div>`;
+  } catch (e) {
+    if (req !== wordPopReq) return;
+    pop.innerHTML = `<div class="wp-head"><span>«${esc(word)}»</span><button class="ibtn" onclick="closeWordPop()" aria-label="Cerrar">✕</button></div><div class="hint" style="padding:6px 4px">${esc(e.message || 'No se pudo buscar.')}</div>
+      <button class="btn-line" style="height:38px;width:100%" onclick="closeWordPop(); toggleVerse(${n})">Seleccionar el versículo ${n}</button>`;
+  }
+}
+function insertPopWord() { if (wordPopData) { insertElement({ ...wordPopData }); closeWordPop(); } }
+
+/* Interlineal de los versículos seleccionados */
+const interCache = new Map();
+async function insertInterlinear() {
+  if (!verseSel.size) return;
+  const session = await getSession();
+  if (!session) { toast('Inicia sesión para usar el interlineal'); return; }
+  const key = bibleBook + ':' + bibleChapter;
+  const btn = $('interBtn'); btn.disabled = true; btn.textContent = 'Cargando…';
+  try {
+    let data = interCache.get(key);
+    if (!data) {
+      const res = await kapiFetch('/api/interlinear', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ book: bibleBook, chapter: bibleChapter }) });
+      const d = await res.json();
+      if (res.status === 403) throw new Error(d.message || 'El interlineal es una función Premium.');
+      if (!res.ok) throw new Error(d.message || 'El interlineal no está disponible para este capítulo.');
+      data = d; interCache.set(key, d);
+    }
+    const nums = [...verseSel].sort((a, b) => a - b);
+    const verses = nums.map(n => ({ n, words: (data.verses[n] || data.verses[String(n)] || []).map(w => ({ o: String(w.text || '').replace(/\//g, ''), t: w.translit || '', g: w.gloss || '', s: w.strongs || '' })) })).filter(v => v.words.length);
+    if (!verses.length) throw new Error('No hay interlineal para esos versículos.');
+    const nt = ['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV'].includes(bibleBook);
+    insertElement({ type: 'inter', w: 700, ref: refLabel(nums), rtl: !nt, verses });
+    clearVerseSel();
+  } catch (e) {
+    toast(e.message || 'No se pudo cargar el interlineal');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Interlineal';
+  }
+}
+
 function toggleVerse(n) { verseSel.has(n) ? verseSel.delete(n) : verseSel.add(n); paintVerseSel(); }
 function paintVerseSel() {
   document.querySelectorAll('.bverse').forEach(el => el.classList.toggle('sel', verseSel.has(Number(el.dataset.v))));
@@ -1048,7 +1151,7 @@ function paintVerseSel() {
 function clearVerseSel() { verseSel.clear(); paintVerseSel(); }
 function updateInsertBar() {
   $('insertBar').hidden = !verseSel.size;
-  $('insertBtn').textContent = verseSel.size > 1 ? `Insertar ${verseSel.size} versículos` : 'Insertar versículo';
+  $('insertBtn').textContent = verseSel.size > 1 ? `Insertar ${verseSel.size}` : 'Insertar';
 }
 function refLabel(nums) {
   const sorted = [...nums].sort((a, b) => a - b);
@@ -1089,6 +1192,11 @@ function setLeftTab(t) {
 }
 let wordTimer = null, wordReq = 0, wordRows = [];
 function searchWordsSoon() { clearTimeout(wordTimer); wordTimer = setTimeout(searchWords, 300); }
+// Orden de resultados: 1) la palabra en español exacta, 2) palabras que empiezan
+// igual, 3) lema o transliteración (hebreo/griego), 4) definiciones que la
+// mencionan. Antes se mezclaban y salían primero coincidencias de la definición.
+const cleanWordKey = w => String(w || '').startsWith('strongs_') ? '' : String(w || '').replace(/_[0-9A-Z]{3}_\d+_\d+$/, '').replace(/_/g, ' ');
+const LEX_SEL = 'word, testament, strongs, lemma, transliteration, definition, language';
 async function searchWords() {
   const raw = $('wordInput').value.trim();
   const list = $('wordList');
@@ -1096,26 +1204,41 @@ async function searchWords() {
   if (!sb) { list.innerHTML = '<div class="hint">Sin conexión con el lexicón.</div>'; return; }
   const req = ++wordReq;
   list.innerHTML = '<div class="hint">Buscando…</div>';
-  let q = sb.from('lexicon_cache').select('word, testament, strongs, lemma, transliteration, definition, language').not('lemma', 'is', null);
   const code = raw.match(/^([hg])0*(\d+)$/i);
-  if (code) q = q.eq('strongs', code[1].toUpperCase() + code[2]);
-  else {
-    const term = raw.replace(/[%,()*\\.:]/g, ' ').trim();
-    q = q.or(`word.ilike.${term}*,lemma.ilike.*${term}*,transliteration.ilike.*${term}*,definition.ilike.*${term}*`);
-  }
+  const term = raw.replace(/[%,()*\\.:_]/g, ' ').trim().toLowerCase();
+  const strip = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '');
   try {
-    const { data, error } = await q.limit(30);
+    let groups;
+    if (code) {
+      const { data } = await sb.from('lexicon_cache').select(LEX_SEL).eq('strongs', code[1].toUpperCase() + code[2]).limit(5);
+      groups = [data || []];
+    } else {
+      const base = () => sb.from('lexicon_cache').select(LEX_SEL).not('lemma', 'is', null);
+      const [w, l, d] = await Promise.all([
+        base().ilike('word', term + '%').limit(40),
+        base().like('word', 'strongs\\_%').or(`lemma.ilike.*${term}*,transliteration.ilike.*${strip(term)}*`).limit(12),
+        base().like('word', 'strongs\\_%').filter('definition', 'imatch', `\\m${term.replace(/[^a-záéíóúüñ ]/gi, '') || 'zzzz'}\\M`).limit(8),
+      ]);
+      const words = (w.data || []).map(r => ({ r, k: cleanWordKey(r.word).toLowerCase() }));
+      const exact = words.filter(x => x.k === term).map(x => x.r);
+      const prefix = words.filter(x => x.k !== term && x.k.startsWith(term)).sort((a, b) => a.k.length - b.k.length).map(x => x.r);
+      groups = [exact, prefix, l.data || [], (d.data || []).map(r => ({ ...r, _def: true }))];
+    }
     if (req !== wordReq) return;
-    if (error) throw error;
     const seen = new Set();
-    wordRows = (data || []).filter(r => { const k = r.strongs || r.lemma; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
-    list.innerHTML = wordRows.length ? wordRows.map((r, i) => `
-      <div class="wcard">
+    wordRows = groups.flat().filter(r => { const k = r.strongs || r.lemma; if (!k || seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
+    let shownDefLabel = false;
+    list.innerHTML = wordRows.length ? wordRows.map((r, i) => {
+      const es = cleanWordKey(r.word);
+      const label = r._def && !shownDefLabel && i > 0 ? (shownDefLabel = true, `<div class="label" style="padding:8px 2px 0">También aparece en estas definiciones</div>`) : '';
+      if (r._def) shownDefLabel = true;
+      return `${label}<div class="wcard">
         <div class="w-top"><span class="w-orig" lang="${r.testament === 'NT' ? 'grc' : 'he'}">${esc(r.lemma)}</span><span class="w-code">${esc(r.strongs || '')} · ${r.testament === 'NT' ? 'griego' : 'hebreo'}</span></div>
-        <div class="w-tr">${esc(r.transliteration || '')}${r.word && !String(r.word).startsWith('strongs_') ? ' · «' + esc(r.word) + '»' : ''}</div>
-        <p>${esc(String(r.definition || '').slice(0, 220))}</p>
+        <div class="w-tr">${esc(r.transliteration || '')}${es ? ' · «' + esc(es) + '»' : ''}</div>
+        <p>${esc(String(r.definition || '').slice(0, 220))}${String(r.definition || '').length > 220 ? '…' : ''}</p>
         <button class="small-btn" onclick="insertWord(${i})">+ Insertar en la página</button>
-      </div>`).join('') : '<div class="hint">Sin resultados.</div>';
+      </div>`;
+    }).join('') : '<div class="hint">Sin resultados. Prueba con otra forma de la palabra (singular, sin conjugar) o con un número Strong.</div>';
   } catch (e) {
     if (req === wordReq) list.innerHTML = '<div class="hint">No se pudo buscar. Intenta de nuevo.</div>';
   }
@@ -1123,7 +1246,7 @@ async function searchWords() {
 function insertWord(i) {
   const r = wordRows[i]; if (!r) return;
   insertElement({ type: 'word', w: 360, lemma: r.lemma, translit: r.transliteration || '', strongs: r.strongs || '', def: String(r.definition || '').slice(0, 400),
-    lang: r.testament === 'NT' ? 'griego' : 'hebreo', word: r.word && !String(r.word).startsWith('strongs_') ? r.word : '' });
+    lang: r.testament === 'NT' ? 'griego' : 'hebreo', word: cleanWordKey(r.word) });
 }
 
 /* ── Asistente ── */
@@ -1157,6 +1280,7 @@ function pageText(page) {
     if (e.type === 'verse') lines.push(`${where}Versículo ${e.ref}: ${e.parts ? e.parts.map(p => p.t).join(' ') : e.text}`);
     if (e.type === 'word') lines.push(`${where}Palabra ${e.lemma} (${e.translit}, ${e.strongs}): ${e.def}`);
     if (e.type === 'ai') lines.push(`${where}Del asistente: ${e.text}`);
+    if (e.type === 'inter') lines.push(`${where}Interlineal ${e.ref}: ${(e.verses || []).map(v => v.words.map(w => `${w.o} (${w.t}, ${w.g})`).join(' ')).join(' / ')}`);
   }
   const strokes = page.els.filter(e => e.type === 'stroke').length;
   if (strokes) lines.push(`(Además hay ${strokes} trazos escritos o dibujados a mano que no se pueden leer como texto.)`);
