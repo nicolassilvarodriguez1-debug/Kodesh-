@@ -163,11 +163,17 @@ function withRoles(segments) { return segments.map(s => ({ ...s, role: roleFor(s
 
 // Algunos modelos (p. ej. eleven_v3) no aceptan previous_text/next_text:
 // si los rechazan, se repite la petición sin ellos.
+// Si ElevenLabs dice que hay demasiadas peticiones a la vez (429), se espera y
+// se reintenta (el plan Creator permite 5 simultáneas).
 async function tts(voice, text, previous, next) {
-  try { return await ttsOnce(voice, text, previous, next); }
-  catch (e) {
-    if (e.status === 400 && (previous || next) && /previous_text|next_text|not supported|unsupported/i.test(e.message)) return ttsOnce(voice, text, '', '');
-    throw e;
+  let usePrev = true;
+  for (let k = 1; ; k++) {
+    try { return await ttsOnce(voice, text, usePrev ? previous : '', usePrev ? next : ''); }
+    catch (e) {
+      if (e.status === 400 && usePrev && (previous || next) && /previous_text|next_text|not supported|unsupported/i.test(e.message)) { usePrev = false; continue; }
+      if ((e.status === 429 || e.status >= 500) && k < 6) { await new Promise(r => setTimeout(r, 2500 * k + Math.random() * 1500)); continue; }
+      throw e;
+    }
   }
 }
 async function ttsOnce(voice, text, previous, next) {
@@ -211,7 +217,7 @@ async function generate(book, chapter, force) {
       results[i] = await tts(c.voice, c.text, i > 0 ? calls[i - 1].text.slice(-200) : '', i + 1 < calls.length ? calls[i + 1].text.slice(0, 200) : '');
     }
   }
-  await Promise.all([worker(), worker(), worker()]);
+  await Promise.all([worker(), worker()]);   // 2 a la vez: deja margen dentro del límite de 5
   const parts = []; const timings = []; let offset = 0;
   calls.forEach((c, i) => {
     const { audio, alignment } = results[i];
