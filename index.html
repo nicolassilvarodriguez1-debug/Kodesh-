@@ -4,6 +4,7 @@
 <script src="/recovery-guard.js"></script>
 <script src="/native-insets.js"></script>
 <script src="/bible-ref.js"></script>
+<script src="/verse-image.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -7909,6 +7910,12 @@ function selectVerseSheetColor(color, el) {
 function verseSheetAction(action) {
   const { book, chapter, verse, verses } = verseSheetState;
   closeVerseSheet();
+  if (action === 'share' && typeof openVerseImage === 'function') {
+    const list = verses && verses.length > 1 ? verses.slice() : [verse];
+    openVerseImage({ book, chapter, verse, verses: list });
+    if (verses && verses.length > 1) endVerseSelection();
+    return;
+  }
   if (verses && verses.length > 1 && ['explain', 'share', 'copy'].includes(action)) {
     const bookName = getAllBooks().find(b => b.id === book)?.name || book;
     const ref = formatVerseRange(bookName, chapter, verses);
