@@ -519,7 +519,10 @@ function buildToolbar() {
   $('toolGroup').innerHTML = TOOLS.map(t => `<button class="ibtn ${tool === t.id ? 'on' : ''}" data-tool="${t.id}" onclick="setTool('${t.id}')" aria-label="${t.label}" aria-pressed="${tool === t.id}" title="${t.label}">${ICON(t.d)}</button>`).join('');
   $('colorGroup').innerHTML = COLORS.map(c => `<button class="swatch ${color === c.id ? 'on' : ''}" style="background:${c.css}" onclick="setColor('${c.id}')" aria-label="Color ${c.label}" aria-pressed="${color === c.id}"></button>`).join('');
   const sz = tool === 'hl' ? SIZES.hl : tool === 'eraser' ? SIZES.eraser : SIZES.pen;
-  $('sizeGroup').innerHTML = [0, 1, 2].map(i => {
+  const eraserModes = tool !== 'eraser' ? '' :
+    `<button class="fbtn ${eraserMode === 'stroke' ? 'on' : ''}" onclick="setEraserMode('stroke')" aria-pressed="${eraserMode === 'stroke'}" title="Borra el trazo completo">Trazo</button>` +
+    `<button class="fbtn ${eraserMode === 'partial' ? 'on' : ''}" onclick="setEraserMode('partial')" aria-pressed="${eraserMode === 'partial'}" title="Borra solo por donde pasas">Parcial</button><span class="fsep"></span>`;
+  $('sizeGroup').innerHTML = eraserModes + [0, 1, 2].map(i => {
     const px = tool === 'eraser' ? [8, 12, 17][i] : tool === 'hl' ? [8, 12, 17][i] : [5, 8, 12][i];
     return `<button class="size-dot ${sizeIdx === i ? 'on' : ''}" onclick="setSize(${i})" aria-label="Grosor ${i + 1}" aria-pressed="${sizeIdx === i}"><span style="width:${px}px;height:${px}px"></span></button>`;
   }).join('');
@@ -770,7 +773,7 @@ function onPointerDown(ev) {
     if (!canDraw(ev)) return;
     ev.preventDefault();
     node.setPointerCapture(ev.pointerId);
-    if (tool === 'eraser') { erasing = { page, node, removed: false, snap: JSON.stringify({ pages: study.pages, title: study.title }) }; eraseAt(page, pt); return; }
+    if (tool === 'eraser') { erasing = { page, node, removed: false, last: pt, snap: JSON.stringify({ pages: study.pages, title: study.title }) }; eraseAt(page, pt); eraserRing(node, pt); return; }
     const hasPressure = ev.pointerType === 'pen' && ev.pressure > 0;
     live = { page, node, pointerId: ev.pointerId, el: { id: uid(), type: 'stroke', tool: tool === 'hl' ? 'hl' : 'pen', color, size: (tool === 'hl' ? SIZES.hl : SIZES.pen)[sizeIdx], pressure: hasPressure, pts: [[r2(pt.x), r2(pt.y), hasPressure ? r2(ev.pressure) : 0.5]] } };
     drawLive();
@@ -816,7 +819,12 @@ function onPointerMove(ev) {
     drawLive();
     return;
   }
-  if (erasing) { eraseAt(erasing.page, pagePoint(erasing.node, ev)); return; }
+  if (erasing) {
+    const evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev];
+    for (const e2 of (evs.length ? evs : [ev])) eraseTo(erasing.page, pagePoint(erasing.node, e2));
+    eraserRing(erasing.node, erasing.last);
+    return;
+  }
   if (drag) {
     const pt = pagePoint(drag.node, ev);
     const dx = pt.x - drag.start.x, dy = pt.y - drag.start.y;
@@ -861,6 +869,7 @@ function onPointerUp(ev) {
     return;
   }
   if (erasing) {
+    eraserRing(erasing.node, null);
     if (erasing.removed) { undoStack.push(erasing.snap); redoStack = []; updateUndoButtons(); markDirty(); }
     erasing = null;
     return;
@@ -883,16 +892,89 @@ function drawLive() {
   path.style.opacity = live.el.tool === 'hl' ? 0.32 : 1;
 }
 
-function eraseAt(page, pt) {
-  const r = SIZES.eraser[sizeIdx];
-  const before = page.els.length;
-  page.els = page.els.filter(e => {
-    if (e.type !== 'stroke') return true;
-    const tol = r + e.size / 2;
-    for (const p of e.pts) if (Math.abs(p[0] - pt.x) < tol && Math.abs(p[1] - pt.y) < tol && Math.hypot(p[0] - pt.x, p[1] - pt.y) < tol) return false;
-    return true;
-  });
-  if (page.els.length !== before) { erasing.removed = true; renderPage(page); }
+/* Borrador: «Trazo» borra el trazo completo que toca; «Parcial» borra solo
+   el tramo por donde pasa y deja el resto del trazo partido en pedazos. */
+let eraserMode = readLS('kodesh_eraser_mode', 'stroke');
+function setEraserMode(m) { eraserMode = m === 'partial' ? 'partial' : 'stroke'; writeLS('kodesh_eraser_mode', eraserMode); buildToolbar(); }
+function eraserRadius() { return SIZES.eraser[sizeIdx] * (eraserMode === 'partial' ? 0.8 : 1); }
+// Recorre el camino del borrador desde el punto anterior para no saltarse tramos.
+function eraseTo(page, pt) {
+  const last = erasing.last;
+  erasing.last = pt;
+  if (!last) return eraseAt(page, pt);
+  const d = Math.hypot(pt.x - last.x, pt.y - last.y);
+  const step = Math.max(2, eraserRadius() / 2);
+  const n = Math.max(1, Math.ceil(d / step));
+  let changed = false;
+  for (let i = 1; i <= n; i++) changed = eraseAt(page, { x: last.x + (pt.x - last.x) * i / n, y: last.y + (pt.y - last.y) * i / n }, true) || changed;
+  if (changed) renderInk(page);
+}
+function eraseAt(page, pt, batch) {
+  const r = eraserRadius();
+  let changed = false;
+  if (eraserMode === 'partial') {
+    const out = [];
+    for (const e of page.els) {
+      if (e.type !== 'stroke') { out.push(e); continue; }
+      const pieces = cutStroke(e, pt, r + e.size / 2);
+      if (!pieces) { out.push(e); continue; }
+      changed = true;
+      for (const pts of pieces) out.push({ ...e, id: uid(), pts });
+    }
+    if (changed) page.els = out;
+  } else {
+    const before = page.els.length;
+    page.els = page.els.filter(e => {
+      if (e.type !== 'stroke') return true;
+      const tol = r + e.size / 2;
+      for (const p of e.pts) if (Math.abs(p[0] - pt.x) < tol && Math.abs(p[1] - pt.y) < tol && Math.hypot(p[0] - pt.x, p[1] - pt.y) < tol) return false;
+      return true;
+    });
+    changed = page.els.length !== before;
+  }
+  if (changed) { erasing.removed = true; if (!batch) renderInk(page); }
+  return changed;
+}
+// Devuelve null si el borrador no toca el trazo; si lo toca, los pedazos que quedan.
+function cutStroke(e, pt, tol) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of e.pts) { if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0]; if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1]; }
+  if (pt.x < minX - tol || pt.x > maxX + tol || pt.y < minY - tol || pt.y > maxY + tol) return null;
+  // Densificar para que el corte sea limpio aunque los puntos estén separados
+  const step = Math.max(1.5, tol / 3);
+  const dense = [e.pts[0]];
+  for (let i = 1; i < e.pts.length; i++) {
+    const a = e.pts[i - 1], b = e.pts[i];
+    const k = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step);
+    for (let j = 1; j < k; j++) dense.push([r2(a[0] + (b[0] - a[0]) * j / k), r2(a[1] + (b[1] - a[1]) * j / k), r2(a[2] + (b[2] - a[2]) * j / k)]);
+    dense.push(b);
+  }
+  const pieces = []; let cur = []; let hit = false;
+  for (const p of dense) {
+    if (Math.hypot(p[0] - pt.x, p[1] - pt.y) < tol) { hit = true; if (cur.length) { pieces.push(cur); cur = []; } }
+    else cur.push(p);
+  }
+  if (!hit) return null;
+  if (cur.length) pieces.push(cur);
+  // Conservar solo los puntos originales más los bordes del corte (los puntos
+  // intermedios agregados cambiarían el grosor simulado del trazo).
+  const orig = new Set(e.pts);
+  const slim = pieces.map(ps => ps.filter((p, i) => i === 0 || i === ps.length - 1 || orig.has(p)));
+  // Quitar migajas: pedazos de menos de ~3 px de largo
+  return slim.filter(ps => ps.length > 1 && Math.hypot(ps[ps.length - 1][0] - ps[0][0], ps[ps.length - 1][1] - ps[0][1]) + ps.length > 4);
+}
+// Solo redibuja la tinta (rápido mientras se borra)
+function renderInk(page) {
+  const node = $('page-' + page.id);
+  const svg = node && node.querySelector('svg.ink');
+  if (svg) svg.outerHTML = inkSvg(page); else renderPage(page);
+}
+function eraserRing(node, pt) {
+  let ring = node.querySelector('.eraser-ring');
+  if (!pt) { if (ring) ring.remove(); return; }
+  if (!ring) { ring = document.createElement('div'); ring.className = 'eraser-ring'; node.appendChild(ring); }
+  const r = eraserRadius();
+  ring.style.cssText = `left:${pt.x - r}px;top:${pt.y - r}px;width:${r * 2}px;height:${r * 2}px`;
 }
 
 /* ── Selección y texto ── */
