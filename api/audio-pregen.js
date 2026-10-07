@@ -4,16 +4,34 @@
 // bible_audio guarda la duración y cuándo empieza cada versículo, para que el
 // lector resalte el versículo que suena.
 //
+// Es una lectura DRAMATIZADA: la IA prepara el guion de cada capítulo (qué
+// dice el narrador y qué dice cada personaje, sin cambiar una palabra) y cada
+// papel tiene su voz (tabla bible_audio_cast). El guion se puede revisar en el
+// panel antes de grabar.
+//
 // Solo superadmin (JWT + 2FA). Acciones (POST { action }):
-//   status              → capítulos grabados por libro y créditos de ElevenLabs
+//   status                          → capítulos grabados por libro y créditos de ElevenLabs
+//   cast_get / cast_save {voices}   → elenco de voces
+//   script {book, chapter, regen?}  → guion del capítulo (lo crea si no existe)
+//   script_save {book, chapter, segments} → guarda un guion corregido a mano
 //   generate {book, chapter, force?} → graba un capítulo (el panel llama uno por uno)
 //
-// Variables en Vercel: ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID y, opcional,
-// ELEVENLABS_MODEL (por defecto eleven_multilingual_v2).
+// Variables en Vercel: ELEVENLABS_API_KEY, ELEVENLABS_MODEL (p. ej. eleven_v4),
+// ELEVENLABS_VOICE_ID (voz del narrador si el elenco aún no tiene una) y
+// ANTHROPIC_API_KEY (guiones).
+import fs from 'node:fs';
 import '../bible-ref.js';
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, isValidBookId, isValidChapter } from './_security.js';
-import { buildNarration, chunkNarration, mp3Duration, verseTimings, textHash } from './_audioCore.js';
+import { speakable, numberToSpanish, mp3Duration, textHash } from './_audioCore.js';
+import { CAST, scriptPrompt, cleanScript, validateScript, planCalls, roleFor } from './_audioScript.js';
+
+const SCRIPT_MODEL = 'claude-sonnet-4-5';
+let WJ = null;
+function redLetter(book, chapter) {
+  try { if (!WJ) WJ = JSON.parse(fs.readFileSync(new URL('../palabras-yeshua.json', import.meta.url), 'utf8')); } catch (e) { WJ = {}; }
+  return WJ?.[book]?.[String(chapter)] || {};
+}
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -59,20 +77,99 @@ async function status() {
       chars: mine.reduce((s, a) => s + Number(a.chars || 0), 0),
     };
   });
-  return { books, credits: await credits(), voice: process.env.ELEVENLABS_VOICE_ID || null };
+  const scripts = await sbJson(`bible_audio_scripts?version=eq.${VERSION}&select=book,chapter,edited`).catch(() => []);
+  for (const b of books) b.scripts = scripts.filter(x => x.book === b.book).map(x => x.chapter).sort((x, y) => x - y);
+  return { books, credits: await credits(), model: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2' };
 }
+
+// ── Elenco ──
+async function castVoices() {
+  const rows = await sbJson('bible_audio_cast?select=role,voice_id').catch(() => []);
+  const v = {}; for (const r of rows || []) if (r.voice_id) v[r.role] = r.voice_id;
+  if (!v.narrador && process.env.ELEVENLABS_VOICE_ID) v.narrador = process.env.ELEVENLABS_VOICE_ID;
+  return v;
+}
+async function castGet() {
+  const v = await castVoices();
+  return { cast: CAST.map(c => ({ role: c.role, label: c.label, voice_id: v[c.role] || '', fallback: c.fallback || null })) };
+}
+async function castSave(voices) {
+  const valid = new Set(CAST.map(c => c.role));
+  const rows = Object.entries(voices || {}).filter(([r]) => valid.has(r)).map(([role, id]) => ({
+    role, label: CAST.find(c => c.role === role).label, voice_id: String(id || '').trim().slice(0, 64) || null, updated_at: new Date().toISOString(),
+  }));
+  if (rows.length) await sbJson('bible_audio_cast?on_conflict=role', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
+  return castGet();
+}
+
+// ── Guion ──
+async function chapterText(book, chapter) {
+  const rows = await sbJson(`textual_cache?book_id=eq.${book}&chapter=eq.${chapter}&select=verses&limit=1`);
+  const raw = rows?.[0]?.verses || {};
+  const verses = {};
+  for (const k of Object.keys(raw)) { const t = speakable(raw[k]); if (t) verses[k] = t; }
+  return verses;
+}
+async function askClaude(prompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: SCRIPT_MODEL, max_tokens: 16000, system: prompt.system, messages: [{ role: 'user', content: prompt.user }] }),
+  });
+  if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text().catch(() => '')).slice(0, 200)}`);
+  const d = await r.json();
+  const txt = (d.content || []).map(c => c.text || '').join('');
+  const m = txt.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('La IA no devolvió un guion válido');
+  return JSON.parse(m[0]).segments || [];
+}
+async function makeScript(book, chapter) {
+  const verses = await chapterText(book, chapter);
+  if (!Object.keys(verses).length) return null;
+  const prompt = scriptPrompt(bookName(book), chapter, verses, redLetter(book, chapter));
+  let segs = await askClaude(prompt);
+  let check = validateScript(verses, segs);
+  if (!check.ok && check.bad.length) {   // un reintento con la lista de errores
+    segs = await askClaude({ system: prompt.system, user: prompt.user + `\n\nEn el intento anterior estos versículos NO reproducían el texto exacto: ${check.bad.join(', ')}. Copia cada palabra tal cual.` });
+  }
+  const { segments, repaired } = cleanScript(verses, segs);
+  const hash = await textHash(JSON.stringify(verses));
+  await sbJson('bible_audio_scripts?on_conflict=version,book,chapter', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify([{ version: VERSION, book, chapter, segments, text_hash: hash, edited: false, updated_at: new Date().toISOString() }]),
+  });
+  return { segments, repaired, text_hash: hash };
+}
+async function getScript(book, chapter, regen) {
+  if (!regen) {
+    const rows = await sbJson(`bible_audio_scripts?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=segments,text_hash,edited&limit=1`);
+    if (rows?.[0]) return { ...rows[0], repaired: [] };
+  }
+  return makeScript(book, chapter);
+}
+async function saveScript(book, chapter, segments) {
+  const verses = await chapterText(book, chapter);
+  const check = validateScript(verses, segments);
+  if (!check.ok) return { ok: false, errors: check.errors.slice(0, 10) };
+  const { segments: clean } = cleanScript(verses, segments);
+  await sbJson('bible_audio_scripts?on_conflict=version,book,chapter', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify([{ version: VERSION, book, chapter, segments: clean, text_hash: await textHash(JSON.stringify(verses)), edited: true, updated_at: new Date().toISOString() }]),
+  });
+  return { ok: true };
+}
+function withRoles(segments) { return segments.map(s => ({ ...s, role: roleFor(s.character, s.gender) })); }
 
 // Algunos modelos (p. ej. eleven_v3) no aceptan previous_text/next_text:
 // si los rechazan, se repite la petición sin ellos.
-async function tts(text, previous, next) {
-  try { return await ttsOnce(text, previous, next); }
+async function tts(voice, text, previous, next) {
+  try { return await ttsOnce(voice, text, previous, next); }
   catch (e) {
-    if (e.status === 400 && (previous || next) && /previous_text|next_text|not supported|unsupported/i.test(e.message)) return ttsOnce(text, '', '');
+    if (e.status === 400 && (previous || next) && /previous_text|next_text|not supported|unsupported/i.test(e.message)) return ttsOnce(voice, text, '', '');
     throw e;
   }
 }
-async function ttsOnce(text, previous, next) {
-  const voice = process.env.ELEVENLABS_VOICE_ID;
+async function ttsOnce(voice, text, previous, next) {
   const r = await fetch(`${EL}/text-to-speech/${encodeURIComponent(voice)}/with-timestamps?output_format=${FORMAT}`, {
     method: 'POST', headers: elHeaders(),
     body: JSON.stringify({
@@ -92,43 +189,59 @@ async function ttsOnce(text, previous, next) {
 }
 
 async function generate(book, chapter, force) {
-  const rows = await sbJson(`textual_cache?book_id=eq.${book}&chapter=eq.${chapter}&select=verses,updated_at&limit=1`);
-  const verses = rows?.[0]?.verses;
-  if (!verses || !Object.keys(verses).length) return { ok: false, reason: 'sin_texto_kodesh' };
-  const narration = buildNarration(bookName(book), chapter, verses);
-  const hash = await textHash(narration.text);
+  const script = await getScript(book, chapter, false);
+  if (!script) return { ok: false, reason: 'sin_texto_kodesh' };
+  const voices = await castVoices();
+  if (!voices.narrador) throw new Error('Falta la voz del narrador en el elenco');
+  const intro = `${bookName(book)}, capítulo ${numberToSpanish(chapter)}.`;
+  const calls = planCalls(script.segments, voices, { intro: `[reverent] ${intro}` });
+  const hash = await textHash(JSON.stringify({ s: script.segments, v: voices, m: process.env.ELEVENLABS_MODEL || '' }));
   if (!force) {
     const ex = await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=text_hash&limit=1`);
     if (ex?.[0]?.text_hash === hash) return { ok: true, skipped: true };
   }
-  const chunks = chunkNarration(narration, 4000);
-  const parts = []; const results = []; let offset = 0;
-  for (let i = 0; i < chunks.length; i++) {
-    const c = chunks[i];
-    const { audio, alignment } = await tts(c.text, i > 0 ? chunks[i - 1].text.slice(-300) : '', i + 1 < chunks.length ? chunks[i + 1].text.slice(0, 300) : '');
+  // Varias llamadas a la vez (cada una ya sabe su texto y su voz)
+  const results = new Array(calls.length);
+  let next = 0;
+  async function worker() {
+    while (next < calls.length) {
+      const i = next++;
+      const c = calls[i];
+      results[i] = await tts(c.voice, c.text, i > 0 ? calls[i - 1].text.slice(-200) : '', i + 1 < calls.length ? calls[i + 1].text.slice(0, 200) : '');
+    }
+  }
+  await Promise.all([worker(), worker(), worker()]);
+  const parts = []; const timings = []; let offset = 0;
+  calls.forEach((c, i) => {
+    const { audio, alignment } = results[i];
     const { seconds } = mp3Duration(audio);
     const duration = seconds || (alignment?.character_end_times_seconds?.slice(-1)[0] ?? 0);
-    results.push({ chunk: c, alignment, offset, duration });
+    const starts = alignment?.character_start_times_seconds || [];
+    const exact = starts.length && (alignment.characters || []).length === c.text.length;
+    for (const m of c.marks) {
+      const t = exact ? starts[Math.min(m.at, starts.length - 1)] : (m.at / Math.max(1, c.text.length)) * duration;
+      timings.push([m.v, Math.round((offset + t) * 100) / 100]);
+    }
     parts.push(audio);
     offset += duration;
-  }
+  });
+  timings.sort((a, b) => a[0] - b[0]);
   const mp3 = Buffer.concat(parts);
-  const timings = verseTimings(narration, results);
   const path = `${VERSION}/${book}/${chapter}.mp3`;
   const up = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST', headers: sbHeaders({ 'Content-Type': 'audio/mpeg', 'x-upsert': 'true', 'cache-control': 'max-age=604800' }), body: mp3,
   });
   if (!up.ok) throw new Error(`storage → ${up.status} ${(await up.text().catch(() => '')).slice(0, 200)}`);
-  const now = new Date().toISOString();
+  const chars = calls.reduce((s2, c) => s2 + c.text.length, 0);
   await sbJson('bible_audio?on_conflict=version,book,chapter', {
     method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify([{
       version: VERSION, book, chapter, path, bytes: mp3.length, duration_s: Math.round(offset * 100) / 100,
-      timings, chars: narration.text.length, text_hash: hash, voice_id: process.env.ELEVENLABS_VOICE_ID,
-      model: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2', updated_at: now,
+      timings, chars, text_hash: hash, voice_id: 'elenco',
+      model: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2', updated_at: new Date().toISOString(),
     }]),
   });
-  return { ok: true, book, chapter, seconds: Math.round(offset), chars: narration.text.length, chunks: chunks.length, path: `${path}?v=${hash}` };
+  return { ok: true, book, chapter, seconds: Math.round(offset), chars, calls: calls.length };
 }
 
 export default async function handler(req, res) {
@@ -138,18 +251,25 @@ export default async function handler(req, res) {
   const admin = await requireAdmin(req, res);
   if (!admin) return;
   if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
-  if (!process.env.ELEVENLABS_API_KEY || !process.env.ELEVENLABS_VOICE_ID) {
-    return res.status(503).json({ error: 'Falta configurar ELEVENLABS_API_KEY y ELEVENLABS_VOICE_ID en Vercel.' });
+  if (!process.env.ELEVENLABS_API_KEY) {
+    return res.status(503).json({ error: 'Falta configurar ELEVENLABS_API_KEY en Vercel.' });
   }
   const action = req.body?.action || 'status';
   try {
     if (action === 'status') return res.status(200).json(await status());
-    if (action === 'generate') {
-      const book = isValidBookId(req.body?.book) ? String(req.body.book).toUpperCase() : null;
-      const chapter = book && isValidChapter(req.body?.chapter) ? Number(req.body.chapter) : null;
-      if (!book || !chapter || !AUDIO_BOOKS.includes(book)) return res.status(400).json({ error: 'Libro o capítulo no válido' });
-      return res.status(200).json(await generate(book, chapter, !!req.body?.force));
+    if (action === 'cast_get') return res.status(200).json(await castGet());
+    if (action === 'cast_save') return res.status(200).json(await castSave(req.body?.voices));
+    const book = isValidBookId(req.body?.book) ? String(req.body.book).toUpperCase() : null;
+    const chapter = book && isValidChapter(req.body?.chapter) ? Number(req.body.chapter) : null;
+    if (!book || !chapter || !AUDIO_BOOKS.includes(book)) return res.status(400).json({ error: 'Libro o capítulo no válido' });
+    if (action === 'script') {
+      if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'Falta ANTHROPIC_API_KEY' });
+      const sc = await getScript(book, chapter, !!req.body?.regen);
+      if (!sc) return res.status(200).json({ ok: false, reason: 'sin_texto_kodesh' });
+      return res.status(200).json({ ok: true, ...sc, segments: withRoles(sc.segments) });
     }
+    if (action === 'script_save') return res.status(200).json(await saveScript(book, chapter, req.body?.segments));
+    if (action === 'generate') return res.status(200).json(await generate(book, chapter, !!req.body?.force));
     return res.status(400).json({ error: 'Acción no válida' });
   } catch (e) {
     console.error('audio-pregen', e.message);

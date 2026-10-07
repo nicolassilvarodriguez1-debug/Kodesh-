@@ -50,3 +50,56 @@ test('tiempos por versículo con el alineado (y desplazamiento entre trozos)', (
   assert.deepEqual(t.map(x => x[0]), [1, 2]);
   assert.equal(t[0][1], Math.round((2 + (n.marks[0].at - c.start) * 0.1) * 100) / 100);
 });
+
+import { roleFor, voiceFor, validateScript, cleanScript, planCalls } from '../api/_audioScript.js';
+
+test('reparto: personajes con nombre, mujeres y multitudes', () => {
+  assert.equal(roleFor('Yeshúa', 'm'), 'yeshua');
+  assert.equal(roleFor('Simón Pedro', 'm'), 'pedro');
+  assert.equal(roleFor('Juan el Bautista', 'm'), 'juan_bautista');
+  assert.equal(roleFor('Tomás', 'm'), 'tomas');
+  assert.equal(roleFor('la multitud', 'grupo'), 'narrador');
+  assert.equal(roleFor('Los fariseos', 'grupo'), 'narrador');
+  const marta = roleFor('Marta', 'f'), maria = roleFor('María', 'f');
+  assert.match(marta, /^mujer_[1-4]$/);
+  assert.equal(roleFor('Marta', 'f'), marta);   // misma voz siempre
+  assert.notEqual(marta, maria);                 // Marta y María suenan distinto
+  assert.match(roleFor('Nicodemo', 'm'), /^hombre_[1-4]$/);
+});
+
+test('voces: cadena de respaldo hasta el narrador', () => {
+  const v = { narrador: 'N', yeshua: 'Y', hombre_1: 'H1' };
+  assert.equal(voiceFor('yeshua', v), 'Y');
+  assert.equal(voiceFor('pedro', v), 'H1');      // pedro → hombre_1
+  assert.equal(voiceFor('mujer_3', v), 'N');     // mujer_3 → mujer_1 → narrador
+  assert.equal(voiceFor('juan', v), 'H1');       // juan → hombre_2 → hombre_1
+});
+
+test('guion: no se acepta si cambia una palabra; se repara al narrador', () => {
+  const verses = { 1: 'Le dijo Nicodemo: ¿Cómo puede ser?', 2: 'Respondió Yeshúa: De cierto te digo.' };
+  const good = [
+    { v: 1, character: 'narrador', text: 'Le dijo Nicodemo:' }, { v: 1, character: 'Nicodemo', gender: 'm', tags: ['questioning'], text: '¿Cómo puede ser?' },
+    { v: 2, character: 'narrador', text: 'Respondió Yeshúa:' }, { v: 2, character: 'Yeshúa', gender: 'm', tags: ['calm', 'nope'], text: 'De cierto te digo.' },
+  ];
+  assert.equal(validateScript(verses, good).ok, true);
+  const bad = good.map(s => s.v === 2 && s.character === 'Yeshúa' ? { ...s, text: 'De verdad te digo.' } : s);
+  const chk = validateScript(verses, bad);
+  assert.equal(chk.ok, false); assert.deepEqual(chk.bad, [2]);
+  const { segments } = cleanScript(verses, bad);
+  assert.deepEqual(segments.filter(s => s.v === 2).map(s => s.character), ['narrador']);
+  assert.deepEqual(cleanScript(verses, good).segments[3].tags, ['calm']);   // marca no permitida fuera
+});
+
+test('llamadas: junta partes seguidas de la misma voz y marca los versículos', () => {
+  const segs = [
+    { v: 1, character: 'narrador', text: 'Uno.' }, { v: 2, character: 'narrador', text: 'Dijo:' },
+    { v: 2, character: 'Yeshúa', gender: 'm', tags: ['calm'], text: 'Paz.' }, { v: 3, character: 'narrador', text: 'Fin.' },
+  ];
+  const calls = planCalls(segs, { narrador: 'N', yeshua: 'Y' }, { intro: 'Juan, capítulo uno.' });
+  assert.deepEqual(calls.map(c => c.voice), ['N', 'Y', 'N']);
+  assert.equal(calls[0].text, 'Juan, capítulo uno. Uno. Dijo:');
+  assert.deepEqual(calls[0].marks.map(m => m.v), [1, 2]);
+  assert.equal(calls[0].text.slice(calls[0].marks[1].at), 'Dijo:');
+  assert.equal(calls[1].text, '[calm] Paz.');
+  assert.deepEqual(calls[2].marks, [{ v: 3, at: 0 }]);
+});

@@ -85,7 +85,8 @@
     },
     "api/audio-pregen.js": {
       "memory": 512,
-      "maxDuration": 300
+      "maxDuration": 300,
+      "includeFiles": "palabras-yeshua.json"
     },
     "api/headings-pregen.js": {
       "memory": 1024,

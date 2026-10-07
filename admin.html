@@ -436,14 +436,17 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Audio de la Biblia · ElevenLabs</div>
-            <div style="font-size:0.72rem;color:var(--text-dim)">Graba la Traducción Kodesh capítulo por capítulo (YHWH se lee «Adonai»). Se empieza por los Evangelios. Cada capítulo gasta tantos créditos de ElevenLabs como caracteres tiene (~4.000–7.000).</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Lectura dramatizada de la Traducción Kodesh: narrador, Yeshúa, discípulos y demás personajes con su propia voz (las multitudes las lee el narrador; YHWH se lee «Adonai»). La IA prepara el guion de cada capítulo sin cambiar una palabra; puedes revisarlo antes de grabar. Cada capítulo gasta ~4.000–7.000 créditos de ElevenLabs.</div>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-sm" id="audioStopBtn" onclick="AUDIO_ADMIN.stop()" style="display:none">Detener</button>
+            <button class="btn-sm" onclick="AUDIO_ADMIN.toggleCast()">Elenco de voces</button>
             <button class="btn-sm" onclick="AUDIO_ADMIN.load()">Revisar</button>
           </div>
         </div>
         <div class="upload-msg" id="audioMsg" style="margin-top:10px"></div>
+        <div id="audioCast" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
+        <div id="audioScript" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px;max-height:520px;overflow:auto"></div>
         <div id="audioBooks" style="display:grid;gap:8px;margin-top:10px"></div>
       </div>
 
@@ -1125,6 +1128,7 @@ const AUDIO_ADMIN = (() => {
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
         <div><div style="font-size:0.8rem">${b.name}</div><div style="font-size:0.68rem;color:var(--text-dim)">${label}${b.withText < b.chapters ? ` · solo ${b.withText} con texto Kodesh` : ''}</div></div>
         <div style="display:flex;gap:6px">
+          <button class="btn-sm" onclick="AUDIO_ADMIN.showScript('${b.book}')">Ver guion</button>
           ${b.outdated.length ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', true)">Regrabar ${b.outdated.length}</button>` : ''}
           ${missing > 0 ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', false)">Grabar ${missing}</button>` : '<span style="font-size:0.7rem;color:var(--green,#7fc98a)">✓ Completo</span>'}
         </div></div>`;
@@ -1163,7 +1167,65 @@ const AUDIO_ADMIN = (() => {
       await load(); msg.textContent = keep + ' ' + msg.textContent; msg.className = cls;
     }
   }
-  return { load, run, stop: () => { stopFlag = true; } };
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function toggleCast() {
+    const box = document.getElementById('audioCast');
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+    box.style.display = ''; box.innerHTML = 'Cargando elenco…';
+    try {
+      const { cast } = await api({ action: 'cast_get' });
+      box.innerHTML = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px">Pega el Voice ID de ElevenLabs de cada papel. Los que dejes vacíos usan la voz indicada entre paréntesis. Las mujeres y los demás hombres se reparten por nombre: el mismo personaje siempre tiene la misma voz (María y Marta suenan distinto).</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px">${cast.map(c => `<label style="display:flex;flex-direction:column;gap:3px;font-size:0.72rem">
+          <span>${esc(c.label)}${c.fallback ? ` <span style="color:var(--text-dim)">(si vacío: ${esc((cast.find(x => x.role === c.fallback) || {}).label || c.fallback)})</span>` : ''}</span>
+          <input data-role="${c.role}" value="${esc(c.voice_id)}" placeholder="Voice ID" style="padding:7px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:monospace;font-size:0.72rem"></label>`).join('')}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center"><button class="btn-sm" onclick="AUDIO_ADMIN.saveCast()">Guardar elenco</button><span id="audioCastMsg" style="font-size:0.72rem;color:var(--text-dim)"></span></div>`;
+    } catch (e) { box.innerHTML = `<span style="color:var(--red)">${esc(e.message)}</span>`; }
+  }
+  async function saveCast() {
+    const voices = {};
+    document.querySelectorAll('#audioCast input[data-role]').forEach(i => { voices[i.dataset.role] = i.value.trim(); });
+    const m = document.getElementById('audioCastMsg');
+    try { await api({ action: 'cast_save', voices }); m.textContent = '✓ Guardado'; } catch (e) { m.textContent = 'Error: ' + e.message; }
+  }
+  let scriptState = null;
+  async function showScript(book, regen) {
+    const ch = Number(prompt(`¿Qué capítulo de ${data.books.find(b => b.book === book).name}?`, '1'));
+    if (!ch) return;
+    openScript(book, ch, regen);
+  }
+  async function openScript(book, ch, regen) {
+    const box = document.getElementById('audioScript');
+    box.style.display = ''; box.innerHTML = `⏳ ${regen ? 'Preparando de nuevo' : 'Cargando'} el guion de ${book} ${ch}… (si no existe, la IA lo prepara: ~20–60 s)`;
+    try {
+      const d = await api({ action: 'script', book, chapter: ch, regen: !!regen });
+      if (!d.ok) { box.innerHTML = 'Este capítulo no tiene texto Kodesh todavía.'; return; }
+      scriptState = { book, ch, segments: d.segments };
+      const colors = { narrador: 'var(--text-dim)', yeshua: 'var(--red, #e05a5a)' };
+      box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <b style="font-size:0.85rem">Guion · ${book} ${ch}</b>
+          <span style="display:flex;gap:6px"><button class="btn-sm" onclick="AUDIO_ADMIN.openScript('${book}',${ch},true)">Preparar de nuevo</button><button class="btn-sm" onclick="AUDIO_ADMIN.saveScript()">Guardar cambios</button><button class="btn-sm" onclick="document.getElementById('audioScript').style.display='none'">Cerrar</button></span></div>
+        ${d.repaired && d.repaired.length ? `<div style="font-size:0.72rem;color:var(--gold);margin-bottom:6px">Versículos que la IA no copió exacto y quedaron con el narrador: ${d.repaired.join(', ')}</div>` : ''}
+        <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:8px">Puedes cambiar el nombre del personaje de una parte (por ejemplo «Pedro» → «Juan»). El texto no se edita aquí.</div>
+        ${d.segments.map((s, i) => `<div style="display:grid;grid-template-columns:34px 150px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.75rem;align-items:start">
+          <span style="color:var(--text-dim)">${s.v}</span>
+          <span><input data-i="${i}" value="${esc(s.character)}" style="width:100%;padding:3px 5px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:${colors[s.role] || 'var(--gold)'};font-size:0.72rem"><span style="display:block;font-size:0.62rem;color:var(--text-dim)">${esc(s.role)}${s.tags && s.tags.length ? ' · [' + esc(s.tags.join('] [')) + ']' : ''}</span></span>
+          <span>${esc(s.text)}</span></div>`).join('')}`;
+    } catch (e) { box.innerHTML = `<span style="color:var(--red)">${esc(e.message)}</span>`; }
+  }
+  async function saveScript() {
+    if (!scriptState) return;
+    const segs = scriptState.segments.map((s, i) => {
+      const inp = document.querySelector(`#audioScript input[data-i="${i}"]`);
+      const { role, ...rest } = s;
+      return { ...rest, character: inp ? inp.value.trim() || 'narrador' : s.character };
+    });
+    try {
+      const r = await api({ action: 'script_save', book: scriptState.book, chapter: scriptState.ch, segments: segs });
+      alert(r.ok ? 'Guion guardado.' : 'No se guardó: ' + (r.errors || []).join(', '));
+      if (r.ok) openScript(scriptState.book, scriptState.ch, false);
+    } catch (e) { alert(e.message); }
+  }
+  return { load, run, stop: () => { stopFlag = true; }, toggleCast, saveCast, showScript, openScript, saveScript };
 })();
 
 // ── HISTORIAL PREMIUM ──
