@@ -3215,6 +3215,7 @@ html.light .parasha-watermark { opacity: 0.08; }
   font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; letter-spacing: 0;
   text-transform: none; color: var(--gold); text-align: left; padding: 4px 18px 0;
 }
+.verse-sheet-ref, .bm-list-ref, .nav-header-title { font-variant-numeric: lining-nums; }
 .verse-sheet-text { margin: 6px 18px 4px; font-style: italic; font-size: 1.02rem; line-height: 1.5; color: var(--text-mid); }
 .verse-sheet-text:empty { display: none; }
 .verse-sheet-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 18px; border-bottom: none; }
@@ -3403,6 +3404,63 @@ html.light .search-mode.active { color: #fffbf0; }
 .word-ai-icon { width: 36px; height: 36px; flex-shrink: 0; border-radius: 18px; background: var(--gold-glow); color: var(--gold); display: flex; align-items: center; justify-content: center; }
 .word-ai-q { display: block; font-size: 0.98rem; }
 .word-ai-sub { display: block; font-size: 0.82rem; color: var(--text-dim); }
+
+/* ═══ Selección de varios versículos y colores personalizados ═══ */
+.verse-sheet-ref-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-right: 18px; }
+.verse-sheet-multi, .verse-sheet-customize, .saved-sheet-colors {
+  height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--border2); background: transparent;
+  color: var(--gold); font-family: var(--font-body); font-size: 0.86rem; cursor: pointer; white-space: nowrap;
+}
+.verse-sheet.multi .verse-sheet-multi { display: none; }
+.verse-sheet.multi .verse-sheet-btn[onclick*="interlinear"],
+.verse-sheet.multi .verse-sheet-btn[onclick*="deep"],
+.verse-sheet.multi .verse-sheet-btn[onclick*="note"] { display: none; }
+.verse-sheet-colors-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.verse-sheet-colors-head .verse-sheet-colors-title { margin: 0; }
+.saved-sheet-colors { margin-left: auto; margin-right: 8px; }
+
+.bible-text .verse.selected { background: var(--gold-glow); box-shadow: inset 0 0 0 1.5px var(--gold); }
+body.verse-select-mode .bible-text .verse { cursor: pointer; }
+body.verse-select-mode .word:hover { background: none; color: inherit; }
+.verse-select-bar {
+  position: fixed; left: 14px; right: 14px; z-index: 450;
+  bottom: calc(12px + var(--safe-area-inset-bottom));
+  height: 64px; padding: 0 8px; border-radius: 32px;
+  display: none; align-items: center; gap: 8px;
+  background: rgba(24,23,34,0.96); border: 1px solid var(--gold-dim);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+}
+html.light .verse-select-bar { background: rgba(255,253,248,0.97); box-shadow: 0 14px 36px rgba(70,52,18,0.18); }
+body.verse-select-mode .verse-select-bar { display: flex; }
+body.verse-select-mode .mobile-nav { visibility: hidden; }
+@media (min-width: 901px) { .verse-select-bar { left: 50%; right: auto; transform: translateX(-50%); width: 460px; } }
+.vsb-cancel { width: 44px; height: 44px; border-radius: 22px; border: none; background: transparent; color: var(--text-dim); font-size: 1rem; cursor: pointer; }
+.vsb-count { flex: 1; font-family: var(--font-display); font-size: 1.12rem; font-weight: 600; color: var(--text); font-variant-numeric: lining-nums; }
+.vsb-btn { height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid var(--border2); background: transparent; color: var(--text); font-family: var(--font-body); font-size: 0.98rem; cursor: pointer; }
+.vsb-primary { background: var(--gold); border-color: var(--gold); color: #15120a; }
+html.light .vsb-primary { color: #fffbf0; }
+
+.bmc-list { flex: 1; overflow-y: auto; padding: 8px 18px; overscroll-behavior: contain; }
+.bmc-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.bmc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bmc-swatch { width: 22px; height: 22px; border-radius: 11px; background: var(--c); flex-shrink: 0; }
+.bmc-name {
+  flex: 1; height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--border2);
+  background: var(--bg3); color: var(--text); font-family: var(--font-body); font-size: 16px; outline: none;
+}
+.bmc-name:focus { border-color: var(--gold-dim); }
+.bmc-palette { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.bmc-color {
+  height: 32px; border-radius: 16px; border: 2px solid transparent; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+.bmc-color.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg2) inset; }
+.bmc-custom { border: 1px dashed var(--border2); color: var(--text-dim); font-size: 1rem; overflow: hidden; }
+.bmc-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.bmc-actions { display: flex; gap: 8px; padding: 12px 18px calc(16px + var(--safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.bmc-reset { height: 46px; padding: 0 16px; border-radius: 23px; border: 1px solid var(--border2); background: transparent; color: var(--text-mid); font-family: var(--font-body); font-size: 0.95rem; cursor: pointer; }
+.bmc-save { flex: 1; height: 46px; border-radius: 23px; border: none; background: var(--gold); color: #15120a; font-family: var(--font-body); font-size: 1rem; font-weight: 500; cursor: pointer; }
+html.light .bmc-save { color: #fffbf0; }
 
 /* ── Cápsula inferior (teléfono y iPad vertical) ── */
 @media (max-width: 900px) {
@@ -3666,11 +3724,44 @@ html.light .search-mode.active { color: #fffbf0; }
   </div>
 </div>
 
+<!-- ══ SELECCIÓN DE VARIOS VERSÍCULOS ══ -->
+<div class="verse-select-bar" id="verseSelectBar" role="toolbar" aria-label="Versículos seleccionados">
+  <button class="vsb-cancel" onclick="endVerseSelection()" aria-label="Cancelar selección">✕</button>
+  <span class="vsb-count" id="vsbCount">1 versículo</span>
+  <button class="vsb-btn" onclick="verseSelectionCopy()">Copiar</button>
+  <button class="vsb-btn vsb-primary" onclick="openVerseSheetForSelection()">Resaltar…</button>
+</div>
+
+<!-- ══ PERSONALIZAR COLORES DE RESALTADO ══ -->
+<div class="assistant-overlay" id="bmCustomOverlay" onclick="if(event.target===this)closeBmCustomizer()">
+  <div class="assistant-panel" id="bmCustomPanel">
+    <div class="assistant-header">
+      <div class="assistant-header-left">
+        <div>
+          <div class="assistant-title">Colores de resaltado</div>
+          <div class="assistant-context">Cambia el nombre y el color de cada categoría</div>
+        </div>
+      </div>
+      <div class="assistant-header-right">
+        <button class="assistant-close" onclick="closeBmCustomizer()" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+    <div class="bmc-list" id="bmcList"></div>
+    <div class="bmc-actions">
+      <button class="bmc-reset" onclick="resetBmCustomizer()">Restaurar originales</button>
+      <button class="bmc-save" onclick="saveBmCustomizer()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ VERSE ACTION BOTTOM SHEET ══ -->
 <div class="verse-sheet-overlay" id="verseSheetOverlay" onclick="closeVerseSheetOutside(event)">
   <div class="verse-sheet" id="verseSheet">
     <div class="verse-sheet-handle"></div>
-    <div class="verse-sheet-ref" id="verseSheetRef">Génesis 1:1</div>
+    <div class="verse-sheet-ref-row">
+      <div class="verse-sheet-ref" id="verseSheetRef">Génesis 1:1</div>
+      <button class="verse-sheet-multi" id="verseSheetMultiBtn" onclick="startVerseSelection()">＋ Seleccionar varios</button>
+    </div>
     <p class="verse-sheet-text" id="verseSheetText"></p>
 
     <!-- Action buttons -->
@@ -3703,7 +3794,10 @@ html.light .search-mode.active { color: #fffbf0; }
 
     <!-- Color picker -->
     <div class="verse-sheet-colors">
-      <div class="verse-sheet-colors-title">Resaltar versículo</div>
+      <div class="verse-sheet-colors-head">
+        <div class="verse-sheet-colors-title" id="verseSheetColorsTitle">Resaltar versículo</div>
+        <button class="verse-sheet-customize" onclick="openBmCustomizer()">Personalizar colores</button>
+      </div>
       <div class="verse-sheet-color-row" id="verseSheetColorRow"></div>
       <div class="verse-sheet-note-area">
         <textarea class="verse-sheet-note-input" id="verseSheetNote"
@@ -3998,6 +4092,7 @@ html.light .search-mode.active { color: #fffbf0; }
     <div class="saved-sheet-head">
       <span class="saved-sheet-handle" aria-hidden="true"></span>
       <h2 class="saved-sheet-title">Guardados</h2>
+      <button class="saved-sheet-colors" onclick="openBmCustomizer()">Colores</button>
       <button class="saved-sheet-close" onclick="closeSavedSheet()" aria-label="Cerrar">✕</button>
     </div>
     <div class="sidebar-section">
@@ -4882,6 +4977,7 @@ async function applySectionHeadings(bookId, chapterNum) {
    LOAD CHAPTER
 ════════════════════════════════════ */
 async function loadChapter(bookId, chapterNum) {
+  if (typeof endVerseSelection === 'function') endVerseSelection();
   // Capítulo nuevo: volver arriba. En el teléfono la que tiene scroll es la
   // ventana (no #mainContent), así que el main.scrollTo(0,0) de
   // renderBibleText no hacía nada y el capítulo nuevo abría a media altura,
@@ -7141,6 +7237,112 @@ const BOOKMARK_CATEGORIES = {
   white:  { name:'Memorizar', color:'#cccccc', emoji:'⭐' },
 };
 
+// Colores de resaltado personalizables: las claves (blue, green…) se quedan
+// fijas porque son las que se guardan en cada marcador; lo que cambia el
+// usuario es el nombre y el color de cada una.
+const BOOKMARK_DEFAULTS = JSON.parse(JSON.stringify(BOOKMARK_CATEGORIES));
+const BM_PALETTE = ['#5a9cf0', '#38b6c9', '#5ccc68', '#a3c24a', '#c9a84c', '#f2c94c',
+                    '#f08c3c', '#e05a5a', '#e06aa8', '#9a6cf0', '#a07d5a', '#cccccc'];
+const BM_CUSTOM_KEY = 'kodesh_bm_categories';
+
+function cleanBmCustom(custom) {
+  const out = {};
+  if (!custom || typeof custom !== 'object') return out;
+  for (const key of Object.keys(BOOKMARK_DEFAULTS)) {
+    const c = custom[key];
+    if (!c || typeof c !== 'object') continue;
+    const name = String(c.name || '').replace(/[<>&"'`]/g, '').trim().slice(0, 20);
+    const color = /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color.toLowerCase() : null;
+    if (name || color) out[key] = { ...(name ? { name } : {}), ...(color ? { color } : {}) };
+  }
+  return out;
+}
+
+function applyBookmarkCategories(custom) {
+  const clean = cleanBmCustom(custom);
+  for (const [key, def] of Object.entries(BOOKMARK_DEFAULTS)) {
+    BOOKMARK_CATEGORIES[key].name = clean[key]?.name || def.name;
+    BOOKMARK_CATEGORIES[key].color = clean[key]?.color || def.color;
+  }
+  let css = '';
+  for (const [key, cat] of Object.entries(BOOKMARK_CATEGORIES)) {
+    const n = parseInt(cat.color.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    css += `.bookmark-${key}{background:rgba(${r},${g},${b},0.15)!important;box-shadow:inset 0 -1px 0 rgba(${r},${g},${b},0.4)!important}`
+         + `html.light .bookmark-${key}{background:rgba(${r},${g},${b},0.17)!important}`
+         + `.bm-${key}{background:${cat.color}!important}`;
+  }
+  let st = document.getElementById('bmCustomColors');
+  if (!st) { st = document.createElement('style'); st.id = 'bmCustomColors'; document.head.appendChild(st); }
+  st.textContent = css;
+  return clean;
+}
+
+// Al arrancar: lo guardado en el teléfono. Al iniciar sesión, auth.js trae
+// lo guardado en la cuenta (user_profiles.bookmark_categories) y lo aplica.
+try { applyBookmarkCategories(JSON.parse(localStorage.getItem(BM_CUSTOM_KEY) || 'null')); } catch (e) {}
+window.onProfileBookmarkCategories = function (custom) {
+  if (!custom) return;
+  const clean = applyBookmarkCategories(custom);
+  try { localStorage.setItem(BM_CUSTOM_KEY, JSON.stringify(clean)); } catch (e) {}
+  if (typeof renderBookmarkList === 'function') renderBookmarkList();
+};
+
+let bmCustomDraft = null;
+function openBmCustomizer() {
+  bmCustomDraft = {};
+  for (const [key, cat] of Object.entries(BOOKMARK_CATEGORIES)) bmCustomDraft[key] = { name: cat.name, color: cat.color };
+  renderBmCustomizer();
+  document.getElementById('bmCustomOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeBmCustomizer() {
+  document.getElementById('bmCustomOverlay').classList.remove('open');
+  if (!document.querySelector('.verse-sheet-overlay.open')) document.body.style.overflow = '';
+}
+function renderBmCustomizer() {
+  document.getElementById('bmcList').innerHTML = Object.entries(bmCustomDraft).map(([key, c]) => `
+    <div class="bmc-row" style="--c:${c.color}">
+      <div class="bmc-top">
+        <span class="bmc-swatch"></span>
+        <input class="bmc-name" maxlength="20" value="${escHtml(c.name)}" aria-label="Nombre de la categoría"
+          oninput="bmCustomDraft['${key}'].name = this.value">
+      </div>
+      <div class="bmc-palette">
+        ${BM_PALETTE.map(h => `<button type="button" class="bmc-color ${h === c.color ? 'active' : ''}" style="background:${h}" aria-label="Color ${h}" onclick="pickBmColor('${key}','${h}')"></button>`).join('')}
+        <label class="bmc-color bmc-custom" aria-label="Otro color"><input type="color" value="${c.color}" onchange="pickBmColor('${key}', this.value)">+</label>
+      </div>
+    </div>`).join('');
+}
+function pickBmColor(key, hex) {
+  bmCustomDraft[key].color = String(hex).toLowerCase();
+  renderBmCustomizer();
+}
+function resetBmCustomizer() {
+  bmCustomDraft = JSON.parse(JSON.stringify(BOOKMARK_DEFAULTS));
+  renderBmCustomizer();
+}
+async function saveBmCustomizer() {
+  // Solo se guarda lo que difiere del original
+  const diff = {};
+  for (const [key, c] of Object.entries(bmCustomDraft)) {
+    const d = BOOKMARK_DEFAULTS[key], e = {};
+    if (c.name.trim() && c.name.trim() !== d.name) e.name = c.name;
+    if (c.color !== d.color) e.color = c.color;
+    if (Object.keys(e).length) diff[key] = e;
+  }
+  const clean = applyBookmarkCategories(diff);
+  try { localStorage.setItem(BM_CUSTOM_KEY, JSON.stringify(clean)); } catch (e) {}
+  closeBmCustomizer();
+  renderBookmarkList();
+  if (document.getElementById('verseSheetOverlay').classList.contains('open')) renderVerseSheetColors();
+  showToast('✓ Colores guardados');
+  const sb = getSupabase();
+  if (sb && currentUser) {
+    try { await sb.from('user_profiles').update({ bookmark_categories: clean }).eq('id', currentUser.id); }
+    catch (e) { console.warn('bookmark_categories sync:', e.message); }
+  }
+}
+
 let bmState = {
   book: '', chapter: 0, verse: 0,
   selectedColor: 'blue',
@@ -7206,26 +7408,62 @@ function filterBookmarks(color, el) {
 ════════════════════════════════════ */
 let verseSheetState = { book: '', chapter: 0, verse: 0, selectedColor: 'blue' };
 
-function openVerseSheet(book, chapter, verse) {
-  verseSheetState = { book, chapter, verse, selectedColor: 'blue' };
+// "Éxodo 7:1–3, 5"
+function formatVerseRange(bookName, chapter, verses) {
+  const v = [...verses].map(Number).sort((a, b) => a - b);
+  const parts = [];
+  for (let i = 0; i < v.length; i++) {
+    let j = i;
+    while (j + 1 < v.length && v[j + 1] === v[j] + 1) j++;
+    parts.push(j > i ? `${v[i]}–${v[j]}` : `${v[i]}`);
+    i = j;
+  }
+  return `${bookName} ${chapter}:${parts.join(', ')}`;
+}
+function verseTextFor(verse) {
+  const el = document.getElementById(`v-${verse}`);
+  if (!el) return '';
+  const c = el.cloneNode(true);
+  c.querySelectorAll('.verse-num, .bookmark-dot').forEach(n => n.remove());
+  return c.textContent.trim().replace(/\s+/g, ' ');
+}
+function renderVerseSheetColors() {
+  const { book, chapter, verses } = verseSheetState;
+  const existing = verses.length === 1 ? state.bookmarks[`${book}:${chapter}:${verses[0]}`] : null;
+  const row = document.getElementById('verseSheetColorRow');
+  row.innerHTML = Object.entries(BOOKMARK_CATEGORIES).map(([key, cat]) => {
+    const isActive = (existing?.color || verseSheetState.selectedColor) === key && (existing || verseSheetState.colorPicked);
+    return `<button type="button" class="verse-sheet-color-dot ${isActive ? 'active' : ''}"
+      style="--c:${cat.color}" aria-pressed="${!!isActive}"
+      onclick="selectVerseSheetColor('${key}', this)"><span class="vs-dot"></span>${cat.name}</button>`;
+  }).join('');
+}
+
+function openVerseSheet(book, chapter, verse, versesList) {
+  const verses = (versesList && versesList.length ? versesList : [verse]).map(Number).sort((a, b) => a - b);
+  verseSheetState = { book, chapter, verse: verses[0], verses, selectedColor: 'blue', colorPicked: false };
+  const multi = verses.length > 1;
+  document.getElementById('verseSheet').classList.toggle('multi', multi);
+  document.getElementById('verseSheetColorsTitle').textContent = multi ? `Resaltar ${verses.length} versículos` : 'Resaltar versículo';
 
   const bookName = getAllBooks().find(b => b.id === book)?.name || book;
-  document.getElementById('verseSheetRef').textContent = `${bookName} ${chapter}:${verse}`;
+  document.getElementById('verseSheetRef').textContent = formatVerseRange(bookName, chapter, verses);
+  if (multi) {
+    const t = verseTextFor(verses[0]);
+    document.getElementById('verseSheetText').textContent = `«${t.length > 120 ? t.slice(0, 117) + '…' : t} …»`;
+    document.getElementById('verseSheetNote').value = '';
+    renderVerseSheetColors();
+    document.getElementById('verseSheetOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    return;
+  }
   // Vista previa del versículo (sin el número ni el punto del marcador)
   const vEl = document.getElementById(`v-${verse}`);
   let vText = '';
   if (vEl) { const c = vEl.cloneNode(true); c.querySelectorAll('.verse-num, .bookmark-dot').forEach(n => n.remove()); vText = c.textContent.trim().replace(/\s+/g, ' '); }
   document.getElementById('verseSheetText').textContent = vText ? `«${vText.length > 220 ? vText.slice(0, 217) + '…' : vText}»` : '';
 
-  // Build color dots
-  const row = document.getElementById('verseSheetColorRow');
-  row.innerHTML = Object.entries(BOOKMARK_CATEGORIES).map(([key, cat]) => {
-    const existing = state.bookmarks[`${book}:${chapter}:${verse}`];
-    const isActive = existing?.color === key;
-    return `<button type="button" class="verse-sheet-color-dot ${isActive ? 'active' : ''}"
-      style="--c:${cat.color}" aria-pressed="${isActive}"
-      onclick="selectVerseSheetColor('${key}', this)"><span class="vs-dot"></span>${cat.name}</button>`;
-  }).join('');
+  renderVerseSheetColors();
 
   // Pre-fill note if exists
   const existing = state.bookmarks[`${book}:${chapter}:${verse}`];
@@ -7247,13 +7485,32 @@ function closeVerseSheetOutside(e) {
 
 function selectVerseSheetColor(color, el) {
   verseSheetState.selectedColor = color;
+  verseSheetState.colorPicked = true;
   document.querySelectorAll('.verse-sheet-color-dot').forEach(d => d.classList.remove('active'));
   el.classList.add('active');
 }
 
 function verseSheetAction(action) {
-  const { book, chapter, verse } = verseSheetState;
+  const { book, chapter, verse, verses } = verseSheetState;
   closeVerseSheet();
+  if (verses && verses.length > 1 && ['explain', 'share', 'copy'].includes(action)) {
+    const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+    const ref = formatVerseRange(bookName, chapter, verses);
+    const body = verses.map(v => `${v} ${verseTextFor(v)}`).join(' ');
+    endVerseSelection();
+    if (action === 'explain') {
+      openAssistant(bookName, chapter);
+      setTimeout(() => {
+        const input = document.getElementById('assistantInput');
+        if (input) { input.value = `Explica ${ref} — "${body.slice(0, 600)}"`; sendMessage(); }
+      }, 500);
+    } else if (action === 'share' && navigator.share) {
+      navigator.share({ text: `"${body}"\n— ${ref}\n\nEstudiado en KODESH · kodeshbible.com` }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(`"${body}" — ${ref}`).then(() => showToast('✓ Versículos copiados'));
+    }
+    return;
+  }
 
   if (action === 'explain') {
     const verseEl = document.getElementById(`v-${verse}`);
@@ -7309,8 +7566,23 @@ function verseSheetAction(action) {
 }
 
 function verseSheetSave() {
-  const { book, chapter, verse, selectedColor } = verseSheetState;
+  const { book, chapter, verse, selectedColor, verses } = verseSheetState;
   const note = document.getElementById('verseSheetNote').value.trim();
+  if (verses && verses.length > 1) {
+    verses.forEach((v, i) => {
+      const key = `${book}:${chapter}:${v}`;
+      state.bookmarks[key] = { book, chapter, verse: v, color: selectedColor, note,
+        text: verseTextFor(v).slice(0, 80), savedAt: Date.now() + i };
+      saveBookmarkToCloud(state.bookmarks[key]);
+      refreshVerseBookmark(book, chapter, v);
+    });
+    saveBookmarksLocal();
+    closeVerseSheet();
+    endVerseSelection();
+    renderBookmarkList();
+    showToast(`${BOOKMARK_CATEGORIES[selectedColor].emoji} ${verses.length} versículos guardados`);
+    return;
+  }
   const key = `${book}:${chapter}:${verse}`;
   const verseEl = document.getElementById(`v-${verse}`);
   const verseText = verseEl ? verseEl.textContent.replace(/^\d+/, '').trim().slice(0, 80) : '';
@@ -7328,7 +7600,21 @@ function verseSheetSave() {
 }
 
 function verseSheetRemove() {
-  const { book, chapter, verse } = verseSheetState;
+  const { book, chapter, verse, verses } = verseSheetState;
+  if (verses && verses.length > 1) {
+    verses.forEach(v => {
+      if (!state.bookmarks[`${book}:${chapter}:${v}`]) return;
+      delete state.bookmarks[`${book}:${chapter}:${v}`];
+      removeBookmarkFromCloud(book, chapter, v);
+      refreshVerseBookmark(book, chapter, v);
+    });
+    saveBookmarksLocal();
+    closeVerseSheet();
+    endVerseSelection();
+    renderBookmarkList();
+    showToast('Marcadores eliminados');
+    return;
+  }
   const key = `${book}:${chapter}:${verse}`;
   delete state.bookmarks[key];
   saveBookmarksLocal();
@@ -7341,8 +7627,67 @@ function verseSheetRemove() {
 
 function openVerseSheetDesktop(e, book, chapter, verse) {
   e.preventDefault();
+  if (verseSelection) { toggleVerseSelected(verse); return; }
   openVerseSheet(book, chapter, verse);
 }
+
+/* ── Seleccionar varios versículos ──
+   Desde la hoja del versículo: "Seleccionar varios". Cada toque marca o
+   desmarca un versículo (y no abre el lexicón); abajo aparece una barra con
+   Copiar y Resaltar…, que abre la misma hoja para todos a la vez. */
+let verseSelection = null;   // { book, chapter, verses: Set }
+
+function startVerseSelection() {
+  const { book, chapter, verse } = verseSheetState;
+  closeVerseSheet();
+  verseSelection = { book, chapter, verses: new Set([Number(verse)]) };
+  document.body.classList.add('verse-select-mode');
+  paintVerseSelection();
+}
+function endVerseSelection() {
+  if (!verseSelection) return;
+  verseSelection = null;
+  document.body.classList.remove('verse-select-mode');
+  document.querySelectorAll('.verse.selected').forEach(el => el.classList.remove('selected'));
+}
+function toggleVerseSelected(verse) {
+  if (!verseSelection) return;
+  const v = Number(verse);
+  if (verseSelection.verses.has(v)) verseSelection.verses.delete(v); else verseSelection.verses.add(v);
+  if (!verseSelection.verses.size) { endVerseSelection(); return; }
+  paintVerseSelection();
+}
+function paintVerseSelection() {
+  document.querySelectorAll('#mainContent .verse').forEach(el => {
+    el.classList.toggle('selected', !!verseSelection && verseSelection.verses.has(Number(el.dataset.verse)));
+  });
+  const n = verseSelection ? verseSelection.verses.size : 0;
+  document.getElementById('vsbCount').textContent = `${n} versículo${n === 1 ? '' : 's'}`;
+}
+function openVerseSheetForSelection() {
+  if (!verseSelection) return;
+  openVerseSheet(verseSelection.book, verseSelection.chapter, null, [...verseSelection.verses]);
+}
+function verseSelectionCopy() {
+  if (!verseSelection) return;
+  const { book, chapter } = verseSelection;
+  const verses = [...verseSelection.verses].sort((a, b) => a - b);
+  const bookName = getAllBooks().find(b => b.id === book)?.name || book;
+  const body = verses.map(v => `${v} ${verseTextFor(v)}`).join(' ');
+  navigator.clipboard?.writeText(`"${body}" — ${formatVerseRange(bookName, chapter, verses)}`)
+    .then(() => showToast('✓ Versículos copiados'));
+  endVerseSelection();
+}
+// En modo selección, un toque en un versículo lo marca/desmarca (antes de que
+// llegue al lexicón de la palabra tocada).
+document.addEventListener('click', e => {
+  if (!verseSelection) return;
+  const v = e.target.closest && e.target.closest('#mainContent .verse');
+  if (!v) return;
+  e.preventDefault();
+  e.stopPropagation();
+  toggleVerseSelected(v.dataset.verse);
+}, true);
 
 function openBookmarkMenu(e, book, chapter, verse) {
   e.preventDefault();
@@ -7423,6 +7768,7 @@ function handleTouchStart(e, book, chapter, verse) {
   const now = Date.now();
   const DOUBLE_TAP_DELAY = 300; // ms between taps to count as double tap
 
+  if (verseSelection) return;   // en modo selección manda el toque simple
   if (lastTapVerse === `${book}:${chapter}:${verse}` && now - lastTapTime < DOUBLE_TAP_DELAY) {
     // Double tap detected on same verse
     e.preventDefault();
@@ -7526,7 +7872,7 @@ function renderBookmarkList() {
 
   if (items.length === 0) {
     list.innerHTML = `<div class="bm-empty">
-      ${bmState.filter === 'all' ? (window.matchMedia('(pointer: coarse)').matches ? 'Mantén presionado un versículo para guardarlo' : 'Clic derecho en un versículo para marcarlo') : 'No hay marcadores de este tipo'}
+      ${bmState.filter === 'all' ? (window.matchMedia('(pointer: coarse)').matches ? 'Toca dos veces un versículo para guardarlo' : 'Clic derecho en un versículo para marcarlo') : 'No hay marcadores de este tipo'}
     </div>`;
     return;
   }

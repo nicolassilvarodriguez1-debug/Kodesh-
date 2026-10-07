@@ -63,10 +63,13 @@ async function loadUserProfile(userId) {
   try {
     const { data } = await sb
       .from('user_profiles')
-      .select('display_name, study_goals, reading_goal_chapters, onboarding_completed, avatar_url')
+      .select('display_name, study_goals, reading_goal_chapters, onboarding_completed, avatar_url, bookmark_categories')
       .eq('id', userId)
       .single();
     userProfile = data;
+    if (data?.bookmark_categories && typeof window.onProfileBookmarkCategories === 'function') {
+      window.onProfileBookmarkCategories(data.bookmark_categories);
+    }
     return data;
   } catch(e) { return null; }
 }
