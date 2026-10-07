@@ -3,6 +3,7 @@
 <head>
 <script src="/recovery-guard.js"></script>
 <script src="/native-insets.js"></script>
+<script src="/bible-ref.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -3397,6 +3398,15 @@ html.light .search-mode.active { color: #fffbf0; }
   background: transparent; color: var(--gold); font-family: var(--font-body); font-size: 0.98rem; cursor: pointer;
 }
 .word-ref-card { background: var(--gold-glow); border-color: var(--gold-dim); }
+.word-ref-card.rich {
+  height: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  padding: 12px 16px; border-radius: 16px; color: var(--text);
+}
+.word-ref-kicker { font-size: 0.78rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); }
+.word-ref-title { font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; color: var(--gold); font-variant-numeric: lining-nums; }
+.word-ref-preview { font-size: 0.98rem; line-height: 1.5; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.word-ref-preview sup { color: var(--gold); font-size: 0.7em; margin-right: 2px; font-variant-numeric: lining-nums; }
+.word-ref-note { font-size: 0.95rem; color: var(--text-dim); margin: 4px 2px 12px; }
 .word-ai-card {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin: 6px 0 4px; padding: 12px 14px;
   border-radius: 16px; border: 1px dashed var(--gold-dim); background: transparent; color: var(--text); cursor: pointer; font-family: var(--font-body);
@@ -5763,17 +5773,26 @@ document.addEventListener('click', (e) => {
 /* ════════════════════════════════════
    SIDEBAR TOGGLE (mobile)
 ════════════════════════════════════ */
+// El fondo va dentro de .app, justo antes de la barra lateral: .app tiene
+// su propio contexto de apilamiento (z-index:1), así que un fondo pegado al
+// <body> quedaba POR ENCIMA de la hoja y cualquier toque la cerraba.
+function addSidebarBackdrop(onClose) {
+  if (document.getElementById('sidebarBackdrop')) return;
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.createElement('div');
+  backdrop.id = 'sidebarBackdrop';
+  backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199';
+  backdrop.onclick = onClose;
+  backdrop.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  sidebar.parentNode.insertBefore(backdrop, sidebar);
+}
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   const isOpen = sidebar.classList.toggle('open');
   // On mobile add/remove overlay backdrop
   if (window.innerWidth <= 768) {
     if (isOpen) {
-      const backdrop = document.createElement('div');
-      backdrop.id = 'sidebarBackdrop';
-      backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199';
-      backdrop.onclick = () => { sidebar.classList.remove('open'); backdrop.remove(); };
-      document.body.appendChild(backdrop);
+      addSidebarBackdrop(() => { sidebar.classList.remove('open'); document.getElementById('sidebarBackdrop')?.remove(); });
     } else {
       document.getElementById('sidebarBackdrop')?.remove();
     }
@@ -6523,13 +6542,7 @@ function mobileNavTo(tab) {
 function openSavedSheet() {
   const sidebar = document.getElementById('sidebar');
   sidebar.classList.add('open', 'bm-only');
-  if (!document.getElementById('sidebarBackdrop')) {
-    const backdrop = document.createElement('div');
-    backdrop.id = 'sidebarBackdrop';
-    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199';
-    backdrop.onclick = closeSavedSheet;
-    document.body.appendChild(backdrop);
-  }
+  addSidebarBackdrop(closeSavedSheet);
   renderBookmarkList();
   sidebar.scrollTop = 0;
 }
@@ -8153,9 +8166,24 @@ function fitAssistantToViewport() {
     if (kbOpen && msgs) msgs.scrollTop = msgs.scrollHeight;
   }
 }
+// iOS a veces no avisa por visualViewport cuando cambia el contenido del
+// panel (llega una respuesta) o el foco: reajustamos unos instantes después.
+function refitAssistantSoon() {
+  requestAnimationFrame(fitAssistantToViewport);
+  setTimeout(fitAssistantToViewport, 120);
+  setTimeout(fitAssistantToViewport, 400);
+}
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fitAssistantToViewport);
   window.visualViewport.addEventListener('scroll', fitAssistantToViewport);
+  window.addEventListener('scroll', () => {
+    if (document.getElementById('assistantOverlay')?.classList.contains('open')) fitAssistantToViewport();
+  }, { passive: true });
+  document.addEventListener('focusin', e => { if (e.target.id === 'assistantInput') refitAssistantSoon(); });
+  document.addEventListener('focusout', e => {
+    if (e.target.id !== 'assistantInput') return;
+    setTimeout(refitAssistantSoon, 60);
+  });
 }
 
 // ── Hojas inferiores (asistente, historial): arrastrar para cerrar ──
@@ -8368,7 +8396,12 @@ async function sendMessage() {
     addMessage('assistant', `Lo siento, hubo un error al procesar tu pregunta. Por favor intenta de nuevo.\n\n_${err.message}_`);
   } finally {
     sendBtn.disabled = false;
-    input.focus();
+    // En el celular NO volvemos a enfocar: en iOS, focus() sobre el campo
+    // (aunque ya tenga el foco) hace que la vista web se desplace para
+    // "mostrarlo", y el panel quedaba desfasado del teclado y con la
+    // cabecera cortada bajo la barra de estado.
+    if (!window.matchMedia('(pointer: coarse)').matches) input.focus();
+    refitAssistantSoon();
   }
 }
 
@@ -8398,14 +8431,47 @@ const BOOK_NAME_TO_ID = {
 };
 
 function parseVerseRef(ref) {
-  // Parse "Juan 3:16" → { bookId:'JHN', chapter:3, verse:16 }
+  // "Juan 3:16", "jn 3", "1 cor 13", "genisis 1"… → { bookId, chapter, verse, … }
+  if (window.KodeshRef) {
+    const r = KodeshRef.parseRef(ref);
+    return r && !r.error && r.chapter != null ? { ...r, verse: r.verse || 1 } : null;
+  }
   const match = ref.match(/^(.+?)\s+(\d+):(\d+)/i);
   if (!match) return null;
-  const bookName = match[1].toLowerCase().trim();
-  const chapter = parseInt(match[2]);
-  const verse = parseInt(match[3]);
-  const bookId = BOOK_NAME_TO_ID[bookName];
-  return bookId ? { bookId, chapter, verse } : null;
+  const bookId = BOOK_NAME_TO_ID[match[1].toLowerCase().trim()];
+  return bookId ? { bookId, chapter: parseInt(match[2]), verse: parseInt(match[3]) } : null;
+}
+
+// Tarjeta "ir a la cita" para la búsqueda por palabras.
+function buildRefCard(query, bible, hasMatches) {
+  const r = window.KodeshRef ? KodeshRef.parseRef(query) : parseVerseRef(query);
+  if (!r) return '';
+  const name = escHtml(r.bookName || '');
+  if (r.error === 'chapter') {
+    return `<div class="word-ref-note">${name} tiene ${r.chapters} capítulo${r.chapters === 1 ? '' : 's'}.</div>`;
+  }
+  const bookOnly = r.chapter == null;
+  // Un libro "adivinado" sin capítulo ("amor" ≈ Amós) solo se sugiere si la
+  // palabra no aparece en la Biblia; si aparece, el usuario buscaba la palabra.
+  if (bookOnly && r.how !== 'exact' && hasMatches) return '';
+  const chapter = r.chapter || 1;
+  const verse = r.verse || 1;
+  const title = window.KodeshRef ? KodeshRef.formatRef(r) : `${name} ${chapter}:${verse}`;
+  const chap = bible?.[r.bookId]?.[String(chapter)];
+  let preview = '';
+  if (chap) {
+    const from = r.verse || 1;
+    const to = r.verseEnd || (r.verse ? r.verse : Math.min(from + 1, Object.keys(chap).length));
+    const parts = [];
+    for (let v = from; v <= to && v < from + 6; v++) if (chap[String(v)]) parts.push(`<sup>${v}</sup>${escHtml(chap[String(v)])}`);
+    preview = parts.join(' ');
+  }
+  const kicker = r.how === 'fuzzy' ? '¿Quisiste decir…?' : bookOnly ? 'Libro' : r.verse ? 'Ir al versículo' : 'Ir al capítulo';
+  return `<button class="word-ref-card rich" onclick="goToVerse('${r.bookId}',${chapter},${r.verse ? verse : 0})">
+      <span class="word-ref-kicker">${kicker}</span>
+      <span class="word-ref-title">${escHtml(title)} →</span>
+      ${preview ? `<span class="word-ref-preview">${preview}</span>` : ''}
+    </button>`;
 }
 
 function openSearch() {
@@ -8518,7 +8584,7 @@ async function runWordSearch(query) {
       }
     }
   }
-  wordSearchState = { query, re, matches, filter: 'all', shown: WORD_SEARCH_PAGE };
+  wordSearchState = { query, re, matches, bible, filter: 'all', shown: WORD_SEARCH_PAGE };
   renderWordSearch();
 }
 
@@ -8531,8 +8597,8 @@ function renderWordSearch() {
   const list = st.filter === 'at' ? st.matches.filter(m => !m.nt) : st.filter === 'nt' ? st.matches.filter(m => m.nt) : st.matches;
 
   // Si escribió una cita ("Juan 3:16"), ofrecer ir directo
-  const ref = parseVerseRef(st.query);
-  const refCard = ref ? `<button class="word-ref-card" onclick="goToVerse('${ref.bookId}',${ref.chapter},${ref.verse})">Ir a ${escHtml(st.query)} →</button>` : '';
+  const refCard = buildRefCard(st.query, st.bible, st.matches.length > 0);
+  const ref = !!refCard;
   const aiCard = `<button class="word-ai-card" onclick="askSearchWithAi()">
       <span class="word-ai-icon">✦</span>
       <span><span class="word-ai-q">¿Qué dice la Escritura sobre «${escHtml(st.query)}»?</span>
