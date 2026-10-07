@@ -20,6 +20,25 @@ export const CAST = [
   { role: 'judas', label: 'Judas Iscariote', fallback: 'hombre_3' },
   { role: 'juan_bautista', label: 'Juan el Bautista', fallback: 'hombre_1' },
   { role: 'voz_cielo', label: 'Voz del cielo / ángeles', fallback: 'narrador' },
+  // Tanaj (Torá primero)
+  { role: 'elohim', label: 'Voz de Elohim / Adonai', fallback: 'voz_cielo' },
+  { role: 'adan', label: 'Adán', fallback: 'hombre_2' },
+  { role: 'eva', label: 'Eva', fallback: 'mujer_1' },
+  { role: 'serpiente', label: 'La serpiente', fallback: 'hombre_3' },
+  { role: 'cain', label: 'Caín', fallback: 'hombre_4' },
+  { role: 'noe', label: 'Noé', fallback: 'hombre_1' },
+  { role: 'abraham', label: 'Abraham (Abram)', fallback: 'hombre_1' },
+  { role: 'sara', label: 'Sara (Sarai)', fallback: 'mujer_2' },
+  { role: 'isaac', label: 'Isaac', fallback: 'hombre_2' },
+  { role: 'rebeca', label: 'Rebeca', fallback: 'mujer_3' },
+  { role: 'jacob', label: 'Jacob (Israel)', fallback: 'hombre_4' },
+  { role: 'esau', label: 'Esaú', fallback: 'hombre_3' },
+  { role: 'raquel', label: 'Raquel', fallback: 'mujer_4' },
+  { role: 'lea', label: 'Lea', fallback: 'mujer_1' },
+  { role: 'jose', label: 'José (hijo de Jacob)', fallback: 'hombre_2' },
+  { role: 'moises', label: 'Moisés', fallback: 'hombre_1' },
+  { role: 'aaron', label: 'Aarón', fallback: 'hombre_3' },
+  { role: 'faraon', label: 'Faraón', fallback: 'hombre_4' },
   { role: 'mujer_1', label: 'Mujer 1', fallback: 'narrador' },
   { role: 'mujer_2', label: 'Mujer 2', fallback: 'mujer_1' },
   { role: 'mujer_3', label: 'Mujer 3', fallback: 'mujer_1' },
@@ -41,7 +60,25 @@ const NAMED = [
   [/^(natanael|bartolom[eé])$/, 'natanael'],
   [/^(mateo|lev[ií])$/, 'mateo'],
   [/^judas( iscariote)?$/, 'judas'],
-  [/^(una )?voz (del|desde el) cielo$|^[aá]ngel|^el [aá]ngel|^gabriel$|^elohim$|^el padre$/, 'voz_cielo'],
+  [/^(elohim|adonai( elohim)?|adonai dios|dios|el se[nñ]or|yhwh|el eterno|el padre|la voz de (dios|elohim|adonai))$/, 'elohim'],
+  [/^(una )?voz (del|desde el) cielo$|^(un |el )?[aá]ngel|^gabriel$/, 'voz_cielo'],
+  [/^ad[aá]n$/, 'adan'],
+  [/^eva$/, 'eva'],
+  [/^(la )?serpiente$/, 'serpiente'],
+  [/^ca[ií]n$/, 'cain'],
+  [/^no[eé]$/, 'noe'],
+  [/^abra(ha)?m$/, 'abraham'],
+  [/^sara[ií]?$/, 'sara'],
+  [/^isaac$/, 'isaac'],
+  [/^rebeca$/, 'rebeca'],
+  [/^jacob$|^israel$/, 'jacob'],
+  [/^esa[uú]$/, 'esau'],
+  [/^raquel$/, 'raquel'],
+  [/^lea$/, 'lea'],
+  [/^jos[eé]$/, 'jose'],
+  [/^mois[eé]s$/, 'moises'],
+  [/^aar[oó]n$/, 'aaron'],
+  [/^(el )?fara[oó]n$/, 'faraon'],
 ];
 const GROUP = /^(multitud|la multitud|el pueblo|los jud[ií]os|los fariseos|los disc[ií]pulos|ellos|todos|la gente|grupo|los soldados|los principales sacerdotes|los demonios)$/;
 
@@ -84,7 +121,7 @@ REGLAS ESTRICTAS
 1. No cambies, quites, agregues ni reordenes NINGUNA palabra ni signo. Si unes los "text" de un versículo en orden (separados por un espacio) debe quedar EXACTAMENTE el versículo original.
 2. Cada parte pertenece a un solo versículo ("v"). Nunca juntes dos versículos en una parte.
 3. Las frases que introducen lo que alguien dice ("Respondió Yeshúa y le dijo:", "Le dijo Nicodemo:") son del narrador. Lo que la persona dice es del personaje.
-4. "character": "narrador" o el nombre del personaje tal como lo llama el texto (Yeshúa, Pedro, Nicodemo, Marta, María Magdalena, Juan el Bautista, la samaritana, un ángel…). Si hablan varios a la vez (la multitud, los judíos, los fariseos, los discípulos juntos), usa "multitud".
+4. "character": "narrador" o el nombre propio del personaje (Yeshúa, Pedro, Nicodemo, Marta, María Magdalena, Juan el Bautista, la samaritana, un ángel…). Cuando habla Dios (Elohim, Adonai, «Dios dijo») usa "Elohim". En Génesis usa los nombres: "Adán" (aunque el texto diga «el hombre»), "Eva" («la mujer»), "la serpiente", "Caín", "Noé", "Abram"… Si hablan varios a la vez (la multitud, los judíos, los fariseos, los discípulos juntos), usa "multitud".
 5. "gender": "m", "f" o "grupo".
 6. "tags": de 0 a 3 marcas de interpretación en inglés, SOLO de esta lista: ${ALLOWED_TAGS.join(', ')}.
    Es una dramatización: cada personaje debe sentirse con la emoción REAL que muestra la escena, también Yeshúa. Ejemplos: al echar a los mercaderes del templo (Juan 2:16) habla de verdad enojado → ["angry","loud","commanding"]; «¡Apártate de mí, Satanás!» → ["stern","commanding"]; «¡Ay de vosotros, escribas y fariseos, hipócritas!» → ["indignant","passionate"]; al llorar por Jerusalén o junto a la tumba de Lázaro → ["grieving","tender"]; «¡Lázaro, ven fuera!» → ["shouting","commanding"]; en la cruz → ["weeping","desperate"] o ["solemn"] según el texto. Una multitud furiosa, un ciego que suplica, una mujer que llora: que se note.

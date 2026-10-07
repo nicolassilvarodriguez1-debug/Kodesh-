@@ -43,7 +43,7 @@ const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
 const EL = 'https://api.elevenlabs.io/v1';
 const VERSION = 'kodesh';
 const BUCKET = 'bible-audio';
-export const AUDIO_BOOKS = ['MAT', 'MRK', 'LUK', 'JHN'];   // se amplía poco a poco
+export const AUDIO_BOOKS = ['GEN', 'EXO', 'LEV', 'NUM', 'DEU', 'MAT', 'MRK', 'LUK', 'JHN'];   // se amplía poco a poco
 const FORMAT = 'mp3_44100_64';
 
 const sbHeaders = (extra = {}) => ({ apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, ...extra });

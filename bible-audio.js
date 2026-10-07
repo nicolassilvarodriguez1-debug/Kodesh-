@@ -8,7 +8,12 @@
   const SPEEDS = [1, 1.25, 1.5, 0.8];
   const byBook = {};          // book → Promise<{ chapter: row }>
   const $ = id => document.getElementById(id);
-  const st = { book: null, chapter: null, row: null, verse: null, userScrollAt: 0, speedIdx: 0, cine: true };
+  const st = { book: null, chapter: null, row: null, verse: null, userScrollAt: 0, speedIdx: 0, cine: true, until: null };
+  // Desde Parashot: ?play=1&until=GEN.6.8 abre el reproductor y para al final de la porción.
+  const qs = new URLSearchParams(location.search);
+  let pending = qs.get('play') === '1' ? { book: qs.get('book'), chapter: parseInt(qs.get('chapter')) || 1, verse: parseInt(qs.get('verse')) || 0 } : null;
+  const untilQ = (qs.get('until') || '').match(/^([A-Z0-9]{3})\.(\d+)\.(\d+)$/);
+  const untilParam = untilQ ? { book: untilQ[1], chapter: +untilQ[2], verse: +untilQ[3] } : null;
   try { st.cine = localStorage.getItem('kodesh_audio_cine') !== '0'; } catch (e) {}
   try { st.speedIdx = Math.max(0, SPEEDS.indexOf(Number(localStorage.getItem('kodesh_audio_speed')) || 1)); } catch (e) {}
   let audio = null;
@@ -127,6 +132,12 @@
     $('kaBar').value = d ? Math.round(audio.currentTime / d * 1000) : 0;
     $('kaSub').textContent = `Kodesh · ${fmt(audio.currentTime)} / ${fmt(d)}`;
     const v = verseAt(audio.currentTime);
+    const u = st.until;
+    if (u && st.book === u.book && st.chapter === u.chapter && v > u.verse && !audio.paused) {
+      audio.pause(); st.until = null;   // fin de la porción
+      if (typeof showToast === 'function') showToast('Fin de la porción ✦ Shabat shalom');
+      return;
+    }
     if (v !== st.verse) { st.verse = v; highlight(); }
   }
   function highlight() {
@@ -143,6 +154,8 @@
   }
   async function onEnded() {
     syncButtons();
+    const u = st.until;
+    if (u && st.book === u.book && st.chapter >= u.chapter) { st.until = null; if (typeof showToast === 'function') showToast('Fin de la porción ✦ Shabat shalom'); return; }
     const next = st.chapter + 1;
     const rows = await rowsFor(st.book);
     if (rows[next] && typeof loadChapter === 'function') {
@@ -153,7 +166,7 @@
   function close() {
     if (audio) audio.pause();
     $('kaPlayer')?.classList.remove('open');
-    st.book = st.chapter = st.verse = null;
+    st.book = st.chapter = st.verse = null; st.until = null;
     document.querySelectorAll('.verse.audio-now').forEach(e => e.classList.remove('audio-now'));
     syncButtons();
   }
@@ -167,14 +180,19 @@
     const b = $('kaCine');
     if (b) { b.hidden = !row.path_cine; b.classList.toggle('on', useCine); b.setAttribute('aria-pressed', useCine); }
   }
-  function start(book, chapter, row) {
+  function start(book, chapter, row, fromVerse) {
     injectUI();
     st.book = book; st.chapter = chapter; st.row = row; st.verse = null;
     setSource();
     applySpeed();
     $('kaName').textContent = `${bookName(book)} ${chapter}`;
     $('kaPlayer').classList.add('open');
-    audio.play().catch(() => {});
+    if (fromVerse > 1) {
+      const t = (row.timings || []).find(x => x[0] === fromVerse);
+      if (t) audio.addEventListener('loadedmetadata', () => { audio.currentTime = Math.max(0, t[1] - 0.3); }, { once: true });
+    }
+    // Sin un toque previo el navegador puede no dejar sonar: queda listo con ▶.
+    audio.play().catch(() => { if (typeof showToast === 'function') showToast('Toca ▶ para escuchar'); });
     if ('mediaSession' in navigator) {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({ title: `${bookName(book)} ${chapter}`, artist: 'KODESH Bible', album: 'Traducción Kodesh', artwork: [{ src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] });
@@ -194,6 +212,11 @@
     const rows = await rowsFor(book);
     if (book !== state.currentBook || chapter !== state.currentChapter) return;
     const row = rows[chapter];
+    if (pending && pending.book === book && pending.chapter === chapter) {
+      const from = pending.verse; pending = null;
+      if (row) { start(book, chapter, row, from); st.until = untilParam; }
+      else if (typeof showToast === 'function') showToast('Este capítulo aún no tiene audio');
+    }
     const meta = document.querySelector('#mainContent .chapter-meta');
     if (!row || !meta || meta.querySelector('.audio-chip')) { highlight(); return; }
     const b = document.createElement('button');

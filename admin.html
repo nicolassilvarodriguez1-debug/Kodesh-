@@ -1158,8 +1158,23 @@ const AUDIO_ADMIN = (() => {
   async function run(book, outdatedOnly) {
     if (running || !data) return;
     const b = data.books.find(x => x.book === book);
-    const list = outdatedOnly ? b.outdated : Array.from({ length: b.chapters }, (_, i) => i + 1).filter(c => !b.done.includes(c));
+    let list = outdatedOnly ? b.outdated : Array.from({ length: b.chapters }, (_, i) => i + 1).filter(c => !b.done.includes(c));
     if (!list.length) return;
+    if (!outdatedOnly && list.length > 1) {
+      // Rango opcional: "1-6", "7", "1-3,8". Vacío = todos los que faltan.
+      const ans = prompt(`¿Qué capítulos de ${b.name}? Ej.: 1-6 (vacío = los ${list.length} que faltan)`, '');
+      if (ans === null) return;
+      if (ans.trim()) {
+        const want = new Set();
+        for (const part of ans.split(',')) {
+          const m = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+          if (!m) { alert('Rango no válido: ' + part); return; }
+          for (let c = +m[1]; c <= +(m[2] || m[1]); c++) want.add(c);
+        }
+        list = list.filter(c => want.has(c));
+        if (!list.length) { alert('Esos capítulos ya están grabados.'); return; }
+      }
+    }
     if (!confirm(`¿Grabar ${list.length} capítulo(s) de ${b.name} con ElevenLabs? Gasta créditos (aprox. ${n(list.length * 5500)} caracteres).`)) return;
     running = true; stopFlag = false;
     const msg = document.getElementById('audioMsg'), stopBtn = document.getElementById('audioStopBtn');

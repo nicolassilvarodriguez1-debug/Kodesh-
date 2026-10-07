@@ -25,6 +25,15 @@ export const LIBRARY = [
   { key: 'rio', kind: 'amb', label: 'Río Jordán', prompt: 'Flowing river water, gentle current, reeds in the wind, birds, no music' },
   { key: 'tumba', kind: 'amb', label: 'Sepulcro', prompt: 'Silent rock-cut tomb, faint dripping water, hollow echo, very quiet, no music' },
   { key: 'lluvia', kind: 'amb', label: 'Lluvia', prompt: 'Steady rain falling on stone and leaves, no thunder, no music' },
+  // Ambientes del Tanaj (cinematográficos)
+  { key: 'abismo', kind: 'amb', label: 'Abismo y aguas primordiales', prompt: 'Primordial dark void before creation, deep cosmic low drone, vast dark waters moving slowly, mysterious and awe-inspiring, no music, no voices' },
+  { key: 'eden', kind: 'amb', label: 'Jardín del Edén', prompt: 'Lush paradise garden, gentle stream, exotic birds singing, soft breeze through trees, peaceful and pristine, no music' },
+  { key: 'diluvio', kind: 'amb', label: 'Diluvio', prompt: 'Torrential relentless rain, rising flood waters, rolling thunder, wind howling, catastrophic storm, no music' },
+  { key: 'arca', kind: 'amb', label: 'Dentro del arca', prompt: 'Inside a huge wooden ark on stormy waters, creaking timbers, rain on the roof, animals stirring, muffled waves, no music' },
+  { key: 'batalla', kind: 'amb', label: 'Batalla antigua', prompt: 'Ancient battlefield, armies clashing, swords and shields, war cries, horses, distant chaos, cinematic, no music' },
+  { key: 'campamento', kind: 'amb', label: 'Campamento de noche', prompt: 'Nomadic tent camp at night in the desert, campfires crackling, camels and goats, distant quiet voices, wind, no music' },
+  { key: 'egipto_palacio', kind: 'amb', label: 'Palacio de Egipto', prompt: 'Grand ancient Egyptian palace hall, vast stone echo, distant attendants, fountains, faint ceremonial atmosphere, no music' },
+  { key: 'desierto_noche', kind: 'amb', label: 'Desierto de noche', prompt: 'Vast desert at night, cold wind, distant jackals, silence and stars, no music' },
   // Efectos puntuales
   { key: 'gallo', kind: 'sfx', seconds: 3, label: 'Canto del gallo', prompt: 'A rooster crowing at dawn, single crow' },
   { key: 'trueno', kind: 'sfx', seconds: 5, label: 'Trueno', prompt: 'Distant rolling thunder' },
@@ -46,6 +55,27 @@ export const LIBRARY = [
   { key: 'viento_recio', kind: 'sfx', seconds: 5, label: 'Viento recio', prompt: 'Sudden rushing mighty wind filling a room' },
   { key: 'llanto', kind: 'sfx', seconds: 5, label: 'Llanto', prompt: 'Several women weeping softly in mourning' },
   { key: 'cadenas', kind: 'sfx', seconds: 3, label: 'Cadenas', prompt: 'Heavy iron chains rattling' },
+  // Efectos cinematográficos del Tanaj
+  { key: 'luz', kind: 'sfx', seconds: 6, label: '«Sea la luz»', prompt: 'Cinematic burst of divine light, massive shimmering swell and bright whoosh rising from darkness, awe-inspiring' },
+  { key: 'aguas_separan', kind: 'sfx', seconds: 6, label: 'Aguas que se separan', prompt: 'Enormous body of water rushing and parting apart, deep roaring waves, cinematic' },
+  { key: 'tierra_surge', kind: 'sfx', seconds: 6, label: 'La tierra surge', prompt: 'Land rising from the sea, deep rumbling earth, water cascading off rocks, cinematic' },
+  { key: 'vida_brota', kind: 'sfx', seconds: 5, label: 'La vida brota', prompt: 'Plants and trees bursting into life, rustling leaves growing rapidly, magical organic swell' },
+  { key: 'animales', kind: 'sfx', seconds: 6, label: 'Animales que aparecen', prompt: 'Chorus of animals appearing: birds taking flight, distant lion roar, cattle, wings flapping, cinematic nature swell' },
+  { key: 'aliento_vida', kind: 'sfx', seconds: 4, label: 'Aliento de vida', prompt: 'A deep gentle divine breath, soft wind blowing into a body, then a first human gasp of life' },
+  { key: 'fruto', kind: 'sfx', seconds: 2, label: 'Morder el fruto', prompt: 'Biting into a crisp juicy fruit' },
+  { key: 'silbido_serpiente', kind: 'sfx', seconds: 3, label: 'Siseo de serpiente', prompt: 'Sinister serpent hiss and slithering through leaves' },
+  { key: 'golpe_muerte', kind: 'sfx', seconds: 3, label: 'Golpe mortal', prompt: 'A heavy blunt blow and a body falling to the ground in a field, dramatic' },
+  { key: 'espada_fuego', kind: 'sfx', seconds: 4, label: 'Espada de fuego', prompt: 'Flaming sword ignites and swirls, roaring fire whoosh, cinematic' },
+  { key: 'puerta_arca', kind: 'sfx', seconds: 4, label: 'Se cierra el arca', prompt: 'Enormous wooden door slowly closing and sealing with a deep boom' },
+  { key: 'trueno_divino', kind: 'sfx', seconds: 6, label: 'Trueno divino', prompt: 'Massive close thunder crack rolling across the sky, cinematic and powerful' },
+  { key: 'choque_espadas', kind: 'sfx', seconds: 4, label: 'Choque de espadas', prompt: 'Swords clashing in combat, several strikes, metal ringing' },
+  { key: 'flechas', kind: 'sfx', seconds: 3, label: 'Lluvia de flechas', prompt: 'Volley of arrows whistling through the air and striking wood and shields' },
+  { key: 'galope', kind: 'sfx', seconds: 5, label: 'Caballos al galope', prompt: 'Many horses and chariots galloping past on hard ground' },
+  { key: 'cuerno_guerra', kind: 'sfx', seconds: 4, label: 'Cuerno de guerra', prompt: 'Ancient war horn blast calling an army to battle, echoing over hills' },
+  { key: 'fuego_altar', kind: 'sfx', seconds: 4, label: 'Fuego del altar', prompt: 'Fire flaring up on a stone altar, crackling, sacrifice smoke' },
+  { key: 'risa', kind: 'sfx', seconds: 3, label: 'Risa de incredulidad', prompt: 'An elderly woman quietly laughing to herself in disbelief' },
+  { key: 'pozo_cae', kind: 'sfx', seconds: 3, label: 'Caer a un pozo', prompt: 'A person thrown down into a dry stone pit, thud and dust, echo' },
+  { key: 'plaga', kind: 'sfx', seconds: 5, label: 'Plaga (enjambre)', prompt: 'Huge swarm of insects buzzing and descending, ominous' },
   // Música de fondo (instrumental, ~2 min)
   { key: 'm_reverente', kind: 'music', label: 'Música: reverente', prompt: 'Reverent, contemplative instrumental with soft oud, ney flute and warm low strings, ancient Middle Eastern modes, slow, gentle, no drums, no vocals, suitable as background under narration' },
   { key: 'm_esperanza', kind: 'music', label: 'Música: esperanza', prompt: 'Hopeful, gentle instrumental with harp, soft strings and a lyre, ancient Israel atmosphere, warm and uplifting, no vocals, background under narration' },
@@ -54,6 +84,13 @@ export const LIBRARY = [
   { key: 'm_triunfo', kind: 'music', label: 'Música: triunfo', prompt: 'Triumphant majestic instrumental, orchestral swell with brass, frame drums and strings, ancient Middle Eastern color, no vocals, background under narration' },
   { key: 'm_asombro', kind: 'music', label: 'Música: asombro', prompt: 'Awe and wonder, shimmering strings and airy pads, slow ancient Middle Eastern melody on ney flute, no vocals, background under narration' },
   { key: 'm_paz', kind: 'music', label: 'Música: paz', prompt: 'Peaceful pastoral instrumental, shepherd flute and lyre, gentle and calm, no vocals, background under narration' },
+  { key: 'm_creacion', kind: 'music', label: 'Música: la creación', prompt: 'Epic cinematic creation theme, starts from near silence with deep low strings and slowly builds into a vast majestic orchestral swell with soaring strings, horns and wordless airy pads, awe and wonder, no vocals, film score' },
+  { key: 'm_eden', kind: 'music', label: 'Música: Edén', prompt: 'Innocent and beautiful paradise theme, harp, celesta, soft woodwinds and gentle strings, pure and luminous, no vocals, film score' },
+  { key: 'm_caida', kind: 'music', label: 'Música: la caída / traición', prompt: 'Dark betrayal theme, unsettling low strings, dissonant pads, slow ominous pulse, sorrow and dread, no vocals, film score' },
+  { key: 'm_juicio', kind: 'music', label: 'Música: juicio', prompt: 'Ominous divine judgment theme, deep brass, timpani rolls, low choir-like synth pads without words, heavy and solemn, no vocals, film score' },
+  { key: 'm_batalla', kind: 'music', label: 'Música: batalla', prompt: 'Epic ancient battle music, thunderous war drums, driving low strings, heroic brass, Middle Eastern percussion, intense, no vocals, film score' },
+  { key: 'm_alianza', kind: 'music', label: 'Música: alianza / promesa', prompt: 'Majestic and warm covenant theme, noble horns and strings, hopeful and solemn, ancient Middle Eastern color, no vocals, film score' },
+  { key: 'm_viaje', kind: 'music', label: 'Música: travesía', prompt: 'Journey through the desert, steady frame drum, oud and ney flute melody, sense of movement and destiny, no vocals, film score' },
 ];
 export const LIB = Object.fromEntries(LIBRARY.map(x => [x.key, x]));
 export const MUSIC_SECONDS = 120;
@@ -71,9 +108,9 @@ export function soundtrackPrompt(bookName, chapter, segments) {
 - Música de fondo: ${list('music')}
 
 REGLAS
-1. Ambiente solo donde el lugar es claro en el texto. Puede haber huecos sin ambiente. Máximo 4 ambientes por capítulo; cada uno cubre un rango de versículos seguido.
-2. Música: de 1 a 3 tramos por capítulo, según el ánimo de la escena. En discursos largos de enseñanza usa música suave (m_reverente o m_paz) o ninguna.
-3. Efectos: solo cuando el texto describe ese sonido o acción de forma concreta (el gallo canta, la piedra es removida, la tormenta, las mesas volcadas). Máximo 6 por capítulo. Nunca efectos encima de las palabras de Yeshúa salvo que el texto lo pida.
+1. Ambiente solo donde el lugar es claro en el texto. Puede haber huecos sin ambiente. Máximo 5 ambientes por capítulo; cada uno cubre un rango de versículos seguido.
+2. Música: de 1 a 4 tramos por capítulo, según el ánimo de cada escena, como la banda sonora de una película: la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), las batallas (m_batalla), las promesas de Elohim (m_alianza), los viajes (m_viaje). En discursos largos de enseñanza usa música suave (m_reverente o m_paz) o ninguna. En genealogías largas, música muy suave o ninguna.
+3. Efectos: cuando el texto describe ese sonido o acción de forma concreta (el gallo canta, la piedra es removida, la tormenta, «sea la luz», las aguas que se separan, el golpe de Caín, la puerta del arca, las espadas). Máximo 8 por capítulo. Nunca efectos encima de las palabras de Yeshúa salvo que el texto lo pida.
 4. "when": "start" (al comenzar el versículo) o "end" (al terminar).
 5. Si nada encaja, deja las listas vacías. Menos es más.
 
@@ -103,9 +140,9 @@ export function cleanSoundtrack(raw, verseNumbers) {
     const key = String(e?.key || ''); const v = Math.round(Number(e?.v));
     if (!LIB[key] || LIB[key].kind !== 'sfx' || !(v >= min && v <= max)) continue;
     sfx.push({ v, key, when: e.when === 'end' ? 'end' : 'start' });
-    if (sfx.length >= 6) break;
+    if (sfx.length >= 8) break;
   }
-  return { ambience: ranges(raw?.ambience, 'amb', 4), music: ranges(raw?.music, 'music', 3), sfx };
+  return { ambience: ranges(raw?.ambience, 'amb', 5), music: ranges(raw?.music, 'music', 4), sfx };
 }
 
 // Segundos de inicio/fin de cada versículo a partir de los tiempos del audio.

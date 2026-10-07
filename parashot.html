@@ -132,6 +132,8 @@ a { color: var(--gold); }
 }
 .btn-primary { flex: 1; border: none; background: var(--gold); color: var(--on-gold); font-weight: 500; }
 .btn-ghost-gold { border-color: var(--gold-line); color: var(--gold); }
+.btn[hidden] { display: none; }
+#weekListen { padding: 0 14px; }
 .shabbat-line { display: flex; align-items: center; gap: 10px; padding: 0 4px; color: var(--text-mid); font-size: 14.5px; }
 
 /* ── Tu año ── */
@@ -287,6 +289,7 @@ a { color: var(--gold); }
     <div class="readings" id="weekReadings"></div>
     <div class="week-actions">
       <a class="btn btn-primary" id="weekContinue" href="index.html">Seguir leyendo</a>
+      <a class="btn btn-ghost-gold" id="weekListen" href="index.html" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Escuchar</a>
       <button class="btn btn-ghost-gold" id="weekConexion">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 6.3L20.5 12l-6.3 2.7L12 21l-2.2-6.3L3.5 12l6.3-2.7z"/></svg>
         Conexión
@@ -361,6 +364,7 @@ a { color: var(--gold); }
       </a>
       <button class="btn" id="sheetStudied" onclick="toggleStudied()" aria-pressed="false">Marcar estudiada</button>
     </div>
+    <a class="btn btn-ghost-gold" id="sheetListen" href="index.html" style="width:100%;margin-bottom:10px" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Escuchar la porción (audio dramatizado)</a>
     <a class="btn btn-ghost-gold" id="sheetCanvas" href="estudio.html?new=parasha" style="width:100%">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>
       Estudiar en el lienzo (escribe y dibuja)
@@ -465,6 +469,31 @@ function bibleUrl(ref, { study = false } = {}) {
   return url;
 }
 
+/* ── ESCUCHAR LA PORCIÓN ──
+   Abre la Biblia en el primer versículo de la porción con el reproductor listo
+   (&play=1) y le dice dónde parar (&until=GEN.6.8). Solo aparece si el primer
+   capítulo ya tiene audio grabado. */
+const AUDIO_SB = 'https://fvknbqdsgqdmwirrgcvb.supabase.co/rest/v1/bible_audio?version=eq.kodesh&select=book,chapter';
+const AUDIO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25icWRzZ3FkbXdpcnJnY3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzU2NjYsImV4cCI6MjA5NjExMTY2Nn0.RqiuH5fafECN1yW5MjBP3zzHAdXLH4QD3gBL_WZ-hB0';
+let audioReady = null;   // Set de "GEN.1"
+function loadAudioReady() {
+  if (!audioReady) audioReady = fetch(AUDIO_SB, { headers: { apikey: AUDIO_KEY, Authorization: `Bearer ${AUDIO_KEY}` } })
+    .then(r => r.ok ? r.json() : []).then(rows => new Set(rows.map(r => `${r.book}.${r.chapter}`))).catch(() => new Set());
+  return audioReady;
+}
+function listenUrl(p) {
+  let url = `index.html?book=${p.book}&chapter=${p.startChapter}&play=1&until=${p.book}.${p.endChapter}.${p.endVerse}`;
+  if (p.startVerse > 1) url += `&verse=${p.startVerse}`;
+  return url;
+}
+async function paintListen(id, p) {
+  const a = document.getElementById(id); if (!a || !p || !p.book) return;
+  a.hidden = true;
+  const ready = await loadAudioReady();
+  if (!ready.has(`${p.book}.${p.startChapter}`)) return;
+  a.href = listenUrl(p); a.hidden = false;
+}
+
 /* ── CARGA ── */
 async function loadData() {
   try {
@@ -526,6 +555,7 @@ function renderWeek() {
   cont.href = bibleUrl(p[nextR.field]);
   cont.textContent = done === 0 ? 'Empezar a leer' : done === 3 ? 'Leer de nuevo' : 'Seguir leyendo';
   document.getElementById('weekConexion').onclick = () => openSheet(p.num - 1);
+  paintListen('weekListen', p);
 
   // Cuenta regresiva a Shabat
   let txt = '';
@@ -673,6 +703,7 @@ function openSheet(idx) {
     </a>`).join('');
   document.getElementById('sheetStudy').href = bibleUrl(p.torah, { study: true });
   document.getElementById('sheetCanvas').href = `estudio.html?new=parasha&p=${p.num}`;
+  paintListen('sheetListen', p);
   document.getElementById('sheetPrev').disabled = idx === 0;
   document.getElementById('sheetNext').disabled = idx === PARASHOT.length - 1;
   paintStudiedBtn();
