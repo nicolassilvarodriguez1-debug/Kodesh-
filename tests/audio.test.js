@@ -103,3 +103,29 @@ test('llamadas: junta partes seguidas de la misma voz y marca los versículos', 
   assert.equal(calls[1].text, '[calm] Paz.');
   assert.deepEqual(calls[2].marks, [{ v: 3, at: 0 }]);
 });
+
+import { cleanSoundtrack, mixPlan, ffmpegArgs, LIBRARY } from '../api/_audioCinema.js';
+
+test('película: banda sonora limpia (claves válidas, sin solapes, topes)', () => {
+  const st = cleanSoundtrack({
+    ambience: [{ from: 1, to: 3, key: 'mar_calmo' }, { from: 2, to: 5, key: 'templo' }, { from: 4, to: 6, key: 'no_existe' }],
+    music: [{ from: 1, to: 6, key: 'm_paz' }, { from: 1, to: 2, key: 'gallo' }],
+    sfx: [{ v: 3, key: 'gallo', when: 'end' }, { v: 99, key: 'trueno' }, { v: 2, key: 'm_paz' }],
+  }, [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(st.ambience, [{ from: 1, to: 3, key: 'mar_calmo' }]);
+  assert.deepEqual(st.music, [{ from: 1, to: 6, key: 'm_paz' }]);
+  assert.deepEqual(st.sfx, [{ v: 3, key: 'gallo', when: 'end' }]);
+  assert.ok(LIBRARY.every(x => ['amb', 'sfx', 'music'].includes(x.kind)));
+});
+
+test('película: capas en el tiempo de cada versículo y comando de mezcla', () => {
+  const st = { ambience: [{ from: 1, to: 2, key: 'mar_calmo' }], music: [], sfx: [{ v: 2, key: 'gallo', when: 'start' }] };
+  const layers = mixPlan(st, [[1, 2], [2, 10], [3, 20]], 30, { gallo: 3 });
+  assert.equal(layers.length, 2);
+  assert.equal(layers[0].start, 1.5); assert.equal(layers[0].dur, 19.5);   // 1.5 → 21 (fin del v2 + 1 s)
+  assert.equal(layers[1].start, 10.2);
+  const args = ffmpegArgs('v.mp3', layers, { mar_calmo: 'a.mp3', gallo: 'g.mp3' }, 'o.mp3');
+  assert.equal(args.filter(a => a === '-i').length, 3);
+  assert.ok(args.join(' ').includes('sidechaincompress'));
+  assert.ok(args.includes('-stream_loop'));
+});

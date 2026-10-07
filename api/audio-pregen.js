@@ -25,6 +25,11 @@ import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, isValidBookId, isValidChapter } from './_security.js';
 import { speakable, numberToSpanish, mp3Duration, textHash } from './_audioCore.js';
 import { CAST, scriptPrompt, cleanScript, validateScript, planCalls, roleFor } from './_audioScript.js';
+import { LIBRARY, LIB, MUSIC_SECONDS, soundtrackPrompt, cleanSoundtrack, mixPlan, ffmpegArgs } from './_audioCinema.js';
+import ffmpegPath from 'ffmpeg-static';
+import { execFile } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 
 const SCRIPT_MODEL = 'claude-sonnet-4-5';
 let WJ = null;
@@ -64,7 +69,7 @@ async function credits() {
 
 async function status() {
   const [audio, textual] = await Promise.all([
-    sbJson(`bible_audio?version=eq.${VERSION}&select=book,chapter,duration_s,chars,text_hash,updated_at`),
+    sbJson(`bible_audio?version=eq.${VERSION}&select=book,chapter,duration_s,chars,text_hash,updated_at,path_cine`),
     sbJson(`textual_cache?book_id=in.(${AUDIO_BOOKS.join(',')})&select=book_id,chapter,updated_at`),
   ]);
   const books = AUDIO_BOOKS.map(id => {
@@ -74,6 +79,7 @@ async function status() {
     return {
       book: id, name: bookName(id), chapters: bookChapters(id), withText: tx.length,
       done: mine.map(a => a.chapter).sort((a, b) => a - b), outdated,
+      cine: mine.filter(a => a.path_cine).map(a => a.chapter).sort((a, b) => a - b),
       minutes: Math.round(mine.reduce((s, a) => s + Number(a.duration_s || 0), 0) / 60),
       chars: mine.reduce((s, a) => s + Number(a.chars || 0), 0),
     };
@@ -124,6 +130,20 @@ async function askClaude(prompt) {
   if (!m) throw new Error('La IA no devolvió un guion válido');
   return JSON.parse(m[0]).segments || [];
 }
+async function askClaudeJson(prompt, maxTokens = 4000) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: SCRIPT_MODEL, max_tokens: maxTokens, system: prompt.system, messages: [{ role: 'user', content: prompt.user }] }),
+  });
+  if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text().catch(() => '')).slice(0, 200)}`);
+  const d = await r.json();
+  const txt = (d.content || []).map(c => c.text || '').join('');
+  const m = txt.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('La IA no devolvió JSON');
+  return JSON.parse(m[0]);
+}
+
 async function makeScript(book, chapter) {
   const verses = await chapterText(book, chapter);
   if (!Object.keys(verses).length) return null;
@@ -251,6 +271,104 @@ async function generate(book, chapter, force) {
   return { ok: true, book, chapter, seconds: Math.round(offset), chars, calls: calls.length };
 }
 
+// ════════ Película: biblioteca, banda sonora y mezcla ════════
+const publicUrl = p => `${SB_URL}/storage/v1/object/public/${BUCKET}/${p}`;
+async function upload(p, buf, type = 'audio/mpeg') {
+  const up = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${p}`, {
+    method: 'POST', headers: sbHeaders({ 'Content-Type': type, 'x-upsert': 'true', 'cache-control': 'max-age=604800' }), body: buf,
+  });
+  if (!up.ok) throw new Error(`storage → ${up.status} ${(await up.text().catch(() => '')).slice(0, 200)}`);
+}
+async function libRows() { return (await sbJson('bible_audio_library?select=key,kind,path,seconds,credits').catch(() => [])) || []; }
+async function libStatus() {
+  const rows = await libRows();
+  const have = Object.fromEntries(rows.map(r => [r.key, r]));
+  return { items: LIBRARY.map(x => ({ key: x.key, kind: x.kind, label: x.label, done: !!have[x.key], credits: have[x.key]?.credits ?? null })) };
+}
+async function libBuild(key) {
+  const item = LIB[key];
+  if (!item) throw new Error('Sonido desconocido');
+  let audio, credits = null, seconds = null;
+  if (item.kind === 'music') {
+    const r = await fetch(`${EL}/music?output_format=mp3_44100_128`, {
+      method: 'POST', headers: elHeaders(),
+      body: JSON.stringify({ prompt: item.prompt, music_length_ms: MUSIC_SECONDS * 1000, force_instrumental: true }),
+    });
+    if (!r.ok) { const e = new Error(`ElevenLabs música ${r.status}: ${(await r.text().catch(() => '')).slice(0, 240)}`); e.status = r.status; throw e; }
+    audio = Buffer.from(await r.arrayBuffer());
+    credits = Number(r.headers.get('character-cost')) || null;
+    seconds = MUSIC_SECONDS;
+  } else {
+    const loop = item.kind === 'amb';
+    const r = await fetch(`${EL}/sound-generation?output_format=mp3_44100_128`, {
+      method: 'POST', headers: elHeaders(),
+      body: JSON.stringify({ text: item.prompt, loop, duration_seconds: loop ? 30 : (item.seconds || 3), prompt_influence: 0.45 }),
+    });
+    if (!r.ok) { const e = new Error(`ElevenLabs efectos ${r.status}: ${(await r.text().catch(() => '')).slice(0, 240)}`); e.status = r.status; throw e; }
+    audio = Buffer.from(await r.arrayBuffer());
+    credits = Number(r.headers.get('character-cost')) || null;
+    seconds = mp3Duration(audio).seconds || (loop ? 30 : item.seconds);
+  }
+  const p = `library/${key}.mp3`;
+  await upload(p, audio);
+  await sbJson('bible_audio_library?on_conflict=key', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify([{ key, kind: item.kind, path: p, seconds, credits, prompt: item.prompt, created_at: new Date().toISOString() }]),
+  });
+  return { ok: true, key, credits, seconds };
+}
+async function getSoundtrack(book, chapter, regen) {
+  const rows = await sbJson(`bible_audio_scripts?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=segments,soundtrack&limit=1`);
+  const row = rows?.[0];
+  if (!row) return null;
+  if (row.soundtrack && !regen) return row.soundtrack;
+  const raw = await askClaudeJson(soundtrackPrompt(bookName(book), chapter, row.segments));
+  const st = cleanSoundtrack(raw, [...new Set(row.segments.map(x => x.v))]);
+  await sbJson(`bible_audio_scripts?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ soundtrack: st }),
+  });
+  return st;
+}
+async function download(url, file) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`descarga ${r.status} ${url.split('/').slice(-2).join('/')}`);
+  fs.writeFileSync(file, Buffer.from(await r.arrayBuffer()));
+}
+function runFfmpeg(args) {
+  return new Promise((resolve, reject) => execFile(ffmpegPath, args, { maxBuffer: 1 << 24 }, (err, _o, stderr) => err ? reject(new Error('ffmpeg: ' + String(stderr || err.message).slice(0, 300))) : resolve()));
+}
+async function mix(book, chapter) {
+  const rows = await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=path,timings,duration_s,text_hash&limit=1`);
+  const row = rows?.[0];
+  if (!row) return { ok: false, reason: 'sin_voz' };
+  const st = await getSoundtrack(book, chapter, false);
+  if (!st) return { ok: false, reason: 'sin_guion' };
+  const lib = Object.fromEntries((await libRows()).map(r => [r.key, r]));
+  const sfxSeconds = Object.fromEntries(Object.values(lib).filter(r => r.kind === 'sfx').map(r => [r.key, Number(r.seconds) || 3]));
+  const layers = mixPlan(st, row.timings, Number(row.duration_s), sfxSeconds).filter(l => lib[l.key]);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mix-'));
+  try {
+    const voice = path.join(dir, 'voice.mp3');
+    await download(publicUrl(row.path), voice);
+    const files = {};
+    for (const key of [...new Set(layers.map(l => l.key))]) {
+      files[key] = path.join(dir, key + '.mp3');
+      await download(publicUrl(lib[key].path), files[key]);
+    }
+    const out = path.join(dir, 'out.mp3');
+    await runFfmpeg(ffmpegArgs(voice, layers, files, out));
+    const p = `${VERSION}/${book}/${chapter}.cine.mp3`;
+    await upload(p, fs.readFileSync(out));
+    await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ path_cine: p, cine_updated_at: new Date().toISOString() }),
+    });
+    const missing = [...new Set(mixPlan(st, row.timings, Number(row.duration_s), sfxSeconds).map(l => l.key).filter(k => !lib[k]))];
+    return { ok: true, layers: layers.length, missing, soundtrack: st };
+  } finally {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+  }
+}
+
 export default async function handler(req, res) {
   applyCors(req, res);
   if (handleOptions(req, res)) return;
@@ -266,6 +384,8 @@ export default async function handler(req, res) {
     if (action === 'status') return res.status(200).json(await status());
     if (action === 'cast_get') return res.status(200).json(await castGet());
     if (action === 'cast_save') return res.status(200).json(await castSave(req.body?.voices));
+    if (action === 'lib_status') return res.status(200).json(await libStatus());
+    if (action === 'lib_build') return res.status(200).json(await libBuild(String(req.body?.key || '')));
     const book = isValidBookId(req.body?.book) ? String(req.body.book).toUpperCase() : null;
     const chapter = book && isValidChapter(req.body?.chapter) ? Number(req.body.chapter) : null;
     if (!book || !chapter || !AUDIO_BOOKS.includes(book)) return res.status(400).json({ error: 'Libro o capítulo no válido' });
@@ -277,6 +397,8 @@ export default async function handler(req, res) {
     }
     if (action === 'script_save') return res.status(200).json(await saveScript(book, chapter, req.body?.segments));
     if (action === 'generate') return res.status(200).json(await generate(book, chapter, !!req.body?.force));
+    if (action === 'soundtrack') return res.status(200).json({ ok: true, soundtrack: await getSoundtrack(book, chapter, !!req.body?.regen) });
+    if (action === 'mix') return res.status(200).json(await mix(book, chapter));
     return res.status(400).json({ error: 'Acción no válida' });
   } catch (e) {
     console.error('audio-pregen', e.message);

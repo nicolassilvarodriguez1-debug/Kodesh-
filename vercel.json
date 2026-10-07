@@ -84,9 +84,9 @@
       "includeFiles": "biblia-rvr.json"
     },
     "api/audio-pregen.js": {
-      "memory": 512,
+      "memory": 1769,
       "maxDuration": 300,
-      "includeFiles": "palabras-yeshua.json"
+      "includeFiles": "{palabras-yeshua.json,node_modules/ffmpeg-static/ffmpeg}"
     },
     "api/headings-pregen.js": {
       "memory": 1024,

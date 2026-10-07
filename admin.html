@@ -441,10 +441,12 @@ tr:hover td { background:rgba(255,255,255,0.02); }
           <div style="display:flex;gap:8px">
             <button class="btn-sm" id="audioStopBtn" onclick="AUDIO_ADMIN.stop()" style="display:none">Detener</button>
             <button class="btn-sm" onclick="AUDIO_ADMIN.toggleCast()">Elenco de voces</button>
+            <button class="btn-sm" onclick="AUDIO_ADMIN.toggleLib()">Biblioteca de sonido</button>
             <button class="btn-sm" onclick="AUDIO_ADMIN.load()">Revisar</button>
           </div>
         </div>
         <div class="upload-msg" id="audioMsg" style="margin-top:10px"></div>
+        <div id="audioLib" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
         <div id="audioCast" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
         <div id="audioScript" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px;max-height:520px;overflow:auto"></div>
         <div id="audioBooks" style="display:grid;gap:8px;margin-top:10px"></div>
@@ -1124,11 +1126,13 @@ const AUDIO_ADMIN = (() => {
     msg.textContent = c ? `Créditos de ElevenLabs: ${n(c.limit - c.used)} disponibles de ${n(c.limit)} (plan ${c.tier || '—'})${c.resetAt ? ' · se renuevan el ' + new Date(c.resetAt).toLocaleDateString('es') : ''}.` : 'No se pudieron leer los créditos de ElevenLabs.';
     box.innerHTML = data.books.map(b => {
       const missing = b.chapters - b.done.length;
-      const label = `${b.done.length} de ${b.chapters} capítulos` + (b.minutes ? ` · ${b.minutes} min` : '') + (b.outdated.length ? ` · ${b.outdated.length} desactualizados` : '');
+      const label = `${b.done.length} de ${b.chapters} capítulos` + (b.minutes ? ` · ${b.minutes} min` : '') + (b.cine && b.cine.length ? ` · 🎬 ${b.cine.length} en película` : '') + (b.outdated.length ? ` · ${b.outdated.length} desactualizados` : '');
+      const toMix = b.done.filter(c => !(b.cine || []).includes(c));
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
         <div><div style="font-size:0.8rem">${b.name}</div><div style="font-size:0.68rem;color:var(--text-dim)">${label}${b.withText < b.chapters ? ` · solo ${b.withText} con texto Kodesh` : ''}</div></div>
         <div style="display:flex;gap:6px">
           <button class="btn-sm" onclick="AUDIO_ADMIN.showScript('${b.book}')">Ver guion</button>
+          ${toMix.length ? `<button class="btn-sm" onclick="AUDIO_ADMIN.mixBook('${b.book}')">🎬 Película ${toMix.length}</button>` : ''}
           ${b.outdated.length ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', true)">Regrabar ${b.outdated.length}</button>` : ''}
           ${missing > 0 ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', false)">Grabar ${missing}</button>` : '<span style="font-size:0.7rem;color:var(--green,#7fc98a)">✓ Completo</span>'}
         </div></div>`;
@@ -1170,7 +1174,11 @@ const AUDIO_ADMIN = (() => {
         if (!sc.ok) { msg.textContent = `${b.name} ${list[i]} no tiene texto Kodesh todavía; se salta.`; continue; }
         msg.textContent = `⏳ Grabando ${b.name} ${list[i]} (${i + 1} de ${list.length})… guion listo, grabando las voces.`;
         const r = await retry(() => api({ action: 'generate', book, chapter: list[i], force: outdatedOnly }));
-        if (r.ok) ok++;
+        if (r.ok) {
+          ok++;
+          msg.textContent = `⏳ ${b.name} ${list[i]}: voces listas, mezclando música y efectos…`;
+          try { await retry(() => api({ action: 'mix', book, chapter: list[i] })); } catch (e) { console.warn('mezcla', e); }
+        }
         else if (r.reason === 'sin_texto_kodesh') msg.textContent = `${b.name} ${list[i]} no tiene texto Kodesh todavía; se salta.`;
       }
       msg.className = 'upload-msg ok';
@@ -1251,12 +1259,69 @@ const AUDIO_ADMIN = (() => {
     try {
       await retry(() => api({ action: 'script', book, chapter: ch }));
       const r = await retry(() => api({ action: 'generate', book, chapter: ch, force: true }));
+      if (r.ok) { msg.textContent = `⏳ ${name} ${ch}: voces listas, mezclando música y efectos…`; await retry(() => api({ action: 'mix', book, chapter: ch })); }
       msg.className = 'upload-msg ok';
       msg.textContent = r.ok ? `✓ ${name} ${ch} grabado: ${Math.floor(r.seconds / 60)}:${String(r.seconds % 60).padStart(2, '0')} min, ${n(r.chars)} caracteres. Ábrelo en la app y toca «Escuchar».` : `No se grabó (${r.reason || 'error'}).`;
     } catch (e) { msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message; }
     finally { running = false; const keep = msg.textContent, cls = msg.className; await load(); msg.textContent = keep + ' ' + msg.textContent; msg.className = cls; }
   }
-  return { load, run, stop: () => { stopFlag = true; }, toggleCast, saveCast, showScript, openScript, saveScript, recordOne };
+  // ── Biblioteca de sonido (se genera una sola vez) ──
+  async function toggleLib() {
+    const box = document.getElementById('audioLib');
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+    box.style.display = ''; box.innerHTML = 'Cargando biblioteca…';
+    await renderLib();
+  }
+  async function renderLib(note) {
+    const box = document.getElementById('audioLib');
+    try {
+      const { items } = await api({ action: 'lib_status' });
+      const kinds = { amb: 'Ambientes', sfx: 'Efectos', music: 'Música de fondo' };
+      const missing = items.filter(x => !x.done).length;
+      const spent = items.reduce((s2, x) => s2 + (x.credits || 0), 0);
+      box.innerHTML = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px">Sonidos que se generan UNA vez con ElevenLabs y se reutilizan en todos los capítulos. ${missing ? `Faltan ${missing}.` : '✓ Biblioteca completa.'}${spent ? ` Créditos usados: ${n(spent)}.` : ''} La música necesita el permiso «Generación de música» en la clave de ElevenLabs.</div>
+        ${note ? `<div style="font-size:0.72rem;margin-bottom:8px">${esc(note)}</div>` : ''}
+        ${Object.entries(kinds).map(([k, t]) => `<div style="margin:8px 0 4px;font-size:0.7rem;letter-spacing:1px;color:var(--gold)">${t}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">${items.filter(x => x.kind === k).map(x => `<span style="font-size:0.7rem;padding:4px 8px;border-radius:12px;border:1px solid var(--border);${x.done ? 'color:var(--text)' : 'color:var(--text-dim);border-style:dashed'}">${x.done ? '✓ ' : ''}${esc(x.label)}</span>`).join('')}</div>`).join('')}
+        <div style="margin-top:10px;display:flex;gap:8px">${missing ? `<button class="btn-sm" onclick="AUDIO_ADMIN.buildLib()">Generar ${missing} sonidos</button>` : ''}</div>`;
+      libItems = items;
+    } catch (e) { box.innerHTML = `<span style="color:var(--red)">${esc(e.message)}</span>`; }
+  }
+  let libItems = [];
+  async function buildLib() {
+    if (running) return;
+    const todo = libItems.filter(x => !x.done);
+    if (!todo.length || !confirm(`¿Generar ${todo.length} sonidos con ElevenLabs? Se hace una sola vez y se reutilizan en todos los capítulos.`)) return;
+    running = true; stopFlag = false;
+    const errs = [];
+    try {
+      for (let i = 0; i < todo.length && !stopFlag; i++) {
+        await renderLib(`⏳ Generando ${todo[i].label} (${i + 1} de ${todo.length})…`);
+        try { await retry(() => api({ action: 'lib_build', key: todo[i].key })); }
+        catch (e) { errs.push(`${todo[i].label}: ${e.message}`); if (/40[13]/.test(e.message)) break; }
+      }
+    } finally { running = false; await renderLib(errs.length ? 'Algunos no se generaron: ' + errs.slice(0, 3).join(' · ') : '✓ Listo.'); }
+  }
+  async function mixBook(book) {
+    if (running || !data) return;
+    const b = data.books.find(x => x.book === book);
+    const list = b.done.filter(c => !(b.cine || []).includes(c));
+    if (!list.length || !confirm(`¿Convertir ${list.length} capítulo(s) de ${b.name} en película (música, ambientes y efectos)? No vuelve a grabar las voces.`)) return;
+    running = true; stopFlag = false;
+    const msg = document.getElementById('audioMsg'), stopBtn = document.getElementById('audioStopBtn');
+    stopBtn.style.display = '';
+    let ok = 0;
+    try {
+      for (let i = 0; i < list.length && !stopFlag; i++) {
+        msg.className = 'upload-msg'; msg.textContent = `🎬 Mezclando ${b.name} ${list[i]} (${i + 1} de ${list.length})…`;
+        const r = await retry(() => api({ action: 'mix', book, chapter: list[i] }));
+        if (r.ok) ok++;
+      }
+      msg.className = 'upload-msg ok'; msg.textContent = `✓ ${ok} capítulo(s) en modo película.`;
+    } catch (e) { msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message; }
+    finally { running = false; stopBtn.style.display = 'none'; const keep = msg.textContent, cls = msg.className; await load(); msg.textContent = keep + ' ' + msg.textContent; msg.className = cls; }
+  }
+  return { load, run, stop: () => { stopFlag = true; }, toggleCast, saveCast, showScript, openScript, saveScript, recordOne, toggleLib, buildLib, mixBook };
 })();
 
 // ── HISTORIAL PREMIUM ──

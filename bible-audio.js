@@ -8,7 +8,8 @@
   const SPEEDS = [1, 1.25, 1.5, 0.8];
   const byBook = {};          // book → Promise<{ chapter: row }>
   const $ = id => document.getElementById(id);
-  const st = { book: null, chapter: null, row: null, verse: null, userScrollAt: 0, speedIdx: 0 };
+  const st = { book: null, chapter: null, row: null, verse: null, userScrollAt: 0, speedIdx: 0, cine: true };
+  try { st.cine = localStorage.getItem('kodesh_audio_cine') !== '0'; } catch (e) {}
   try { st.speedIdx = Math.max(0, SPEEDS.indexOf(Number(localStorage.getItem('kodesh_audio_speed')) || 1)); } catch (e) {}
   let audio = null;
 
@@ -17,7 +18,7 @@
     if (!byBook[book]) {
       byBook[book] = (async () => {
         const c = sb(); if (!c) throw new Error('sin conexión');
-        const { data, error } = await c.from('bible_audio').select('chapter,path,duration_s,timings,text_hash').eq('version', VERSION).eq('book', book);
+        const { data, error } = await c.from('bible_audio').select('chapter,path,path_cine,cine_updated_at,duration_s,timings,text_hash').eq('version', VERSION).eq('book', book);
         if (error) throw error;
         const map = {}; (data || []).forEach(r => { map[r.chapter] = r; }); return map;
       })().catch(e => { delete byBook[book]; return {}; });
@@ -46,6 +47,8 @@
 .ka-btn { width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border, #2A2836); background: transparent; color: var(--text-mid, #B8AF9C); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font: inherit; font-size: .78rem; padding: 0; }
 .ka-play { width: 48px; height: 48px; border-radius: 24px; border: none; background: var(--gold, #C9A84C); color: #15120A; }
 .ka-speed { width: auto; padding: 0 10px; min-width: 48px; }
+.ka-cine { font-size: 1rem; }
+.ka-cine.on { border-color: var(--gold, #C9A84C); background: var(--gold-glow, rgba(201,168,76,.14)); }
 .ka-bar { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--border, #2A2836); outline: none; margin: 4px 0 0; }
 .ka-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 8px; background: var(--gold, #C9A84C); cursor: pointer; }
 .ka-bar::-moz-range-thumb { width: 16px; height: 16px; border-radius: 8px; background: var(--gold, #C9A84C); border: none; }`;
@@ -60,6 +63,7 @@
         <div class="ka-title"><div class="ka-name" id="kaName">—</div><div class="ka-sub" id="kaSub">Traducción Kodesh</div></div>
         <button class="ka-btn" id="kaBack" aria-label="Retroceder 15 segundos">${ico('<path d="M11 5L6 9l5 4"/><path d="M6 9h8a5 5 0 010 10h-3"/>')}</button>
         <button class="ka-btn" id="kaFwd" aria-label="Adelantar 15 segundos">${ico('<path d="M13 5l5 4-5 4"/><path d="M18 9h-8a5 5 0 000 10h3"/>')}</button>
+        <button class="ka-btn ka-cine" id="kaCine" aria-label="Película: música y efectos" title="Película: música y efectos" hidden>🎬</button>
         <button class="ka-btn ka-speed" id="kaSpeed" aria-label="Velocidad">1×</button>
         <button class="ka-btn" id="kaClose" aria-label="Cerrar reproductor">✕</button>
       </div>
@@ -77,6 +81,14 @@
     $('kaFwd').onclick = () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 15); };
     $('kaSpeed').onclick = () => { st.speedIdx = (st.speedIdx + 1) % SPEEDS.length; applySpeed(); };
     $('kaClose').onclick = close;
+    $('kaCine').onclick = () => {
+      st.cine = !st.cine;
+      try { localStorage.setItem('kodesh_audio_cine', st.cine ? '1' : '0'); } catch (e) {}
+      const t = audio.currentTime, playing = !audio.paused;
+      setSource();
+      audio.addEventListener('loadedmetadata', () => { audio.currentTime = t; if (playing) audio.play().catch(() => {}); }, { once: true });
+      if (typeof showToast === 'function') showToast(st.cine ? '🎬 Película: con música y efectos' : 'Solo voces');
+    };
     $('kaBar').addEventListener('input', e => { if (audio.duration) audio.currentTime = audio.duration * e.target.value / 1000; });
     applySpeed();
     ['wheel', 'touchmove'].forEach(ev => window.addEventListener(ev, () => { st.userScrollAt = Date.now(); }, { passive: true }));
@@ -145,11 +157,20 @@
     document.querySelectorAll('.verse.audio-now').forEach(e => e.classList.remove('audio-now'));
     syncButtons();
   }
+  function setSource() {
+    const row = st.row; if (!row) return;
+    const useCine = !!(st.cine && row.path_cine);
+    const p = useCine ? row.path_cine : row.path;
+    const v = (row.text_hash || '') + (useCine ? '-' + (row.cine_updated_at || '') : '');
+    const url = sb().storage.from('bible-audio').getPublicUrl(p).data.publicUrl + `?v=${encodeURIComponent(v)}`;
+    if (audio.src !== url) audio.src = url;
+    const b = $('kaCine');
+    if (b) { b.hidden = !row.path_cine; b.classList.toggle('on', useCine); b.setAttribute('aria-pressed', useCine); }
+  }
   function start(book, chapter, row) {
     injectUI();
     st.book = book; st.chapter = chapter; st.row = row; st.verse = null;
-    const url = sb().storage.from('bible-audio').getPublicUrl(row.path).data.publicUrl + `?v=${row.text_hash || ''}`;
-    if (audio.src !== url) audio.src = url;
+    setSource();
     applySpeed();
     $('kaName').textContent = `${bookName(book)} ${chapter}`;
     $('kaPlayer').classList.add('open');
