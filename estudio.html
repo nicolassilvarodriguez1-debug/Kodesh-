@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<script src="/recovery-guard.js"></script>
+<script src="/native-insets.js"></script>
+<title>KODESH · Lienzo de estudio</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b0b12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Frank+Ruhl+Libre:wght@500&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<script>try { if (localStorage.getItem('kodesh_theme') === 'light') document.documentElement.classList.add('light'); } catch (e) {}</script>
+<style>
+:root {
+  --bg: #0b0b12; --bg2: #12111a; --bg3: #1b1a26; --bg-sunk: #08080d; --page: #14131d;
+  --border: #22212e; --border2: #2a2836; --hair: #1c1b26;
+  --text: #e9e3d3; --text-mid: #b8af9c; --text-dim: #8e8676; --text-soft: #cfc7b5;
+  --gold: #c9a84c; --gold-line: #3a3220; --gold-glow: rgba(201,168,76,0.14); --on-gold: #15120a;
+  --blue: #8db8f5; --purple: #b9a0f2; --red: #e08a7a; --green: #7fc98a;
+  --ink: #e9e3d3; --hand: #d9cfb4; --dots: #24222f; --lines: #1e1d2a; --tpl-border: #26243a;
+  --scrim: rgba(2,2,6,0.6);
+  --font-display: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --font-hebrew: 'Frank Ruhl Libre', 'SBL Hebrew', serif;
+  --font-hand: 'Caveat', 'Comic Sans MS', cursive;
+  --safe-top: var(--safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+html.light {
+  --bg: #f6f1e6; --bg2: #fffdf8; --bg3: #f0e9da; --bg-sunk: #ebe3d1; --page: #fffdf8;
+  --border: #e6dcc6; --border2: #d9cdb2; --hair: #ece3d0;
+  --text: #241d12; --text-mid: #4f4636; --text-dim: #7a6f5c; --text-soft: #4f4636;
+  --gold: #8a6a1e; --gold-line: #dccb9c; --gold-glow: rgba(138,106,30,0.12); --on-gold: #fffdf8;
+  --blue: #1f5a9e; --purple: #5b3aa0; --red: #a8402e; --green: #2f7a3a;
+  --ink: #241d12; --hand: #2e3e7a; --dots: #e2d8c2; --lines: #efe6d2; --tpl-border: #e6dcc6;
+  --scrim: rgba(60,45,15,0.35);
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px;
+  -webkit-font-smoothing: antialiased; font-variant-numeric: lining-nums; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+button { font: inherit; color: inherit; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+[lang="he"] { font-family: var(--font-hebrew); font-weight: 500; }
+[hidden] { display: none !important; }
+.icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ── Botones base ── */
+.ibtn {
+  width: 40px; height: 40px; flex-shrink: 0; border: none; background: transparent; color: var(--text-mid);
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 20px; cursor: pointer; text-decoration: none;
+}
+.ibtn:active, .ibtn:hover { background: var(--gold-glow); }
+.ibtn.on { background: var(--gold); color: var(--on-gold); }
+.ibtn:disabled { opacity: 0.35; cursor: default; background: transparent; }
+.pill {
+  height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--border2); background: transparent;
+  color: var(--text-mid); font-size: 14.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.pill.on { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+.btn-gold { height: 44px; padding: 0 22px; border-radius: 22px; border: none; background: var(--gold); color: var(--on-gold); font-size: 15.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-line { height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid var(--border2); background: transparent; color: var(--text); font-size: 15px; cursor: pointer; }
+.label { font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+
+/* ── Barra superior ── */
+.topbar {
+  position: relative; z-index: 30; display: flex; align-items: center; gap: 8px;
+  padding: calc(8px + var(--safe-top)) 12px 8px 6px; min-height: calc(58px + var(--safe-top));
+  background: var(--bg); border-bottom: 1px solid var(--hair);
+}
+.topbar::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 160px; background: var(--bg); }
+.title-input {
+  min-width: 0; flex: 0 1 280px; height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid transparent;
+  background: transparent; color: var(--text); font-family: var(--font-display); font-size: 20px; font-weight: 600; outline: none;
+}
+.title-input:focus { border-color: var(--border2); background: var(--bg2); }
+.save-state { font-size: 12.5px; color: var(--text-dim); white-space: nowrap; }
+.spacer { flex: 1; }
+
+/* ── Inicio: mis estudios ── */
+.home { height: calc(100% - 58px - var(--safe-top)); overflow-y: auto; padding: 22px 20px calc(40px + var(--safe-bottom)); }
+.home-inner { max-width: 1040px; margin: 0 auto; }
+.home h1 { margin: 0; font-family: var(--font-display); font-size: 32px; font-weight: 600; }
+.home-sub { margin: 4px 0 18px; color: var(--text-mid); font-size: 16px; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.study-card {
+  display: flex; flex-direction: column; text-align: left; border-radius: 18px; border: 1px solid var(--border); background: var(--bg2);
+  overflow: hidden; cursor: pointer; padding: 0; color: var(--text); min-height: 210px;
+}
+.study-card.new { align-items: center; justify-content: center; gap: 10px; border-style: dashed; border-color: var(--gold-line); color: var(--gold); font-size: 17px; }
+.study-thumb { flex: 1; min-height: 120px; margin: 10px 10px 0; border-radius: 10px; background: var(--bg-sunk); position: relative; overflow: hidden; }
+.study-thumb .heb { position: absolute; right: 12px; bottom: 6px; font-size: 34px; color: var(--gold); opacity: 0.85; }
+.study-thumb .tpl-name { position: absolute; left: 12px; top: 10px; }
+.study-meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
+.study-title { font-family: var(--font-display); font-size: 19px; font-weight: 600; line-height: 1.15; }
+.study-date { font-size: 13px; color: var(--text-dim); }
+.cloud-note { margin-top: 18px; font-size: 14px; color: var(--text-dim); }
+.cloud-note a { color: var(--gold); }
+
+/* ── Editor ── */
+.editor { display: flex; flex-direction: column; height: 100%; }
+.toolbar {
+  display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--hair); background: var(--bg);
+  overflow-x: auto; scrollbar-width: none; position: relative; z-index: 20;
+}
+.toolbar::-webkit-scrollbar { display: none; }
+.tb-group { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 22px; background: var(--bg2); border: 1px solid var(--border); flex-shrink: 0; }
+.tb-sep { width: 8px; flex-shrink: 0; }
+.swatch { width: 26px; height: 26px; border-radius: 13px; border: 2px solid transparent; cursor: pointer; margin: 0 2px; flex-shrink: 0; }
+.swatch.on { border-color: var(--text); }
+.size-dot { width: 32px; height: 32px; border: none; background: transparent; border-radius: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.size-dot span { background: var(--text-mid); border-radius: 50%; display: block; }
+.size-dot.on { background: var(--gold-glow); }
+.size-dot.on span { background: var(--gold); }
+.zoom-label { min-width: 46px; text-align: center; font-size: 13.5px; color: var(--text-mid); }
+
+.ed-body { flex: 1; display: flex; min-height: 0; position: relative; }
+.panel { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg); min-height: 0; }
+.panel-left { border-right: 1px solid var(--border); }
+.panel-right { border-left: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 70%, var(--bg-sunk)); }
+.panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; }
+.panel-close { margin-left: auto; }
+.stage { flex: 1; min-width: 0; overflow: auto; background: var(--bg-sunk); position: relative; -webkit-overflow-scrolling: touch; }
+.pages { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 22px 22px 60px; min-width: min-content; }
+.page-wrap { position: relative; flex-shrink: 0; }
+.page {
+  position: absolute; left: 0; top: 0; transform-origin: 0 0; background: var(--page); border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35); overflow: hidden; touch-action: pan-x pan-y;
+}
+html.light .page { box-shadow: 0 10px 30px rgba(70,52,18,0.16); }
+.page.finger-draw { touch-action: none; }
+.page.free { background-color: var(--page); background-image: radial-gradient(var(--dots) 1.4px, transparent 1.4px); background-size: 28px 28px; border-radius: 10px; }
+.page-num { position: absolute; right: 0; bottom: -20px; font-size: 12px; color: var(--text-dim); }
+.page-actions { position: absolute; right: -4px; top: -2px; transform: translateX(100%); display: flex; flex-direction: column; gap: 6px; padding-left: 8px; }
+.add-page { display: flex; gap: 8px; }
+
+/* Plantilla (fondo) */
+.tpl { position: absolute; inset: 0; pointer-events: none; }
+.tpl-head { position: absolute; left: 56px; right: 56px; top: 48px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--gold); padding-bottom: 8px; }
+.tpl-kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-dim); }
+.tpl-title { font-family: var(--font-display); font-size: 44px; font-weight: 600; line-height: 1.05; color: var(--text); }
+.tpl-heb { font-family: var(--font-hebrew); font-size: 42px; color: var(--gold); line-height: 1; }
+.tpl-box { position: absolute; border: 1.5px solid var(--tpl-border); border-radius: 12px; }
+.tpl-box.lined { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 35px, var(--lines) 35px, var(--lines) 36px); background-position: 0 34px; }
+.tpl-box.dashed { border-style: dashed; }
+.tpl-label { position: absolute; left: 14px; top: 10px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+.tpl-sub { position: absolute; left: 14px; top: 32px; font-size: 18px; color: var(--text-mid); }
+.tpl-line { position: absolute; height: 3px; background: var(--gold); border-radius: 2px; }
+.tpl-dot { position: absolute; width: 14px; height: 14px; border-radius: 7px; background: var(--gold); }
+.c-gold { color: var(--gold) !important; } .c-blue { color: var(--blue) !important; } .c-purple { color: var(--purple) !important; }
+
+/* Elementos */
+.els { position: absolute; inset: 0; }
+.el { position: absolute; border-radius: 12px; }
+.mode-ink .els { pointer-events: none; }
+.mode-select .el, .mode-text .el { touch-action: none; cursor: grab; }
+.el-text .txt { display: block; }
+.el-text {
+  min-height: 34px; padding: 4px 8px; font-size: 24px; line-height: 1.45; color: var(--ink); outline: none; white-space: pre-wrap; word-break: break-word; border-radius: 8px;
+}
+.el-text.hand { font-family: var(--font-hand); font-size: 30px; line-height: 1.2; color: var(--hand); }
+.el-text:empty::before { content: 'Escribe aquí…'; color: var(--text-dim); }
+.el-card { padding: 12px 16px; background: var(--bg3); border: 1px solid var(--border2); box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
+html.light .el-card { background: #fbf6ea; }
+.el-kicker { font-size: 12.5px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--gold); }
+.el-body { margin-top: 4px; font-size: 20px; line-height: 1.45; color: var(--text); white-space: pre-wrap; }
+.el-body sup { color: var(--gold); font-size: 0.65em; margin-right: 3px; }
+.el-word .w-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.el-word .w-orig { font-size: 40px; color: var(--gold); line-height: 1.2; }
+.el-word .w-code { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+.el-word .w-translit { font-family: var(--font-display); font-style: italic; font-size: 21px; }
+.el-ai { border-left: 4px solid var(--purple); }
+.el-ai .el-kicker { color: var(--purple); }
+.el-ai .el-body { font-size: 18.5px; }
+.el.selected { outline: 2px solid var(--gold); outline-offset: 4px; }
+.el.editing { outline: 2px dashed var(--gold); outline-offset: 4px; }
+.el-handle {
+  position: absolute; right: -14px; top: 50%; width: 20px; height: 44px; margin-top: -22px; border-radius: 10px;
+  background: var(--gold); cursor: ew-resize; touch-action: none;
+}
+.sel-bar {
+  position: absolute; z-index: 5; display: flex; gap: 2px; padding: 3px; border-radius: 20px; background: var(--bg2); border: 1px solid var(--border2);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3); transform-origin: 0 100%;
+}
+
+/* Tinta */
+.ink { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.mode-select .ink, .mode-text .ink { pointer-events: none; }
+.ink path.hl { mix-blend-mode: normal; }
+
+/* ── Paneles ── */
+.tabs { display: flex; height: 36px; border-radius: 18px; border: 1px solid var(--border2); overflow: hidden; flex: 1; }
+.tabs button { flex: 1; border: none; background: transparent; color: var(--text-mid); font-size: 14px; cursor: pointer; }
+.tabs button.on { background: var(--gold-glow); color: var(--gold); }
+.field { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 20px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text-dim); }
+.field input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: var(--text); font: inherit; font-size: 16px; }
+.bible-nav { display: flex; gap: 6px; padding: 0 12px 8px; }
+.bible-nav select { flex: 1; min-width: 0; height: 38px; border-radius: 19px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text); font: inherit; font-size: 15px; padding: 0 10px; }
+.bible-nav .ch { flex: 0 0 82px; }
+.bible-list { flex: 1; overflow-y: auto; padding: 4px 12px 90px 6px; font-size: 17px; line-height: 1.58; -webkit-overflow-scrolling: touch; }
+.bverse { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 8px; padding: 6px 8px 6px 0; border-radius: 10px; cursor: pointer; }
+.bverse.sel { background: var(--gold-glow); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.bverse .n { font-family: var(--font-display); font-size: 13.5px; color: var(--gold); text-align: right; padding-top: 3px; }
+.bheading { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--gold); padding: 10px 0 2px 34px; }
+.insert-bar {
+  position: absolute; left: 12px; right: 12px; bottom: 14px; display: flex; gap: 6px; padding: 6px; border-radius: 24px;
+  background: var(--bg2); border: 1px solid var(--gold-line); box-shadow: 0 10px 26px rgba(0,0,0,0.35);
+}
+.insert-bar .btn-gold { flex: 1; height: 40px; }
+.word-list { flex: 1; overflow-y: auto; padding: 8px 12px 20px; display: flex; flex-direction: column; gap: 8px; }
+.wcard { padding: 10px 12px; border-radius: 14px; background: var(--bg2); border: 1px solid var(--border); }
+.wcard .w-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.wcard .w-orig { font-size: 26px; color: var(--gold); }
+.wcard .w-code { font-size: 12px; color: var(--text-dim); }
+.wcard .w-tr { font-family: var(--font-display); font-style: italic; font-size: 17px; }
+.wcard p { margin: 4px 0 8px; font-size: 14.5px; line-height: 1.4; color: var(--text-soft); }
+.small-btn { height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--gold-line); background: transparent; color: var(--gold); font-size: 13.5px; cursor: pointer; }
+.hint { padding: 16px; color: var(--text-dim); font-size: 14.5px; line-height: 1.5; text-align: center; }
+
+.chat { flex: 1; overflow-y: auto; padding: 4px 14px 10px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+.msg-u { align-self: flex-end; max-width: 88%; padding: 8px 12px; border-radius: 14px 14px 4px 14px; background: var(--bg3); font-size: 15px; line-height: 1.4; white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
+.msg-a { padding: 10px 12px; border-radius: 14px 14px 14px 4px; background: var(--bg2); border: 1px solid var(--border); font-size: 15px; line-height: 1.5; color: var(--text-soft); white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
+.msg-a .acts { display: flex; gap: 6px; margin-top: 8px; }
+.typing { color: var(--text-dim); font-style: italic; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 0; }
+.chip { height: 30px; padding: 0 11px; border-radius: 15px; border: 1px solid var(--border2); background: transparent; color: var(--text-mid); font-size: 13px; cursor: pointer; }
+.ask { display: flex; gap: 6px; margin: 10px 14px calc(14px + var(--safe-bottom)); }
+.ask textarea { flex: 1; min-width: 0; min-height: 42px; max-height: 120px; resize: none; padding: 10px 14px; border-radius: 21px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text); font: inherit; font-size: 16px; outline: none; }
+.ask .send { width: 42px; height: 42px; border-radius: 21px; border: none; background: var(--gold); color: var(--on-gold); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: flex-end; }
+
+/* ── Modal de plantillas ── */
+.modal-ov { position: fixed; inset: 0; z-index: 100; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal {
+  width: min(1000px, 100%); max-height: calc(100% - 20px); overflow-y: auto; border-radius: 24px; background: var(--bg2); border: 1px solid var(--border2);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5); padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 16px;
+}
+.modal h2 { margin: 0; font-family: var(--font-display); font-size: 28px; font-weight: 600; }
+.modal p.sub { margin: 2px 0 0; color: var(--text-mid); }
+.formats { display: flex; gap: 8px; flex-wrap: wrap; }
+.fmt { flex: 1 1 200px; min-height: 56px; padding: 8px 16px; border-radius: 16px; border: 1px solid var(--border2); background: transparent; color: var(--text); cursor: pointer; text-align: left; display: flex; flex-direction: column; justify-content: center; }
+.fmt small { color: var(--text-dim); font-size: 13px; }
+.fmt.on { border: 1.5px solid var(--gold); background: var(--gold-glow); color: var(--gold); }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.tcard { display: flex; flex-direction: column; padding: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: var(--bg3); cursor: pointer; text-align: left; color: var(--text); }
+.tcard.on { border: 2px solid var(--gold); }
+.tprev { display: block; height: 116px; margin: 10px 10px 0; border-radius: 10px; }
+.tcard .tn { font-family: var(--font-display); font-size: 18px; font-weight: 600; padding: 8px 12px 0; }
+.tcard .td { font-size: 13px; color: var(--text-dim); padding: 0 12px 12px; line-height: 1.3; }
+.modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.modal-foot span { font-size: 14px; color: var(--text-dim); }
+
+.menu-pop { position: absolute; right: 10px; top: calc(54px + var(--safe-top)); z-index: 60; min-width: 220px; padding: 6px; border-radius: 16px; background: var(--bg2); border: 1px solid var(--border2); box-shadow: 0 16px 40px rgba(0,0,0,0.45); }
+.menu-pop button { display: flex; align-items: center; gap: 10px; width: 100%; height: 42px; padding: 0 12px; border: none; border-radius: 10px; background: transparent; color: var(--text); font-size: 15px; cursor: pointer; text-align: left; }
+.menu-pop button:hover { background: var(--gold-glow); }
+.menu-pop .danger { color: var(--red); }
+.menu-pop label { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 42px; padding: 0 12px; font-size: 15px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translate(-50%, 20px); z-index: 200;
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text); padding: 10px 18px; border-radius: 22px;
+  font-size: 15px; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; max-width: calc(100% - 32px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── Pantallas medianas y celular: los paneles flotan sobre el lienzo ── */
+@media (max-width: 1080px) {
+  .panel { position: absolute; top: 0; bottom: 0; z-index: 25; width: min(340px, 88vw); box-shadow: 0 0 40px rgba(0,0,0,0.45); }
+  .panel-left { left: 0; }
+  .panel-right { right: 0; }
+}
+@media (max-width: 640px) {
+  .panel { width: 100%; left: 0; right: 0; top: auto; height: 62%; border-radius: 20px 20px 0 0; border: 1px solid var(--border2); }
+  .title-input { font-size: 17px; }
+  .save-state { display: none; }
+  .pill .lbl { display: none; }
+  .pill { padding: 0 10px; }
+}
+
+/* ── Imprimir / PDF ── */
+@media print {
+  @page { size: 8.5in 11in; margin: 0; }
+  :root, html.light { --page: #fff; --text: #1a1610; --text-mid: #4f4636; --text-dim: #6b604c; --ink: #1a1610; --hand: #2e3e7a; --gold: #7a5c14; --tpl-border: #d9cdb2; --lines: #ece3d0; --bg3: #faf6ec; --border2: #e0d5bd; --blue: #1f5a9e; --purple: #5b3aa0; --dots: #e7dfcc; }
+  html, body { height: auto; overflow: visible; background: #fff; }
+  .topbar, .toolbar, .panel, .page-actions, .add-page, .page-num, .sel-bar, .el-handle, .toast, .menu-pop, .home { display: none !important; }
+  .editor, .ed-body, .stage { display: block; height: auto; overflow: visible; background: #fff; }
+  .pages { display: block; padding: 0; }
+  .page-wrap { width: 8.5in !important; height: 11in !important; page-break-after: always; break-after: page; }
+  .page { transform: none !important; box-shadow: none; border-radius: 0; }
+  .page.free { width: 8.5in !important; height: 11in !important; }
+  .el.selected, .el.editing { outline: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Inicio -->
+<section id="homeView" hidden>
+  <header class="topbar">
+    <a class="ibtn" href="index.html" aria-label="Volver a la Biblia">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <span class="tpl-heb" style="font-size:22px" lang="he">קֹדֶשׁ</span>
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:600">Lienzo de estudio</span>
+    <span class="spacer"></span>
+    <button class="ibtn" onclick="toggleTheme()" aria-label="Cambiar tema" id="themeBtn"></button>
+  </header>
+  <div class="home">
+    <div class="home-inner">
+      <h1>Mis estudios</h1>
+      <p class="home-sub">Escribe, dibuja y arma tu estudio con la Biblia y el asistente al lado.</p>
+      <div class="home-grid" id="studyGrid"></div>
+      <p class="cloud-note" id="cloudNote"></p>
+    </div>
+  </div>
+</section>
+
+<!-- Editor -->
+<section id="editorView" class="editor" hidden>
+  <header class="topbar">
+    <button class="ibtn" onclick="closeEditor()" aria-label="Volver a mis estudios">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <input class="title-input" id="titleInput" aria-label="Título del estudio" maxlength="120" onchange="renameStudy(this.value)">
+    <span class="save-state" id="saveState"></span>
+    <span class="spacer"></span>
+    <button class="pill" id="bibleToggle" onclick="togglePanel('left')" aria-pressed="false">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6v13"/></svg><span class="lbl">Biblia</span>
+    </button>
+    <button class="pill" id="aiToggle" onclick="togglePanel('right')" aria-pressed="false">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 6.3L20.5 12l-6.3 2.7L12 21l-2.2-6.3L3.5 12l6.3-2.7z"/></svg><span class="lbl">Asistente</span>
+    </button>
+    <button class="ibtn" onclick="toggleMenu(event)" aria-label="Más opciones" aria-haspopup="menu">
+      <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button>
+  </header>
+
+  <div class="toolbar" role="toolbar" aria-label="Herramientas">
+    <div class="tb-group" id="toolGroup"></div>
+    <span class="tb-sep"></span>
+    <div class="tb-group" id="colorGroup"></div>
+    <span class="tb-sep"></span>
+    <div class="tb-group" id="sizeGroup"></div>
+    <span class="tb-sep"></span>
+    <div class="tb-group">
+      <button class="ibtn" id="undoBtn" onclick="undo()" aria-label="Deshacer"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+      <button class="ibtn" id="redoBtn" onclick="redo()" aria-label="Rehacer"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+    </div>
+    <span class="tb-sep"></span>
+    <div class="tb-group">
+      <button class="ibtn" onclick="setZoom(zoom / 1.2)" aria-label="Alejar">−</button>
+      <button class="zoom-label ibtn" style="width:auto;padding:0 6px" id="zoomLabel" onclick="setZoom(1)" aria-label="Ajustar al ancho">100%</button>
+      <button class="ibtn" onclick="setZoom(zoom * 1.2)" aria-label="Acercar">+</button>
+    </div>
+  </div>
+
+  <div class="ed-body">
+    <aside class="panel panel-left" id="panelLeft" hidden aria-label="Biblia y palabras">
+      <div class="panel-head">
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tabBible" class="on" onclick="setLeftTab('bible')" aria-selected="true">Biblia</button>
+          <button role="tab" id="tabWords" onclick="setLeftTab('words')" aria-selected="false">Palabras</button>
+        </div>
+        <button class="ibtn panel-close" onclick="togglePanel('left')" aria-label="Cerrar panel">✕</button>
+      </div>
+      <div id="bibleTab" style="display:flex;flex-direction:column;flex:1;min-height:0;position:relative">
+        <div class="bible-nav">
+          <select id="bookSel" aria-label="Libro" onchange="onBookChange()"></select>
+          <select id="chapSel" class="ch" aria-label="Capítulo" onchange="loadBibleChapter()"></select>
+        </div>
+        <div style="padding:0 12px 8px">
+          <label class="field">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+            <input id="refInput" placeholder="Ir a… (p. ej. gen 9:13)" aria-label="Ir a una cita" onkeydown="if (event.key === 'Enter') goToRefInput()">
+          </label>
+        </div>
+        <div class="bible-list" id="bibleList"><div class="hint">Cargando la Biblia…</div></div>
+        <div class="insert-bar" id="insertBar" hidden>
+          <button class="btn-gold" onclick="insertSelectedVerses()" id="insertBtn">Insertar</button>
+          <button class="btn-line" style="height:40px" onclick="clearVerseSel()">Cancelar</button>
+        </div>
+      </div>
+      <div id="wordsTab" style="display:none;flex-direction:column;flex:1;min-height:0">
+        <div style="padding:0 12px 4px">
+          <label class="field">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+            <input id="wordInput" placeholder="pacto, H1285, berit…" aria-label="Buscar palabra" oninput="searchWordsSoon()">
+          </label>
+        </div>
+        <div class="word-list" id="wordList"><div class="hint">Busca una palabra en español, hebreo o griego, o un número Strong (H1285, G26).</div></div>
+      </div>
+    </aside>
+
+    <main class="stage" id="stage">
+      <div class="pages" id="pages"></div>
+    </main>
+
+    <aside class="panel panel-right" id="panelRight" hidden aria-label="Asistente">
+      <div class="panel-head">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 6.3L20.5 12l-6.3 2.7L12 21l-2.2-6.3L3.5 12l6.3-2.7z"/></svg>
+        <span style="color:var(--gold);font-size:15px">Asistente · conoce tu página</span>
+        <button class="ibtn panel-close" onclick="togglePanel('right')" aria-label="Cerrar asistente">✕</button>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="chips" id="chips"></div>
+      <div class="ask">
+        <textarea id="askInput" rows="1" placeholder="Pregunta sobre tu estudio…" aria-label="Pregunta al asistente" oninput="autoGrow(this)" onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); askAI(); }"></textarea>
+        <button class="send" onclick="askAI()" aria-label="Enviar pregunta">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        </button>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<div class="menu-pop" id="menuPop" role="menu" hidden>
+  <button role="menuitem" onclick="exportPDF()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 19h14"/></svg>Exportar PDF / imprimir</button>
+  <button role="menuitem" onclick="openTemplatePicker('page')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>Nueva página con plantilla</button>
+  <label><span>Dibujar con el dedo</span><input type="checkbox" id="fingerDraw" onchange="setFingerDraw(this.checked)"></label>
+  <button role="menuitem" onclick="toggleTheme(); hideMenu()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>Modo claro / oscuro</button>
+  <button role="menuitem" class="danger" onclick="deleteStudy()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>Borrar este estudio</button>
+</div>
+
+<div class="modal-ov" id="tplModal" hidden onclick="if (event.target === this) closeTemplatePicker()">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="tplTitle">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <h2 id="tplTitle">Nuevo estudio</h2>
+        <p class="sub" id="tplSub">Empieza en blanco o con una plantilla. Todo se puede mover, borrar o dibujar encima.</p>
+      </div>
+      <button class="ibtn" onclick="closeTemplatePicker()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="formats" role="radiogroup" aria-label="Formato" id="fmtGroup">
+      <button class="fmt on" role="radio" aria-checked="true" data-fmt="notebook" onclick="pickFormat('notebook')">Cuaderno<small>páginas tamaño carta, con plantillas</small></button>
+      <button class="fmt" role="radio" aria-checked="false" data-fmt="free" onclick="pickFormat('free')">Lienzo libre<small>una hoja grande para mapas de ideas</small></button>
+    </div>
+    <div class="tgrid" id="tplGrid"></div>
+    <div class="modal-foot">
+      <span id="tplChosen"></span>
+      <button class="btn-gold" onclick="confirmTemplate()" id="tplConfirm">Crear estudio</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/bible-ref.js"></script>
+<script src="/vendor/perfect-freehand.js"></script>
+<script src="/estudio.js"></script>
+</body>
+</html>

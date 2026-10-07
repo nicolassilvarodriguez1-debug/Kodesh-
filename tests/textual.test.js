@@ -142,6 +142,12 @@ describe('asistente — capítulo actual', () => {
     assert.match(sys, /sin preguntarle cuál es/);
     assert.doesNotMatch(buildAssistantSystem({ bookId: null, userName: '', userGoals: [] }), /CAPÍTULO ACTUAL/);
   });
+  test('lienzo de estudio: la página del usuario va como contexto', () => {
+    const sys = buildAssistantSystem({ bookId: 'GEN', chapter: 9, userName: '', userGoals: [], studyContext: 'Lo que aprendí: Dios cumple' });
+    assert.match(sys, /PÁGINA DE ESTUDIO DEL USUARIO/);
+    assert.match(sys, /<pagina>\nLo que aprendí: Dios cumple\n<\/pagina>/);
+    assert.doesNotMatch(buildAssistantSystem({ bookId: 'GEN', chapter: 9, userName: '', userGoals: [] }), /PÁGINA DE ESTUDIO/);
+  });
 });
 
 // ── Títulos de sección ──

@@ -358,6 +358,10 @@ a { color: var(--gold); }
       </a>
       <button class="btn" id="sheetStudied" onclick="toggleStudied()" aria-pressed="false">Marcar estudiada</button>
     </div>
+    <a class="btn btn-ghost-gold" id="sheetCanvas" href="estudio.html?new=parasha" style="width:100%">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>
+      Estudiar en el lienzo (escribe y dibuja)
+    </a>
   </section>
 </div>
 
@@ -654,6 +658,7 @@ function openSheet(idx) {
       <span class="sheet-reading-go">Leer</span>
     </a>`).join('');
   document.getElementById('sheetStudy').href = bibleUrl(p.torah, { study: true });
+  document.getElementById('sheetCanvas').href = `estudio.html?new=parasha&p=${p.num}`;
   document.getElementById('sheetPrev').disabled = idx === 0;
   document.getElementById('sheetNext').disabled = idx === PARASHOT.length - 1;
   paintStudiedBtn();
