@@ -347,6 +347,19 @@ html.light .el-card { background: #fbf6ea; }
   .pill { padding: 0 10px; }
 }
 
+/* ── Exportar PDF (colores de papel mientras se dibuja) ── */
+html.exporting, html.light.exporting { --page: #fff; --text: #1a1610; --text-mid: #4f4636; --text-dim: #6b604c; --ink: #1a1610; --hand: #2e3e7a; --gold: #7a5c14; --tpl-border: #d9cdb2; --lines: #ece3d0; --bg3: #faf6ec; --border2: #e0d5bd; --blue: #1f5a9e; --purple: #5b3aa0; --dots: #e7dfcc; }
+.exporting .sel-bar, .exporting .el-handle, .exporting .el-corner, .exporting .tpl-acts, .exporting .eraser-ring { display: none !important; }
+.exporting .el.selected, .exporting .el.editing { outline: none; }
+.pdf-sheet { position: fixed; inset: 0; z-index: 400; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pdf-sheet[hidden] { display: none; }
+.pdf-card { width: min(420px, 100%); background: var(--bg2); border: 1px solid var(--border2); border-radius: 20px; padding: 22px 20px 18px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.45); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pdf-title { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--text); }
+.pdf-sub { font-size: 14px; color: var(--text-dim); word-break: break-word; }
+.pdf-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+.pdf-hint { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+.pdf-spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--border2); border-top-color: var(--gold); animation: pdfspin 0.8s linear infinite; margin-bottom: 6px; }
+@keyframes pdfspin { to { transform: rotate(360deg); } }
 /* ── Imprimir / PDF ── */
 @media print {
   .tpl-acts { display: none !important; }
@@ -510,7 +523,7 @@ html.light .el-card { background: #fbf6ea; }
 </section>
 
 <div class="menu-pop" id="menuPop" role="menu" hidden>
-  <button role="menuitem" onclick="exportPDF()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 19h14"/></svg>Exportar PDF / imprimir</button>
+  <button role="menuitem" onclick="exportPDF()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 19h14"/></svg>Exportar PDF</button>
   <button role="menuitem" onclick="openTemplatePicker('page')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>Nueva página con plantilla</button>
   <label><span>Dibujar con el dedo</span><input type="checkbox" id="fingerDraw" onchange="setFingerDraw(this.checked)"></label>
   <button role="menuitem" onclick="toggleTheme(); hideMenu()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>Modo claro / oscuro</button>

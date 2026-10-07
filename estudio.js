@@ -1808,10 +1808,216 @@ function insertAI(i) {
 function toggleMenu(ev) { ev.stopPropagation(); const m = $('menuPop'); m.hidden = !m.hidden; applyFingerMode(); }
 function hideMenu() { $('menuPop').hidden = true; }
 document.addEventListener('click', e => { if (!e.target.closest('#menuPop')) hideMenu(); });
-function exportPDF() {
+/* ── Exportar PDF ──
+   window.print() no hace nada dentro de la app de iOS, así que el PDF se arma
+   aquí: cada hoja se dibuja en un canvas (en colores de papel) leyendo lo que
+   ya está en pantalla, se pasa a JPEG y se empaqueta en un PDF mínimo.
+   Luego se comparte (iPhone/iPad: Guardar en Archivos, AirDrop, imprimir…)
+   o se descarga (computadora). */
+let pdfBusy = false, lastPdf = null;
+async function exportPDF() {
   hideMenu(); commitEditing(); deselect();
-  const z = zoom; zoom = 1;
-  setTimeout(() => { window.print(); zoom = z; }, 50);
+  if (!study || pdfBusy) return;
+  pdfBusy = true;
+  const root = document.documentElement;
+  const wasLight = root.classList.contains('light');
+  showPdfSheet('busy');
+  try {
+    root.classList.add('light', 'exporting');
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const imgs = [];
+    for (const page of study.pages) {
+      const node = $('page-' + page.id);
+      if (!node) continue;
+      imgs.push(await rasterPage(node, page));
+    }
+    const blob = buildPdf(imgs);
+    const name = (study.title || 'Estudio').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) + '.pdf';
+    lastPdf = { blob, name };
+    showPdfSheet('ready');
+  } catch (e) {
+    console.error(e);
+    showPdfSheet(null);
+    toast('No se pudo crear el PDF');
+  } finally {
+    root.classList.remove('exporting');
+    if (!wasLight) root.classList.remove('light');
+    pdfBusy = false;
+  }
+}
+function showPdfSheet(state) {
+  let el = $('pdfSheet');
+  if (!state) { if (el) el.hidden = true; return; }
+  if (!el) {
+    el = document.createElement('div'); el.id = 'pdfSheet'; el.className = 'pdf-sheet';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Exportar PDF');
+    document.body.appendChild(el);
+  }
+  el.hidden = false;
+  if (state === 'busy') {
+    el.innerHTML = `<div class="pdf-card"><div class="pdf-spin" aria-hidden="true"></div><div class="pdf-title">Creando el PDF…</div><div class="pdf-sub">${study.pages.length} ${study.pages.length === 1 ? 'hoja' : 'hojas'}</div></div>`;
+    return;
+  }
+  const canShare = !!(navigator.canShare && navigator.share && (() => { try { return navigator.canShare({ files: [new File([lastPdf.blob], lastPdf.name, { type: 'application/pdf' })] }); } catch (e) { return false; } })());
+  const kb = lastPdf.blob.size / 1024;
+  el.innerHTML = `<div class="pdf-card">
+    <div class="pdf-title">Tu PDF está listo</div>
+    <div class="pdf-sub">${esc(lastPdf.name)} · ${kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.round(kb) + ' KB'}</div>
+    <div class="pdf-actions">
+      ${canShare ? `<button class="btn-gold" onclick="sharePdf()">Compartir o guardar</button>` : ''}
+      <button class="${canShare ? 'btn-line' : 'btn-gold'}" onclick="downloadPdf()">${canShare ? 'Descargar' : 'Descargar PDF'}</button>
+      <button class="btn-line" onclick="showPdfSheet(null)">Cerrar</button>
+    </div>
+    ${canShare ? '<div class="pdf-hint">En iPhone y iPad elige «Guardar en Archivos», «Imprimir» o la app donde lo quieras enviar.</div>' : ''}
+  </div>`;
+}
+async function sharePdf() {
+  if (!lastPdf) return;
+  const file = new File([lastPdf.blob], lastPdf.name, { type: 'application/pdf' });
+  try { await navigator.share({ files: [file], title: lastPdf.name.replace(/\.pdf$/, '') }); showPdfSheet(null); }
+  catch (e) { if (e && e.name !== 'AbortError') downloadPdf(); }
+}
+function downloadPdf() {
+  if (!lastPdf) return;
+  const url = URL.createObjectURL(lastPdf.blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = lastPdf.name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  showPdfSheet(null);
+}
+
+// Dibuja una hoja en un canvas leyendo la posición real de cada cosa en pantalla.
+async function rasterPage(node, page) {
+  const { w: W, h: H } = pageSize(page);
+  const px = Math.min(2, Math.sqrt(15e6 / (W * H)));          // límite de canvas en iOS
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(W * px); cv.height = Math.round(H * px);
+  const ctx = cv.getContext('2d');
+  ctx.scale(px, px);
+  const pr = node.getBoundingClientRect();
+  const s = pr.width / W;
+  const cs0 = getComputedStyle(node);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  if (node.classList.contains('free')) {
+    ctx.fillStyle = cs0.getPropertyValue('--dots').trim() || '#e7dfcc';
+    for (let y = 14; y < H; y += 28) for (let x = 14; x < W; x += 28) { ctx.beginPath(); ctx.arc(x, y, 1.4, 0, Math.PI * 2); ctx.fill(); }
+  }
+  const box = r => ({ x: (r.left - pr.left) / s, y: (r.top - pr.top) / s, w: r.width / s, h: r.height / s });
+  const elScale = n => { const el = n.closest && n.closest('.el'); return el && el.offsetWidth ? (el.getBoundingClientRect().width / s) / el.offsetWidth : 1; };
+  const visible = c => c !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(c);
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); r = Math.max(0, Math.min(r, w / 2, h / 2)); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+
+  function drawBox(el, cs) {
+    const b = box(el.getBoundingClientRect());
+    if (b.w <= 0 || b.h <= 0) return;
+    const k = elScale(el);
+    const rad = (parseFloat(cs.borderTopLeftRadius) || 0) * k;
+    if (visible(cs.backgroundColor)) { ctx.fillStyle = cs.backgroundColor; rr(b.x, b.y, b.w, b.h, rad); ctx.fill(); }
+    if (el.classList.contains('lined')) {          // renglones cada 36 px (desde 34 px)
+      ctx.fillStyle = cs.getPropertyValue('--lines').trim() || '#ece3d0';
+      for (let y = 35 * k; y < b.h - 1; y += 36 * k) ctx.fillRect(b.x + 1, b.y + y, b.w - 2, Math.max(0.75, k));
+    }
+    const sides = ['Top', 'Right', 'Bottom', 'Left'].map(sd => ({ w: (parseFloat(cs['border' + sd + 'Width']) || 0) * k, c: cs['border' + sd + 'Color'], st: cs['border' + sd + 'Style'] }));
+    const uniform = sides.every(x => x.w === sides[0].w && x.c === sides[0].c && x.st === sides[0].st);
+    if (uniform && sides[0].w > 0 && sides[0].st !== 'none' && visible(sides[0].c)) {
+      ctx.strokeStyle = sides[0].c; ctx.lineWidth = sides[0].w;
+      ctx.setLineDash(sides[0].st === 'dashed' ? [6 * k, 4 * k] : sides[0].st === 'dotted' ? [1.5 * k, 3 * k] : []);
+      const h2 = sides[0].w / 2; rr(b.x + h2, b.y + h2, b.w - sides[0].w, b.h - sides[0].w, Math.max(0, rad - h2)); ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      const lines = [[b.x, b.y, b.x + b.w, b.y], [b.x + b.w, b.y, b.x + b.w, b.y + b.h], [b.x, b.y + b.h, b.x + b.w, b.y + b.h], [b.x, b.y, b.x, b.y + b.h]];
+      sides.forEach((sd, i) => {
+        if (sd.w <= 0 || sd.st === 'none' || !visible(sd.c)) return;
+        const [x1, y1, x2, y2] = lines[i], o = (i === 0 || i === 3 ? 1 : -1) * sd.w / 2;
+        ctx.strokeStyle = sd.c; ctx.lineWidth = sd.w; ctx.beginPath();
+        if (i % 2 === 0) { ctx.moveTo(x1, y1 + o); ctx.lineTo(x2, y2 + o); } else { ctx.moveTo(x1 + o, y1); ctx.lineTo(x2 + o, y2); }
+        ctx.stroke();
+      });
+    }
+  }
+  function drawText(tn) {
+    const parent = tn.parentElement;
+    const cs = getComputedStyle(parent);
+    if (cs.visibility === 'hidden' || !tn.textContent.trim()) return;
+    const k = elScale(parent);
+    const fs = parseFloat(cs.fontSize) * k;
+    ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+    ctx.fillStyle = cs.color;
+    ctx.textBaseline = 'alphabetic';
+    const upper = cs.textTransform === 'uppercase';
+    const ls = (parseFloat(cs.letterSpacing) || 0) * k;
+    const range = document.createRange();
+    const text = tn.textContent;
+    const re = /\S+/g; let m;
+    while ((m = re.exec(text))) {
+      range.setStart(tn, m.index); range.setEnd(tn, m.index + m[0].length);
+      const rects = range.getClientRects();
+      if (!rects.length) continue;
+      const r = box(rects[0]);
+      let word = upper ? m[0].toUpperCase() : m[0];
+      const mt = ctx.measureText(word);
+      const asc = mt.fontBoundingBoxAscent || fs * 0.8, desc = mt.fontBoundingBoxDescent || fs * 0.2;
+      const base = r.y + (r.h - (asc + desc)) / 2 + asc;
+      if (ls) { let x = r.x; for (const ch of word) { ctx.fillText(ch, x, base); x += ctx.measureText(ch).width + ls; } }
+      else ctx.fillText(word, r.x, base);
+    }
+  }
+  function drawInk(svg) {
+    for (const path of svg.querySelectorAll('path')) {
+      const d = path.getAttribute('d');
+      if (!d) continue;
+      const cs = getComputedStyle(path);
+      ctx.globalAlpha = parseFloat(cs.opacity) || 1;
+      ctx.fillStyle = cs.fill && cs.fill !== 'none' ? cs.fill : '#1a1610';
+      try { ctx.fill(new Path2D(d)); } catch (e) {}
+    }
+    ctx.globalAlpha = 1;
+  }
+  (function walk(n) {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) { drawText(c); continue; }
+      if (c.nodeType !== 1) continue;
+      if (c.tagName.toLowerCase() === 'svg') { if (c.classList.contains('ink')) drawInk(c); continue; }
+      const cs = getComputedStyle(c);
+      if (cs.display === 'none') continue;
+      if (cs.visibility !== 'hidden') drawBox(c, cs);
+      walk(c);
+    }
+  })(node);
+  const dataUrl = cv.toDataURL('image/jpeg', 0.9);
+  cv.width = cv.height = 0;
+  const bin = atob(dataUrl.split(',')[1]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { bytes, pw: Math.round(W * px), ph: Math.round(H * px), wPt: W * 0.75, hPt: H * 0.75 };
+}
+// PDF mínimo: una imagen JPEG por hoja.
+function buildPdf(imgs) {
+  const enc = new TextEncoder();
+  const parts = []; const offsets = []; let len = 0;
+  const push = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const n = imgs.length;
+  const pageIds = imgs.map((_, i) => 3 + i * 3);
+  const obj = (id, body) => { offsets[id] = len; push(`${id} 0 obj\n`); for (const b of [].concat(body)) push(b); push('\nendobj\n'); };
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, `<< /Type /Pages /Kids [${pageIds.map(id => id + ' 0 R').join(' ')}] /Count ${n} >>`);
+  imgs.forEach((im, i) => {
+    const pid = 3 + i * 3, cid = pid + 1, iid = pid + 2;
+    const w = im.wPt.toFixed(2), h = im.hPt.toFixed(2);
+    obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im${i} ${iid} 0 R >> >> /Contents ${cid} 0 R >>`);
+    const content = `q ${w} 0 0 ${h} 0 0 cm /Im${i} Do Q`;
+    obj(cid, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    obj(iid, [`<< /Type /XObject /Subtype /Image /Width ${im.pw} /Height ${im.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`, im.bytes, '\nendstream']);
+  });
+  const total = 3 + n * 3;
+  const xref = len;
+  let x = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for (let id = 1; id < total; id++) x += String(offsets[id]).padStart(10, '0') + ' 00000 n \n';
+  push(x + `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts, { type: 'application/pdf' });
 }
 
 /* ── Teclado (computadora) ── */
