@@ -223,6 +223,25 @@ function silence(sec) {
     '-c:a', 'libmp3lame', '-b:a', '64k', '-write_xing', '0', '-id3v2_version', '0', '-f', 'mp3', 'pipe:1'], { encoding: 'buffer', maxBuffer: 1 << 22 },
     (err, out, stderr) => err ? reject(new Error('silencio: ' + String(stderr || err.message).slice(0, 200))) : resolve(silenceCache[sec] = Buffer.from(out))));
 }
+// Voz de Elohim: un poco más grave y con eco de catedral, para que nunca se
+// confunda con el narrador. Los ángeles / voz del cielo llevan solo un eco leve.
+// La duración no cambia (asetrate + atempo se compensan), así los tiempos de
+// cada versículo siguen exactos.
+const VOICE_FX = {
+  elohim: 'asetrate=44100*0.93,aresample=44100,atempo=1.0753,bass=g=5:f=110,aecho=0.85:0.8:70|140|230:0.32|0.22|0.12,volume=1.15',
+  voz_cielo: 'aecho=0.85:0.75:60|130:0.22|0.12',
+};
+const FX_VERSION = 1;
+function voiceFx(buf, role) {
+  const f = VOICE_FX[role];
+  if (!f) return Promise.resolve(buf);
+  return new Promise((resolve, reject) => {
+    const p = execFile(ffmpegPath, ['-hide_banner', '-loglevel', 'error', '-f', 'mp3', '-i', 'pipe:0', '-af', f, '-ac', '1', '-ar', '44100',
+      '-c:a', 'libmp3lame', '-b:a', '64k', '-write_xing', '0', '-id3v2_version', '0', '-f', 'mp3', 'pipe:1'], { encoding: 'buffer', maxBuffer: 1 << 26 },
+      (err, out, stderr) => err ? reject(new Error('efecto de voz: ' + String(stderr || err.message).slice(0, 200))) : resolve(Buffer.from(out)));
+    p.stdin.end(buf);
+  });
+}
 async function generate(book, chapter, force) {
   const script = await getScript(book, chapter, false);
   if (!script) return { ok: false, reason: 'sin_texto_kodesh' };
@@ -230,7 +249,7 @@ async function generate(book, chapter, force) {
   if (!voices.narrador) throw new Error('Falta la voz del narrador en el elenco');
   const intro = `${bookName(book)}, capítulo ${numberToSpanish(chapter)}.`;
   const calls = planCalls(script.segments, voices, { intro: `[reverent] ${intro}` });
-  const hash = await textHash(JSON.stringify({ s: script.segments, v: voices, m: process.env.ELEVENLABS_MODEL || '', p: SPEAKER_PAUSE, st: 2 }));
+  const hash = await textHash(JSON.stringify({ s: script.segments, v: voices, m: process.env.ELEVENLABS_MODEL || '', p: SPEAKER_PAUSE, st: 2, fx: FX_VERSION }));
   if (!force) {
     const ex = await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=text_hash&limit=1`);
     if (ex?.[0]?.text_hash === hash) return { ok: true, skipped: true };
@@ -243,7 +262,9 @@ async function generate(book, chapter, force) {
       const i = next++;
       const c = calls[i];
       // El narrador estable; los personajes con más libertad para expresar emoción
-      results[i] = await tts(c.voice, c.text, i > 0 ? calls[i - 1].text.slice(-200) : '', i + 1 < calls.length ? calls[i + 1].text.slice(0, 200) : '', c.role === 'narrador' ? 0.55 : 0.35);
+      const r = await tts(c.voice, c.text, i > 0 ? calls[i - 1].text.slice(-200) : '', i + 1 < calls.length ? calls[i + 1].text.slice(0, 200) : '', c.role === 'narrador' ? 0.55 : 0.35);
+      if (VOICE_FX[c.role]) r.audio = await voiceFx(r.audio, c.role);
+      results[i] = r;
     }
   }
   await Promise.all([worker(), worker()]);   // 2 a la vez: deja margen dentro del límite de 5
