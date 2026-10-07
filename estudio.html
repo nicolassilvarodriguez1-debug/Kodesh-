@@ -113,6 +113,13 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .toolbar::-webkit-scrollbar { display: none; }
 .tb-group { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 22px; background: var(--bg2); border: 1px solid var(--border); flex-shrink: 0; }
 .tb-sep { width: 8px; flex-shrink: 0; }
+.tb-group.textfmt { transition: opacity 0.15s; }
+.tb-group.textfmt:not(.active) { opacity: 0.55; }
+.fbtn { height: 36px; padding: 0 10px; border: none; border-radius: 18px; background: transparent; color: var(--text-mid); cursor: pointer; }
+.fbtn.on { background: var(--gold-glow); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-line); }
+.fsep { width: 1px; height: 22px; background: var(--border2); margin: 0 4px; flex-shrink: 0; }
+.fs-label { min-width: 46px; text-align: center; font-size: 14px; color: var(--text); font-variant-numeric: lining-nums; }
+.ibtn.on b, .ibtn.on i { color: inherit; }
 .swatch { width: 26px; height: 26px; border-radius: 13px; border: 2px solid transparent; cursor: pointer; margin: 0 2px; flex-shrink: 0; }
 .swatch.on { border-color: var(--text); }
 .size-dot { width: 32px; height: 32px; border: none; background: transparent; border-radius: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -372,6 +379,21 @@ html.light .el-card { background: #fbf6ea; }
 
   <div class="toolbar" role="toolbar" aria-label="Herramientas">
     <div class="tb-group" id="toolGroup"></div>
+    <span class="tb-sep"></span>
+    <div class="tb-group textfmt" id="textFmtGroup" role="group" aria-label="Formato de texto">
+      <button class="fbtn" data-font="book" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="setFont('book')" title="Letra de libro" aria-label="Letra de libro"><span style="font-family:var(--font-body);font-size:17px">Libro</span></button>
+      <button class="fbtn" data-font="hand" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="setFont('hand')" title="Letra manuscrita" aria-label="Letra manuscrita"><span style="font-family:var(--font-hand);font-size:21px">Mano</span></button>
+      <span class="fsep"></span>
+      <button class="ibtn" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="stepFontSize(-1)" aria-label="Letra más pequeña" title="Letra más pequeña"><span style="font-size:13px">A−</span></button>
+      <span class="fs-label" id="fsLabel" title="Tamaño de la letra">18 pt</span>
+      <button class="ibtn" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="stepFontSize(1)" aria-label="Letra más grande" title="Letra más grande"><span style="font-size:17px">A+</span></button>
+      <span class="fsep"></span>
+      <button class="ibtn" id="boldBtn" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="toggleFmt('bold')" aria-label="Negrita" title="Negrita (Ctrl/⌘ B)"><b style="font-size:17px">B</b></button>
+      <button class="ibtn" id="italicBtn" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="toggleFmt('italic')" aria-label="Cursiva" title="Cursiva (Ctrl/⌘ I)"><i style="font-size:18px;font-family:var(--font-display)">I</i></button>
+      <span class="fsep"></span>
+      <button class="ibtn" data-align="left" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="setAlign('left')" aria-label="Alinear a la izquierda" title="Alinear a la izquierda"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+      <button class="ibtn" data-align="center" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="setAlign('center')" aria-label="Centrar" title="Centrar"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+    </div>
     <span class="tb-sep"></span>
     <div class="tb-group" id="colorGroup"></div>
     <span class="tb-sep"></span>

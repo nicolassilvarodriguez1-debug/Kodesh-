@@ -174,6 +174,32 @@ function preferredBox(page, type) {
   }
   return null;
 }
+/* Texto sobre los renglones: las cajas con renglones tienen una línea cada 36 px
+   (la primera a 70.5 px del borde superior de la caja). La base de la letra en
+   una línea de alto L queda a ≈ L/2 + 0,34·tamaño del borde superior. */
+const TEXT_SIZES = [14, 16, 20, 24, 28, 32, 40, 48, 64];
+const RULE = 36, RULE_FIRST = 70.5, TEXT_PAD = 4;
+const DEFAULT_FS = font => font === 'hand' ? 32 : 24;
+function linedBoxFor(page, el) {
+  if (!study || study.format === 'free') return null;
+  const b = boxAt(page, el.x + 10, el.y + 20);
+  return b && b.lined ? b : null;
+}
+function textMetrics(page, el) {
+  const fs = el.fs || DEFAULT_FS(el.font);
+  const box = linedBoxFor(page, el);
+  const lh = box ? (fs <= 28 ? RULE : fs <= 56 ? RULE * 2 : RULE * 3) : Math.round(fs * 1.45);
+  return { fs, lh, box };
+}
+function snapText(page, el, down = false) {
+  const { fs, lh, box } = textMetrics(page, el);
+  if (!box) return;
+  const base = lh / 2 + 0.34 * fs;                           // de la parte de arriba del texto a la base
+  const firstLine = box.y + RULE_FIRST;
+  const k = Math.max(0, (down ? Math.ceil : Math.round)((el.y + TEXT_PAD + base + 3 - firstLine) / RULE - (down ? 0.01 : 0)));
+  el.y = Math.round(firstLine + k * RULE - 3 - TEXT_PAD - base);
+  if (el.x < box.x + 8 || el.x > box.x + box.w - 60) el.x = box.x + 12;
+}
 function boxAt(page, x, y) {
   const t = tplById(page.template);
   return t.boxes.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) || null;
@@ -411,6 +437,7 @@ async function openStudy(id, preloaded) {
   computeFit();
   renderPages();
   renderChat();
+  updateFmtBar();
   if (window.innerWidth > 1080) {
     if (readLS('kodesh_study_panel_left', true)) openPanel('left');
     if (readLS('kodesh_study_panel_right', false)) openPanel('right');
@@ -458,7 +485,7 @@ function buildToolbar() {
   pages.classList.add(tool === 'select' ? 'mode-select' : tool === 'text' ? 'mode-text' : 'mode-ink');
   applyFingerMode();
 }
-function setTool(t) { commitEditing(); tool = t; if (t !== 'select') deselect(); buildToolbar(); }
+function setTool(t) { commitEditing(); tool = t; if (t !== 'select' && t !== 'text') deselect(); buildToolbar(); updateFmtBar(); }
 function setColor(c) {
   color = c;
   if (selectedId) {   // cambiar el color de un texto seleccionado
@@ -565,7 +592,11 @@ function elHtml(e) {
   const base = `class="el el-${e.type}${sel}" data-el="${e.id}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;${sc !== 1 ? `transform:scale(${sc});` : ''}--inv:${1 / sc}"`;
   const handle = e.id === selectedId ? '<span class="el-handle" data-handle="w" aria-hidden="true" title="Ancho"></span><span class="el-corner" data-handle="s" aria-hidden="true" title="Tamaño"></span>' : '';
   if (e.type === 'text') {
-    return `<div ${base.replace('class="el el-text', `class="el el-text${e.font === 'hand' ? ' hand' : ''}`)} ${e.color ? `data-color="${e.color}"` : ''}><span class="txt" style="color:${e.color ? colorCss(e.color) : ''}">${esc(e.text)}</span>${handle}</div>`;
+    const pg = study.pages.find(p => p.els.includes(e));
+    const m = pg ? textMetrics(pg, e) : { fs: DEFAULT_FS(e.font), lh: 36 };
+    const st = `font-size:${m.fs}px;line-height:${m.lh}px;${e.bold ? 'font-weight:600;' : ''}${e.italic ? 'font-style:italic;' : ''}${e.align ? `text-align:${e.align};` : ''}`;
+    const textHandle = e.id === selectedId ? '<span class="el-handle" data-handle="w" aria-hidden="true" title="Ancho"></span>' : '';
+    return `<div ${base.replace('class="el el-text', `class="el el-text${e.font === 'hand' ? ' hand' : ''}`).replace('style="', `style="${st}`)}><span class="txt" style="color:${e.color ? colorCss(e.color) : ''}">${esc(e.text)}</span>${textHandle}</div>`;
   }
   if (e.type === 'verse') {
     return `<div ${base.replace('el-verse', 'el-card el-verse')}><div class="el-kicker">${esc(e.ref)}${e.version ? ' · ' + esc(e.version) : ''}</div><div class="el-body">${e.parts ? e.parts.map(p => `<sup>${p.n}</sup>${esc(p.t)}`).join(' ') : esc(e.text)}</div>${handle}</div>`;
@@ -774,6 +805,7 @@ function onPointerUp(ev) {
   }
   if (drag) {
     const d = drag; drag = null;
+    if (d.moved && d.el.type === 'text') snapText(d.page, d.el);
     if (d.moved) { renderPage(d.page); markDirty(); }
     else if (d.wasSelected && d.el.type === 'text') { editSelected(); }
     else renderPage(d.page);
@@ -802,17 +834,18 @@ function eraseAt(page, pt) {
 }
 
 /* ── Selección y texto ── */
-function select(id, rerender = true) {
+function select(id) {
   selectedId = id;
   const f = findEl(id);
   if (f) renderPage(f.page);
-  if (rerender) {}
+  updateFmtBar();
 }
 function deselect() {
   if (!selectedId) return;
   const f = findEl(selectedId);
   selectedId = null;
   if (f) renderPage(f.page);
+  updateFmtBar();
 }
 function deleteSelected() {
   const f = selectedId && findEl(selectedId);
@@ -825,6 +858,7 @@ function deleteSelected() {
 function resizeSelected(k) {
   const f = selectedId && findEl(selectedId);
   if (!f) return;
+  if (f.el.type === 'text') { stepFontSize(k > 1 ? 1 : -1); return; }
   snapshot();
   f.el.s = Math.round(clamp((f.el.s || 1) * k, 0.35, 3) * 100) / 100;
   renderPage(f.page); markDirty();
@@ -841,10 +875,60 @@ function duplicateSelected() {
 function toggleHand() {
   const f = selectedId && findEl(selectedId);
   if (!f || f.el.type !== 'text') return;
-  snapshot();
-  f.el.font = f.el.font === 'hand' ? 'book' : 'hand';
-  writeLS('kodesh_study_font', f.el.font);
-  renderPage(f.page); markDirty();
+  setFont(f.el.font === 'hand' ? 'book' : 'hand');
+}
+
+/* ── Formato de texto (barra superior, como en Word) ──
+   Se aplica al texto que estás escribiendo o al seleccionado, y queda como
+   formato para el próximo texto. */
+function textFmt() { return { font: 'book', fs: 24, bold: false, italic: false, align: 'left', ...readLS('kodesh_study_textfmt', {}) }; }
+function saveTextFmt(patch) { writeLS('kodesh_study_textfmt', { ...textFmt(), ...patch }); }
+function fmtTarget() {
+  const id = editingId || selectedId;
+  const f = id && findEl(id);
+  return f && f.el.type === 'text' ? f : null;
+}
+function applyTextFmt(patch) {
+  saveTextFmt(patch);
+  const f = fmtTarget();
+  if (f) {
+    if (!editingId) snapshot();
+    Object.assign(f.el, patch);
+    if (patch.font && !patch.fs) f.el.fs = f.el.fs || DEFAULT_FS(patch.font);
+    snapText(f.page, f.el);
+    if (editingId === f.el.id) {
+      // Sin volver a dibujar la página: así no se pierde el cursor.
+      const node = document.querySelector(`[data-el="${f.el.id}"]`);
+      if (node) {
+        const m = textMetrics(f.page, f.el);
+        node.classList.toggle('hand', f.el.font === 'hand');
+        Object.assign(node.style, { fontSize: m.fs + 'px', lineHeight: m.lh + 'px', fontWeight: f.el.bold ? '600' : '', fontStyle: f.el.italic ? 'italic' : '', textAlign: f.el.align || '', top: f.el.y + 'px', left: f.el.x + 'px' });
+      }
+    } else renderPage(f.page);
+    markDirty();
+  }
+  updateFmtBar();
+}
+function setFont(font) { const f = fmtTarget(); applyTextFmt({ font, fs: (f && f.el.fs && f.el.font === font) ? f.el.fs : DEFAULT_FS(font) }); }
+function stepFontSize(dir) {
+  const f = fmtTarget();
+  const cur = f ? (f.el.fs || DEFAULT_FS(f.el.font)) : textFmt().fs;
+  let i = TEXT_SIZES.findIndex(x => x >= cur); if (i < 0) i = TEXT_SIZES.length - 1;
+  if (TEXT_SIZES[i] !== cur && dir < 0) i++;
+  applyTextFmt({ fs: TEXT_SIZES[clamp(i + dir, 0, TEXT_SIZES.length - 1)] });
+}
+function toggleFmt(key) { const f = fmtTarget(); applyTextFmt({ [key]: !(f ? f.el[key] : textFmt()[key]) }); }
+function setAlign(a) { applyTextFmt({ align: a }); }
+function updateFmtBar() {
+  const g = $('textFmtGroup'); if (!g || !study) return;
+  const f = fmtTarget();
+  const cur = f ? { font: f.el.font || 'book', fs: f.el.fs || DEFAULT_FS(f.el.font), bold: !!f.el.bold, italic: !!f.el.italic, align: f.el.align || 'left' } : textFmt();
+  g.classList.toggle('active', !!f || tool === 'text');
+  g.querySelectorAll('[data-font]').forEach(b => { const on = b.dataset.font === cur.font; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  $('fsLabel').textContent = Math.round(cur.fs * 0.75) + ' pt';
+  $('boldBtn').classList.toggle('on', cur.bold); $('boldBtn').setAttribute('aria-pressed', cur.bold);
+  $('italicBtn').classList.toggle('on', cur.italic); $('italicBtn').setAttribute('aria-pressed', cur.italic);
+  g.querySelectorAll('[data-align]').forEach(b => { const on = b.dataset.align === cur.align; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
 }
 function createTextAt(page, pt) {
   const box = boxAt(page, pt.x, pt.y);
@@ -854,16 +938,33 @@ function createTextAt(page, pt) {
     x = box.x + 12; w = box.w - 24; y = Math.max(box.y + 34, pt.y - 22);
   }
   snapshot();
-  const el = { id: uid(), type: 'text', x: Math.round(clamp(x, 8, pg.w - 140)), y: Math.round(clamp(y, 8, pg.h - 40)), w: Math.round(Math.max(140, w)), text: '', font: readLS('kodesh_study_font', 'book'), color: color !== 'ink' ? color : undefined };
+  const f = textFmt();
+  const el = { id: uid(), type: 'text', x: Math.round(clamp(x, 8, pg.w - 140)), y: Math.round(clamp(y, 8, pg.h - 40)), w: Math.round(Math.max(140, w)), text: '',
+    font: f.font, fs: f.fs, bold: f.bold || undefined, italic: f.italic || undefined, align: f.align && f.align !== 'left' ? f.align : undefined, color: color !== 'ink' ? color : undefined };
   page.els.push(el);
+  snapText(page, el);
   selectedId = el.id; editingId = el.id;
   renderPage(page);
+  // Si cae sobre otro texto o tarjeta, baja al siguiente renglón libre.
+  let moved = false;
+  for (let i = 0; i < 12; i++) {
+    const h = elHeight(el.id);
+    const hit = page.els.find(o => o !== el && o.type !== 'stroke' &&
+      el.x < o.x + o.w * (o.s || 1) && el.x + el.w > o.x && el.y < o.y + elHeight(o.id) - 2 && el.y + h > o.y + 2);
+    if (!hit) break;
+    el.y = Math.round(hit.y + elHeight(hit.id));
+    snapText(page, el, true);
+    moved = true;
+  }
+  if (moved) renderPage(page);
+  updateFmtBar();
 }
 function editSelected() {
   const f = selectedId && findEl(selectedId);
   if (!f || f.el.type !== 'text') return;
   editingId = f.el.id;
   renderPage(f.page);
+  updateFmtBar();
 }
 function startEditingNode(node) {
   node.classList.add('editing');
@@ -897,6 +998,7 @@ function commitEditing() {
   }
   renderPage(f.page);
   markDirty();
+  updateFmtBar();
 }
 
 /* ── Insertar elementos (Biblia, palabras, asistente) ── */
@@ -1347,6 +1449,7 @@ document.addEventListener('keydown', e => {
   const mod = e.metaKey || e.ctrlKey;
   if (mod && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && e.key.toLowerCase() === 'y' && !typing) { e.preventDefault(); redo(); return; }
+  if (mod && (e.key.toLowerCase() === 'b' || e.key.toLowerCase() === 'i') && fmtTarget()) { e.preventDefault(); toggleFmt(e.key.toLowerCase() === 'b' ? 'bold' : 'italic'); return; }
   if (typing) return;
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); deleteSelected(); return; }
   const map = { v: 'select', p: 'pen', h: 'hl', e: 'eraser', t: 'text' };
