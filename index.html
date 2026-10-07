@@ -3669,6 +3669,19 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
   .nav-app-logo { font-family: var(--font-hebrew); font-size: 1.1rem; color: var(--gold); line-height: 1; }
   .nav-app-link:active { background: var(--gold-glow); }
 }
+
+/* ── Aviso de cambio de parashá dentro del capítulo ── */
+.parasha-break {
+  display: flex; align-items: center; gap: 14px; margin: 1.6em 0 1.1em; text-decoration: none; color: inherit;
+  animation: fadeIn 0.4s var(--ease-out);
+}
+.pb-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim)); }
+.pb-line:last-child { background: linear-gradient(90deg, var(--gold-dim), transparent); }
+.pb-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; padding: 0 4px; }
+.pb-kicker { font-family: var(--font-body); font-size: 0.62em; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-variant-numeric: lining-nums; }
+.pb-heb { font-family: var(--font-hebrew); font-size: 1.35em; line-height: 1.25; color: var(--gold); }
+.pb-name { font-family: var(--font-display); font-size: 0.92em; font-weight: 600; color: var(--text); }
+.pb-sig { font-weight: 400; font-style: italic; color: var(--text-mid); }
 </style>
 </head>
 <body>
@@ -5082,8 +5095,40 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
 
   main.innerHTML = html;
   main.scrollTo(0, 0);
+  currentParashaBreak = parasha && parasha.nextInChapter ? parasha.nextInChapter : null;
   if (interlinearActive) renderInterlinearInline(state.currentBook, chapterNum, verses);
+  else insertParashaBreak();
   applySectionHeadings(state.currentBook, chapterNum);
+}
+
+/* ── Cambio de parashá a mitad de capítulo ──
+   El banner de arriba muestra la parashá con la que empieza el capítulo; si
+   otra empieza dentro (p. ej. Noaj en Génesis 6:9), se marca justo antes de
+   ese versículo (y antes de su título de sección, si lo tiene). */
+let currentParashaBreak = null;
+function insertParashaBreak() {
+  const p = currentParashaBreak;
+  const text = document.querySelector('#mainContent .bible-text');
+  if (!p || !text) return;
+  text.querySelectorAll('.parasha-break').forEach(el => el.remove());
+  let anchor = text.querySelector('#v-' + Number(p.startVerse));
+  if (!anchor) return;
+  while (anchor.previousElementSibling && anchor.previousElementSibling.classList.contains('section-heading')) {
+    anchor = anchor.previousElementSibling;
+  }
+  const el = document.createElement('a');
+  el.className = 'parasha-break';
+  el.href = 'parashot.html?p=' + Number(p.num);
+  el.setAttribute('aria-label', `Aquí comienza la parashá ${p.nombre}`);
+  el.innerHTML = `
+    <span class="pb-line" aria-hidden="true"></span>
+    <span class="pb-body">
+      <span class="pb-kicker">Comienza la parashá ${Number(p.num)}</span>
+      <span class="pb-heb" lang="he">${escHtml(p.heb || '')}</span>
+      <span class="pb-name">${escHtml(p.nombre)}<span class="pb-sig"> · ${escHtml(p.sig || '')}</span></span>
+    </span>
+    <span class="pb-line" aria-hidden="true"></span>`;
+  anchor.parentNode.insertBefore(el, anchor);
 }
 
 /* ════════════════════════════════════
@@ -6322,7 +6367,8 @@ async function renderInterlinearInline(bookId, chapterNum, rvVerses) {
     </div>`;
   }).join('') || '<div class="interlinear-locked">Sin datos para mostrar.</div>';
 
-  // Títulos de sección también en este modo
+  // Títulos de sección y cambio de parashá también en este modo
+  insertParashaBreak();
   const known = headingsByBook[bookId];
   if (known) insertSectionHeadings(known[chapterNum]);
 }
@@ -9228,7 +9274,15 @@ function init() {
   }
 
   selectBook(book);
-  loadChapter(book, chapter);
+  // Desde el Ciclo de estudio: ?verse=9 lleva al versículo y ?study=1 abre
+  // el asistente sobre ese capítulo.
+  const verse = parseInt(params.get('verse')) || 0;
+  const study = params.get('study') === '1';
+  loadChapter(book, chapter).then(() => {
+    if (verse > 1) setTimeout(() => document.getElementById('v-' + verse)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    if (study) setTimeout(() => openAssistant(), 500);
+    if (verse || study) window.history.replaceState({}, '', `/index.html?book=${encodeURIComponent(book)}&chapter=${chapter}`);
+  });
 }
 
 init();

@@ -18,9 +18,9 @@
   },
   {
     "num": 2,
-    "nombre": "Noach",
+    "nombre": "Noaj",
     "heb": "נֹחַ",
-    "translit": "Nóaj",
+    "translit": "Noaj",
     "sig": "Noé / Descanso",
     "torah": "Génesis 6:9–11:32",
     "haftarah": "Isaías 54:1–55:5",
@@ -35,7 +35,7 @@
   },
   {
     "num": 3,
-    "nombre": "Lech Lecha",
+    "nombre": "Lej Lejá",
     "heb": "לֶךְ-לְךָ",
     "translit": "Lej Lejá",
     "sig": "Ve tú / Sal para ti",
@@ -52,7 +52,7 @@
   },
   {
     "num": 4,
-    "nombre": "Vayera",
+    "nombre": "Vayerá",
     "heb": "וַיֵּרָא",
     "translit": "Vayerá",
     "sig": "Y apareció / Se mostró",
@@ -69,9 +69,9 @@
   },
   {
     "num": 5,
-    "nombre": "Chayei Sarah",
+    "nombre": "Jayé Sará",
     "heb": "חַיֵּי שָׂרָה",
-    "translit": "JayéiArá",
+    "translit": "Jayé Sará",
     "sig": "Vida de Sara",
     "torah": "Génesis 23:1–25:18",
     "haftarah": "1 Reyes 1:1–31",
@@ -103,7 +103,7 @@
   },
   {
     "num": 7,
-    "nombre": "Vayetze",
+    "nombre": "Vayetsé",
     "heb": "וַיֵּצֵא",
     "translit": "Vayetsé",
     "sig": "Y salió",
@@ -120,7 +120,7 @@
   },
   {
     "num": 8,
-    "nombre": "Vayishlach",
+    "nombre": "Vayishlaj",
     "heb": "וַיִּשְׁלַח",
     "translit": "Vayishlaj",
     "sig": "Y envió",
@@ -137,9 +137,9 @@
   },
   {
     "num": 9,
-    "nombre": "Vayeshev",
+    "nombre": "Vayéshev",
     "heb": "וַיֵּשֶׁב",
-    "translit": "Vayeshev",
+    "translit": "Vayéshev",
     "sig": "Y habitó / Se estableció",
     "torah": "Génesis 37:1–40:23",
     "haftarah": "Amós 2:6–3:8",
@@ -154,7 +154,7 @@
   },
   {
     "num": 10,
-    "nombre": "Miketz",
+    "nombre": "Mikéts",
     "heb": "מִקֵּץ",
     "translit": "Mikéts",
     "sig": "Al cabo / Al fin de",
@@ -188,7 +188,7 @@
   },
   {
     "num": 12,
-    "nombre": "Vayechi",
+    "nombre": "Vayejí",
     "heb": "וַיְחִי",
     "translit": "Vayejí",
     "sig": "Y vivió",
@@ -222,9 +222,9 @@
   },
   {
     "num": 14,
-    "nombre": "Vaera",
+    "nombre": "Vaerá",
     "heb": "וָאֵרָא",
-    "translit": "Vaerrá",
+    "translit": "Vaerá",
     "sig": "Y me aparecí / Me mostré",
     "torah": "Éxodo 6:2–9:35",
     "haftarah": "Ezequiel 28:25–29:21",
@@ -256,7 +256,7 @@
   },
   {
     "num": 16,
-    "nombre": "Beshalach",
+    "nombre": "Beshalaj",
     "heb": "בְּשַׁלַּח",
     "translit": "Beshalaj",
     "sig": "Cuando dejó ir",
@@ -273,7 +273,7 @@
   },
   {
     "num": 17,
-    "nombre": "Yitro",
+    "nombre": "Yitró",
     "heb": "יִתְרוֹ",
     "translit": "Yitró",
     "sig": "Jetro / Excelencia",
@@ -307,7 +307,7 @@
   },
   {
     "num": 19,
-    "nombre": "Terumah",
+    "nombre": "Terumá",
     "heb": "תְּרוּמָה",
     "translit": "Terumá",
     "sig": "Ofrenda / Contribución",
@@ -324,7 +324,7 @@
   },
   {
     "num": 20,
-    "nombre": "Tetzaveh",
+    "nombre": "Tetsavé",
     "heb": "תְּצַוֶּה",
     "translit": "Tetsavé",
     "sig": "Ordenarás / Mandarás",
@@ -341,7 +341,7 @@
   },
   {
     "num": 21,
-    "nombre": "Ki Tissa",
+    "nombre": "Ki Tisá",
     "heb": "כִּי תִשָּׂא",
     "translit": "Ki Tisá",
     "sig": "Cuando tomes / Cuando cuentes",
@@ -360,7 +360,7 @@
     "num": 22,
     "nombre": "Vayakhel",
     "heb": "וַיַּקְהֵל",
-    "translit": "Vayakél",
+    "translit": "Vayakhel",
     "sig": "Y reunió / Congregó",
     "torah": "Éxodo 35:1–38:20",
     "haftarah": "1 Reyes 7:40–50",
@@ -375,7 +375,7 @@
   },
   {
     "num": 23,
-    "nombre": "Pekudei",
+    "nombre": "Pekudéi",
     "heb": "פְקוּדֵי",
     "translit": "Pekudéi",
     "sig": "Cuentas / Registros",
@@ -392,7 +392,7 @@
   },
   {
     "num": 24,
-    "nombre": "Vayikra",
+    "nombre": "Vayikrá",
     "heb": "וַיִּקְרָא",
     "translit": "Vayikrá",
     "sig": "Y llamó",
@@ -409,7 +409,7 @@
   },
   {
     "num": 25,
-    "nombre": "Tzav",
+    "nombre": "Tsav",
     "heb": "צַו",
     "translit": "Tsav",
     "sig": "Ordena / Manda",
@@ -426,7 +426,7 @@
   },
   {
     "num": 26,
-    "nombre": "Shemini",
+    "nombre": "Sheminí",
     "heb": "שְּׁמִינִי",
     "translit": "Sheminí",
     "sig": "Octavo",
@@ -443,7 +443,7 @@
   },
   {
     "num": 27,
-    "nombre": "Tazria",
+    "nombre": "Tazría",
     "heb": "תַזְרִיעַ",
     "translit": "Tazría",
     "sig": "Cuando conciba / Dé a luz",
@@ -460,9 +460,9 @@
   },
   {
     "num": 28,
-    "nombre": "Metzora",
+    "nombre": "Metsorá",
     "heb": "מְּצֹרָע",
-    "translit": "Metsora",
+    "translit": "Metsorá",
     "sig": "El afligido / Leproso",
     "torah": "Levítico 14:1–15:33",
     "haftarah": "2 Reyes 7:3–20",
@@ -477,7 +477,7 @@
   },
   {
     "num": 29,
-    "nombre": "Acharei Mot",
+    "nombre": "Ajaréi Mot",
     "heb": "אַחֲרֵי מוֹת",
     "translit": "Ajaréi Mot",
     "sig": "Después de la muerte",
@@ -545,7 +545,7 @@
   },
   {
     "num": 33,
-    "nombre": "Bechukotai",
+    "nombre": "Bejukotái",
     "heb": "בְּחֻקֹּתַי",
     "translit": "Bejukotái",
     "sig": "En mis estatutos",
@@ -579,7 +579,7 @@
   },
   {
     "num": 35,
-    "nombre": "Nasso",
+    "nombre": "Nasó",
     "heb": "נָשֹׂא",
     "translit": "Nasó",
     "sig": "Toma el censo / Levanta",
@@ -596,9 +596,9 @@
   },
   {
     "num": 36,
-    "nombre": "Beha'alotcha",
+    "nombre": "Behaalotjá",
     "heb": "בְּהַעֲלֹתְךָ",
-    "translit": "Beha'alotjá",
+    "translit": "Behaalotjá",
     "sig": "Cuando hagas subir",
     "torah": "Números 8:1–12:16",
     "haftarah": "Zacarías 2:14–4:7",
@@ -613,7 +613,7 @@
   },
   {
     "num": 37,
-    "nombre": "Shelach",
+    "nombre": "Shelaj Lejá",
     "heb": "שְׁלַח-לְךָ",
     "translit": "Shelaj Lejá",
     "sig": "Envía para ti",
@@ -630,9 +630,9 @@
   },
   {
     "num": 38,
-    "nombre": "Korach",
+    "nombre": "Kóraj",
     "heb": "קֹרַח",
-    "translit": "Koraj",
+    "translit": "Kóraj",
     "sig": "Calvo / Korah",
     "torah": "Números 16:1–18:32",
     "haftarah": "1 Samuel 11:14–12:22",
@@ -647,7 +647,7 @@
   },
   {
     "num": 39,
-    "nombre": "Chukat",
+    "nombre": "Jukat",
     "heb": "חֻקַּת",
     "translit": "Jukat",
     "sig": "Estatuto / Ley",
@@ -681,7 +681,7 @@
   },
   {
     "num": 41,
-    "nombre": "Pinchas",
+    "nombre": "Pinjás",
     "heb": "פִּינְחָס",
     "translit": "Pinjás",
     "sig": "Finees",
@@ -715,7 +715,7 @@
   },
   {
     "num": 43,
-    "nombre": "Masei",
+    "nombre": "Maséi",
     "heb": "מַּסְעֵי",
     "translit": "Maséi",
     "sig": "Jornadas / Etapas",
@@ -749,7 +749,7 @@
   },
   {
     "num": 45,
-    "nombre": "Vaetchanan",
+    "nombre": "Vaetjanán",
     "heb": "וָאֶתְחַנַּן",
     "translit": "Vaetjanán",
     "sig": "Y oré / Supliqué",
@@ -766,9 +766,9 @@
   },
   {
     "num": 46,
-    "nombre": "Ekev",
+    "nombre": "Ékev",
     "heb": "עֵקֶב",
-    "translit": "Ekev",
+    "translit": "Ékev",
     "sig": "Como resultado / Recompensa",
     "torah": "Deuteronomio 7:12–11:25",
     "haftarah": "Isaías 49:14–51:3",
@@ -783,7 +783,7 @@
   },
   {
     "num": 47,
-    "nombre": "Reeh",
+    "nombre": "Reé",
     "heb": "רְאֵה",
     "translit": "Reé",
     "sig": "Mira / Ve",
@@ -817,7 +817,7 @@
   },
   {
     "num": 49,
-    "nombre": "Ki Tetze",
+    "nombre": "Ki Tetsé",
     "heb": "כִּי-תֵצֵא",
     "translit": "Ki Tetsé",
     "sig": "Cuando salgas",
@@ -834,7 +834,7 @@
   },
   {
     "num": 50,
-    "nombre": "Ki Tavo",
+    "nombre": "Ki Tavó",
     "heb": "כִּי-תָבוֹא",
     "translit": "Ki Tavó",
     "sig": "Cuando entres",
@@ -851,7 +851,7 @@
   },
   {
     "num": 51,
-    "nombre": "Nitzavim",
+    "nombre": "Nitsavim",
     "heb": "נִצָּבִים",
     "translit": "Nitsavim",
     "sig": "Ustedes están de pie",
@@ -868,7 +868,7 @@
   },
   {
     "num": 52,
-    "nombre": "Vayelech",
+    "nombre": "Vayélej",
     "heb": "וַיֵּלֶךְ",
     "translit": "Vayélej",
     "sig": "Y fue",
@@ -902,9 +902,9 @@
   },
   {
     "num": 54,
-    "nombre": "Vezot Haberacha",
+    "nombre": "Vezot Haberajá",
     "heb": "וְזֹאת הַבְּרָכָה",
-    "translit": "Vezot HaBerakhá",
+    "translit": "Vezot Haberajá",
     "sig": "Esta es la bendición",
     "torah": "Deuteronomio 33:1–34:12",
     "haftarah": "Josué 1:1–18",

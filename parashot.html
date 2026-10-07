@@ -7,776 +7,762 @@
 <title>KODESH · Ciclo de Estudio</title>
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#c9a84c">
+<meta name="theme-color" content="#0b0b12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="KODESH">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Frank+Ruhl+Libre:wght@500&display=swap" rel="stylesheet">
+<script>try { if (localStorage.getItem('kodesh_theme') === 'light') document.documentElement.classList.add('light'); } catch (e) {}</script>
 <style>
+/* Rediseño B «Noche de Shabat» — fusión «Esta semana» + «El camino de la Torá» */
 :root {
-  --gold:#c9a84c; --gold-bright:#e8c96a; --gold-dim:#5a4820; --gold-glow:rgba(201,168,76,0.12);
-  --bg:#05050a; --bg2:#0a0a12; --bg3:#0f0f1a; --bg4:#141428;
-  --border:#1a1a2a; --border2:#252538;
-  --text:#ede5d5; --text-mid:#a09880; --text-dim:#5a5870;
-  --green:#5ccc68; --green-dim:#1a3a1e;
-  --blue:#5a9cf0; --blue-dim:#1a2a3a;
-  --purple:#9a6cf0; --purple-dim:#2a1a4a;
-  --red:#e05a5a;
+  --bg: #0b0b12; --bg2: #12111a; --bg3: #1b1a26; --bg-sunk: #0e0d15;
+  --border: #22212e; --border2: #2a2836; --hair: #1c1b26;
+  --text: #e9e3d3; --text-mid: #b8af9c; --text-dim: #8e8676; --text-soft: #cfc7b5;
+  --gold: #c9a84c; --gold-line: #3a3220; --gold-glow: rgba(201,168,76,0.14); --gold-heb: #a8935a;
+  --on-gold: #15120a;
+  --blue: #8db8f5; --blue-soft: rgba(90,156,240,0.14);
+  --purple: #b9a0f2; --purple-soft: rgba(154,108,240,0.14);
+  --node: #3a3848;
+  --scrim: rgba(2,2,6,0.62);
+  --font-display: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --font-hebrew: 'Frank Ruhl Libre', 'SBL Hebrew', serif;
+  --safe-top: var(--safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  color-scheme: dark;
 }
 html.light {
-  --gold:#8a6010; --gold-bright:#6a4808; --gold-dim:#d4a855; --gold-glow:rgba(138,96,16,0.10);
-  --bg:#faf8f4; --bg2:#f3efe8; --bg3:#ece7dc; --bg4:#e4ddd0;
-  --border:#ddd6c8; --border2:#cec5b4;
-  --text:#1a1610; --text-mid:#5a4e38; --text-dim:#9a8e78;
-  --green:#2a8a30; --green-dim:#d0ecd2;
-  --blue:#1a5a9a; --blue-dim:#d0e0f4;
-  --purple:#5a2a9a; --purple-dim:#e8d8f8;
-  --red:#c03030;
+  --bg: #f6f1e6; --bg2: #fffdf8; --bg3: #f0e9da; --bg-sunk: #f8f3e8;
+  --border: #e6dcc6; --border2: #d9cdb2; --hair: #ece3d0;
+  --text: #241d12; --text-mid: #4f4636; --text-dim: #7a6f5c; --text-soft: #4f4636;
+  --gold: #8a6a1e; --gold-line: #dccb9c; --gold-glow: rgba(138,106,30,0.12); --gold-heb: #8a6a1e;
+  --on-gold: #fffdf8;
+  --blue: #1f5a9e; --blue-soft: rgba(31,90,158,0.1);
+  --purple: #5b3aa0; --purple-soft: rgba(91,58,160,0.1);
+  --node: #cfc3a8;
+  --scrim: rgba(60,45,15,0.35);
+  color-scheme: light;
 }
-.theme-toggle {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  color: var(--text-dim);
-  width: 34px; height: 34px;
-  border-radius: 8px;
-  cursor: pointer;
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 17px;
+  min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; font-variant-numeric: lining-nums;
+}
+button { font: inherit; color: inherit; }
+a { color: var(--gold); }
+[lang="he"] { font-family: var(--font-hebrew); font-weight: 500; }
+
+/* ── Barra superior ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 6px;
+  padding: calc(8px + var(--safe-top)) 10px 8px 6px; min-height: calc(62px + var(--safe-top));
+  background: color-mix(in srgb, var(--bg) 88%, transparent); border-bottom: 1px solid var(--hair);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+/* En la app de iOS la zona de la hora/batería queda sobre la página: este
+   fondo la cubre para que no se vea el contenido al hacer scroll. */
+.topbar::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 160px; background: var(--bg); pointer-events: none; }
+.icon-btn {
+  width: 44px; height: 44px; flex-shrink: 0; border: none; background: transparent; color: var(--text-mid);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 22px; text-decoration: none;
+}
+.icon-btn.round { width: 40px; height: 40px; border: 1px solid var(--border2); }
+.icon-btn:active { background: var(--gold-glow); }
+.topbar-title { flex: 1; text-align: center; min-width: 0; }
+.topbar-title h1 { margin: 0; font-family: var(--font-display); font-size: 21px; font-weight: 600; line-height: 1.15; }
+.topbar-sub { font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+
+.page { max-width: 640px; margin: 0 auto; padding: 16px 16px calc(40px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Búsqueda ── */
+.search-row { display: none; }
+.search-row.open { display: block; }
+.search-field {
+  display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px; border-radius: 23px;
+  border: 1px solid var(--border2); background: var(--bg2); color: var(--text-dim);
+}
+.search-field input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: var(--text); font: inherit; font-size: 16px; }
+
+/* ── Tarjeta de esta semana ── */
+.week {
+  position: relative; overflow: hidden; border-radius: 22px; border: 1px solid var(--gold-line);
+  background: radial-gradient(120% 90% at 100% 0%, var(--gold-glow), transparent 60%), var(--bg2);
+  padding: 18px 18px 16px;
+}
+.week-watermark { position: absolute; right: -8px; top: -14px; font-size: 108px; color: var(--gold); opacity: 0.1; line-height: 1; pointer-events: none; white-space: nowrap; }
+.week-kicker { display: flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); position: relative; }
+.week-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 4px; background: var(--gold); flex-shrink: 0; }
+.week-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; position: relative; }
+.week-name { margin: 0; font-family: var(--font-display); font-size: 40px; font-weight: 600; line-height: 1; }
+.week-sig { font-size: 17px; font-style: italic; color: var(--text-mid); margin-top: 4px; }
+.week-heb { font-size: 34px; color: var(--gold); line-height: 1.1; text-align: right; }
+.week-tema { margin: 12px 0 0; font-size: 15.5px; line-height: 1.45; color: var(--text-soft); position: relative; }
+.week-combo { margin-top: 8px; font-size: 14px; color: var(--text-dim); position: relative; }
+.readings-head { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 8px; position: relative; }
+.label { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+.readings-count { font-size: 13.5px; color: var(--gold); }
+.readings { display: flex; flex-direction: column; border-radius: 14px; background: var(--bg-sunk); border: 1px solid var(--border); overflow: hidden; position: relative; }
+.reading { display: flex; align-items: center; min-height: 56px; border-bottom: 1px solid var(--hair); }
+.reading:last-child { border-bottom: none; }
+.reading-check {
+  width: 52px; height: 56px; flex-shrink: 0; border: none; background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
-  transition: all 0.2s;
-  flex-shrink: 0;
 }
-.theme-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
-html.light .current-banner { background: linear-gradient(135deg, #f5efe0, #ede4cc); }
-html.light .modal-top { background: linear-gradient(135deg, #f0e8d0, #e8dcc0); }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:3px;}
-
-/* ── TOPBAR ── */
-.topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:var(--safe-area-inset-top,0px) 24px 0;gap:16px;min-height:calc(64px + var(--safe-area-inset-top,0px));position:sticky;top:0;z-index:100;}
-/* En la app de iOS la zona de la barra de estado (hora, batería) queda por
-   encima de la página y dejaba ver el contenido al hacer scroll: este fondo
-   la cubre con el color de la barra. */
-.topbar::before{content:'';position:absolute;left:0;right:0;bottom:100%;height:160px;background:var(--bg2);pointer-events:none;}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-.logo-heb{font-family:serif;font-size:1.3rem;color:var(--gold);}
-.logo-sep{width:1px;height:20px;background:var(--border2);margin:0 4px;}
-.logo-txt{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:900;color:var(--gold);letter-spacing:3px;}
-.nav-link{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid transparent;transition:all 0.2s;}
-.nav-link:hover{color:var(--gold);border-color:var(--gold-dim);}
-.nav-link.active{color:var(--gold);border-color:var(--gold-dim);background:var(--gold-glow);}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.btn-gold{background:linear-gradient(135deg,var(--gold-dim),var(--gold-glow));border:1px solid var(--gold-dim);color:var(--gold-bright);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s;}
-html.light .btn-gold{background:linear-gradient(135deg,#c8960a,#a07008);color:#fff8ee;}
-.btn-gold:hover{box-shadow:0 0 16px var(--gold-glow);}
-
-/* ── HERO ── */
-.hero{padding:48px 40px 32px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
-.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%);pointer-events:none;}
-.hero-eyebrow{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:4px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:10px;}
-.hero-title{font-family:'Cinzel',serif;font-size:2.4rem;font-weight:900;color:var(--text);line-height:1.1;margin-bottom:8px;}
-.hero-title span{color:var(--gold);}
-.hero-sub{font-size:1.05rem;color:var(--text-dim);max-width:600px;line-height:1.6;margin-bottom:24px;}
-.hero-stats{display:flex;gap:32px;flex-wrap:wrap;}
-.stat{text-align:center;}
-.stat-num{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--gold);line-height:1;}
-.stat-label{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
-
-/* ── CURRENT PARASHA BANNER ── */
-.current-banner{margin:24px 40px;background:linear-gradient(135deg,#0a0800,#140e02);border:1px solid var(--gold-dim);border-radius:12px;padding:20px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
-.current-badge{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);background:var(--gold-glow);border:1px solid var(--gold-dim);padding:4px 10px;border-radius:20px;white-space:nowrap;}
-.current-info{flex:1;}
-.current-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:600;color:var(--text);}
-.current-refs{font-size:0.85rem;color:var(--text-dim);margin-top:3px;}
-.current-heb{font-family:serif;font-size:1.6rem;color:var(--gold);direction:rtl;}
-.btn-study{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:6px;border:1px solid var(--gold-dim);color:var(--gold);background:transparent;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
-.btn-study:hover{background:var(--gold-glow);}
-
-/* ── INTRO SECTION ── */
-.intro-section{margin:0 40px 8px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg2);}
-.intro-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;transition:background 0.2s;user-select:none;}
-.intro-toggle:hover{background:var(--bg3);}
-.intro-toggle-left{display:flex;align-items:center;gap:10px;}
-.intro-toggle-icon{font-size:1.1rem;}
-.intro-toggle-title{font-family:'Cinzel',serif;font-size:0.75rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
-.intro-toggle-arrow{font-size:0.7rem;color:var(--gold-dim);transition:transform 0.3s;}
-.intro-toggle-arrow.open{transform:rotate(180deg);}
-.intro-content{display:none;padding:0 20px 20px;border-top:1px solid var(--border);}
-.intro-content.open{display:block;}
-.intro-highlight{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#0a0800,#140e02);border:1px solid var(--gold-dim);border-radius:10px;padding:16px 18px;margin:16px 0;}
-html.light .intro-highlight{background:linear-gradient(135deg,#f5efe0,#ede4cc);}
-.intro-block-icon{font-size:1.5rem;flex-shrink:0;margin-top:2px;}
-.intro-block-title{font-family:'Cinzel',serif;font-size:0.78rem;font-weight:600;color:var(--gold);letter-spacing:1px;margin-bottom:6px;}
-.intro-block-text{font-size:0.95rem;color:var(--text-mid);line-height:1.7;}
-.intro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
-.intro-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color 0.2s;}
-.intro-card:hover{border-color:var(--gold-dim);}
-.intro-card-icon{font-size:1.3rem;margin-bottom:8px;display:block;}
-.intro-card-title{font-family:'Cinzel',serif;font-size:0.72rem;font-weight:600;letter-spacing:1px;color:var(--text);margin-bottom:8px;text-transform:uppercase;}
-.intro-card-text{font-size:0.9rem;color:var(--text-dim);line-height:1.65;}
-.intro-card-text strong{color:var(--gold);font-weight:600;}
-.intro-card-text em{color:var(--text-mid);font-style:italic;}
-.intro-quote{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:14px 18px;margin-top:4px;}
-.intro-quote-text{font-size:1.05rem;color:var(--text-mid);line-height:1.6;font-style:italic;margin-bottom:6px;}
-.intro-quote-ref{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);}
-@media(max-width:768px){
-  .intro-section{margin:0 16px 8px;}
-  .intro-grid{grid-template-columns:1fr;}
-  .intro-toggle-title{font-size:0.65rem;}
+.reading-check span {
+  width: 24px; height: 24px; border-radius: 12px; border: 1.5px solid var(--node);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--on-gold);
 }
-
-/* ── FILTER TABS ── */
-.filter-bar{padding:16px 40px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.filter-title{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-right:8px;}
-.filter-btn{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);color:var(--text-dim);background:transparent;cursor:pointer;transition:all 0.2s;}
-.filter-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
-.filter-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-glow);}
-.search-wrap{margin-left:auto;}
-.search-input{background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:'Crimson Pro',serif;font-size:0.9rem;padding:6px 14px;border-radius:6px;outline:none;width:200px;transition:border 0.2s;}
-.search-input:focus{border-color:var(--gold-dim);}
-.search-input::placeholder{color:var(--text-dim);}
-
-/* ── GRID ── */
-.grid-container{padding:24px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
-
-/* ── PARASHA CARD ── */
-.parasha-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.2s;position:relative;}
-.parasha-card:hover{border-color:var(--gold-dim);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.4);}
-.parasha-card.current{border-color:var(--gold);}
-.card-accent{height:2px;width:100%;}
-.card-body{padding:16px;}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
-.card-num{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim);}
-.card-date{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-mid);margin:6px 0 2px;}
-.card-date .combo{color:var(--gold);border:1px solid var(--gold-dim);border-radius:10px;padding:1px 7px;text-transform:none;letter-spacing:0;font-family:inherit;}
-.current-date{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-mid);margin-top:6px;}
-.card-heb{font-family:serif;font-size:1.4rem;color:var(--gold);direction:rtl;line-height:1;}
-.card-name{font-family:'Cinzel',serif;font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:2px;}
-.card-sig{font-size:0.82rem;color:var(--text-dim);font-style:italic;margin-bottom:12px;}
-.card-refs{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-.ref-row{display:flex;align-items:center;gap:8px;}
-.ref-badge{font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
-.ref-badge.torah{background:var(--gold-glow);color:var(--gold);border:1px solid var(--gold-dim);}
-.ref-badge.haftarah{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue);}
-.ref-badge.mesianica{background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple);}
-html.light .ref-badge.torah{background:#f5e8c0;color:#7a5008;border-color:#c9a84c;}
-html.light .ref-badge.haftarah{background:#d0e4f8;color:#1a4a8a;border-color:#5a8cc9;}
-html.light .ref-badge.mesianica{background:#e8d8f8;color:#5a1a9a;border-color:#9a6cf0;}
-.ref-text{font-size:0.78rem;color:var(--text-mid);}
-.card-tema{font-size:0.8rem;color:var(--text-dim);line-height:1.5;margin-bottom:10px;border-top:1px solid var(--border);padding-top:10px;}
-.card-footer{display:flex;align-items:center;justify-content:space-between;}
-.card-translit{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim);}
-.btn-ver{font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:1.5px;text-transform:uppercase;padding:5px 10px;border-radius:4px;border:1px solid var(--border2);color:var(--text-dim);background:transparent;cursor:pointer;transition:all 0.15s;}
-.btn-ver:hover{border-color:var(--gold-dim);color:var(--gold);}
-
-/* ── DETAIL MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.2s;}
-.modal-overlay.open{opacity:1;pointer-events:auto;}
-.modal{background:var(--bg2);border:1px solid var(--gold-dim);border-radius:16px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;position:relative;transform:translateY(20px) scale(0.97);transition:transform 0.2s;}
-.modal-overlay.open .modal{transform:translateY(0) scale(1);}
-.modal-top{background:linear-gradient(135deg,#0a0800,#140e02);padding:28px 28px 20px;border-bottom:1px solid var(--gold-dim);}
-.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
-.modal-num{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--gold-dim);}
-.modal-heb{font-family:serif;font-size:2.4rem;color:var(--gold);direction:rtl;line-height:1;}
-.modal-close{background:none;border:1px solid var(--border2);color:var(--text-dim);font-size:0.8rem;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all 0.15s;flex-shrink:0;}
-.modal-close:hover{border-color:var(--red);color:var(--red);}
-.modal-name{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--text);margin-bottom:4px;}
-.modal-sig{font-size:1rem;color:var(--text-dim);font-style:italic;}
-.modal-body{padding:24px 28px;}
-.modal-section{margin-bottom:20px;}
-.modal-section-title{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-.ref-block{background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:3px solid;}
-.ref-block.torah{border-left-color:var(--gold);}
-.ref-block.haftarah{border-left-color:var(--blue);}
-.ref-block.mesianica{border-left-color:var(--purple);}
-.ref-block-label{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
-.ref-block.torah .ref-block-label{color:var(--gold);}
-.ref-block.haftarah .ref-block-label{color:var(--blue);}
-.ref-block.mesianica .ref-block-label{color:var(--purple);}
-.ref-block-text{font-size:0.9rem;color:var(--text-mid);}
-.conexion-text{font-size:0.95rem;color:var(--text-mid);line-height:1.7;}
-.tema-text{font-size:1rem;color:var(--text);line-height:1.7;}
-.modal-nav{display:flex;justify-content:space-between;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);}
-.btn-modal-nav{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:6px;border:1px solid var(--border2);color:var(--text-dim);background:transparent;cursor:pointer;transition:all 0.2s;}
-.btn-modal-nav:hover{border-color:var(--gold-dim);color:var(--gold);}
-.btn-modal-nav:disabled{opacity:0.3;cursor:not-allowed;}
-
-/* ── BOOK SECTIONS ── */
-.book-header{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:8px 0 4px;}
-.book-header-line{flex:1;height:1px;background:var(--border);}
-.book-header-text{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);white-space:nowrap;}
-
-/* ── PROGRESS RING ── */
-.progress-ring-wrap{display:flex;align-items:center;gap:16px;}
-.ring-label{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
-.ring-pct{font-family:'Cinzel',serif;font-size:1rem;font-weight:900;color:var(--gold);}
-
-/* ── EMPTY STATE ── */
-.empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);}
-.empty-icon{font-size:2.5rem;margin-bottom:12px;}
-.empty-text{font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-left:3px solid var(--green);color:var(--text);font-size:0.9rem;padding:12px 18px;border-radius:8px;z-index:2000;opacity:0;transform:translateX(20px);transition:all 0.3s;pointer-events:none;}
-.toast.show{opacity:1;transform:translateX(0);}
-
-/* ── RESPONSIVE ── */
-@media(max-width:768px){
-  .hero,.filter-bar,.grid-container,.current-banner{padding-left:16px;padding-right:16px;}
-  .hero-title{font-size:1.6rem;}
-  .modal{margin:0;border-radius:12px 12px 0 0;max-height:92vh;}
-  .modal-overlay{align-items:flex-end;padding:0;}
-  .grid-container{grid-template-columns:1fr;}
-  /* La barra se salía de la pantalla en teléfonos (scroll horizontal). */
-  .topbar{padding:0 14px;gap:10px;}
-  .topbar .nav-link{font-size:0.55rem;letter-spacing:1px;}
-  .topbar .btn-gold{display:none;}
-  .logo-sep,.logo-txt{display:none;}
+.reading.done .reading-check span { background: var(--gold); border-color: var(--gold); }
+.reading-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 56px; padding-right: 14px; text-decoration: none; color: var(--text); }
+.reading-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.reading-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; }
+.reading-ref { font-size: 16.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reading.done .reading-ref { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--node); }
+.c-torah { color: var(--gold); } .c-haftarah { color: var(--blue); } .c-np { color: var(--purple); }
+.week-actions { display: flex; gap: 8px; margin-top: 14px; position: relative; }
+.btn {
+  height: 46px; padding: 0 18px; border-radius: 23px; border: 1px solid var(--border2); background: transparent;
+  color: var(--text); font-size: 15.5px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
 }
+.btn-primary { flex: 1; border: none; background: var(--gold); color: var(--on-gold); font-weight: 500; }
+.btn-ghost-gold { border-color: var(--gold-line); color: var(--gold); }
+.shabbat-line { display: flex; align-items: center; gap: 10px; padding: 0 4px; color: var(--text-mid); font-size: 14.5px; }
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.parasha-card{animation:fadeUp 0.3s ease both;}
+/* ── Tu año ── */
+.year { padding: 14px 16px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--border); }
+.year-head { display: flex; align-items: baseline; justify-content: space-between; }
+.year-count { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--gold); }
+.year-count small { font-size: 15px; font-weight: 500; color: var(--text-dim); }
+.year-bars { display: grid; grid-template-columns: 12fr 11fr 10fr 10fr 11fr; gap: 4px; margin-top: 10px; }
+.year-bar { display: flex; flex-direction: column; gap: 5px; min-width: 0; border: none; background: transparent; padding: 0; cursor: pointer; text-align: left; }
+.year-track { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.year-fill { height: 6px; background: var(--gold); border-radius: 3px; }
+.year-name { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.year-bar.current .year-name { color: var(--gold); }
+
+/* ── El camino ── */
+.book { display: flex; flex-direction: column; }
+.book-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 48px;
+  padding: 6px 4px; border: none; background: transparent; cursor: pointer; text-align: left;
+}
+.book-head-left { display: flex; align-items: center; gap: 10px; }
+.book-heb { font-size: 22px; color: var(--gold); }
+.book-meta { font-size: 13.5px; color: var(--text-dim); }
+.book-chev { color: var(--text-dim); transition: transform 0.25s ease; }
+.book.open .book-chev { transform: rotate(180deg); }
+.path { list-style: none; margin: 0; padding: 0 2px; position: relative; display: none; }
+.book.open .path { display: block; }
+.path::before { content: ''; position: absolute; left: 17px; top: 20px; bottom: 28px; width: 2px; background: var(--node); opacity: 0.6; }
+.step { position: relative; display: flex; align-items: center; gap: 14px; }
+.node {
+  position: relative; z-index: 1; width: 32px; height: 32px; flex-shrink: 0; border-radius: 16px;
+  background: var(--bg); border: 1.5px solid var(--node); color: var(--text-mid);
+  display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 600; font-size: 15px;
+}
+.step.studied .node { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+.step.current .node { background: var(--gold); border-color: var(--gold); color: var(--on-gold); font-weight: 700; box-shadow: 0 0 0 5px var(--gold-glow); }
+.step-btn {
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 60px;
+  padding: 8px 0; border: none; border-bottom: 1px solid var(--hair); background: transparent; cursor: pointer; text-align: left; color: var(--text);
+}
+.step-main { display: flex; flex-direction: column; min-width: 0; }
+.step-name { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+.step.current .step-name { color: var(--gold); }
+.step-sub { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-side { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.step-heb { font-size: 19px; color: var(--gold-heb); white-space: nowrap; }
+.step-date { font-size: 12.5px; color: var(--text-dim); white-space: nowrap; }
+.step.current .step-date { color: var(--gold); }
+.empty { text-align: center; color: var(--text-dim); font-style: italic; padding: 30px 0; }
+
+/* ── ¿Qué es el ciclo? ── */
+.intro { border-radius: 18px; border: 1px solid var(--border); background: var(--bg2); overflow: hidden; margin-top: 6px; }
+.intro-toggle {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 0 16px;
+  border: none; background: transparent; cursor: pointer; text-align: left;
+}
+.intro-toggle-title { flex: 1; font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+.intro-toggle .book-chev { flex-shrink: 0; }
+.intro.open .intro-toggle .book-chev { transform: rotate(180deg); }
+.intro-content { display: none; padding: 0 16px 18px; }
+.intro.open .intro-content { display: block; }
+.intro-item { padding: 12px 0; border-top: 1px solid var(--hair); }
+.intro-item h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 17.5px; font-weight: 600; color: var(--gold); }
+.intro-item p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--text-soft); }
+.intro-quote { margin: 8px 0 0; padding: 14px 16px; border-radius: 14px; background: var(--gold-glow); font-style: italic; font-size: 16px; line-height: 1.5; }
+.intro-quote cite { display: block; margin-top: 6px; font-style: normal; font-size: 14px; color: var(--gold); }
+
+/* ── Hoja de detalle ── */
+.sheet-overlay { position: fixed; inset: 0; z-index: 500; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+.sheet-overlay.open { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; max-height: calc(100% - 40px - var(--safe-top)); max-width: 640px; margin: 0 auto;
+  background: var(--bg2); border-top: 1px solid var(--border2); border-radius: 24px 24px 0 0;
+  padding: 8px 18px calc(18px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 14px; overflow-y: auto; overscroll-behavior: contain;
+  transform: translateY(100%); transition: transform 0.36s var(--ease-sheet); box-shadow: 0 -20px 50px rgba(0,0,0,0.45);
+}
+.sheet-overlay.open .sheet { transform: translateY(0); }
+.grab { width: 38px; height: 4px; border-radius: 2px; background: var(--node); margin: 2px auto 0; flex-shrink: 0; }
+.sheet-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sheet-nav .label { text-align: center; }
+.sheet-hero { text-align: center; }
+.sheet-heb { font-size: 48px; color: var(--gold); line-height: 1.2; }
+.sheet-name { margin: 0; font-family: var(--font-display); font-size: 34px; font-weight: 600; line-height: 1.1; }
+.sheet-sig { font-size: 17px; font-style: italic; color: var(--text-mid); }
+.sheet-tema { margin: 10px 0 0; font-size: 16px; line-height: 1.45; color: var(--text-soft); }
+.sheet-readings { display: flex; flex-direction: column; gap: 8px; }
+.sheet-reading {
+  display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 0 14px; border-radius: 16px;
+  background: var(--bg3); border: 1px solid var(--border); text-decoration: none; color: var(--text);
+}
+.sheet-reading-icon { width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ic-torah { background: var(--gold-glow); color: var(--gold); } .ic-haftarah { background: var(--blue-soft); color: var(--blue); } .ic-np { background: var(--purple-soft); color: var(--purple); }
+.sheet-reading .reading-text { flex: 1; }
+.sheet-reading-go { font-size: 14px; color: var(--gold); }
+.conexion { padding: 14px 16px; border-radius: 16px; background: var(--gold-glow); border: 1px solid var(--gold-line); }
+.conexion p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; }
+.conexion .label { display: flex; align-items: center; gap: 8px; color: var(--gold); }
+.sheet-actions { display: flex; gap: 8px; }
+.sheet-actions .btn { flex: 1; }
+.btn.studied { border-color: var(--gold); color: var(--gold); }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translate(-50%, 20px); z-index: 900;
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text); padding: 10px 18px; border-radius: 22px;
+  font-size: 15px; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .sheet, .sheet-overlay, .toast, .book-chev { transition: none; } }
 </style>
 </head>
 <body>
 
-<div class="toast" id="toast"></div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal" id="modal">
-    <div class="modal-top">
-      <div class="modal-header">
-        <div>
-          <div class="modal-num" id="modalNum"></div>
-          <div class="modal-name" id="modalName"></div>
-          <div class="modal-sig" id="modalSig"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div class="modal-heb" id="modalHeb"></div>
-          <button class="modal-close" onclick="closeModalBtn()">✕ Cerrar</button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-body">
-      <div class="modal-section">
-        <div class="modal-section-title">Tema Central</div>
-        <p class="tema-text" id="modalTema"></p>
-      </div>
-      <div class="modal-section">
-        <div class="modal-section-title">Lecturas</div>
-        <div class="ref-block torah">
-          <div class="ref-block-label">Torah</div>
-          <div class="ref-block-text" id="modalTorah"></div>
-        </div>
-        <div class="ref-block haftarah">
-          <div class="ref-block-label">Haftarah — Profetas</div>
-          <div class="ref-block-text" id="modalHaftarah"></div>
-        </div>
-        <div class="ref-block mesianica">
-          <div class="ref-block-label">Haftarah Mesiánica — Brit Hadashá</div>
-          <div class="ref-block-text" id="modalMesianica"></div>
-        </div>
-      </div>
-      <div class="modal-section">
-        <div class="modal-section-title">Conexión Mesiánica</div>
-        <p class="conexion-text" id="modalConexion"></p>
-      </div>
-      <div class="modal-nav">
-        <button class="btn-modal-nav" id="btnPrev" onclick="navigateModal(-1)">← Anterior</button>
-        <button class="btn-modal-nav" id="btnBible" onclick="goToBible(document.getElementById('modalTorah').textContent)" style="border-color:var(--gold-dim);color:var(--gold);">📖 Leer en Biblia</button>
-        <button class="btn-modal-nav" id="btnNext" onclick="navigateModal(1)">Siguiente →</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- TOPBAR -->
 <header class="topbar">
-  <a class="logo" href="index.html">
-    <span class="logo-heb">קֹדֶשׁ</span>
-    <span class="logo-sep"></span>
-    <span class="logo-txt">KODESH</span>
+  <a class="icon-btn" href="index.html" aria-label="Volver a la Biblia">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
   </a>
-  <a class="nav-link" href="index.html">Biblia</a>
-  <a class="nav-link active" href="parashot.html">Ciclo de Estudio</a>
-  <div class="topbar-right">
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
-    <button class="btn-gold" onclick="showToast('✦ Próximamente — Plan Berith')">✦ Berith</button>
+  <div class="topbar-title">
+    <h1>Ciclo de estudio</h1>
+    <div class="topbar-sub" id="hebYear">Las 54 porciones</div>
   </div>
+  <button class="icon-btn round" id="searchBtn" onclick="toggleSearch()" aria-label="Buscar porción" aria-expanded="false" aria-controls="searchRow">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+  </button>
+  <button class="icon-btn round" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">
+    <svg id="themeIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+  </button>
 </header>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-eyebrow">Ciclo Anual de Estudio Bíblico</div>
-  <div class="hero-title">Las <span>54 Porciones</span></div>
-  <div class="hero-sub">Porciones semanales de la Torah con lecturas proféticas y conexiones al Nuevo Pacto — el hilo rojo que une toda la Escritura.</div>
-  <div class="hero-stats">
-    <div class="stat"><div class="stat-num">54</div><div class="stat-label">Porciones</div></div>
-    <div class="stat"><div class="stat-num">5</div><div class="stat-label">Libros de Moisés</div></div>
-    <div class="stat"><div class="stat-num" id="statLeidas">0</div><div class="stat-label">Estudiadas</div></div>
-  </div>
-</section>
-
-<!-- CURRENT PARASHA -->
-<div class="current-banner" id="currentBanner">
-  <div class="current-badge" id="currentBadge">📅 Porción de esta semana</div>
-  <div class="current-info">
-    <div class="current-name" id="currentName">Cargando...</div>
-    <div class="current-refs" id="currentRefs"></div>
-    <div class="current-date" id="currentDate"></div>
-  </div>
-  <div class="current-heb" id="currentHeb"></div>
-  <button class="btn-study" id="btnCurrentStudy">Leer en Biblia →</button>
-</div>
-
-<!-- ══ INTRO EDUCATIVA ══ -->
-<div class="intro-section" id="introSection">
-  <div class="intro-toggle" onclick="toggleIntro()">
-    <div class="intro-toggle-left">
-      <span class="intro-toggle-icon">📜</span>
-      <span class="intro-toggle-title">¿Qué es el Ciclo de Estudio de la Torah?</span>
-    </div>
-    <span class="intro-toggle-arrow" id="introArrow">▼</span>
+<main class="page">
+  <div class="search-row" id="searchRow">
+    <label class="search-field">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+      <input type="search" id="searchInput" placeholder="Nombre, tema o cita (p. ej. Noaj, Éxodo 20)" aria-label="Buscar porción" oninput="handleSearch()">
+    </label>
   </div>
 
-  <div class="intro-content" id="introContent">
-
-    <div class="intro-block intro-highlight">
-      <div class="intro-block-icon">✡️</div>
+  <section class="week" id="week" aria-labelledby="weekName">
+    <span class="week-watermark" lang="he" aria-hidden="true" id="weekWatermark"></span>
+    <div class="week-kicker" id="weekKicker">Esta semana</div>
+    <div class="week-head">
       <div>
-        <div class="intro-block-title">Una tradición de más de 2,500 años</div>
-        <div class="intro-block-text">Desde el tiempo de Esdras y Nehemías (siglo V a.C.), el pueblo de Dios ha leído la Torah de manera sistemática, semana a semana, a lo largo de todo un año. Esta práctica ha unido a comunidades de creyentes en todo el mundo — leyendo exactamente el mismo pasaje, en la misma semana, durante más de dos milenios.</div>
+        <h2 class="week-name" id="weekName">Cargando…</h2>
+        <div class="week-sig" id="weekSig"></div>
       </div>
+      <span class="week-heb" lang="he" id="weekHeb"></span>
     </div>
-
-    <div class="intro-grid">
-      <div class="intro-card">
-        <div class="intro-card-icon">📖</div>
-        <div class="intro-card-title">¿Qué es la Torah?</div>
-        <div class="intro-card-text">Torah (תּוֹרָה) significa <em>instrucción</em> o <em>enseñanza</em> — no simplemente "ley". Son los cinco primeros libros de la Biblia escritos por Moisés: Génesis, Éxodo, Levítico, Números y Deuteronomio. Contienen la historia de la creación, la caída, los patriarcas, el éxodo de Egipto y las instrucciones de vida que Dios dio a su pueblo.</div>
-      </div>
-
-      <div class="intro-card">
-        <div class="intro-card-icon">🗓️</div>
-        <div class="intro-card-title">¿Cómo funciona el ciclo?</div>
-        <div class="intro-card-text">Los cinco libros de Moisés se dividen en <strong>54 porciones semanales</strong>. Como el año tiene menos Shabatot disponibles que porciones, algunas semanas se leen dos juntas (porción combinada), y cuáles se combinan cambia cada año. El ciclo comienza en otoño con Bereshit ("En el principio" — Génesis 1) y termina en Simjat Torá con Vezot HaBerakhá ("Esta es la bendición" — Deuteronomio 33-34). Luego comienza de nuevo.</div>
-      </div>
-
-      <div class="intro-card">
-        <div class="intro-card-icon">🏷️</div>
-        <div class="intro-card-title">¿Por qué tienen nombres hebreos?</div>
-        <div class="intro-card-text">Cada porción recibe el nombre de las primeras palabras significativas del texto hebreo original. Por ejemplo, la primera porción se llama <strong>Bereshit</strong> porque comienza con "Bereshit bara Elohim" — "En el principio creó Dios". Este sistema facilita referirse a la porción sin necesitar citar capítulos y versículos.</div>
-      </div>
-
-      <div class="intro-card">
-        <div class="intro-card-icon">🔗</div>
-        <div class="intro-card-title">Las tres lecturas de cada semana</div>
-        <div class="intro-card-text">Cada semana incluye tres lecturas conectadas: la <strong>Torah</strong> (porción de Moisés), la <strong>Haftarah</strong> (un pasaje de los Profetas que conecta temáticamente con la Torah), y la <strong>lectura del Nuevo Pacto</strong> — donde vemos cómo Yeshúa y los apóstoles cumplieron y profundizaron lo que la Torah enseñó.</div>
-      </div>
-
-      <div class="intro-card">
-        <div class="intro-card-icon">🌍</div>
-        <div class="intro-card-title">Una práctica global</div>
-        <div class="intro-card-text">Hoy mismo, millones de creyentes en todo el mundo — desde Jerusalén hasta São Paulo, desde Nueva York hasta Lagos — están leyendo la misma porción semanal. Al seguir este ciclo, te unes a una cadena ininterrumpida de estudio que atraviesa culturas, siglos y continentes.</div>
-      </div>
-
-      <div class="intro-card">
-        <div class="intro-card-icon">💡</div>
-        <div class="intro-card-title">¿Cómo estudiar cada porción?</div>
-        <div class="intro-card-text">1. <strong>Lee</strong> los capítulos de la Torah indicados. 2. <strong>Observa</strong> los temas, personajes y mandamientos. 3. <strong>Lee la Haftarah</strong> y busca la conexión con la Torah. 4. <strong>Lee el Nuevo Pacto</strong> y descubre cómo Yeshúa cumple o profundiza la porción. 5. <strong>Aplica</strong> a tu vida lo que el Espíritu te muestra.</div>
-      </div>
+    <p class="week-tema" id="weekTema"></p>
+    <div class="week-combo" id="weekCombo" hidden></div>
+    <div class="readings-head">
+      <span class="label">Lecturas de la semana</span>
+      <span class="readings-count" id="readingsCount"></span>
     </div>
-
-    <div class="intro-quote">
-      <div class="intro-quote-text">"Este libro de la Torah no se apartará de tu boca, sino que de día y de noche meditarás en él..."</div>
-      <div class="intro-quote-ref">Josué 1:8</div>
+    <div class="readings" id="weekReadings"></div>
+    <div class="week-actions">
+      <a class="btn btn-primary" id="weekContinue" href="index.html">Seguir leyendo</a>
+      <button class="btn btn-ghost-gold" id="weekConexion">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 6.3L20.5 12l-6.3 2.7L12 21l-2.2-6.3L3.5 12l6.3-2.7z"/></svg>
+        Conexión
+      </button>
     </div>
+  </section>
 
+  <div class="shabbat-line" id="shabbatLine">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    <span id="shabbatText"></span>
   </div>
+
+  <section class="year" aria-label="Tu año en la Torah">
+    <div class="year-head">
+      <span class="label">Tu año en la Torah</span>
+      <span class="year-count"><span id="statLeidas">0</span> <small>de 54</small></span>
+    </div>
+    <div class="year-bars" id="yearBars"></div>
+  </section>
+
+  <div id="path"></div>
+
+  <section class="intro" id="intro">
+    <button class="intro-toggle" onclick="toggleIntro()" aria-expanded="false" aria-controls="introContent" id="introToggle">
+      <span class="intro-toggle-title">¿Qué es el ciclo de estudio de la Torah?</span>
+      <svg class="book-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="intro-content" id="introContent">
+      <div class="intro-item"><h3>Una tradición de más de 2,500 años</h3><p>Desde el tiempo de Esdras y Nehemías (siglo V a.C.), el pueblo de Dios ha leído la Torah de manera sistemática, semana a semana, a lo largo de todo un año. Esta práctica ha unido a comunidades de creyentes en todo el mundo — leyendo exactamente el mismo pasaje, en la misma semana, durante más de dos milenios.</p></div>
+      <div class="intro-item"><h3>¿Qué es la Torah?</h3><p>Torah (<span lang="he">תּוֹרָה</span>) significa <em>instrucción</em> o <em>enseñanza</em> — no simplemente "ley". Son los cinco primeros libros de la Biblia escritos por Moisés: Génesis, Éxodo, Levítico, Números y Deuteronomio. Contienen la historia de la creación, la caída, los patriarcas, el éxodo de Egipto y las instrucciones de vida que Dios dio a su pueblo.</p></div>
+      <div class="intro-item"><h3>¿Cómo funciona el ciclo?</h3><p>Los cinco libros de Moisés se dividen en <strong>54 porciones semanales</strong>. Como el año tiene menos Shabatot disponibles que porciones, algunas semanas se leen dos juntas (porción combinada), y cuáles se combinan cambia cada año. El ciclo comienza en otoño con Bereshit ("En el principio" — Génesis 1) y termina en Simjat Torá con Vezot Haberajá ("Esta es la bendición" — Deuteronomio 33-34). Luego comienza de nuevo.</p></div>
+      <div class="intro-item"><h3>¿Por qué tienen nombres hebreos?</h3><p>Cada porción recibe el nombre de las primeras palabras significativas del texto hebreo original. Por ejemplo, la primera porción se llama <strong>Bereshit</strong> porque comienza con "Bereshit bara Elohim" — "En el principio creó Dios". Este sistema facilita referirse a la porción sin necesitar citar capítulos y versículos.</p></div>
+      <div class="intro-item"><h3>Las tres lecturas de cada semana</h3><p>Cada semana incluye tres lecturas conectadas: la <strong>Torah</strong> (porción de Moisés), la <strong>Haftarah</strong> (un pasaje de los Profetas que conecta temáticamente con la Torah), y la <strong>lectura del Nuevo Pacto</strong> — donde vemos cómo Yeshúa y los apóstoles cumplieron y profundizaron lo que la Torah enseñó.</p></div>
+      <div class="intro-item"><h3>Una práctica global</h3><p>Hoy mismo, millones de creyentes en todo el mundo — desde Jerusalén hasta São Paulo, desde Nueva York hasta Lagos — están leyendo la misma porción semanal. Al seguir este ciclo, te unes a una cadena ininterrumpida de estudio que atraviesa culturas, siglos y continentes.</p></div>
+      <div class="intro-item"><h3>¿Cómo estudiar cada porción?</h3><p>1. <strong>Lee</strong> los capítulos de la Torah indicados. 2. <strong>Observa</strong> los temas, personajes y mandamientos. 3. <strong>Lee la Haftarah</strong> y busca la conexión con la Torah. 4. <strong>Lee el Nuevo Pacto</strong> y descubre cómo Yeshúa cumple o profundiza la porción. 5. <strong>Aplica</strong> a tu vida lo que el Espíritu te muestra.</p></div>
+      <blockquote class="intro-quote">"Este libro de la Torah no se apartará de tu boca, sino que de día y de noche meditarás en él..."<cite>Josué 1:8</cite></blockquote>
+    </div>
+  </section>
+</main>
+
+<!-- Hoja de detalle de una porción -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="if (event.target === this) closeSheet()">
+  <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetName">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="sheet-nav">
+      <button class="icon-btn round" id="sheetPrev" onclick="navigateSheet(-1)" aria-label="Porción anterior">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <span class="label" id="sheetNum"></span>
+      <button class="icon-btn round" id="sheetNext" onclick="navigateSheet(1)" aria-label="Porción siguiente">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="sheet-hero">
+      <div class="sheet-heb" lang="he" id="sheetHeb"></div>
+      <h2 class="sheet-name" id="sheetName"></h2>
+      <div class="sheet-sig" id="sheetSig"></div>
+      <p class="sheet-tema" id="sheetTema"></p>
+    </div>
+    <div class="sheet-readings" id="sheetReadings"></div>
+    <div class="conexion">
+      <div class="label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 15l6-6M10 6l1-1a4 4 0 0 1 6 6l-1 1M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg>
+        La conexión
+      </div>
+      <p id="sheetConexion"></p>
+    </div>
+    <div class="sheet-actions">
+      <a class="btn btn-primary" id="sheetStudy" href="index.html">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 6.3L20.5 12l-6.3 2.7L12 21l-2.2-6.3L3.5 12l6.3-2.7z"/></svg>
+        Estudiar con IA
+      </a>
+      <button class="btn" id="sheetStudied" onclick="toggleStudied()" aria-pressed="false">Marcar estudiada</button>
+    </div>
+  </section>
 </div>
 
-<!-- FILTER BAR -->
-<div class="filter-bar">
-  <span class="filter-title">Filtrar</span>
-  <button class="filter-btn active" onclick="filterBook('all',this)">Todas</button>
-  <button class="filter-btn" onclick="filterBook('GEN',this)">Génesis</button>
-  <button class="filter-btn" onclick="filterBook('EXO',this)">Éxodo</button>
-  <button class="filter-btn" onclick="filterBook('LEV',this)">Levítico</button>
-  <button class="filter-btn" onclick="filterBook('NUM',this)">Números</button>
-  <button class="filter-btn" onclick="filterBook('DEU',this)">Deuteronomio</button>
-  <div class="search-wrap">
-    <input class="search-input" type="text" placeholder="Buscar parashá..." id="searchInput" oninput="handleSearch()">
-  </div>
-</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- GRID -->
-<div class="grid-container" id="gridContainer"></div>
-
+<script src="/bible-ref.js"></script>
 <script>
-/* ── DATA ── */
+/* ── DATOS ── */
 let PARASHOT = [];
-let currentFilter = 'all';
-let currentSearch = '';
-let modalIndex = 0;
-let studiedParashot = JSON.parse(localStorage.getItem('kodesh_parashot') || '{}');
-
-/* ── BOOK RANGES ── */
-const BOOK_RANGES = {
-  GEN: [1,12], EXO: [13,23], LEV: [24,33], NUM: [34,43], DEU: [44,54]
-};
-const BOOK_NAMES = {
-  GEN:'Génesis', EXO:'Éxodo', LEV:'Levítico', NUM:'Números', DEU:'Deuteronomio'
-};
-const BOOK_COLORS = {
-  GEN:'linear-gradient(90deg,#c9a84c,#e8c96a)',
-  EXO:'linear-gradient(90deg,#5a9cf0,#80c0f8)',
-  LEV:'linear-gradient(90deg,#5ccc68,#80f090)',
-  NUM:'linear-gradient(90deg,#9a6cf0,#c090f8)',
-  DEU:'linear-gradient(90deg,#e05a5a,#f08080)',
-};
-
-function getBookId(num) {
-  for (const [bid, [min,max]] of Object.entries(BOOK_RANGES)) {
-    if (num >= min && num <= max) return bid;
-  }
-  return 'GEN';
-}
-
-/* ── CURRENT PARASHA ──
-   parashot-calendar.json: { "YYYY-MM-DD": [num, ...] } generado con
-   scripts/gen-parashot-calendar.py (diáspora, 2025-2056). Dos números =
-   porción combinada. Antes había una tabla de fechas fija del ciclo 5786
-   que caducaba en octubre de 2026. */
 let PARASHA_CALENDAR = {};
+let currentSearch = '';
+let sheetIndex = 0;
+const openBooks = new Set();
 
-// "2026-09-05" como fecha LOCAL (new Date("2026-09-05") es UTC y en Nueva
-// York corre la porción un día hacia atrás).
-function localDate(s) {
-  const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, m - 1, d);
+function readJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch (e) { return fallback; }
 }
+function writeJSON(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
 
-// Porción(es) de la próxima lectura: la de este Shabat (o la de Simjat Torá).
+let studiedParashot = readJSON('kodesh_parashot', {});
+// Lecturas marcadas por porción: { "1": { torah: true, haftarah: false, np: true } }
+let readingChecks = readJSON('kodesh_parashot_readings', {});
+
+const BOOKS = [
+  { id: 'GEN', name: 'Génesis', heb: 'בְּרֵאשִׁית', range: [1, 12] },
+  { id: 'EXO', name: 'Éxodo', heb: 'שְׁמוֹת', range: [13, 23] },
+  { id: 'LEV', name: 'Levítico', heb: 'וַיִּקְרָא', range: [24, 33] },
+  { id: 'NUM', name: 'Números', heb: 'בְּמִדְבַּר', range: [34, 43] },
+  { id: 'DEU', name: 'Deuteronomio', heb: 'דְּבָרִים', range: [44, 54] },
+];
+const READINGS = [
+  { key: 'torah', field: 'torah', label: 'Torah', cls: 'c-torah', ic: 'ic-torah' },
+  { key: 'haftarah', field: 'haftarah', label: 'Haftarah · Profetas', cls: 'c-haftarah', ic: 'ic-haftarah' },
+  { key: 'np', field: 'mesianica', label: 'Nuevo Pacto', cls: 'c-np', ic: 'ic-np' },
+];
+const bookOf = num => BOOKS.find(b => num >= b.range[0] && num <= b.range[1]) || BOOKS[0];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// Las porciones de Deuteronomio pasaron de 52 a 54 (faltaban Vayélej y
+// Haazinu): Vezot Haberajá era la 52 y ahora es la 54. Se mueve la marca una vez.
+(function migrateStudied54() {
+  try {
+    if (localStorage.getItem('kodesh_parashot_v54')) return;
+    if (studiedParashot[52]) { studiedParashot[54] = studiedParashot[52]; delete studiedParashot[52]; }
+    writeJSON('kodesh_parashot', studiedParashot);
+    localStorage.setItem('kodesh_parashot_v54', '1');
+  } catch (e) {}
+})();
+
+/* ── FECHAS ──
+   parashot-calendar.json: { "YYYY-MM-DD": [num, ...] } (diáspora, 2025-2056).
+   Dos números = porción combinada. */
+function localDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function today0() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
 function getCurrentParashaNums() {
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  for (const dateStr of Object.keys(PARASHA_CALENDAR).sort()) {
-    if (localDate(dateStr) >= today) return PARASHA_CALENDAR[dateStr];
-  }
+  const t = today0();
+  for (const ds of Object.keys(PARASHA_CALENDAR).sort()) if (localDate(ds) >= t) return PARASHA_CALENDAR[ds];
   return [1];
 }
-function getCurrentParashaNum() { return getCurrentParashaNums()[0]; }
-
-// Próxima fecha (hoy o después) en que se lee la porción `num`, y con cuál
-// se combina ese año: { date: "2026-10-10", nums: [22, 23] } o null.
 function getNextReading(num) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  for (const dateStr of Object.keys(PARASHA_CALENDAR).sort()) {
-    if (localDate(dateStr) < today) continue;
-    const nums = PARASHA_CALENDAR[dateStr];
-    if (nums.includes(num)) return { date: dateStr, nums };
+  const t = today0();
+  for (const ds of Object.keys(PARASHA_CALENDAR).sort()) {
+    if (localDate(ds) < t) continue;
+    if (PARASHA_CALENDAR[ds].includes(num)) return { date: ds, nums: PARASHA_CALENDAR[ds] };
   }
   return null;
 }
-
-// "Shabat 10 oct 2026" / "Simjat Torá · dom 4 oct 2026"
-function formatReadingDate(reading, { long = false } = {}) {
+function shortDate(reading) {
+  if (!reading) return '';
+  return localDate(reading.date).toLocaleDateString('es', { day: 'numeric', month: 'short' }).replace('.', '');
+}
+function readingTitle(reading) {
   if (!reading) return '';
   const d = localDate(reading.date);
-  const opts = long ? { day: 'numeric', month: 'long', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' };
-  const fecha = d.toLocaleDateString('es', opts).replace('.', '');
-  if (reading.nums.includes(54)) return `Simjat Torá · ${d.toLocaleDateString('es', { weekday: long ? 'long' : 'short' }).replace('.', '')} ${fecha}`;
-  return `Shabat ${fecha}`;
+  const f = d.toLocaleDateString('es', { day: 'numeric', month: 'short' }).replace('.', '');
+  return reading.nums.includes(54) ? `Simjat Torá · ${f}` : `Shabat ${f}`;
 }
 
-// Las porciones de Deuteronomio pasaron de 52 a 54 (faltaban Vayelej y
-// Haazinu): Vezot HaBerajá era la 52 y ahora es la 54. Mover la marca de
-// "estudiada" una sola vez para no atribuírsela a Vayelej.
-(function migrateStudied54() {
-  if (localStorage.getItem('kodesh_parashot_v54')) return;
-  if (studiedParashot[52]) { studiedParashot[54] = studiedParashot[52]; delete studiedParashot[52]; }
-  localStorage.setItem('kodesh_parashot', JSON.stringify(studiedParashot));
-  localStorage.setItem('kodesh_parashot_v54', '1');
-})();
-
-/* ── NAVIGATE TO BIBLE ── */
-// Maps torah reference like "Génesis 1:1–6:8" to book/chapter
-const TORAH_BOOK_MAP = {
-  'génesis':'GEN','genesis':'GEN','éxodo':'EXO','exodo':'EXO',
-  'levítico':'LEV','levitico':'LEV','números':'NUM','numeros':'NUM',
-  'deuteronomio':'DEU'
-};
-
-function goToBible(torahRef) {
-  // Parse "Génesis 1:1–6:8" → book=GEN, chapter=1
-  const lower = torahRef.toLowerCase();
-  let bookId = null;
-  let chapter = 1;
-  for (const [name, id] of Object.entries(TORAH_BOOK_MAP)) {
-    if (lower.includes(name)) {
-      bookId = id;
-      const match = torahRef.match(/(\d+):/);
-      if (match) chapter = parseInt(match[1]);
-      break;
-    }
-  }
-  if (bookId) {
-    window.location.href = `index.html?book=${bookId}&chapter=${chapter}`;
-  } else {
-    window.location.href = 'index.html';
-  }
+/* ── IR A LA BIBLIA ── */
+// "Isaías 42:5–43:10" → index.html?book=ISA&chapter=42&verse=5
+function bibleUrl(ref, { study = false } = {}) {
+  const first = String(ref || '').split(/[–—]|-(?=\s*\d+:)/)[0].trim();
+  const r = window.KodeshRef ? KodeshRef.parseRef(first) : null;
+  if (!r || r.error || !r.chapter) return 'index.html';
+  let url = `index.html?book=${r.bookId}&chapter=${r.chapter}`;
+  if (r.verse > 1) url += `&verse=${r.verse}`;
+  if (study) url += '&study=1';
+  return url;
 }
+
+/* ── CARGA ── */
 async function loadData() {
   try {
-    const [res, calRes] = await Promise.all([
-      fetch('./parashot-data.json'),
-      fetch('./parashot-calendar.json'),
-    ]);
+    const [res, calRes] = await Promise.all([fetch('./parashot-data.json'), fetch('./parashot-calendar.json')]);
     PARASHOT = await res.json();
     PARASHA_CALENDAR = calRes.ok ? await calRes.json() : {};
-    renderCurrentParasha();
-    renderGrid();
-    updateStats();
-  } catch(e) {
-    console.error('Error loading parashot:', e);
-  }
-}
-
-/* ── RENDER CURRENT ── */
-function renderCurrentParasha() {
-  const ps = getCurrentParashaNums().map(n => PARASHOT.find(x => x.num === n)).filter(Boolean);
-  if (!ps.length) ps.push(PARASHOT[0]);
-  const p = ps[0];
-  if (!p) return;
-  document.getElementById('currentName').textContent = ps.length > 1
-    ? `${ps.map(x => x.nombre).join('–')} — porción combinada`
-    : `${p.nombre} — ${p.sig}`;
-  const reading = getNextReading(p.num);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const isToday = reading && localDate(reading.date).getTime() === today.getTime();
-  document.getElementById('currentBadge').textContent = p.num === 54
-    ? '🎉 Simjat Torá — fin del ciclo'
-    : (isToday ? '📅 Porción de hoy' : '📅 Porción de esta semana');
-  document.getElementById('currentDate').textContent = reading ? formatReadingDate(reading, { long: true }) : '';
-  document.getElementById('currentRefs').textContent = ps.map(x => x.torah).join(' · ');
-  document.getElementById('currentHeb').textContent = ps.map(x => x.heb).join(' – ');
-  document.getElementById('btnCurrentStudy').onclick = () => goToBible(p.torah);
-}
-
-/* ── RENDER GRID ── */
-function renderGrid() {
-  const container = document.getElementById('gridContainer');
-  container.innerHTML = '';
-
-  let filtered = PARASHOT;
-  if (currentFilter !== 'all') {
-    const [min,max] = BOOK_RANGES[currentFilter];
-    filtered = filtered.filter(p => p.num >= min && p.num <= max);
-  }
-  if (currentSearch) {
-    const q = currentSearch.toLowerCase();
-    filtered = filtered.filter(p =>
-      p.nombre.toLowerCase().includes(q) ||
-      p.sig.toLowerCase().includes(q) ||
-      p.tema.toLowerCase().includes(q) ||
-      p.torah.toLowerCase().includes(q)
-    );
-  }
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No se encontraron porciones</div></div>`;
+  } catch (e) {
+    document.getElementById('weekName').textContent = 'No se pudo cargar el ciclo';
     return;
   }
-
-  let lastBook = '';
-  const currentNums = getCurrentParashaNums();
-
-  filtered.forEach((p, idx) => {
-    const bookId = getBookId(p.num);
-
-    // Book section header
-    if (bookId !== lastBook) {
-      const header = document.createElement('div');
-      header.className = 'book-header';
-      header.innerHTML = `
-        <div class="book-header-line"></div>
-        <div class="book-header-text">${BOOK_NAMES[bookId]}</div>
-        <div class="book-header-line"></div>
-      `;
-      container.appendChild(header);
-      lastBook = bookId;
-    }
-
-    const isCurrent = currentNums.includes(p.num);
-    const reading = getNextReading(p.num);
-    const partner = reading && reading.nums.length > 1
-      ? PARASHOT.find(x => x.num === reading.nums.find(n => n !== p.num)) : null;
-    const dateHtml = reading
-      ? `<div class="card-date">📅 ${isCurrent ? '' : 'Próxima: '}${formatReadingDate(reading)}${partner ? `<span class="combo">junto con ${partner.nombre}</span>` : ''}</div>`
-      : '';
-    const isStudied = !!studiedParashot[p.num];
-    const color = BOOK_COLORS[bookId];
-
-    const card = document.createElement('div');
-    card.className = `parasha-card ${isCurrent ? 'current' : ''}`;
-    card.style.animationDelay = (idx * 0.03) + 's';
-    card.innerHTML = `
-      <div class="card-accent" style="background:${color}"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <div>
-            <div class="card-num">${String(p.num).padStart(2,'0')} ${isCurrent ? (p.num === 54 ? '· 🎉 Simjat Torá' : '· 📅 Esta semana') : ''}</div>
-            <div class="card-name">${p.nombre}</div>
-            <div class="card-sig">${p.sig}</div>
-            ${dateHtml}
-          </div>
-          <div class="card-heb">${p.heb}</div>
-        </div>
-        <div class="card-refs">
-          <div class="ref-row">
-            <span class="ref-badge torah">Torah</span>
-            <span class="ref-text">${p.torah}</span>
-          </div>
-          <div class="ref-row">
-            <span class="ref-badge haftarah">Haftarah</span>
-            <span class="ref-text">${p.haftarah}</span>
-          </div>
-          <div class="ref-row">
-            <span class="ref-badge mesianica">Mesiánica</span>
-            <span class="ref-text">${p.mesianica}</span>
-          </div>
-        </div>
-        <div class="card-tema">${p.tema}</div>
-        <div class="card-footer">
-          <span class="card-translit">${p.translit}</span>
-          <div style="display:flex;gap:6px;">
-            <button class="btn-ver" onclick="goToBible('${p.torah}')">📖 Leer</button>
-            <button class="btn-ver" onclick="openModal(${p.num-1})">Conexión →</button>
-          </div>
-        </div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
+  const cur = getCurrentParashaNums()[0];
+  openBooks.add(bookOf(cur).id);
+  renderWeek();
+  renderYear();
+  renderPath();
+  const fromLink = parseInt(new URLSearchParams(location.search).get('p'));
+  if (fromLink >= 1 && fromLink <= 54) openSheet(fromLink - 1);
 }
 
-/* ── MODAL ── */
-function openModal(idx) {
-  modalIndex = idx;
+/* ── ESTA SEMANA ── */
+function renderWeek() {
+  const nums = getCurrentParashaNums();
+  const ps = nums.map(n => PARASHOT.find(x => x.num === n)).filter(Boolean);
+  if (!ps.length) ps.push(PARASHOT[0]);
+  const p = ps[0];
+  const reading = getNextReading(p.num);
+  const isToday = reading && localDate(reading.date).getTime() === today0().getTime();
+  const simjat = p.num === 54;
+
+  document.getElementById('weekKicker').textContent =
+    `${simjat ? 'Fin del ciclo' : isToday ? 'Hoy' : 'Esta semana'}${reading ? ' · ' + readingTitle(reading) : ''}`;
+  document.getElementById('weekName').textContent = ps.map(x => x.nombre).join(' – ');
+  document.getElementById('weekSig').textContent = ps.map(x => x.sig).join(' · ');
+  document.getElementById('weekHeb').textContent = p.heb;
+  document.getElementById('weekWatermark').textContent = p.heb;
+  document.getElementById('weekTema').textContent = p.tema;
+  const combo = document.getElementById('weekCombo');
+  combo.hidden = ps.length < 2;
+  if (ps.length > 1) combo.textContent = `Esta semana se leen juntas (porción combinada). Toca cada una en el camino para ver sus lecturas.`;
+
+  const checks = readingChecks[p.num] || {};
+  const done = READINGS.filter(r => checks[r.key]).length;
+  document.getElementById('readingsCount').textContent = `${done} de 3`;
+  document.getElementById('weekReadings').innerHTML = READINGS.map(r => `
+    <div class="reading ${checks[r.key] ? 'done' : ''}">
+      <button class="reading-check" onclick="toggleReading(${p.num}, '${r.key}')" aria-pressed="${!!checks[r.key]}" aria-label="Marcar ${r.label} como leída"><span>${checks[r.key] ? '✓' : ''}</span></button>
+      <a class="reading-link" href="${bibleUrl(p[r.field])}">
+        <span class="reading-text">
+          <span class="reading-label ${r.cls}">${r.label}</span>
+          <span class="reading-ref">${esc(p[r.field])}</span>
+        </span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </div>`).join('');
+
+  const nextR = READINGS.find(r => !checks[r.key]) || READINGS[0];
+  const cont = document.getElementById('weekContinue');
+  cont.href = bibleUrl(p[nextR.field]);
+  cont.textContent = done === 0 ? 'Empezar a leer' : done === 3 ? 'Leer de nuevo' : 'Seguir leyendo';
+  document.getElementById('weekConexion').onclick = () => openSheet(p.num - 1);
+
+  // Cuenta regresiva a Shabat
+  let txt = '';
+  if (reading) {
+    const days = Math.round((localDate(reading.date) - today0()) / 86400000);
+    if (simjat) txt = days === 0 ? 'Hoy es Simjat Torá: se completa el ciclo' : `Faltan ${days} día${days === 1 ? '' : 's'} para Simjat Torá`;
+    else if (days === 0) txt = 'Hoy es Shabat · Shabat shalom';
+    else if (days === 1) txt = 'Shabat empieza hoy al atardecer';
+    else txt = `Faltan ${days} días para Shabat · empieza el viernes al atardecer`;
+  }
+  document.getElementById('shabbatText').textContent = txt;
+  document.getElementById('shabbatLine').hidden = !txt;
+}
+
+function toggleReading(num, key) {
+  const c = readingChecks[num] || (readingChecks[num] = {});
+  c[key] = !c[key];
+  writeJSON('kodesh_parashot_readings', readingChecks);
+  // Al completar las tres lecturas, la porción queda como estudiada.
+  if (READINGS.every(r => c[r.key]) && !studiedParashot[num]) {
+    studiedParashot[num] = true;
+    writeJSON('kodesh_parashot', studiedParashot);
+    showToast('Porción completada · Shabat shalom');
+  }
+  renderWeek(); renderYear(); renderPath();
+}
+
+/* ── TU AÑO ── */
+function renderYear() {
+  const total = Object.keys(studiedParashot).filter(k => studiedParashot[k]).length;
+  document.getElementById('statLeidas').textContent = total;
+  const cur = bookOf(getCurrentParashaNums()[0]).id;
+  document.getElementById('yearBars').innerHTML = BOOKS.map(b => {
+    const n = b.range[1] - b.range[0] + 1;
+    let s = 0; for (let i = b.range[0]; i <= b.range[1]; i++) if (studiedParashot[i]) s++;
+    return `<button class="year-bar ${b.id === cur ? 'current' : ''}" onclick="jumpToBook('${b.id}')" aria-label="${b.name}: ${s} de ${n} estudiadas">
+      <span class="year-track"><span class="year-fill" style="display:block;width:${Math.round(s / n * 100)}%"></span></span>
+      <span class="year-name">${b.name}</span>
+    </button>`;
+  }).join('');
+}
+function jumpToBook(id) {
+  openBooks.add(id); renderPath();
+  document.getElementById('book-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── EL CAMINO ── */
+// Una cita ("Éxodo 20", "gen 6:12") encuentra la porción que la contiene.
+function refFor(q) {
+  if (!window.KodeshRef) return null;
+  const r = KodeshRef.parseRef(q);
+  return r && !r.error && r.chapter ? r : null;
+}
+function containsRef(p, r) {
+  if (p.book !== r.bookId) return false;
+  if (!r.verse) return r.chapter >= p.startChapter && r.chapter <= p.endChapter;
+  const v = r.verse;
+  const after = r.chapter > p.startChapter || (r.chapter === p.startChapter && v >= (p.startVerse || 1));
+  const before = r.chapter < p.endChapter || (r.chapter === p.endChapter && (!r.verse || v <= (p.endVerse || 999)));
+  return after && before;
+}
+function matches(p, q) {
+  if (!q) return true;
+  const r = refFor(q);
+  if (r) return containsRef(p, r);
+  const n = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const nq = n(q);
+  return [p.nombre, p.sig, p.tema, p.torah, p.haftarah, p.mesianica, String(p.num)].some(f => n(f).includes(nq));
+}
+function renderPath() {
+  const cur = getCurrentParashaNums();
+  const q = currentSearch.trim();
+  let html = '', any = false;
+  for (const b of BOOKS) {
+    const list = PARASHOT.filter(p => p.num >= b.range[0] && p.num <= b.range[1] && matches(p, q));
+    if (!list.length) continue;
+    any = true;
+    const n = b.range[1] - b.range[0] + 1;
+    let s = 0; for (let i = b.range[0]; i <= b.range[1]; i++) if (studiedParashot[i]) s++;
+    const open = q || openBooks.has(b.id);
+    html += `<section class="book ${open ? 'open' : ''}" id="book-${b.id}">
+      <button class="book-head" onclick="toggleBook('${b.id}')" aria-expanded="${!!open}">
+        <span class="book-head-left">
+          <span class="book-heb" lang="he">${b.heb}</span>
+          <span><span class="label">${b.name}</span><br><span class="book-meta">${n} porciones · ${s} estudiada${s === 1 ? '' : 's'}</span></span>
+        </span>
+        <svg class="book-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <ol class="path">${list.map(p => {
+        const isCur = cur.includes(p.num);
+        const reading = getNextReading(p.num);
+        const partner = reading && reading.nums.length > 1 ? PARASHOT.find(x => x.num === reading.nums.find(k => k !== p.num)) : null;
+        const sub = isCur ? 'Esta semana · arriba' : (partner ? `${p.torah} · junto con ${partner.nombre}` : p.torah);
+        return `<li class="step ${isCur ? 'current' : ''} ${studiedParashot[p.num] && !isCur ? 'studied' : ''}">
+          <span class="node" aria-hidden="true">${studiedParashot[p.num] && !isCur ? '✓' : p.num}</span>
+          <button class="step-btn" onclick="openSheet(${p.num - 1})">
+            <span class="step-main">
+              <span class="step-name">${esc(p.nombre)}</span>
+              <span class="step-sub">${esc(sub)}</span>
+            </span>
+            <span class="step-side">
+              <span class="step-heb" lang="he">${p.heb}</span>
+              <span class="step-date">${isCur ? 'Esta semana' : shortDate(reading)}</span>
+            </span>
+          </button>
+        </li>`;
+      }).join('')}</ol>
+    </section>`;
+  }
+  document.getElementById('path').innerHTML = any ? html : '<div class="empty">No se encontraron porciones</div>';
+}
+function toggleBook(id) {
+  if (currentSearch.trim()) return;
+  openBooks.has(id) ? openBooks.delete(id) : openBooks.add(id);
+  renderPath();
+}
+
+/* ── BÚSQUEDA ── */
+function toggleSearch() {
+  const row = document.getElementById('searchRow');
+  const open = row.classList.toggle('open');
+  document.getElementById('searchBtn').setAttribute('aria-expanded', open);
+  if (open) document.getElementById('searchInput').focus();
+  else { document.getElementById('searchInput').value = ''; currentSearch = ''; renderPath(); }
+}
+function handleSearch() { currentSearch = document.getElementById('searchInput').value; renderPath(); }
+
+/* ── HOJA DE DETALLE ── */
+function openSheet(idx) {
   const p = PARASHOT[idx];
   if (!p) return;
-
+  sheetIndex = idx;
   const reading = getNextReading(p.num);
-  document.getElementById('modalNum').textContent = `Parashá ${String(p.num).padStart(2,'0')} de 54`
-    + (reading ? ` · ${formatReadingDate(reading)}` : '');
-  document.getElementById('modalName').textContent = p.nombre;
-  document.getElementById('modalSig').textContent = p.sig + ' · ' + p.translit;
-  document.getElementById('modalHeb').textContent = p.heb;
-  document.getElementById('modalTema').textContent = p.tema;
-  document.getElementById('modalTorah').textContent = p.torah;
-  document.getElementById('modalHaftarah').textContent = p.haftarah;
-  document.getElementById('modalMesianica').textContent = p.mesianica;
-  document.getElementById('modalConexion').textContent = p.conexion;
-
-  document.getElementById('btnPrev').disabled = idx === 0;
-  document.getElementById('btnNext').disabled = idx === PARASHOT.length - 1;
-
-  // Mark as studied
-  studiedParashot[p.num] = true;
-  localStorage.setItem('kodesh_parashot', JSON.stringify(studiedParashot));
-  updateStats();
-
-  document.getElementById('modalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  document.getElementById('sheetNum').textContent = `Porción ${p.num} de 54${reading ? ' · ' + readingTitle(reading) : ''}`;
+  document.getElementById('sheetHeb').textContent = p.heb;
+  document.getElementById('sheetName').textContent = p.nombre;
+  document.getElementById('sheetSig').textContent = p.sig;
+  document.getElementById('sheetTema').textContent = p.tema;
+  document.getElementById('sheetConexion').textContent = p.conexion;
+  document.getElementById('sheetReadings').innerHTML = READINGS.map(r => `
+    <a class="sheet-reading" href="${bibleUrl(p[r.field])}">
+      <span class="sheet-reading-icon ${r.ic}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6v13"/></svg></span>
+      <span class="reading-text"><span class="reading-label ${r.cls}">${r.label}</span><span class="reading-ref">${esc(p[r.field])}</span></span>
+      <span class="sheet-reading-go">Leer</span>
+    </a>`).join('');
+  document.getElementById('sheetStudy').href = bibleUrl(p.torah, { study: true });
+  document.getElementById('sheetPrev').disabled = idx === 0;
+  document.getElementById('sheetNext').disabled = idx === PARASHOT.length - 1;
+  paintStudiedBtn();
+  const ov = document.getElementById('sheetOverlay');
+  if (!ov.classList.contains('open')) {
+    ov.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  document.getElementById('sheet').scrollTop = 0;
 }
-
-function closeModalBtn() {
-  document.getElementById('modalOverlay').classList.remove('open');
+function paintStudiedBtn() {
+  const p = PARASHOT[sheetIndex];
+  const on = !!studiedParashot[p.num];
+  const b = document.getElementById('sheetStudied');
+  b.classList.toggle('studied', on);
+  b.setAttribute('aria-pressed', on);
+  b.textContent = on ? '✓ Estudiada' : 'Marcar estudiada';
+}
+function toggleStudied() {
+  const p = PARASHOT[sheetIndex];
+  if (studiedParashot[p.num]) delete studiedParashot[p.num]; else studiedParashot[p.num] = true;
+  writeJSON('kodesh_parashot', studiedParashot);
+  paintStudiedBtn(); renderYear(); renderPath();
+}
+function closeSheet() {
+  document.getElementById('sheetOverlay').classList.remove('open');
   document.body.style.overflow = '';
-  renderGrid();
 }
-
-function closeModal(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModalBtn();
-}
-
-function navigateModal(dir) {
-  const newIdx = modalIndex + dir;
-  if (newIdx >= 0 && newIdx < PARASHOT.length) openModal(newIdx);
-}
+function navigateSheet(dir) { const i = sheetIndex + dir; if (i >= 0 && i < PARASHOT.length) openSheet(i); }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModalBtn();
-  if (e.key === 'ArrowRight') navigateModal(1);
-  if (e.key === 'ArrowLeft') navigateModal(-1);
+  if (!document.getElementById('sheetOverlay').classList.contains('open')) return;
+  if (e.key === 'Escape') closeSheet();
+  if (e.key === 'ArrowRight') navigateSheet(1);
+  if (e.key === 'ArrowLeft') navigateSheet(-1);
 });
 
-/* ── FILTERS ── */
-function filterBook(bookId, btn) {
-  currentFilter = bookId;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderGrid();
+// Deslizar hacia abajo para cerrar la hoja
+(function () {
+  const sheet = document.getElementById('sheet');
+  let y0 = null, x0 = 0, dy = 0, t0 = 0, active = false;
+  sheet.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now(); active = false;
+  }, { passive: true });
+  sheet.addEventListener('touchmove', e => {
+    if (y0 == null) return;
+    const ddy = e.touches[0].clientY - y0, ddx = e.touches[0].clientX - x0;
+    if (!active) {
+      if (Math.abs(ddx) > 8 && Math.abs(ddx) > Math.abs(ddy)) { y0 = null; return; }
+      if (ddy < -6 || sheet.scrollTop > 0) { y0 = null; return; }
+      if (ddy < 10) return;
+      active = true; sheet.style.transition = 'none';
+    }
+    e.preventDefault();
+    dy = Math.max(0, ddy - 10);
+    sheet.style.transform = `translateY(${dy}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (y0 == null) return; y0 = null;
+    if (!active) return; active = false;
+    sheet.style.transition = ''; sheet.style.transform = '';
+    if (dy > sheet.offsetHeight * 0.22 || (dy > 40 && Date.now() - t0 < 300)) closeSheet();
+  };
+  sheet.addEventListener('touchend', end);
+  sheet.addEventListener('touchcancel', end);
+})();
+
+/* ── ¿QUÉ ES EL CICLO? ── */
+function toggleIntro() {
+  const el = document.getElementById('intro');
+  const open = el.classList.toggle('open');
+  document.getElementById('introToggle').setAttribute('aria-expanded', open);
+  try { localStorage.setItem('kodesh_intro_open', open ? '1' : '0'); } catch (e) {}
+}
+(function initIntro() {
+  let saved = null;
+  try { saved = localStorage.getItem('kodesh_intro_open'); } catch (e) {}
+  // Primera visita: abierta para que se entienda qué es el ciclo
+  if (saved === null) { document.getElementById('intro').classList.add('open'); document.getElementById('introToggle').setAttribute('aria-expanded', 'true'); }
+})();
+
+/* ── TEMA ── */
+const MOON = '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>';
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+function paintThemeIcon() { document.getElementById('themeIcon').innerHTML = document.documentElement.classList.contains('light') ? SUN : MOON; }
+function toggleTheme() {
+  const light = document.documentElement.classList.toggle('light');
+  try { localStorage.setItem('kodesh_theme', light ? 'light' : 'dark'); } catch (e) {}
+  paintThemeIcon();
 }
 
-function handleSearch() {
-  currentSearch = document.getElementById('searchInput').value;
-  renderGrid();
-}
+/* ── AÑO HEBREO ── */
+(function () {
+  try {
+    const y = new Intl.DateTimeFormat('es-u-ca-hebrew', { year: 'numeric' }).format(new Date()).replace(/\D/g, '');
+    if (y) document.getElementById('hebYear').textContent = `Año ${y} · 54 porciones`;
+  } catch (e) {}
+})();
 
-/* ── STATS ── */
-function updateStats() {
-  const count = Object.keys(studiedParashot).length;
-  document.getElementById('statLeidas').textContent = count;
-}
-
-/* ── TOAST ── */
+/* ── AVISO ── */
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-/* ── INTRO TOGGLE ── */
-function toggleIntro() {
-  const content = document.getElementById('introContent');
-  const arrow = document.getElementById('introArrow');
-  const isOpen = content.classList.toggle('open');
-  arrow.classList.toggle('open', isOpen);
-  // Save preference
-  localStorage.setItem('kodesh_intro_open', isOpen ? '1' : '0');
-}
-
-function initIntro() {
-  // Open by default on first visit
-  const saved = localStorage.getItem('kodesh_intro_open');
-  if (saved === null || saved === '1') {
-    document.getElementById('introContent').classList.add('open');
-    document.getElementById('introArrow').classList.add('open');
-  }
-}
-
-/* ── THEME ── */
-function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
-  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
-}
-function initTheme() {
-  if (localStorage.getItem('kodesh_theme') === 'light') {
-    document.documentElement.classList.add('light');
-    document.getElementById('themeToggle').textContent = '☀️';
-  }
-}
-
-/* ── INIT ── */
-initTheme();
-initIntro();
+paintThemeIcon();
 loadData();
 </script>
 </body>
