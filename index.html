@@ -59,6 +59,7 @@
   --green-dim:   #16321b;
   --blue:        #5a9cf0;
   --red:         #e05a5a;
+  --wj:          #e8877c;
 
   /* Geometría */
   --scroll-w:    6px;
@@ -116,6 +117,7 @@ html.light {
   --green-dim:   #d5ecd4;
   --blue:        #1a5a9a;
   --red:         #c03030;
+  --wj:          #b0302a;
 
   --shadow-sm:   0 1px 2px rgba(70,50,15,.10), 0 2px 8px rgba(70,50,15,.08);
   --shadow-md:   0 4px 12px rgba(70,50,15,.12), 0 12px 32px rgba(70,50,15,.10);
@@ -3093,6 +3095,7 @@ body { font-family: var(--font-body); }
 /* Dentro del área de lectura (antes se salía por la derecha y cortaba la
    primera letra; en nombres cortos como Noaj casi no se veía). El tamaño se
    ajusta en fitParashaWatermark() para que el nombre completo quepa. */
+.word.wj { color: var(--wj); }
 .parasha-watermark {
   position: absolute;
   top: 0; right: 14px;
@@ -3883,10 +3886,10 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
     <div class="profile-content active" id="pcontent-stats">
       <div class="settings-row">
         <div>
-          <div class="settings-row-label">📜 Modo Interlineal automático</div>
-          <div class="settings-row-desc">Abrir el análisis hebreo/griego al tocar "Interlineal" en cada capítulo</div>
+          <div class="settings-row-label">Palabras de Yeshúa en rojo</div>
+          <div class="settings-row-desc">Resalta en rojo lo que dijo Yeshúa en los Evangelios, Hechos y Apocalipsis</div>
         </div>
-        <div class="toggle-switch" id="interlinearToggle" onclick="toggleInterlinearPref()">
+        <div class="toggle-switch on" id="wjToggle" role="switch" aria-checked="true" aria-label="Palabras de Yeshúa en rojo" onclick="toggleWJPref()">
           <div class="toggle-switch-knob"></div>
         </div>
       </div>
@@ -5104,6 +5107,7 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
 
   main.innerHTML = html;
   fitParashaWatermark();
+  applyWordsOfJesus();
   main.scrollTo(0, 0);
   currentParashaBreak = parasha && parasha.nextInChapter ? parasha.nextInChapter : null;
   if (interlinearActive) renderInterlinearInline(state.currentBook, chapterNum, verses);
@@ -5573,6 +5577,72 @@ const TEXTUAL_LABEL_OFF = '✦ Kodesh <span class="badge-beta">BETA</span>';
 
 // Título del capítulo en la barra superior (teléfono): "Éxodo 7" y debajo la
 // parashá (o el testamento).
+/* ── Palabras de Yeshúa en rojo ──
+   palabras-yeshua.json viene de la marca de las palabras de Jesús en la KJV
+   (dominio público): por versículo, 1 = todo el versículo, o fracciones del
+   texto donde empieza y termina lo que Él dice. Aquí se pasan al texto en
+   español ajustándolas a la puntuación (p. ej. lo que sigue a «dijo:»). */
+const WJ_BOOKS = new Set(['MAT', 'MRK', 'LUK', 'JHN', 'ACT', '1CO', '2CO', 'REV']);
+let WJ = null, wjLoading = null;
+function wjEnabled() { try { return localStorage.getItem('kodesh_wj') !== '0'; } catch (e) { return true; } }
+function loadWJ() {
+  if (WJ) return Promise.resolve(WJ);
+  if (!wjLoading) wjLoading = fetch('palabras-yeshua.json').then(r => r.json()).then(d => { WJ = d; applyWordsOfJesus(); return d; }).catch(() => { wjLoading = null; });
+  return wjLoading;
+}
+function wjRanges(text, segs) {
+  const L = text.length;
+  if (segs === 1) return [[0, L]];
+  const cands = [0];
+  const re = /[:;,.?!»)]\s*/g; let m;
+  while ((m = re.exec(text))) cands.push(m.index + m[0].length);
+  cands.push(L);
+  const pick = (target, isStart) => {
+    let best = null, bs = Infinity;
+    for (const c of cands) {
+      const prev = text.slice(0, c).trimEnd().slice(-1);
+      let sc = Math.abs(c - target) / L;
+      if (isStart && prev === ':') sc -= 0.12;
+      if (!isStart && '.?!'.includes(prev)) sc -= 0.06;
+      if (sc < bs) { bs = sc; best = c; }
+    }
+    return best;
+  };
+  const out = [];
+  for (const [a, b] of segs) {
+    const s = a <= 0.02 ? 0 : pick(a * L, true);
+    let e = b >= 0.98 ? L : pick(b * L, false);
+    while (e > s && text[e - 1] === ' ') e--;
+    if (e - s > 1) out.push([s, e]);
+  }
+  return out;
+}
+function applyWordsOfJesus() {
+  const root = document.querySelector('#mainContent .bible-text');
+  if (!root) return;
+  root.querySelectorAll('.word.wj').forEach(w => w.classList.remove('wj'));
+  if (!wjEnabled() || !WJ_BOOKS.has(state.currentBook)) return;
+  if (!WJ) { loadWJ(); return; }
+  const ch = WJ[state.currentBook] && WJ[state.currentBook][String(state.currentChapter)];
+  if (!ch) return;
+  root.querySelectorAll('.verse[data-verse]').forEach(vEl => {
+    const segs = ch[vEl.dataset.verse];
+    if (!segs) return;
+    const words = [...vEl.querySelectorAll('.word')];
+    let text = ''; const starts = [];
+    words.forEach(w => { if (text) text += ' '; starts.push(text.length); text += w.textContent; });
+    const ranges = wjRanges(text, segs);
+    words.forEach((w, i) => { if (ranges.some(([a, b]) => starts[i] >= a && starts[i] < b)) w.classList.add('wj'); });
+  });
+}
+function toggleWJPref() {
+  const t = document.getElementById('wjToggle');
+  const on = !wjEnabled();
+  try { localStorage.setItem('kodesh_wj', on ? '1' : '0'); } catch (e) {}
+  if (t) { t.classList.toggle('on', on); t.setAttribute('aria-checked', on); }
+  applyWordsOfJesus();
+}
+
 function fitParashaWatermark() {
   const w = document.querySelector('.parasha-watermark');
   if (!w || !w.parentElement) return;
@@ -6269,16 +6339,9 @@ async function warmInterlinearCache(bookId, chapterNum) {
   } catch(e) {}
 }
 
-function toggleInterlinearPref() {
-  const t = document.getElementById('interlinearToggle');
-  const isOn = t.classList.toggle('on');
-  localStorage.setItem('kodesh_interlinear_pref', isOn ? '1' : '0');
-}
-
 function initInterlinearPref() {
-  const pref = localStorage.getItem('kodesh_interlinear_pref') === '1';
-  const t = document.getElementById('interlinearToggle');
-  if (t) t.classList.toggle('on', pref);
+  const t = document.getElementById('wjToggle');
+  if (t) { const on = wjEnabled(); t.classList.toggle('on', on); t.setAttribute('aria-checked', on); }
 }
 
 /* ── Interlineal dentro del lector ──
