@@ -62,7 +62,16 @@ async function status() {
   return { books, credits: await credits(), voice: process.env.ELEVENLABS_VOICE_ID || null };
 }
 
+// Algunos modelos (p. ej. eleven_v3) no aceptan previous_text/next_text:
+// si los rechazan, se repite la petición sin ellos.
 async function tts(text, previous, next) {
+  try { return await ttsOnce(text, previous, next); }
+  catch (e) {
+    if (e.status === 400 && (previous || next) && /previous_text|next_text|not supported|unsupported/i.test(e.message)) return ttsOnce(text, '', '');
+    throw e;
+  }
+}
+async function ttsOnce(text, previous, next) {
   const voice = process.env.ELEVENLABS_VOICE_ID;
   const r = await fetch(`${EL}/text-to-speech/${encodeURIComponent(voice)}/with-timestamps?output_format=${FORMAT}`, {
     method: 'POST', headers: elHeaders(),
