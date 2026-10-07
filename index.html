@@ -8956,7 +8956,20 @@ if (window.visualViewport) {
 // Cuando llegan resultados o cambia el modo, iOS a veces no avisa: reajustar.
 document.addEventListener('DOMContentLoaded', () => {
   const ov = document.getElementById('searchOverlay');
-  if (!ov || !window.MutationObserver) return;
+  if (!ov) return;
+  // En iOS «overflow: hidden» en el body no impide que el dedo desplace la
+  // Biblia de atrás: solo dejamos desplazar lo que de verdad tiene scroll
+  // dentro de la hoja (resultados, filas de filtros que se deslizan de lado).
+  ov.addEventListener('touchmove', e => {
+    if (!ov.classList.contains('open')) return;
+    for (let el = e.target; el && el !== ov; el = el.parentElement) {
+      const cs = getComputedStyle(el);
+      if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) return;
+      if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 1) return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  if (!window.MutationObserver) return;
   let t = null;
   new MutationObserver(() => { if (!ov.classList.contains('open')) return; clearTimeout(t); t = setTimeout(refitSearchSoon, 30); })
     .observe(ov, { childList: true, subtree: true });
