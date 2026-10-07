@@ -20,7 +20,7 @@ const MIN_VERSIONS = {
 
 // Última versión disponible (informativa — no bloquea).
 const LATEST_VERSIONS = {
-  ios:     '1.0.4',
+  ios:     '2.0',
   android: '1.0.4',
 };
 
