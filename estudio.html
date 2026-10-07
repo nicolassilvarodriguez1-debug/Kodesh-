@@ -246,6 +246,20 @@ html.light .el-card { background: #fbf6ea; }
 .bverse .w { border-radius: 4px; }
 .bverse .w:hover { background: var(--gold-glow); }
 .bverse .w.on { background: var(--gold); color: var(--on-gold); }
+.vstyle { display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; font-size: 13px; color: var(--text-dim); }
+.vstyle span { margin-right: 2px; }
+.vstyle button { height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid var(--border2); background: transparent; color: var(--text-mid); font-size: 13.5px; cursor: pointer; }
+.vstyle button.on { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+.drag-ghost {
+  position: fixed; left: 0; top: 0; z-index: 300; pointer-events: none; display: flex; flex-direction: column; gap: 1px;
+  padding: 8px 14px; border-radius: 14px; background: var(--bg2); border: 1.5px solid var(--gold); color: var(--text);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45); font-size: 15px; white-space: nowrap;
+}
+.drag-ghost .label { font-size: 10.5px; }
+.verse-dragging .bverse { -webkit-user-select: none; user-select: none; }
+@media (pointer: coarse) { .bverse { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; } }
+@media (max-width: 1080px) { .verse-dragging .panel { opacity: 0.18; pointer-events: none; transition: opacity 0.15s; } }
+.page.drop-target { box-shadow: 0 0 0 3px var(--gold), 0 10px 30px rgba(0,0,0,0.35); }
 .bible-hint { padding: 0 12px 6px; font-size: 12.5px; color: var(--text-dim); }
 .word-pop {
   position: absolute; left: 12px; right: 12px; bottom: 14px; padding: 10px 12px 12px; border-radius: 18px; background: var(--bg2);
@@ -440,7 +454,12 @@ html.light .el-card { background: #fbf6ea; }
             <input id="refInput" placeholder="Ir a… (p. ej. gen 9:13)" aria-label="Ir a una cita" onkeydown="if (event.key === 'Enter') goToRefInput()">
           </label>
         </div>
-        <div class="bible-hint">Toca una palabra para verla en el original, o el número del versículo para seleccionarlo.</div>
+        <div class="vstyle" role="group" aria-label="Insertar versículos como">
+          <span>Insertar como</span>
+          <button class="on" data-vstyle="card" onclick="setVerseStyle('card')" aria-pressed="true">Tarjeta</button>
+          <button data-vstyle="text" onclick="setVerseStyle('text')" aria-pressed="false">Texto con cita</button>
+        </div>
+        <div class="bible-hint">Toca una palabra para verla en el original, el número para seleccionar el versículo, o mantén presionado y arrástralo a la página.</div>
         <div class="bible-list" id="bibleList"><div class="hint">Cargando la Biblia…</div></div>
         <div class="insert-bar" id="insertBar" hidden>
           <button class="btn-gold" onclick="insertSelectedVerses()" id="insertBtn">Insertar</button>

@@ -1049,7 +1049,7 @@ function insertElement(el, at) {
   // (o Pasaje / Escritura / Texto base) y una palabra a «Palabra clave» si
   // están vacías. Si cae sobre otra caja ancha, se acomoda dentro de ella.
   if (study.format !== 'free') {
-    const pref = !at && preferredBox(target.page, el.type);
+    const pref = !at && preferredBox(target.page, el._kind || el.type);
     const under = boxAt(target.page, target.x, target.y);
     const box = pref || (under && !under.plain && under.w >= 300 ? under : null);
     if (box) {
@@ -1057,12 +1057,15 @@ function insertElement(el, at) {
       el.y = pref ? box.y + 34 : Math.max(box.y + 34, el.y);
     }
   }
+  delete el._kind;
+  if (el.type === 'text') snapText(target.page, el);
   snapshot();
   target.page.els.push(el);
   if (tool !== 'select') { tool = 'select'; buildToolbar(); }
   selectedId = el.id;
   renderPage(target.page);
   avoidOverlap(target.page, el);
+  if (el.type === 'text') { snapText(target.page, el, true); renderPage(target.page); }
   markDirty();
   if (window.innerWidth <= 1080) closePanels();
   toast('Insertado en la página');
@@ -1146,6 +1149,8 @@ async function initBible() {
   if (study && study.ref && study.ref.bookId) { bibleBook = study.ref.bookId; bibleChapter = study.ref.chapter || 1; }
   bookSel.value = bibleBook;
   fillChapters();
+  initVerseTouchDrag();
+  setVerseStyle(verseStyle());
   if (!BIBLE) {
     try { BIBLE = await (await fetch('./biblia-rvr.json')).json(); }
     catch (e) { $('bibleList').innerHTML = '<div class="hint">No se pudo cargar la Biblia.</div>'; return; }
@@ -1167,7 +1172,7 @@ function loadBibleChapter() {
   const nums = Object.keys(ch).map(Number).sort((a, b) => a - b);
   const words = t => esc(t).replace(/([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)/g, '<span class="w">$1</span>');
   $('bibleList').innerHTML = `<div class="bheading">${esc(bookName(bibleBook))} ${bibleChapter}</div>` + nums.map(n =>
-    `<div class="bverse" data-v="${n}" draggable="true" onclick="onVerseTap(event, ${n})" ondragstart="dragVerse(event, ${n})"><span class="n">${n}</span><span>${words(ch[String(n)])}</span></div>`).join('');
+    `<div class="bverse" data-v="${n}" ${FINE_POINTER ? 'draggable="true"' : ''} onclick="onVerseTap(event, ${n})" ondragstart="dragVerse(event, ${n})"><span class="n">${n}</span><span>${words(ch[String(n)])}</span></div>`).join('');
   closeWordPop();
   $('bibleList').scrollTop = 0;
 }
@@ -1284,9 +1289,21 @@ function refLabel(nums) {
   }
   return `${bookName(bibleBook)} ${bibleChapter}:${parts.join(', ')}`;
 }
+// «Insertar como»: tarjeta (recuadro) o solo el texto con la cita al final.
+function verseStyle() { return readLS('kodesh_verse_style', 'card'); }
+function setVerseStyle(v) {
+  writeLS('kodesh_verse_style', v);
+  document.querySelectorAll('[data-vstyle]').forEach(b => { const on = b.dataset.vstyle === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+}
 function verseElement(nums) {
   const ch = BIBLE[bibleBook][String(bibleChapter)];
   const sorted = [...nums].sort((a, b) => a - b);
+  if (verseStyle() === 'text') {
+    const body = sorted.length > 1 ? sorted.map(n => `${n} ${ch[String(n)]}`).join(' ') : ch[String(sorted[0])];
+    const f = textFmt();
+    return { type: 'text', _kind: 'verse', w: study && study.format === 'free' ? 520 : 460, text: `«${body}» — ${refLabel(sorted)}`,
+      font: f.font, fs: f.fs, bold: f.bold || undefined, italic: f.italic || undefined, align: f.align && f.align !== 'left' ? f.align : undefined };
+  }
   return { type: 'verse', w: study && study.format === 'free' ? 520 : 460, ref: refLabel(sorted), version: 'RVR60', book: bibleBook, chapter: bibleChapter, verses: sorted,
     parts: sorted.length > 1 ? sorted.map(n => ({ n, t: ch[String(n)] })) : null, text: sorted.length === 1 ? ch[String(sorted[0])] : '' };
 }
@@ -1295,6 +1312,89 @@ function insertSelectedVerses() {
   insertElement(verseElement(verseSel));
   clearVerseSel();
 }
+const FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+/* Arrastrar con el dedo o el lápiz (iPad, celular): mantener presionado un
+   versículo ~0,35 s y arrastrarlo a la página. Si el dedo se mueve antes, es
+   un desplazamiento normal de la lista. */
+let vdrag = null;
+function initVerseTouchDrag() {
+  const list = $('bibleList');
+  if (!list || list.dataset.touchDrag) return;
+  list.dataset.touchDrag = '1';
+  list.addEventListener('touchstart', e => {
+    const row = e.target.closest('.bverse');
+    if (!row || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const n = Number(row.dataset.v);
+    vdrag = { n, x0: t.clientX, y0: t.clientY, active: false, timer: setTimeout(() => startVerseDrag(n, t.clientX, t.clientY), 350) };
+  }, { passive: true });
+  list.addEventListener('touchmove', e => {
+    if (!vdrag) return;
+    const t = e.touches[0];
+    if (!vdrag.active) {
+      if (Math.hypot(t.clientX - vdrag.x0, t.clientY - vdrag.y0) > 8) { clearTimeout(vdrag.timer); vdrag = null; }
+      return;
+    }
+    e.preventDefault();
+    moveVerseDrag(t.clientX, t.clientY);
+  }, { passive: false });
+  const end = e => {
+    if (!vdrag) return;
+    clearTimeout(vdrag.timer);
+    if (vdrag.active) {
+      e.preventDefault();
+      const t = e.changedTouches[0];
+      dropVerseDrag(t.clientX, t.clientY);
+    }
+    vdrag = null;
+  };
+  list.addEventListener('touchend', end, { passive: false });
+  list.addEventListener('touchcancel', () => { if (vdrag) { clearTimeout(vdrag.timer); cleanupVerseDrag(); vdrag = null; } });
+}
+function startVerseDrag(n, x, y) {
+  if (!vdrag) return;
+  vdrag.active = true;
+  vdrag.nums = verseSel.has(n) ? new Set(verseSel) : new Set([n]);
+  closeWordPop();
+  const g = document.createElement('div');
+  g.className = 'drag-ghost'; g.id = 'dragGhost';
+  g.innerHTML = `<span class="label">${verseStyle() === 'text' ? 'Texto' : 'Tarjeta'}</span><b>${esc(refLabel(vdrag.nums))}</b>`;
+  document.body.appendChild(g);
+  document.body.classList.add('verse-dragging');
+  if (navigator.vibrate) navigator.vibrate(10);
+  moveVerseDrag(x, y);
+}
+function moveVerseDrag(x, y) {
+  const g = $('dragGhost'); if (!g) return;
+  g.style.transform = `translate(${x - 20}px, ${y - 56}px)`;
+  document.querySelectorAll('.page.drop-target').forEach(p => p.classList.remove('drop-target'));
+  const under = document.elementFromPoint(x, y);
+  const pg = under && under.closest && under.closest('#pages .page');
+  if (pg) pg.classList.add('drop-target');
+  // Desplazar el documento al acercarse a los bordes
+  const edge = 70;
+  if (y > window.innerHeight - edge) window.scrollBy(0, 14);
+  else if (y < $('edHead').getBoundingClientRect().bottom + edge) window.scrollBy(0, -14);
+}
+function cleanupVerseDrag() {
+  $('dragGhost')?.remove();
+  document.body.classList.remove('verse-dragging');
+  document.querySelectorAll('.page.drop-target').forEach(p => p.classList.remove('drop-target'));
+}
+function dropVerseDrag(x, y) {
+  const nums = vdrag.nums;
+  // Buscar la página ANTES de limpiar: al quitar .verse-dragging el panel
+  // vuelve a recibir toques y taparía la página en pantallas angostas.
+  const under = document.elementFromPoint(x, y);
+  const node = under && under.closest && under.closest('#pages .page');
+  cleanupVerseDrag();
+  if (!node) { toast('Suelta el versículo sobre la página'); return; }
+  const pt = pagePoint(node, { clientX: x, clientY: y });
+  insertElement(verseElement(nums), { page: pageById(node.dataset.page), x: pt.x, y: pt.y });
+  clearVerseSel();
+}
+
 function dragVerse(ev, n) {
   const nums = verseSel.has(n) ? verseSel : new Set([n]);
   ev.dataTransfer.setData('application/x-kodesh', JSON.stringify(verseElement(nums)));
