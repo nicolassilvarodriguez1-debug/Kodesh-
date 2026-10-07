@@ -2908,6 +2908,9 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
   }
   .search-overlay.open .search-modal { transform: translateY(0); }
   .search-examples { display: none; }
+  /* Con el teclado abierto la hoja ocupa solo el área visible (ver fitSearchToViewport) */
+  .search-overlay.kb-open { bottom: auto; }
+  .search-overlay.kb-open .search-modal { max-height: calc(100% - 8px); }
 
   /* ── Assistant panel ── */
   .assistant-overlay { justify-content: flex-end; align-items: flex-end; }
@@ -8914,12 +8917,50 @@ function openSearch() {
   document.getElementById('searchOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   setTimeout(() => document.getElementById('searchInputMain').focus(), 100);
+  refitSearchSoon();
 }
 
 function closeSearch() {
-  document.getElementById('searchOverlay').classList.remove('open');
+  const ov = document.getElementById('searchOverlay');
+  ov.classList.remove('open', 'kb-open');
+  ov.style.top = ov.style.height = '';
   document.body.style.overflow = '';
 }
+
+// Igual que el asistente y las notas: iOS no achica la página al abrir el
+// teclado, la desplaza; la hoja de Buscar quedaba anclada abajo, detrás del
+// teclado. La ajustamos al área realmente visible.
+function fitSearchToViewport() {
+  const ov = document.getElementById('searchOverlay');
+  const vv = window.visualViewport;
+  if (!ov || !vv || !ov.classList.contains('open') || window.innerWidth > 900) return;
+  const kbOpen = window.innerHeight - vv.height > 120;
+  ov.classList.toggle('kb-open', kbOpen);
+  ov.style.top = kbOpen ? vv.offsetTop + 'px' : '';
+  ov.style.height = kbOpen ? vv.height + 'px' : '';
+}
+function refitSearchSoon() {
+  requestAnimationFrame(fitSearchToViewport);
+  setTimeout(fitSearchToViewport, 150);
+  setTimeout(fitSearchToViewport, 450);
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitSearchToViewport);
+  window.visualViewport.addEventListener('scroll', fitSearchToViewport);
+  window.addEventListener('scroll', () => {
+    if (document.getElementById('searchOverlay')?.classList.contains('open')) fitSearchToViewport();
+  }, { passive: true });
+  document.addEventListener('focusin', e => { if (e.target.id === 'searchInputMain') refitSearchSoon(); });
+  document.addEventListener('focusout', e => { if (e.target.id === 'searchInputMain') setTimeout(refitSearchSoon, 60); });
+}
+// Cuando llegan resultados o cambia el modo, iOS a veces no avisa: reajustar.
+document.addEventListener('DOMContentLoaded', () => {
+  const ov = document.getElementById('searchOverlay');
+  if (!ov || !window.MutationObserver) return;
+  let t = null;
+  new MutationObserver(() => { if (!ov.classList.contains('open')) return; clearTimeout(t); t = setTimeout(refitSearchSoon, 30); })
+    .observe(ov, { childList: true, subtree: true });
+});
 
 function closeSearchOutside(e) {
   if (e.target === document.getElementById('searchOverlay')) closeSearch();

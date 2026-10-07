@@ -1866,7 +1866,7 @@ function showPdfSheet(state) {
     <div class="pdf-sub">${esc(lastPdf.name)} · ${kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.round(kb) + ' KB'}</div>
     <div class="pdf-actions">
       ${canShare ? `<button class="btn-gold" onclick="sharePdf()">Compartir o guardar</button>` : ''}
-      <button class="${canShare ? 'btn-line' : 'btn-gold'}" onclick="downloadPdf()">${canShare ? 'Descargar' : 'Descargar PDF'}</button>
+      ${canShare ? '' : `<button class="btn-gold" onclick="downloadPdf()">Descargar PDF</button>`}
       <button class="btn-line" onclick="showPdfSheet(null)">Cerrar</button>
     </div>
     ${canShare ? '<div class="pdf-hint">En iPhone y iPad elige «Guardar en Archivos», «Imprimir» o la app donde lo quieras enviar.</div>' : ''}
