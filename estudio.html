@@ -43,8 +43,11 @@ html.light {
 /* Sin overflow:hidden en body: en la app de iOS (contentInset "always") una
    página que no se desplaza quedaba debajo de la hora/batería y con una franja
    blanca abajo. Así se comporta como las demás páginas de la app. */
-html, body { margin: 0; height: 100%; overscroll-behavior: none; }
-html { background: var(--bg); }
+/* El documento se desplaza (como la Biblia y el Ciclo): en la app de iOS es lo
+   que hace que el contenido empiece debajo de la hora y la batería. La barra
+   de arriba queda fija con position: sticky y los paneles con position: fixed. */
+html { margin: 0; height: 100%; background: var(--bg); }
+body { margin: 0; min-height: calc(100% + 1px); }
 body {
   background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px;
   -webkit-font-smoothing: antialiased; font-variant-numeric: lining-nums;
@@ -109,7 +112,8 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .cloud-note a { color: var(--gold); }
 
 /* ── Editor ── */
-.editor { display: flex; flex-direction: column; height: 100%; }
+.editor { display: block; }
+.ed-head { position: sticky; top: 0; z-index: 30; background: var(--bg); }
 .toolbar {
   display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--hair); background: var(--bg);
   overflow-x: auto; scrollbar-width: none; position: relative; z-index: 20;
@@ -132,13 +136,13 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .size-dot.on span { background: var(--gold); }
 .zoom-label { min-width: 46px; text-align: center; font-size: 13.5px; color: var(--text-mid); }
 
-.ed-body { flex: 1; display: flex; min-height: 0; position: relative; }
-.panel { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg); min-height: 0; }
-.panel-left { border-right: 1px solid var(--border); }
-.panel-right { border-left: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 70%, var(--bg-sunk)); }
+.ed-body { position: relative; }
+.panel { position: fixed; top: var(--hdr, 120px); bottom: 0; z-index: 25; width: 320px; display: flex; flex-direction: column; background: var(--bg); min-height: 0; padding-bottom: var(--safe-bottom); }
+.panel-left { left: 0; border-right: 1px solid var(--border); }
+.panel-right { right: 0; border-left: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 70%, var(--bg-sunk)); }
 .panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; }
 .panel-close { margin-left: auto; }
-.stage { flex: 1; min-width: 0; overflow: auto; background: var(--bg-sunk); position: relative; -webkit-overflow-scrolling: touch; }
+.stage { background: var(--bg-sunk); position: relative; min-height: calc(100vh - var(--hdr, 120px)); padding-left: var(--pl, 0px); padding-right: var(--pr, 0px); }
 .pages { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 22px 22px 60px; min-width: min-content; }
 .page-wrap { position: relative; flex-shrink: 0; }
 .page {
@@ -311,12 +315,11 @@ html.light .el-card { background: #fbf6ea; }
 
 /* ── Pantallas medianas y celular: los paneles flotan sobre el lienzo ── */
 @media (max-width: 1080px) {
-  .panel { position: absolute; top: 0; bottom: 0; z-index: 25; width: min(340px, 88vw); box-shadow: 0 0 40px rgba(0,0,0,0.45); }
-  .panel-left { left: 0; }
-  .panel-right { right: 0; }
+  .panel { width: min(340px, 88vw); box-shadow: 0 0 40px rgba(0,0,0,0.45); }
 }
 @media (max-width: 640px) {
   .panel { width: 100%; left: 0; right: 0; top: auto; height: 62%; border-radius: 20px 20px 0 0; border: 1px solid var(--border2); }
+  .panel-left, .panel-right { left: 0; right: 0; }
   .title-input { font-size: 17px; }
   .save-state { display: none; }
   .pill .lbl { display: none; }
@@ -328,8 +331,8 @@ html.light .el-card { background: #fbf6ea; }
   @page { size: 8.5in 11in; margin: 0; }
   :root, html.light { --page: #fff; --text: #1a1610; --text-mid: #4f4636; --text-dim: #6b604c; --ink: #1a1610; --hand: #2e3e7a; --gold: #7a5c14; --tpl-border: #d9cdb2; --lines: #ece3d0; --bg3: #faf6ec; --border2: #e0d5bd; --blue: #1f5a9e; --purple: #5b3aa0; --dots: #e7dfcc; }
   html, body { height: auto; overflow: visible; background: #fff; }
-  .topbar, .toolbar, .panel, .page-actions, .add-page, .page-num, .sel-bar, .el-handle, .toast, .menu-pop, .home { display: none !important; }
-  .editor, .ed-body, .stage { display: block; height: auto; overflow: visible; background: #fff; }
+  .ed-head, .topbar, .toolbar, .panel, .page-actions, .add-page, .page-num, .sel-bar, .el-handle, .toast, .menu-pop, .home { display: none !important; }
+  .editor, .ed-body, .stage { display: block; height: auto; min-height: 0; padding: 0 !important; overflow: visible; background: #fff; }
   .pages { display: block; padding: 0; }
   .page-wrap { width: 8.5in !important; height: 11in !important; page-break-after: always; break-after: page; }
   .page { transform: none !important; box-shadow: none; border-radius: 0; }
@@ -363,6 +366,7 @@ html.light .el-card { background: #fbf6ea; }
 
 <!-- Editor -->
 <section id="editorView" class="editor" hidden>
+ <div class="ed-head" id="edHead">
   <header class="topbar">
     <button class="ibtn" onclick="closeEditor()" aria-label="Volver a mis estudios">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
@@ -415,6 +419,7 @@ html.light .el-card { background: #fbf6ea; }
     </div>
   </div>
 
+  </div>
   <div class="ed-body">
     <aside class="panel panel-left" id="panelLeft" hidden aria-label="Biblia y palabras">
       <div class="panel-head">

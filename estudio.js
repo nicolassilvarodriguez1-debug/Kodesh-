@@ -434,14 +434,17 @@ async function openStudy(id, preloaded) {
   history.replaceState({}, '', 'estudio.html?id=' + encodeURIComponent(study.id));
   setSaveState('Guardado');
   buildToolbar();
+  setHdr();
+  window.scrollTo(0, 0);
+  if (window.innerWidth > 1080) {
+    if (readLS('kodesh_study_panel_left', true)) openPanel('left', true);
+    if (readLS('kodesh_study_panel_right', false)) openPanel('right', true);
+  }
+  updateStagePad();
   computeFit();
   renderPages();
   renderChat();
   updateFmtBar();
-  if (window.innerWidth > 1080) {
-    if (readLS('kodesh_study_panel_left', true)) openPanel('left');
-    if (readLS('kodesh_study_panel_right', false)) openPanel('right');
-  }
   updateUndoButtons();
 }
 function closeEditor() {
@@ -505,24 +508,37 @@ function applyFingerMode() {
 }
 
 /* ── Zoom ── */
+function setHdr() {
+  const h = $('edHead') ? $('edHead').offsetHeight : 120;
+  document.documentElement.style.setProperty('--hdr', h + 'px');
+}
+// En pantallas anchas los paneles fijos ocupan su lado: el lienzo se corre.
+function updateStagePad() {
+  const wide = window.innerWidth > 1080;
+  const st = $('stage');
+  st.style.setProperty('--pl', wide && !$('panelLeft').hidden ? '320px' : '0px');
+  st.style.setProperty('--pr', wide && !$('panelRight').hidden ? '320px' : '0px');
+}
+const stagePads = () => { const cs = getComputedStyle($('stage')); return { l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0 }; };
 function computeFit() {
   const stage = $('stage');
   const pg = PAGE[study.format];
-  const avail = Math.max(280, stage.clientWidth - 44);
+  const pads = stagePads();
+  const avail = Math.max(280, stage.clientWidth - pads.l - pads.r - 44);
   fitScale = study.format === 'free' ? Math.min(1, avail / 1200) : Math.min(1.25, avail / pg.w);
 }
 function setZoom(z) {
-  const stage = $('stage');
+  const se = document.scrollingElement;
   const oldScale = fitScale * zoom;
-  const cx = stage.scrollLeft + stage.clientWidth / 2, cy = stage.scrollTop + stage.clientHeight / 2;
+  const cx = se.scrollLeft + window.innerWidth / 2, cy = se.scrollTop + window.innerHeight / 2;
   zoom = clamp(z, 0.4, 4);
   renderPages();
   const k = (fitScale * zoom) / oldScale;
-  stage.scrollLeft = cx * k - stage.clientWidth / 2;
-  stage.scrollTop = cy * k - stage.clientHeight / 2;
+  se.scrollLeft = cx * k - window.innerWidth / 2;
+  se.scrollTop = cy * k - window.innerHeight / 2;
 }
 const scale = () => fitScale * zoom;
-window.addEventListener('resize', () => { if (!study) return; const s = scale(); computeFit(); if (Math.abs(scale() - s) > 0.01) renderPages(); });
+window.addEventListener('resize', () => { if (!study) return; setHdr(); updateStagePad(); const s = scale(); computeFit(); if (Math.abs(scale() - s) > 0.01) renderPages(); });
 
 /* ── Historial ── */
 function snapshot() {
@@ -1003,10 +1019,11 @@ function commitEditing() {
 
 /* ── Insertar elementos (Biblia, palabras, asistente) ── */
 function visiblePageAndPoint() {
-  const stage = $('stage');
-  const sr = stage.getBoundingClientRect();
-  const cy = sr.top + Math.min(sr.height * 0.4, 320);
-  const cx = sr.left + sr.width / 2;
+  const sr = $('stage').getBoundingClientRect();
+  const pads = stagePads();
+  const top = Math.max(sr.top, $('edHead').getBoundingClientRect().bottom);
+  const cy = top + Math.min((window.innerHeight - top) * 0.4, 320);
+  const cx = sr.left + pads.l + (sr.width - pads.l - pads.r) / 2;
   let best = null, bestDist = Infinity;
   document.querySelectorAll('.page').forEach(n => {
     const r = n.getBoundingClientRect();
@@ -1087,7 +1104,7 @@ async function addPage(template) {
 /* ════════════════════════════════════
    PANELES
 ════════════════════════════════════ */
-function openPanel(side) {
+function openPanel(side, initial) {
   const panel = side === 'left' ? $('panelLeft') : $('panelRight');
   if (window.innerWidth <= 1080) closePanels(side === 'left' ? 'right' : 'left');
   panel.hidden = false;
@@ -1096,7 +1113,7 @@ function openPanel(side) {
   if (window.innerWidth > 1080) writeLS('kodesh_study_panel_' + side, true);
   if (side === 'left') initBible();
   if (side === 'right') renderChips();
-  setTimeout(() => { const s = scale(); computeFit(); if (Math.abs(scale() - s) > 0.01) renderPages(); }, 0);
+  if (!initial) { updateStagePad(); setTimeout(() => { const s = scale(); computeFit(); if (Math.abs(scale() - s) > 0.01) renderPages(); }, 0); }
 }
 function closePanels(only) {
   for (const side of ['left', 'right']) {
@@ -1114,6 +1131,7 @@ function togglePanel(side) {
   else {
     closePanels(side);
     if (window.innerWidth > 1080) writeLS('kodesh_study_panel_' + side, false);
+    updateStagePad();
     setTimeout(() => { const s = scale(); computeFit(); if (Math.abs(scale() - s) > 0.01) renderPages(); }, 0);
   }
 }
