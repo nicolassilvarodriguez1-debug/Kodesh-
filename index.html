@@ -8613,6 +8613,9 @@ function initDragToClose() {
   attachDragToClose(document.getElementById('verseSheet'), closeVerseSheet);
   attachDragToClose(document.getElementById('lexiconPopup'), closeLexicon, { enabled: () => window.innerWidth <= 767 });
   attachDragToClose(document.getElementById('notesPanel'), closeNotes, { enabled: () => window.innerWidth <= 900 });
+  // Guardados (y la barra lateral cuando es hoja inferior en el teléfono)
+  const sidebar = document.getElementById('sidebar');
+  attachDragToClose(sidebar, closeSavedSheet, { enabled: () => window.innerWidth <= 900 && sidebar.classList.contains('open') });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDragToClose);
 else initDragToClose();
