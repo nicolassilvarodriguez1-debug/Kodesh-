@@ -46,7 +46,7 @@ html.light {
 /* El documento se desplaza (como la Biblia y el Ciclo): en la app de iOS es lo
    que hace que el contenido empiece debajo de la hora y la batería. La barra
    de arriba queda fija con position: sticky y los paneles con position: fixed. */
-html { margin: 0; height: 100%; background: var(--bg); }
+html { margin: 0; height: 100%; background: var(--bg); overflow-x: hidden; overscroll-behavior: none; }
 body { margin: 0; min-height: calc(100% + 1px); }
 body {
   background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px;
@@ -142,7 +142,10 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .panel-right { right: 0; border-left: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 70%, var(--bg-sunk)); }
 .panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; }
 .panel-close { margin-left: auto; }
-.stage { background: var(--bg-sunk); position: relative; min-height: calc(100vh - var(--hdr, 120px)); padding-left: var(--pl, 0px); padding-right: var(--pr, 0px); }
+/* El lienzo se desplaza a lo ancho dentro de su propia caja (no el documento),
+   así la barra superior nunca se corre al arrastrar el lienzo libre, y el
+   contenido no pasa por debajo de los paneles abiertos. */
+.stage { background: var(--bg-sunk); position: relative; min-height: calc(100vh - var(--hdr, 120px)); margin-left: var(--pl, 0px); margin-right: var(--pr, 0px); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .pages { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 22px 22px 60px; min-width: min-content; }
 .page-wrap { position: relative; flex-shrink: 0; }
 .page {

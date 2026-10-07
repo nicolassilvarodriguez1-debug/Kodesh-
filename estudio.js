@@ -528,13 +528,13 @@ function computeFit() {
   fitScale = study.format === 'free' ? Math.min(1, avail / 1200) : Math.min(1.25, avail / pg.w);
 }
 function setZoom(z) {
-  const se = document.scrollingElement;
+  const se = document.scrollingElement, st = $('stage');
   const oldScale = fitScale * zoom;
-  const cx = se.scrollLeft + window.innerWidth / 2, cy = se.scrollTop + window.innerHeight / 2;
+  const cx = st.scrollLeft + st.clientWidth / 2, cy = se.scrollTop + window.innerHeight / 2;
   zoom = clamp(z, 0.4, 4);
   renderPages();
   const k = (fitScale * zoom) / oldScale;
-  se.scrollLeft = cx * k - window.innerWidth / 2;
+  st.scrollLeft = cx * k - st.clientWidth / 2;
   se.scrollTop = cy * k - window.innerHeight / 2;
 }
 const scale = () => fitScale * zoom;
