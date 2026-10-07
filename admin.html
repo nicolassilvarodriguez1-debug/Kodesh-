@@ -1293,7 +1293,7 @@ const AUDIO_ADMIN = (() => {
     const box = document.getElementById('audioLib');
     try {
       const { items } = await api({ action: 'lib_status' });
-      const kinds = { amb: 'Ambientes', sfx: 'Efectos', music: 'Música de fondo' };
+      const kinds = { theme: 'Radionovela: sintonía y cierre', motif: 'Radionovela: tema de Elohim', bridge: 'Radionovela: cortinas entre escenas', sting: 'Radionovela: golpes musicales', music: 'Música de fondo', amb: 'Ambientes', sfx: 'Efectos' };
       const missing = items.filter(x => !x.done).length;
       const spent = items.reduce((s2, x) => s2 + (x.credits || 0), 0);
       box.innerHTML = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px">Sonidos que se generan UNA vez con ElevenLabs y se reutilizan en todos los capítulos. ${missing ? `Faltan ${missing}.` : '✓ Biblioteca completa.'}${spent ? ` Créditos usados: ${n(spent)}.` : ''} La música necesita el permiso «Generación de música» en la clave de ElevenLabs.</div>
@@ -1323,7 +1323,7 @@ const AUDIO_ADMIN = (() => {
     if (running || !data) return;
     const b = data.books.find(x => x.book === book);
     const list = all ? b.done.slice() : b.done.filter(c => !(b.cine || []).includes(c));
-    if (!list.length || !confirm(`¿Convertir ${list.length} capítulo(s) de ${b.name} en película (música, ambientes y efectos)? No vuelve a grabar las voces.`)) return;
+    if (!list.length || !confirm(`¿Convertir ${list.length} capítulo(s) de ${b.name} en radionovela (sintonía, escenas con cortina, música, ambientes, efectos y el tema de Elohim)? No vuelve a grabar las voces.`)) return;
     running = true; stopFlag = false;
     const msg = document.getElementById('audioMsg'), stopBtn = document.getElementById('audioStopBtn');
     stopBtn.style.display = '';

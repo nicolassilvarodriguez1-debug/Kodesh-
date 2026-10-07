@@ -91,30 +91,68 @@ export const LIBRARY = [
   { key: 'm_batalla', kind: 'music', label: 'Música: batalla', prompt: 'Epic ancient battle music, thunderous war drums, driving low strings, heroic brass, Middle Eastern percussion, intense, no vocals, film score' },
   { key: 'm_alianza', kind: 'music', label: 'Música: alianza / promesa', prompt: 'Majestic and warm covenant theme, noble horns and strings, hopeful and solemn, ancient Middle Eastern color, no vocals, film score' },
   { key: 'm_viaje', kind: 'music', label: 'Música: travesía', prompt: 'Journey through the desert, steady frame drum, oud and ney flute melody, sense of movement and destiny, no vocals, film score' },
+  // Más efectos (foley)
+  { key: 'aves_vuelo', kind: 'sfx', seconds: 4, label: 'Aves que alzan el vuelo', prompt: 'A flock of birds suddenly taking flight, many wings flapping, chirping' },
+  { key: 'rugido_leon', kind: 'sfx', seconds: 3, label: 'Rugido de león', prompt: 'A lion roaring in the distance across open land' },
+  { key: 'ganado', kind: 'sfx', seconds: 4, label: 'Ganado y rebaños', prompt: 'Herd of cattle, sheep and goats moving, lowing and bleating, hooves on dirt' },
+  { key: 'latido', kind: 'sfx', seconds: 5, label: 'Latido (tensión)', prompt: 'Slow deep heartbeat, tense and suspenseful, cinematic' },
+  { key: 'bendicion', kind: 'sfx', seconds: 4, label: 'Destello de bendición', prompt: 'Soft heavenly shimmer, gentle bell-like sparkle and warm swell, sacred and luminous' },
+  { key: 'oleaje', kind: 'sfx', seconds: 5, label: 'Oleaje del mar', prompt: 'Large ocean waves rolling and crashing on the shore' },
+  { key: 'llanto_hombre', kind: 'sfx', seconds: 4, label: 'Lamento de un hombre', prompt: 'A man crying out in anguish, then sobbing, distant echo' },
+  { key: 'cuchillo', kind: 'sfx', seconds: 2, label: 'Cuchillo', prompt: 'A knife raised and gripped, metallic scrape' },
+  // ── Radionovela ──
+  // Sintonía de entrada y cierre (identidad de la serie)
+  { key: 'sintonia', kind: 'theme', seconds: 30, label: 'Sintonía de entrada', prompt: 'Opening theme of an epic biblical radio drama series: solemn majestic orchestral fanfare with noble horns, soaring strings and deep frame drums, ancient Middle Eastern color, memorable heroic melody, builds to a climax in the first 12 seconds then settles into a soft sustained chord, no vocals' },
+  { key: 'cierre', kind: 'theme', seconds: 20, label: 'Cierre del capítulo', prompt: 'Closing theme of an epic biblical radio drama: the same noble melody played gently by strings and oud, warm and reflective, ends with a final resolved chord and long fade, no vocals' },
+  // Tema de Elohim (leitmotiv): suena encima de la música cuando Dios habla
+  { key: 'tema_divino', kind: 'motif', seconds: 60, label: 'Tema de Elohim (cuando Dios habla)', prompt: 'Solemn sacred leitmotif for the voice of God: very slow sustained ethereal pads, soft pipe organ drones, shimmering high strings and celesta, a simple holy melody of few notes, reverent awe and majesty, no percussion, no vocals, seamless and calm' },
+  // Cortinas / puentes musicales entre escenas (cambio de lugar o de tiempo)
+  { key: 'puente_solemne', kind: 'bridge', seconds: 10, label: 'Cortina: solemne', prompt: 'Short radio drama music bridge: solemn majestic orchestral phrase with horns and strings, rises and resolves cleanly, ancient Middle Eastern color, no vocals' },
+  { key: 'puente_asombro', kind: 'bridge', seconds: 10, label: 'Cortina: asombro', prompt: 'Short radio drama music bridge: shimmering awe-inspiring swell with harp glissando, airy strings and ney flute, resolves softly, no vocals' },
+  { key: 'puente_drama', kind: 'bridge', seconds: 10, label: 'Cortina: dramática', prompt: 'Short radio drama music bridge: dramatic tense orchestral phrase with low strings, timpani hit and dark brass, ends on a suspended chord, no vocals' },
+  { key: 'puente_tristeza', kind: 'bridge', seconds: 10, label: 'Cortina: tristeza', prompt: 'Short radio drama music bridge: sorrowful duduk phrase over soft strings, slow and tender, resolves sadly, no vocals' },
+  { key: 'puente_esperanza', kind: 'bridge', seconds: 10, label: 'Cortina: esperanza', prompt: 'Short radio drama music bridge: hopeful warm phrase with lyre, harp and gentle strings, rising and luminous, no vocals' },
+  { key: 'puente_viaje', kind: 'bridge', seconds: 10, label: 'Cortina: travesía', prompt: 'Short radio drama music bridge: oud and frame drum phrase suggesting a journey and passing of time, ends cleanly, no vocals' },
+  // Golpes musicales (subrayan un momento dramático)
+  { key: 'golpe_drama', kind: 'sting', seconds: 3, label: 'Golpe: dramático', prompt: 'Dramatic orchestral stinger hit, low brass and timpani, short and powerful' },
+  { key: 'golpe_revelacion', kind: 'sting', seconds: 4, label: 'Golpe: revelación', prompt: 'Revelation musical stinger, bright rising string swell with harp and soft choir-like pad, short' },
+  { key: 'golpe_juicio', kind: 'sting', seconds: 4, label: 'Golpe: juicio', prompt: 'Ominous judgment stinger, deep boom, dark brass cluster and rumble, short' },
+  { key: 'golpe_suspenso', kind: 'sting', seconds: 3, label: 'Golpe: suspenso', prompt: 'Suspense stinger, dissonant high string screech rising and cut off, short' },
+  { key: 'golpe_tristeza', kind: 'sting', seconds: 4, label: 'Golpe: tristeza', prompt: 'Sad musical stinger, single low cello note with soft piano chord, short and somber' },
+  { key: 'golpe_gloria', kind: 'sting', seconds: 4, label: 'Golpe: gloria', prompt: 'Glorious triumphant stinger, bright brass fanfare chord with cymbal swell, short' },
 ];
 export const LIB = Object.fromEntries(LIBRARY.map(x => [x.key, x]));
+// Se generan con la API de música de ElevenLabs (lo demás con la de efectos)
+export const MUSIC_KINDS = ['music', 'theme', 'bridge', 'motif'];
 export const MUSIC_SECONDS = 120;
 
-// ── Banda sonora del capítulo (la propone la IA) ──
+// ── Banda sonora del capítulo (la propone la IA, como director de radionovela) ──
+export const SOUNDTRACK_VERSION = 2;
 export function soundtrackPrompt(bookName, chapter, segments) {
   const byV = {};
   for (const s of segments) (byV[s.v] = byV[s.v] || []).push(`${s.character === 'narrador' ? '' : s.character + ': '}${s.text}`);
   const lines = Object.keys(byV).map(Number).sort((a, b) => a - b).map(v => `${v}| ${byV[v].join(' ')}`).join('\n');
   const list = kind => LIBRARY.filter(x => x.kind === kind).map(x => `${x.key} (${x.label})`).join(', ');
   return {
-    system: `Diseñas la banda sonora de una Biblia en audio dramatizada, como una película, con reverencia y buen gusto. Recibes un capítulo con sus versículos y eliges sonidos SOLO de esta biblioteca:
+    system: `Eres el director de sonido de una RADIONOVELA bíblica de gran producción, al estilo de las radionovelas clásicas pero con calidad de cine. El oyente no ve nada: todo lo que imagina sale del sonido. Recibes un capítulo con sus versículos y eliges sonidos SOLO de esta biblioteca:
 - Ambientes (fondo continuo de un lugar): ${list('amb')}
-- Efectos puntuales: ${list('sfx')}
-- Música de fondo: ${list('music')}
+- Efectos sonoros: ${list('sfx')}
+- Música de fondo (colchón musical): ${list('music')}
+- Cortinas musicales (puente entre escenas): ${list('bridge')}
+- Golpes musicales (subrayan un instante): ${list('sting')}
+(La sintonía de entrada, el cierre y el tema de Elohim cuando Dios habla se ponen solos; no los elijas.)
 
-REGLAS
-1. Ambiente solo donde el lugar es claro en el texto. Puede haber huecos sin ambiente. Máximo 5 ambientes por capítulo; cada uno cubre un rango de versículos seguido.
-2. Música: de 1 a 4 tramos por capítulo, según el ánimo de cada escena, como la banda sonora de una película: la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), las batallas (m_batalla), las promesas de Elohim (m_alianza), los viajes (m_viaje). En discursos largos de enseñanza usa música suave (m_reverente o m_paz) o ninguna. En genealogías largas, música muy suave o ninguna.
-3. Efectos: cuando el texto describe ese sonido o acción de forma concreta (el gallo canta, la piedra es removida, la tormenta, «sea la luz», las aguas que se separan, el golpe de Caín, la puerta del arca, las espadas). Máximo 8 por capítulo. Nunca efectos encima de las palabras de Yeshúa salvo que el texto lo pida.
-4. "when": "start" (al comenzar el versículo) o "end" (al terminar).
-5. Si nada encaja, deja las listas vacías. Menos es más.
+EL LENGUAJE DE LA RADIONOVELA
+1. ESCENAS: divide el capítulo en escenas. Hay escena nueva cuando cambia el lugar, el tiempo (otro día, «después de esto», años después) o el bloque de la historia. En Génesis 1 cada día de la creación es una escena. Marca en "scenes" el versículo donde EMPIEZA cada escena (no el primero del capítulo) y la cortina que la anuncia según el ánimo de lo que viene. Entre escenas habrá un silencio de voces de unos segundos lleno por esa cortina. De 2 a 10 escenas por capítulo si la historia lo permite.
+2. MÚSICA DE FONDO SIEMPRE: la radionovela casi nunca queda en silencio musical. Cubre TODO el capítulo con tramos seguidos de música, cambiando de tema cuando cambia el ánimo o la escena (hasta 8 tramos): la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), batallas (m_batalla), promesas de Elohim (m_alianza), viajes (m_viaje), tensión (m_tension), tristeza (m_tristeza), triunfo (m_triunfo), asombro (m_asombro), paz (m_paz), reverencia (m_reverente). En genealogías o leyes usa m_reverente o m_paz.
+3. AMBIENTES: pinta cada lugar con su ambiente (hasta 8 tramos). Si el lugar se intuye, úsalo.
+4. EFECTOS: generosos, como en la radio: cada acción que se pueda oír lleva su sonido (la luz que irrumpe, las aguas, la tierra, las aves, los animales, el aliento de vida, pasos, puertas, golpes, fuego, espadas, llanto, el trueno). Hasta 16 por capítulo. "when": "start" (al comenzar el versículo) o "end" (al terminar).
+5. GOLPES MUSICALES: en los instantes que cortan la respiración (una revelación, un juicio, una muerte, una traición, una victoria, una bendición solemne). Hasta 6 por capítulo.
+6. SILENCIOS DRAMÁTICOS: el silencio también es lenguaje. En "pauses" indica antes de qué versículo hace falta un silencio de 1 a 2 segundos para que el momento respire (después de un golpe, antes de una frase decisiva). Hasta 6.
+7. Nunca tapes las palabras de Yeshúa con efectos salvo que el texto lo pida.
 
-Responde SOLO con JSON: {"ambience":[{"from":1,"to":5,"key":"mar_calmo"}],"music":[{"from":1,"to":12,"key":"m_reverente"}],"sfx":[{"v":34,"key":"gallo","when":"end"}]}`,
+Responde SOLO con JSON:
+{"scenes":[{"v":6,"bridge":"puente_asombro"}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","when":"end"}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
     user: `${bookName} capítulo ${chapter}.\n${lines}`,
   };
 }
@@ -123,10 +161,11 @@ Responde SOLO con JSON: {"ambience":[{"from":1,"to":5,"key":"mar_calmo"}],"music
 export function cleanSoundtrack(raw, verseNumbers) {
   const vs = [...verseNumbers].map(Number).sort((a, b) => a - b);
   const min = vs[0] || 1, max = vs[vs.length - 1] || 1;
+  const okKey = (key, kind) => LIB[key] && LIB[key].kind === kind;
   const ranges = (arr, kind, limit) => {
     const out = [];
     for (const r of Array.isArray(arr) ? arr : []) {
-      const key = String(r?.key || ''); if (!LIB[key] || LIB[key].kind !== kind) continue;
+      const key = String(r?.key || ''); if (!okKey(key, kind)) continue;
       let from = Math.max(min, Math.round(Number(r.from))), to = Math.min(max, Math.round(Number(r.to)));
       if (!(from <= to)) continue;
       if (out.some(o => from <= o.to && to >= o.from)) continue;   // sin solapes
@@ -135,14 +174,44 @@ export function cleanSoundtrack(raw, verseNumbers) {
     }
     return out.sort((a, b) => a.from - b.from);
   };
-  const sfx = [];
-  for (const e of Array.isArray(raw?.sfx) ? raw.sfx : []) {
-    const key = String(e?.key || ''); const v = Math.round(Number(e?.v));
-    if (!LIB[key] || LIB[key].kind !== 'sfx' || !(v >= min && v <= max)) continue;
-    sfx.push({ v, key, when: e.when === 'end' ? 'end' : 'start' });
-    if (sfx.length >= 8) break;
+  const points = (arr, kind, limit) => {
+    const out = [];
+    for (const e of Array.isArray(arr) ? arr : []) {
+      const key = String(e?.key || ''); const v = Math.round(Number(e?.v));
+      if (!okKey(key, kind) || !(v >= min && v <= max)) continue;
+      out.push({ v, key, when: e.when === 'end' ? 'end' : 'start' });
+      if (out.length >= limit) break;
+    }
+    return out;
+  };
+  const ambience = ranges(raw?.ambience, 'amb', 8);
+  const music = ranges(raw?.music, 'music', 8);
+  const sfx = points(raw?.sfx, 'sfx', 16);
+  const out = { ambience, music, sfx };
+  if (raw && (raw.scenes || raw.stings || raw.pauses || raw.v === SOUNDTRACK_VERSION)) {
+    // Música de fondo siempre: los tramos se tocan entre sí y cubren todo el capítulo
+    if (!music.length) music.push({ from: min, to: max, key: 'm_reverente' });
+    music[0].from = min; music[music.length - 1].to = max;
+    for (let k = 0; k + 1 < music.length; k++) music[k].to = music[k + 1].from - 1;
+    const seen = new Set();
+    out.scenes = [];
+    for (const e of Array.isArray(raw?.scenes) ? raw.scenes : []) {
+      const v = Math.round(Number(e?.v)); if (!(v > min && v <= max) || seen.has(v)) continue;
+      const bridge = okKey(String(e?.bridge || ''), 'bridge') ? e.bridge : 'puente_solemne';
+      seen.add(v); out.scenes.push({ v, bridge });
+      if (out.scenes.length >= 10) break;
+    }
+    out.scenes.sort((a, b) => a.v - b.v);
+    out.pauses = [];
+    for (const e of Array.isArray(raw?.pauses) ? raw.pauses : []) {
+      const v = Math.round(Number(e?.v)); if (!(v > min && v <= max) || seen.has(v)) continue;
+      seen.add(v); out.pauses.push({ v, s: Math.min(2.5, Math.max(0.8, Number(e?.s) || 1.5)) });
+      if (out.pauses.length >= 6) break;
+    }
+    out.stings = points(raw?.stings, 'sting', 6);
+    out.v = SOUNDTRACK_VERSION;
   }
-  return { ambience: ranges(raw?.ambience, 'amb', 5), music: ranges(raw?.music, 'music', 4), sfx };
+  return out;
 }
 
 // Segundos de inicio/fin de cada versículo a partir de los tiempos del audio.
@@ -154,7 +223,7 @@ export function verseSpans(timings, total) {
 }
 
 // Plan de mezcla: qué archivo suena, desde qué segundo, cuánto dura y a qué volumen.
-export const LEVELS = { amb: 0.22, music: 0.15, sfx: 0.5 };
+export const LEVELS = { amb: 0.22, music: 0.2, sfx: 0.55, bridge: 0.5, sting: 0.5, theme: 0.5, motif: 0.32 };
 export function mixPlan(soundtrack, timings, total, sfxSeconds = {}) {
   const spans = verseSpans(timings, total);
   const at = v => spans[v];
@@ -179,9 +248,90 @@ export function mixPlan(soundtrack, timings, total, sfxSeconds = {}) {
 }
 const round = x => Math.round(x * 100) / 100;
 
+// ── Radionovela: línea de tiempo ──
+// La voz se corta antes de ciertos versículos para abrir silencios (cambio de
+// escena o silencio dramático); al principio va la sintonía sola y al final
+// el cierre. Devuelve las piezas de voz, los tiempos nuevos y los huecos.
+export const RADIO = { lead: 7, tail: 9, scene: 3.5 };
+export function radioTimeline(timings, total, st, opts = {}) {
+  const R = { ...RADIO, ...opts };
+  const t = [...(timings || [])].sort((a, b) => a[1] - b[1]);
+  const inserts = {};
+  for (const sc of st?.scenes || []) inserts[sc.v] = { dur: R.scene, kind: 'scene', bridge: sc.bridge };
+  for (const p of st?.pauses || []) if (!inserts[p.v]) inserts[p.v] = { dur: p.s, kind: 'pause' };
+  const cuts = [];
+  for (const [v, start] of t) if (inserts[v] && start > 0.2) cuts.push({ v, at: Math.max(0, start - 0.05), ...inserts[v] });
+  cuts.sort((a, b) => a.at - b.at);
+  const pieces = []; const gaps = [];
+  let from = 0, shift = R.lead;
+  for (const c of cuts) {
+    if (c.at <= from) continue;
+    pieces.push({ from: round(from), to: round(c.at), at: round(from + shift) });
+    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge });
+    shift += c.dur; from = c.at;
+  }
+  pieces.push({ from: round(from), to: round(total), at: round(from + shift) });
+  const map = x => { let sh = R.lead; for (const c of cuts) if (c.at <= x + 1e-6 && gaps.some(g => g.v === c.v)) sh += c.dur; return round(x + sh); };
+  return { pieces, gaps, map, timings: t.map(([v, s]) => [v, map(s)]), total: round(total + shift + R.tail), voiceEnd: round(total + shift), lead: R.lead, tail: R.tail };
+}
+
+// Dónde habla Elohim (segundos del audio de voz). Si la grabación guardó los
+// tramos exactos se usan; si no, se estiman por la proporción de letras
+// dentro de cada versículo.
+export function divineSpans(segments, timings, total, exact) {
+  if (Array.isArray(exact) && exact.length) return exact.map(x => [x.s, x.e]);
+  const spans = verseSpans(timings, total);
+  const byV = {};
+  for (const sg of segments || []) (byV[sg.v] = byV[sg.v] || []).push(sg);
+  const out = [];
+  for (const [v, list] of Object.entries(byV)) {
+    const sp = spans[v]; if (!sp) continue;
+    const len = list.reduce((a, x) => a + x.text.length + 1, 0);
+    let acc = 0;
+    for (const x of list) {
+      const a = acc; acc += x.text.length + 1;
+      if (!/^(elohim|adonai|dios|yhwh)/i.test(String(x.character || '').trim())) continue;
+      out.push([sp.start + (a / len) * (sp.end - sp.start), sp.start + (acc / len) * (sp.end - sp.start)]);
+    }
+  }
+  out.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const s of out) { const last = merged[merged.length - 1]; if (last && s[0] - last[1] < 2) last[1] = Math.max(last[1], s[1]); else merged.push([...s]); }
+  return merged;
+}
+
+// Plan completo de la radionovela sobre la línea de tiempo nueva.
+export function radioPlan(st, tl, divine, sfxSeconds = {}) {
+  const body = tl.voiceEnd;   // donde termina la última palabra
+  const layers = mixPlan(st, tl.timings, body, sfxSeconds);
+  const spans = verseSpans(tl.timings, body);
+  // Sintonía: sola al principio y se esconde bajo la voz del narrador
+  layers.push({ key: 'sintonia', kind: 'theme', start: 0, dur: round(tl.lead + 6), fade: 2.5, loop: false, gain: LEVELS.theme });
+  // Cierre: entra al terminar la última frase
+  layers.push({ key: 'cierre', kind: 'theme', start: round(Math.max(0, body - 1)), dur: round(tl.tail + 1), fade: 2, loop: false, gain: LEVELS.theme });
+  // Cortinas entre escenas, en el silencio de las voces
+  for (const g of tl.gaps) {
+    if (g.kind !== 'scene') continue;
+    layers.push({ key: g.bridge || 'puente_solemne', kind: 'bridge', start: round(Math.max(0, g.at - 0.4)), dur: round(g.dur + 2.6), fade: 0.5, loop: false, gain: LEVELS.bridge });
+  }
+  // Golpes musicales
+  for (const e of st?.stings || []) {
+    const s = spans[e.v]; if (!s) continue;
+    const len = LIB[e.key]?.seconds || 3;
+    const start = e.when === 'end' ? Math.max(s.start, s.end - 0.3) : Math.max(0, s.start - 0.4);
+    layers.push({ key: e.key, kind: 'sting', start: round(start), dur: len, fade: 0.2, loop: false, gain: LEVELS.sting });
+  }
+  // Tema de Elohim: encima de todo, sin bajar con la voz
+  for (const [a, b] of divine || []) {
+    const s = tl.map(a), e = tl.map(b);
+    layers.push({ key: 'tema_divino', kind: 'motif', start: round(Math.max(0, s - 1)), dur: round(e - s + 2.5), fade: 1.2, loop: true, gain: LEVELS.motif, bus: 'motif' });
+  }
+  return layers;
+}
+
 // Argumentos de ffmpeg para mezclar la voz con las capas.
 // files: { key → ruta local }; la voz es la entrada 0.
-export function ffmpegArgs(voicePath, layers, files, outPath) {
+export function ffmpegArgs(voicePath, layers, files, outPath, opts = {}) {
   const args = ['-y', '-hide_banner', '-loglevel', 'error', '-i', voicePath];
   const used = layers.filter(l => files[l.key]);
   used.forEach(l => {
@@ -189,21 +339,47 @@ export function ffmpegArgs(voicePath, layers, files, outPath) {
     args.push('-t', String(l.dur + 0.5), '-i', files[l.key]);
   });
   const fmt = 'aformat=sample_rates=44100:channel_layouts=stereo';
-  const parts = [used.length ? `[0:a]${fmt},asplit=2[voice][key]` : `[0:a]${fmt}[voice]`];
-  const labels = [];
+  const parts = [];
+  // Voz: entera, o en piezas colocadas en su sitio con silencios entre medio
+  const pieces = opts.pieces || null;
+  if (pieces && pieces.length > 1) {
+    parts.push(`[0:a]${fmt},asplit=${pieces.length}${pieces.map((_, k) => `[p${k}]`).join('')}`);
+    pieces.forEach((pc, k) => {
+      const ms = Math.round(pc.at * 1000);
+      parts.push(`[p${k}]atrim=${pc.from}:${pc.to},asetpts=PTS-STARTPTS,adelay=${ms}|${ms}[q${k}]`);
+    });
+    parts.push(`${pieces.map((_, k) => `[q${k}]`).join('')}amix=inputs=${pieces.length}:normalize=0:duration=longest,apad=whole_dur=${opts.total}[vfull]`);
+  } else if (pieces && pieces.length === 1) {
+    const ms = Math.round(pieces[0].at * 1000);
+    parts.push(`[0:a]${fmt},adelay=${ms}|${ms},apad=whole_dur=${opts.total}[vfull]`);
+  } else {
+    parts.push(`[0:a]${fmt}[vfull]`);
+  }
+  const bed = [], motif = [];
   used.forEach((l, i) => {
     const d = l.dur, f = Math.min(l.fade, d / 3);
     const ms = Math.round(l.start * 1000);
     parts.push(`[${i + 1}:a]${fmt},atrim=0:${d},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${f},afade=t=out:st=${round(d - f)}:d=${f},volume=${l.gain},adelay=${ms}|${ms}[l${i}]`);
-    labels.push(`[l${i}]`);
+    (l.bus === 'motif' ? motif : bed).push(`[l${i}]`);
   });
-  if (!labels.length) {
-    parts.push('[voice]anull[mix]');
+  if (!bed.length && !motif.length) {
+    parts.push('[vfull]anull[mix]');
   } else {
-    parts.push(`${labels.join('')}amix=inputs=${labels.length}:normalize=0:duration=longest[bed]`);
-    // La música y los ambientes bajan solos cuando alguien habla
-    parts.push('[bed][key]sidechaincompress=threshold=0.04:ratio=5:attack=30:release=500:makeup=1[ducked]');
-    parts.push('[voice][ducked]amix=inputs=2:normalize=0:duration=first[mix]');
+    const finals = [];
+    if (bed.length) {
+      parts.push('[vfull]asplit=2[voice][key]');
+      // Cuando habla Elohim la música de fondo baja un poco más para dejar sitio a su tema
+      const dv = (opts.divine || []).map(([a, b]) => `between(t,${round(a)},${round(b)})`).join('+');
+      parts.push(`${bed.join('')}amix=inputs=${bed.length}:normalize=0:duration=longest${dv ? `,volume=enable='${dv}':volume=0.5` : ''}[bed]`);
+      // La música y los ambientes bajan solos cuando alguien habla
+      parts.push('[bed][key]sidechaincompress=threshold=0.04:ratio=5:attack=30:release=500:makeup=1[ducked]');
+      finals.push('[voice]', '[ducked]');
+    } else finals.push('[vfull]');
+    if (motif.length) {
+      parts.push(`${motif.join('')}amix=inputs=${motif.length}:normalize=0:duration=longest[motif]`);
+      finals.push('[motif]');
+    }
+    parts.push(`${finals.join('')}amix=inputs=${finals.length}:normalize=0:duration=first[mix]`);
   }
   parts.push('[mix]alimiter=limit=0.95[out]');
   args.push('-filter_complex', parts.join(';'), '-map', '[out]', '-ac', '2', '-ar', '44100', '-c:a', 'libmp3lame', '-b:a', '96k', outPath);

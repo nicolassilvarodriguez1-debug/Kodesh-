@@ -23,7 +23,7 @@
     if (!byBook[book]) {
       byBook[book] = (async () => {
         const c = sb(); if (!c) throw new Error('sin conexión');
-        const { data, error } = await c.from('bible_audio').select('chapter,path,path_cine,cine_updated_at,duration_s,timings,text_hash').eq('version', VERSION).eq('book', book);
+        const { data, error } = await c.from('bible_audio').select('chapter,path,path_cine,cine_updated_at,duration_s,timings,text_hash,timings_cine,duration_cine').eq('version', VERSION).eq('book', book);
         if (error) throw error;
         const map = {}; (data || []).forEach(r => { map[r.chapter] = r; }); return map;
       })().catch(e => { delete byBook[book]; return {}; });
@@ -89,9 +89,16 @@
     $('kaCine').onclick = () => {
       st.cine = !st.cine;
       try { localStorage.setItem('kodesh_audio_cine', st.cine ? '1' : '0'); } catch (e) {}
-      const t = audio.currentTime, playing = !audio.paused;
+      // Mantiene el mismo versículo al cambiar entre voz sola y radionovela
+      const playing = !audio.paused;
+      const before = st.cine ? (st.row?.timings || []) : (st.row?.timings_cine || st.row?.timings || []);
+      const v = (() => { let r = null; for (const [n, s0] of before) { if (s0 <= audio.currentTime + 0.05) r = [n, audio.currentTime - s0]; else break; } return r; })();
       setSource();
-      audio.addEventListener('loadedmetadata', () => { audio.currentTime = t; if (playing) audio.play().catch(() => {}); }, { once: true });
+      audio.addEventListener('loadedmetadata', () => {
+        const hit = v && curTimings().find(x => x[0] === v[0]);
+        audio.currentTime = hit ? Math.max(0, hit[1] + v[1]) : 0;
+        if (playing) audio.play().catch(() => {});
+      }, { once: true });
       if (typeof showToast === 'function') showToast(st.cine ? '🎬 Película: con música y efectos' : 'Solo voces');
     };
     $('kaBar').addEventListener('input', e => { if (audio.duration) audio.currentTime = audio.duration * e.target.value / 1000; });
@@ -120,15 +127,18 @@
     });
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
   }
+  // En la radionovela los versículos caen en otros segundos (sintonía, silencios entre escenas)
+  const usingCine = () => !!(st.cine && st.row?.path_cine);
+  const curTimings = () => (usingCine() && st.row?.timings_cine) || st.row?.timings || [];
   function verseAt(t) {
-    const tm = st.row?.timings || [];
+    const tm = curTimings();
     let v = null;
     for (const [n, s] of tm) { if (s <= t + 0.05) v = n; else break; }
     return v;
   }
   function onTime() {
     if (!audio) return;
-    const d = audio.duration || Number(st.row?.duration_s) || 0;
+    const d = audio.duration || Number((usingCine() && st.row?.duration_cine) || st.row?.duration_s) || 0;
     $('kaBar').value = d ? Math.round(audio.currentTime / d * 1000) : 0;
     $('kaSub').textContent = `Kodesh · ${fmt(audio.currentTime)} / ${fmt(d)}`;
     const v = verseAt(audio.currentTime);
@@ -188,7 +198,7 @@
     $('kaName').textContent = `${bookName(book)} ${chapter}`;
     $('kaPlayer').classList.add('open');
     if (fromVerse > 1) {
-      const t = (row.timings || []).find(x => x[0] === fromVerse);
+      const t = curTimings().find(x => x[0] === fromVerse);
       if (t) audio.addEventListener('loadedmetadata', () => { audio.currentTime = Math.max(0, t[1] - 0.3); }, { once: true });
     }
     // Sin un toque previo el navegador puede no dejar sonar: queda listo con ▶.

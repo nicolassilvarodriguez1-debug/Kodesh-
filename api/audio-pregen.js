@@ -25,7 +25,7 @@ import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, isValidBookId, isValidChapter } from './_security.js';
 import { speakable, numberToSpanish, mp3Duration, textHash } from './_audioCore.js';
 import { CAST, scriptPrompt, cleanScript, validateScript, planCalls, roleFor } from './_audioScript.js';
-import { LIBRARY, LIB, MUSIC_SECONDS, soundtrackPrompt, cleanSoundtrack, mixPlan, ffmpegArgs } from './_audioCinema.js';
+import { LIBRARY, LIB, MUSIC_SECONDS, MUSIC_KINDS, SOUNDTRACK_VERSION, soundtrackPrompt, cleanSoundtrack, ffmpegArgs, radioTimeline, radioPlan, divineSpans } from './_audioCinema.js';
 import ffmpegPath from 'ffmpeg-static';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
@@ -271,6 +271,7 @@ async function generate(book, chapter, force) {
   const parts = []; const timings = []; let offset = 0;
   const gap = await silence(SPEAKER_PAUSE);
   const gapSec = mp3Duration(gap).seconds || SPEAKER_PAUSE;
+  const voiceSpans = [];
   calls.forEach((c, i) => {
     // Pausa breve cuando cambia quien habla («…y le dijo Yeshúa:» · pausa · Yeshúa)
     if (i > 0 && calls[i - 1].voice !== c.voice) { parts.push(gap); offset += gapSec; }
@@ -284,6 +285,7 @@ async function generate(book, chapter, force) {
       timings.push([m.v, Math.round((offset + t) * 100) / 100]);
     }
     parts.push(audio);
+    if (c.role === 'elohim') voiceSpans.push({ s: Math.round(offset * 100) / 100, e: Math.round((offset + duration) * 100) / 100 });
     offset += duration;
   });
   timings.sort((a, b) => a[0] - b[0]);
@@ -298,7 +300,7 @@ async function generate(book, chapter, force) {
     method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify([{
       version: VERSION, book, chapter, path, bytes: mp3.length, duration_s: Math.round(offset * 100) / 100,
-      timings, chars, text_hash: hash, voice_id: 'elenco',
+      timings, chars, text_hash: hash, voice_id: 'elenco', voice_spans: voiceSpans,
       model: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2', updated_at: new Date().toISOString(),
     }]),
   });
@@ -323,15 +325,16 @@ async function libBuild(key) {
   const item = LIB[key];
   if (!item) throw new Error('Sonido desconocido');
   let audio, credits = null, seconds = null;
-  if (item.kind === 'music') {
+  if (MUSIC_KINDS.includes(item.kind)) {
+    const len = Math.max(10, item.seconds || MUSIC_SECONDS);
     const r = await fetch(`${EL}/music?output_format=mp3_44100_128`, {
       method: 'POST', headers: elHeaders(),
-      body: JSON.stringify({ prompt: item.prompt, music_length_ms: MUSIC_SECONDS * 1000, force_instrumental: true }),
+      body: JSON.stringify({ prompt: item.prompt, music_length_ms: len * 1000, force_instrumental: true }),
     });
     if (!r.ok) { const e = new Error(`ElevenLabs música ${r.status}: ${(await r.text().catch(() => '')).slice(0, 240)}`); e.status = r.status; throw e; }
     audio = Buffer.from(await r.arrayBuffer());
     credits = Number(r.headers.get('character-cost')) || null;
-    seconds = MUSIC_SECONDS;
+    seconds = mp3Duration(audio).seconds || len;
   } else {
     const loop = item.kind === 'amb';
     const r = await fetch(`${EL}/sound-generation?output_format=mp3_44100_128`, {
@@ -355,9 +358,9 @@ async function getSoundtrack(book, chapter, regen) {
   const rows = await sbJson(`bible_audio_scripts?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=segments,soundtrack&limit=1`);
   const row = rows?.[0];
   if (!row) return null;
-  if (row.soundtrack && !regen) return row.soundtrack;
+  if (row.soundtrack && row.soundtrack.v === SOUNDTRACK_VERSION && !regen) return row.soundtrack;
   const raw = await askClaudeJson(soundtrackPrompt(bookName(book), chapter, row.segments));
-  const st = cleanSoundtrack(raw, [...new Set(row.segments.map(x => x.v))]);
+  const st = cleanSoundtrack({ ...(raw || {}), v: SOUNDTRACK_VERSION }, [...new Set(row.segments.map(x => x.v))]);
   await sbJson(`bible_audio_scripts?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}`, {
     method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ soundtrack: st }),
   });
@@ -371,18 +374,27 @@ async function download(url, file) {
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => execFile(ffmpegPath, args, { maxBuffer: 1 << 24 }, (err, _o, stderr) => err ? reject(new Error('ffmpeg: ' + String(stderr || err.message).slice(0, 300))) : resolve()));
 }
+// Radionovela: sintonía, escenas con cortina y silencio, golpes musicales,
+// música de fondo continua, ambientes, efectos y el tema de Elohim cuando habla.
+const RADIO_KINDS = ['theme', 'bridge', 'sting', 'motif'];
 async function mix(book, chapter) {
-  const rows = await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=path,timings,duration_s,text_hash&limit=1`);
+  const rows = await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=path,timings,duration_s,text_hash,voice_spans&limit=1`);
   const row = rows?.[0];
   if (!row) return { ok: false, reason: 'sin_voz' };
   const st = await getSoundtrack(book, chapter, false);
   if (!st) return { ok: false, reason: 'sin_guion' };
+  const scr = await sbJson(`bible_audio_scripts?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=segments&limit=1`);
+  const segments = scr?.[0]?.segments || [];
   const lib = Object.fromEntries((await libRows()).map(r => [r.key, r]));
-  const sfxSeconds = Object.fromEntries(Object.values(lib).filter(r => r.kind === 'sfx').map(r => [r.key, Number(r.seconds) || 3]));
-  const planned = mixPlan(st, row.timings, Number(row.duration_s), sfxSeconds);
+  const sfxSeconds = Object.fromEntries(Object.values(lib).filter(r => r.kind === 'sfx' || r.kind === 'sting').map(r => [r.key, Number(r.seconds) || 3]));
+  const total = Number(row.duration_s);
+  const tl = radioTimeline(row.timings, total, st);
+  const divine = divineSpans(segments, row.timings, total, row.voice_spans);
+  const planned = radioPlan(st, tl, divine, sfxSeconds);
+  // Las piezas propias de la radionovela no pueden faltar (si no, no suena a radionovela)
+  const missingRadio = [...new Set(planned.filter(l => RADIO_KINDS.includes(l.kind) && !lib[l.key]).map(l => l.key))];
+  if (missingRadio.length) return { ok: false, reason: 'faltan_sonidos', missing: missingRadio };
   const layers = planned.filter(l => lib[l.key]);
-  // Sin los sonidos de la biblioteca no se hace una «película» que en realidad es solo voz
-  if (planned.length && !layers.length) return { ok: false, reason: 'faltan_sonidos', missing: [...new Set(planned.map(l => l.key))] };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mix-'));
   try {
     const voice = path.join(dir, 'voice.mp3');
@@ -393,14 +405,15 @@ async function mix(book, chapter) {
       await download(publicUrl(lib[key].path), files[key]);
     }
     const out = path.join(dir, 'out.mp3');
-    await runFfmpeg(ffmpegArgs(voice, layers, files, out));
+    await runFfmpeg(ffmpegArgs(voice, layers, files, out, { pieces: tl.pieces, total: tl.total, divine: divine.map(([a, b]) => [tl.map(a), tl.map(b)]) }));
     const p = `${VERSION}/${book}/${chapter}.cine.mp3`;
     await upload(p, fs.readFileSync(out));
     await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}`, {
-      method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ path_cine: p, cine_updated_at: new Date().toISOString() }),
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ path_cine: p, cine_updated_at: new Date().toISOString(), timings_cine: tl.timings, duration_cine: tl.total }),
     });
-    const missing = [...new Set(mixPlan(st, row.timings, Number(row.duration_s), sfxSeconds).map(l => l.key).filter(k => !lib[k]))];
-    return { ok: true, layers: layers.length, missing, soundtrack: st };
+    const missing = [...new Set(planned.map(l => l.key).filter(k => !lib[k]))];
+    return { ok: true, layers: layers.length, scenes: tl.gaps.filter(g => g.kind === 'scene').length, missing, soundtrack: st };
   } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
   }

@@ -115,7 +115,8 @@ test('película: banda sonora limpia (claves válidas, sin solapes, topes)', () 
   assert.deepEqual(st.ambience, [{ from: 1, to: 3, key: 'mar_calmo' }]);
   assert.deepEqual(st.music, [{ from: 1, to: 6, key: 'm_paz' }]);
   assert.deepEqual(st.sfx, [{ v: 3, key: 'gallo', when: 'end' }]);
-  assert.ok(LIBRARY.every(x => ['amb', 'sfx', 'music'].includes(x.kind)));
+  assert.ok(LIBRARY.every(x => ['amb', 'sfx', 'music', 'theme', 'bridge', 'sting', 'motif'].includes(x.kind)));
+  assert.equal(new Set(LIBRARY.map(x => x.key)).size, LIBRARY.length);
 });
 
 test('película: capas en el tiempo de cada versículo y comando de mezcla', () => {
@@ -128,4 +129,42 @@ test('película: capas en el tiempo de cada versículo y comando de mezcla', () 
   assert.equal(args.filter(a => a === '-i').length, 3);
   assert.ok(args.join(' ').includes('sidechaincompress'));
   assert.ok(args.includes('-stream_loop'));
+});
+
+import { radioTimeline, radioPlan, divineSpans, SOUNDTRACK_VERSION } from '../api/_audioCinema.js';
+
+test('radionovela: escenas, silencios y música que cubre todo el capítulo', () => {
+  const st = cleanSoundtrack({
+    scenes: [{ v: 3, bridge: 'puente_asombro' }, { v: 1, bridge: 'puente_drama' }, { v: 5, bridge: 'no_existe' }],
+    pauses: [{ v: 3, s: 2 }, { v: 4, s: 9 }],
+    music: [{ from: 2, to: 3, key: 'm_creacion' }, { from: 5, to: 5, key: 'm_paz' }],
+    stings: [{ v: 4, key: 'golpe_juicio' }, { v: 4, key: 'gallo' }],
+  }, [1, 2, 3, 4, 5, 6]);
+  assert.equal(st.v, SOUNDTRACK_VERSION);
+  assert.deepEqual(st.scenes, [{ v: 3, bridge: 'puente_asombro' }, { v: 5, bridge: 'puente_solemne' }]);
+  assert.deepEqual(st.pauses, [{ v: 4, s: 2.5 }]);                 // el v3 ya es escena; tope 2.5 s
+  assert.deepEqual(st.music, [{ from: 1, to: 4, key: 'm_creacion' }, { from: 5, to: 6, key: 'm_paz' }]);
+  assert.deepEqual(st.stings, [{ v: 4, key: 'golpe_juicio', when: 'start' }]);
+});
+
+test('radionovela: la voz se abre en silencios y los tiempos se corren', () => {
+  const st = { scenes: [{ v: 2, bridge: 'puente_solemne' }], pauses: [{ v: 3, s: 1.5 }], ambience: [], music: [], sfx: [], stings: [] };
+  const tl = radioTimeline([[1, 2], [2, 10], [3, 20]], 30, st);
+  assert.deepEqual(tl.pieces.map(p => [p.from, p.to, p.at]), [[0, 9.95, 7], [9.95, 19.95, 20.45], [19.95, 30, 31.95]]);
+  assert.deepEqual(tl.timings, [[1, 9], [2, 20.5], [3, 32]]);
+  assert.equal(tl.voiceEnd, 42); assert.equal(tl.total, 51);
+  const segs = [{ v: 1, character: 'narrador', text: 'Y dijo:' }, { v: 1, character: 'Elohim', text: 'Sea la luz y fue.' }];
+  const dv = divineSpans(segs, [[1, 2], [2, 10]], 12, null);
+  assert.equal(dv.length, 1); assert.ok(dv[0][0] > 2 && dv[0][1] <= 10.01);
+  const layers = radioPlan(st, tl, dv, {});
+  const keys = layers.map(l => l.key);
+  for (const k of ['sintonia', 'cierre', 'puente_solemne', 'tema_divino']) assert.ok(keys.includes(k), k);
+  assert.ok(!keys.includes('m_paz'));
+  const motif = layers.find(l => l.key === 'tema_divino');
+  assert.equal(motif.bus, 'motif');
+  const args = ffmpegArgs('v.mp3', layers, { sintonia: 's.mp3', cierre: 'c.mp3', puente_solemne: 'p.mp3', tema_divino: 't.mp3' }, 'o.mp3', { pieces: tl.pieces, total: tl.total, divine: dv.map(([a, b]) => [tl.map(a), tl.map(b)]) });
+  const fc = args[args.indexOf('-filter_complex') + 1];
+  assert.ok(fc.includes('asplit=3[p0][p1][p2]'));
+  assert.ok(fc.includes('[motif]'));
+  assert.ok(fc.includes("volume=enable='between("));
 });
