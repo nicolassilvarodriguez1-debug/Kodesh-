@@ -3090,12 +3090,16 @@ body { font-family: var(--font-body); }
 }
 .section-heading::after { display: none; }
 
+/* Dentro del área de lectura (antes se salía por la derecha y cortaba la
+   primera letra; en nombres cortos como Noaj casi no se veía). El tamaño se
+   ajusta en fitParashaWatermark() para que el nombre completo quepa. */
 .parasha-watermark {
   position: absolute;
-  top: 6px; right: -18px;
+  top: 0; right: 14px;
   font-family: var(--font-hebrew);
   font-size: 8.5rem;
-  line-height: 1;
+  line-height: 1.3;
+  direction: rtl; unicode-bidi: isolate;
   color: var(--gold);
   opacity: 0.07;
   pointer-events: none;
@@ -3171,7 +3175,7 @@ html.light .parasha-watermark { opacity: 0.08; }
   .chapter-header::after { display: none; }
   .chapter-meta { justify-content: center; gap: 6px; margin-top: 4px; }
   .main { padding: 10px 18px calc(118px + var(--safe-area-inset-bottom)) 12px; }
-  .parasha-watermark { font-size: 7.5rem; top: -6px; right: -26px; }
+  .parasha-watermark { font-size: 7.5rem; top: -4px; right: 6px; }
 }
 
 /* Números de versículo y cifras con dígitos alineados (Cormorant usa
@@ -5099,6 +5103,7 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
   `;
 
   main.innerHTML = html;
+  fitParashaWatermark();
   main.scrollTo(0, 0);
   currentParashaBreak = parasha && parasha.nextInChapter ? parasha.nextInChapter : null;
   if (interlinearActive) renderInterlinearInline(state.currentBook, chapterNum, verses);
@@ -5568,6 +5573,17 @@ const TEXTUAL_LABEL_OFF = '✦ Kodesh <span class="badge-beta">BETA</span>';
 
 // Título del capítulo en la barra superior (teléfono): "Éxodo 7" y debajo la
 // parashá (o el testamento).
+function fitParashaWatermark() {
+  const w = document.querySelector('.parasha-watermark');
+  if (!w || !w.parentElement) return;
+  w.style.fontSize = '';
+  const max = w.parentElement.clientWidth - 28;
+  const fs = parseFloat(getComputedStyle(w).fontSize);
+  if (max > 0 && w.scrollWidth > max) w.style.fontSize = Math.max(48, Math.floor(fs * max / w.scrollWidth)) + 'px';
+}
+window.addEventListener('resize', () => fitParashaWatermark());
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitParashaWatermark());
+
 function updateTopbarChapter(bookName, chapterNum, parasha) {
   const t = document.getElementById('topbarChapterTitle');
   const sub = document.getElementById('topbarChapterSub');
