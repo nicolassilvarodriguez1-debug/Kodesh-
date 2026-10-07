@@ -1203,7 +1203,7 @@ const AUDIO_ADMIN = (() => {
       const colors = { narrador: 'var(--text-dim)', yeshua: 'var(--red, #e05a5a)' };
       box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
           <b style="font-size:0.85rem">Guion · ${book} ${ch}</b>
-          <span style="display:flex;gap:6px"><button class="btn-sm" onclick="AUDIO_ADMIN.openScript('${book}',${ch},true)">Preparar de nuevo</button><button class="btn-sm" onclick="AUDIO_ADMIN.saveScript()">Guardar cambios</button><button class="btn-sm" onclick="document.getElementById('audioScript').style.display='none'">Cerrar</button></span></div>
+          <span style="display:flex;gap:6px"><button class="btn-sm" onclick="AUDIO_ADMIN.recordOne('${book}',${ch})">Grabar este capítulo</button><button class="btn-sm" onclick="AUDIO_ADMIN.openScript('${book}',${ch},true)">Preparar de nuevo</button><button class="btn-sm" onclick="AUDIO_ADMIN.saveScript()">Guardar cambios</button><button class="btn-sm" onclick="document.getElementById('audioScript').style.display='none'">Cerrar</button></span></div>
         ${d.repaired && d.repaired.length ? `<div style="font-size:0.72rem;color:var(--gold);margin-bottom:6px">Versículos que la IA no copió exacto y quedaron con el narrador: ${d.repaired.join(', ')}</div>` : ''}
         <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:8px">Puedes cambiar el nombre del personaje de una parte (por ejemplo «Pedro» → «Juan»). El texto no se edita aquí.</div>
         ${d.segments.map((s, i) => `<div style="display:grid;grid-template-columns:34px 150px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.75rem;align-items:start">
@@ -1225,7 +1225,21 @@ const AUDIO_ADMIN = (() => {
       if (r.ok) openScript(scriptState.book, scriptState.ch, false);
     } catch (e) { alert(e.message); }
   }
-  return { load, run, stop: () => { stopFlag = true; }, toggleCast, saveCast, showScript, openScript, saveScript };
+  async function recordOne(book, ch) {
+    if (running) return;
+    const name = (data?.books.find(b => b.book === book) || {}).name || book;
+    if (!confirm(`¿Grabar ${name} ${ch} con ElevenLabs? Gasta créditos (aprox. 4.000–7.000).`)) return;
+    running = true;
+    const msg = document.getElementById('audioMsg');
+    msg.className = 'upload-msg'; msg.textContent = `⏳ Grabando ${name} ${ch}… tarda 20–90 segundos.`;
+    try {
+      const r = await api({ action: 'generate', book, chapter: ch, force: true });
+      msg.className = 'upload-msg ok';
+      msg.textContent = r.ok ? `✓ ${name} ${ch} grabado: ${Math.floor(r.seconds / 60)}:${String(r.seconds % 60).padStart(2, '0')} min, ${n(r.chars)} caracteres. Ábrelo en la app y toca «Escuchar».` : `No se grabó (${r.reason || 'error'}).`;
+    } catch (e) { msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message; }
+    finally { running = false; const keep = msg.textContent, cls = msg.className; await load(); msg.textContent = keep + ' ' + msg.textContent; msg.className = cls; }
+  }
+  return { load, run, stop: () => { stopFlag = true; }, toggleCast, saveCast, showScript, openScript, saveScript, recordOne };
 })();
 
 // ── HISTORIAL PREMIUM ──

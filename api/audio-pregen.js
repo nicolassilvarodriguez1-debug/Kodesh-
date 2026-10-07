@@ -49,7 +49,8 @@ const bookChapters = id => (globalThis.KodeshRef?.BOOKS || []).find(b => b[0] ==
 async function sbJson(path, opts = {}) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { ...opts, headers: sbHeaders({ 'Content-Type': 'application/json', ...(opts.headers || {}) }) });
   if (!r.ok) throw new Error(`supabase ${path.split('?')[0]} → ${r.status} ${await r.text().catch(() => '')}`.slice(0, 300));
-  return r.status === 204 ? null : r.json();
+  const body = await r.text();   // con return=minimal Supabase responde 201 sin cuerpo
+  return body ? JSON.parse(body) : null;
 }
 
 async function credits() {
