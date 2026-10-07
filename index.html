@@ -3618,6 +3618,57 @@ html.light .notes-panel .notes-btn-save { background: var(--gold); color: #fffdf
   .il-orig { font-size: 1.4rem; }
   .il-hebrew .il-orig { font-size: 1.55rem; }
 }
+
+/* ── Menú lateral (☰) ── */
+.app-menu-overlay {
+  position: fixed; inset: 0; z-index: 900; background: rgba(2,2,6,0.6);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-med) ease;
+}
+html.light .app-menu-overlay { background: rgba(60,45,15,0.35); }
+.app-menu-overlay.open { opacity: 1; pointer-events: auto; }
+.app-menu {
+  position: absolute; top: 0; bottom: 0; left: 0; width: min(300px, 82vw);
+  background: var(--bg2); border-right: 1px solid var(--border2);
+  padding: calc(18px + var(--safe-area-inset-top)) 0 calc(18px + var(--safe-area-inset-bottom));
+  display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+  transform: translateX(-100%); transition: transform 0.34s var(--ease-sheet);
+  box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+}
+html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
+.app-menu-overlay.open .app-menu { transform: translateX(0); }
+.app-menu-brand { display: flex; align-items: center; gap: 12px; padding: 8px 14px 18px 22px; border-bottom: 1px solid var(--border); }
+.app-menu-brand-heb { font-family: var(--font-hebrew); font-size: 1.9rem; color: var(--gold); line-height: 1; text-decoration: none; }
+.app-menu-brand-txt { font-family: 'Cinzel', var(--font-display); letter-spacing: 4px; font-size: 1rem; color: var(--text); }
+.app-menu-brand-sub { font-family: var(--font-body); font-size: 0.82rem; color: var(--text-dim); }
+.app-menu-close {
+  margin-left: auto; width: 36px; height: 36px; border-radius: 18px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text-mid); display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.app-menu-close svg { width: 16px; height: 16px; }
+.app-menu-label { font-family: var(--font-body); font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); padding: 16px 22px 4px; }
+.app-menu-item {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; padding: 0 22px;
+  border: none; background: transparent; text-align: left; text-decoration: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 1.08rem; color: var(--text);
+}
+.app-menu-item svg { color: var(--gold); flex-shrink: 0; }
+.app-menu-item.active { background: var(--gold-glow); color: var(--gold); }
+.app-menu-item:active { background: var(--gold-glow); }
+.app-menu-sep { height: 1px; background: var(--border); margin: 8px 22px; }
+
+/* ── Accesos a Inicio y Ciclo de estudio dentro de «Escrituras» ── */
+.nav-app-links { display: none; }
+@media (max-width: 767px) {
+  .nav-app-links { display: flex; gap: 8px; padding: 12px 16px 4px; }
+  .nav-app-link {
+    flex: 1; height: 42px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    border-radius: 21px; border: 1px solid var(--border2); color: var(--text-mid); text-decoration: none;
+    font-family: var(--font-body); font-size: 0.95rem;
+  }
+  .nav-app-link svg { color: var(--gold); }
+  .nav-app-logo { font-family: var(--font-hebrew); font-size: 1.1rem; color: var(--gold); line-height: 1; }
+  .nav-app-link:active { background: var(--gold-glow); }
+}
 </style>
 </head>
 <body>
@@ -3700,6 +3751,30 @@ html.light .notes-panel .notes-btn-save { background: var(--gold); color: #fffdf
 </div>
 
 <!-- ══ INTERLINEAR OVERLAY ══ -->
+<!-- ══ MENÚ LATERAL (botón ☰ en el teléfono) ══ -->
+<div class="app-menu-overlay" id="appMenuOverlay" onclick="if (event.target === this) closeAppMenu()">
+  <aside class="app-menu" id="appMenu" aria-label="Menú de KODESH">
+    <div class="app-menu-brand">
+      <a href="/landing.html" class="app-menu-brand-heb" lang="he" aria-label="Inicio de KODESH">קֹדֶשׁ</a>
+      <div>
+        <div class="app-menu-brand-txt">KODESH</div>
+        <div class="app-menu-brand-sub">Biblia de estudio</div>
+      </div>
+      <button class="app-menu-close" onclick="closeAppMenu()" aria-label="Cerrar menú"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="app-menu-label">Navegar</div>
+    <a class="app-menu-item" href="/landing.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6h-6v6H4z"/></svg>Inicio</a>
+    <button class="app-menu-item active" onclick="closeAppMenu(); openNav();"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6v13"/></svg>Leer la Biblia</button>
+    <a class="app-menu-item" href="parashot.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Ciclo de estudio</a>
+    <a class="app-menu-item" href="lexicon.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>Lexicón</a>
+    <a class="app-menu-item" href="cronicas.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>Crónicas del Reino</a>
+    <a class="app-menu-item" href="actividades.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15.5 12h.01M17.5 14h.01"/></svg>Actividades</a>
+    <div class="app-menu-sep"></div>
+    <a class="app-menu-item" href="profile.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Ajustes</a>
+    <a class="app-menu-item" href="ayuda.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17h.01"/></svg>Ayuda</a>
+  </aside>
+</div>
+
 <!-- ══ MOBILE BOTTOM NAV ══ -->
 <nav class="mobile-nav" id="mobileNav" aria-label="Secciones">
   <div class="mobile-nav-progress" id="mobileNavProgress" style="transform:scaleX(0)"></div>
@@ -4128,10 +4203,14 @@ html.light .notes-panel .notes-btn-save { background: var(--gold); color: #fffdf
           <button class="nav-close" onclick="closeNav()">✕</button>
         </div>
       </div>
+      <nav class="nav-app-links" aria-label="Accesos">
+        <a class="nav-app-link" href="/landing.html"><span class="nav-app-logo" lang="he">קֹדֶשׁ</span>Inicio</a>
+        <a class="nav-app-link" href="parashot.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Ciclo de estudio</a>
+      </nav>
       <div class="nav-quick-row" id="navQuickRow" style="display:none"></div>
       <div class="nav-testament-tabs">
-        <button class="nav-tab active" id="navTabAT" onclick="navSwitchTestament('AT')">Tanaj</button>
-        <button class="nav-tab" id="navTabNT" onclick="navSwitchTestament('NT')">Brit Hadashá</button>
+        <button class="nav-tab active" id="navTabAT" onclick="navSwitchTestament('AT')">Antiguo Pacto</button>
+        <button class="nav-tab" id="navTabNT" onclick="navSwitchTestament('NT')">Nuevo Pacto</button>
       </div>
       <div class="nav-book-grid" id="navBookGrid"></div>
     </div>
@@ -4158,7 +4237,7 @@ html.light .notes-panel .notes-btn-save { background: var(--gold); color: #fffdf
       <span class="logo-text">KODESH</span>
     </a>
 
-    <button class="sidebar-toggle" onclick="openNav()" id="sidebarToggle" aria-label="Libros y capítulos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+    <button class="sidebar-toggle" onclick="onMenuButton()" id="sidebarToggle" aria-label="Menú" aria-controls="appMenu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
     <button class="topbar-chapter" id="topbarChapter" onclick="openNav()" aria-label="Elegir libro y capítulo">
       <span class="topbar-chapter-title" id="topbarChapterTitle">KODESH</span>
       <span class="topbar-chapter-sub" id="topbarChapterSub"></span>
@@ -4203,8 +4282,8 @@ html.light .notes-panel .notes-btn-save { background: var(--gold); color: #fffdf
     <div class="sidebar-section">
       <div class="sidebar-title">Testamento</div>
       <div class="testament-tabs">
-        <button class="testament-tab active" id="tab-at" onclick="switchTestament('AT')">Antiguo</button>
-        <button class="testament-tab" id="tab-nt" onclick="switchTestament('NT')">Nuevo</button>
+        <button class="testament-tab active" id="tab-at" onclick="switchTestament('AT')">Antiguo Pacto</button>
+        <button class="testament-tab" id="tab-nt" onclick="switchTestament('NT')">Nuevo Pacto</button>
       </div>
     </div>
 
@@ -5445,7 +5524,7 @@ function updateTopbarChapter(bookName, chapterNum, parasha) {
   if (!t || !sub) return;
   t.textContent = `${bookName} ${chapterNum}`;
   const isNT = BIBLE_BOOKS.NT.some(b => b.id === state.currentBook);
-  sub.textContent = parasha ? `${parasha.nombre} · ${String(parasha.sig || '').split('/')[0].trim()}` : (isNT ? 'Brit Hadashá' : 'Tanaj');
+  sub.textContent = parasha ? `${parasha.nombre} · ${String(parasha.sig || '').split('/')[0].trim()}` : (isNT ? 'Nuevo Pacto' : 'Antiguo Pacto');
 }
 
 function restoreTextualToggleButton() {
@@ -8389,6 +8468,58 @@ if (window.visualViewport) {
   });
 }
 
+
+/* ════════════════════════════════════
+   MENÚ LATERAL (☰)
+   En el teléfono el ☰ abre el menú de la app; el título del capítulo sigue
+   abriendo los libros. En pantallas medianas el ☰ sigue abriendo los libros.
+════════════════════════════════════ */
+function onMenuButton() {
+  if (window.innerWidth <= 767) openAppMenu();
+  else openNav();
+}
+function openAppMenu() {
+  document.getElementById('appMenuOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeAppMenu() {
+  const ov = document.getElementById('appMenuOverlay');
+  if (!ov.classList.contains('open')) return;
+  ov.classList.remove('open');
+  if (!document.querySelector('.verse-sheet-overlay.open, .notes-overlay.open, .assistant-overlay.open')) document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppMenu(); });
+// Deslizar hacia la izquierda para cerrar
+(function () {
+  const init = () => {
+    const menu = document.getElementById('appMenu');
+    if (!menu) return;
+    let x0 = null, y0 = 0, dx = 0, active = false;
+    menu.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; active = false; }, { passive: true });
+    menu.addEventListener('touchmove', e => {
+      if (x0 == null) return;
+      const ddx = e.touches[0].clientX - x0, ddy = e.touches[0].clientY - y0;
+      if (!active) {
+        if (Math.abs(ddy) > 10 && Math.abs(ddy) > Math.abs(ddx)) { x0 = null; return; }
+        if (ddx > -10) return;
+        active = true; menu.style.transition = 'none';
+      }
+      e.preventDefault();
+      dx = Math.min(0, ddx + 10);
+      menu.style.transform = `translateX(${dx}px)`;
+    }, { passive: false });
+    const end = () => {
+      if (x0 == null) return; x0 = null;
+      if (!active) return; active = false;
+      menu.style.transition = ''; menu.style.transform = '';
+      if (dx < -menu.offsetWidth * 0.25) closeAppMenu();
+    };
+    menu.addEventListener('touchend', end);
+    menu.addEventListener('touchcancel', end);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
 // ── Deslizar hacia abajo para cerrar (hoja del versículo, lexicón, notas) ──
 // Se puede arrastrar desde cualquier parte de la hoja que no sea un campo de
 // texto, siempre que el contenido esté arriba del todo y el gesto sea
@@ -8867,7 +8998,7 @@ function renderWordSearch() {
   const chip = (key, label, n) => `<button class="word-filter ${st.filter === key ? 'active' : ''}" onclick="setWordFilter('${key}')">${label} · ${n.toLocaleString('es')}</button>`;
   let html = refCard + `
     <div class="word-summary">${st.matches.length.toLocaleString('es')} versículo${st.matches.length === 1 ? '' : 's'}</div>
-    <div class="word-filters">${chip('all', 'Todo', st.matches.length)}${at ? chip('at', 'Tanaj', at) : ''}${nt ? chip('nt', 'Brit Hadashá', nt) : ''}</div>`;
+    <div class="word-filters">${chip('all', 'Todo', st.matches.length)}${at ? chip('at', 'Antiguo Pacto', at) : ''}${nt ? chip('nt', 'Nuevo Pacto', nt) : ''}</div>`;
   html += list.slice(0, st.shown).map(m => `
     <button class="word-result" onclick="goToVerse('${m.bookId}',${m.chapter},${m.verse})">
       <span class="word-result-ref">${escHtml(m.bookName)} ${m.chapter}:${m.verse}</span>
