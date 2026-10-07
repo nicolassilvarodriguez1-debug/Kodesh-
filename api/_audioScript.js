@@ -72,7 +72,8 @@ export function voiceFor(role, castVoices) {
 }
 
 // ── Instrucciones para la IA ──
-export const ALLOWED_TAGS = ['reverent', 'softly', 'warmly', 'calm', 'gentle', 'firm', 'urgent', 'joyful', 'sad', 'pleading', 'astonished', 'angry', 'fearful', 'whispering', 'shouting', 'questioning', 'tender', 'solemn', 'excited', 'weary', 'mocking', 'pause'];
+export const ALLOWED_TAGS = ['reverent', 'softly', 'warmly', 'calm', 'gentle', 'firm', 'urgent', 'joyful', 'sad', 'pleading', 'astonished', 'angry', 'fearful', 'whispering', 'shouting', 'questioning', 'tender', 'solemn', 'excited', 'weary', 'mocking', 'pause',
+  'indignant', 'stern', 'commanding', 'weeping', 'grieving', 'passionate', 'loud', 'tense', 'desperate', 'triumphant', 'awed', 'compassionate'];
 export function scriptPrompt(bookName, chapter, verses, redLetter) {
   const lines = Object.keys(verses).map(Number).sort((a, b) => a - b).map(v => `${v}|${verses[String(v)]}`).join('\n');
   const wj = redLetter && Object.keys(redLetter).length ? `\nVersículos donde habla Yeshúa (según las letras rojas): ${Object.keys(redLetter).join(', ')}.` : '';
@@ -85,7 +86,9 @@ REGLAS ESTRICTAS
 3. Las frases que introducen lo que alguien dice ("Respondió Yeshúa y le dijo:", "Le dijo Nicodemo:") son del narrador. Lo que la persona dice es del personaje.
 4. "character": "narrador" o el nombre del personaje tal como lo llama el texto (Yeshúa, Pedro, Nicodemo, Marta, María Magdalena, Juan el Bautista, la samaritana, un ángel…). Si hablan varios a la vez (la multitud, los judíos, los fariseos, los discípulos juntos), usa "multitud".
 5. "gender": "m", "f" o "grupo".
-6. "tags": de 0 a 2 marcas de interpretación en inglés, SOLO de esta lista: ${ALLOWED_TAGS.join(', ')}. Úsalas con mesura y reverencia; el narrador casi siempre sin marcas.
+6. "tags": de 0 a 3 marcas de interpretación en inglés, SOLO de esta lista: ${ALLOWED_TAGS.join(', ')}.
+   Es una dramatización: cada personaje debe sentirse con la emoción REAL que muestra la escena, también Yeshúa. Ejemplos: al echar a los mercaderes del templo (Juan 2:16) habla de verdad enojado → ["angry","loud","commanding"]; «¡Apártate de mí, Satanás!» → ["stern","commanding"]; «¡Ay de vosotros, escribas y fariseos, hipócritas!» → ["indignant","passionate"]; al llorar por Jerusalén o junto a la tumba de Lázaro → ["grieving","tender"]; «¡Lázaro, ven fuera!» → ["shouting","commanding"]; en la cruz → ["weeping","desperate"] o ["solemn"] según el texto. Una multitud furiosa, un ciego que suplica, una mujer que llora: que se note.
+   La enseñanza tranquila va con marcas suaves (calm, warmly, gentle) o ninguna. El narrador casi siempre sin marcas, salvo «pause» o un matiz breve en momentos fuertes.
 7. Si nadie habla en el versículo, una sola parte del narrador.
 
 Responde SOLO con JSON: {"segments":[{"v":1,"character":"narrador","gender":"m","tags":[],"text":"..."}]}`,

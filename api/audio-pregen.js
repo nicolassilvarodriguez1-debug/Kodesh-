@@ -185,10 +185,10 @@ function withRoles(segments) { return segments.map(s => ({ ...s, role: roleFor(s
 // si los rechazan, se repite la petición sin ellos.
 // Si ElevenLabs dice que hay demasiadas peticiones a la vez (429), se espera y
 // se reintenta (el plan Creator permite 5 simultáneas).
-async function tts(voice, text, previous, next) {
+async function tts(voice, text, previous, next, stability) {
   let usePrev = true;
   for (let k = 1; ; k++) {
-    try { return await ttsOnce(voice, text, usePrev ? previous : '', usePrev ? next : ''); }
+    try { return await ttsOnce(voice, text, usePrev ? previous : '', usePrev ? next : '', stability); }
     catch (e) {
       if (e.status === 400 && usePrev && (previous || next) && /previous_text|next_text|not supported|unsupported/i.test(e.message)) { usePrev = false; continue; }
       if ((e.status === 429 || e.status >= 500) && k < 6) { await new Promise(r => setTimeout(r, 2500 * k + Math.random() * 1500)); continue; }
@@ -196,13 +196,13 @@ async function tts(voice, text, previous, next) {
     }
   }
 }
-async function ttsOnce(voice, text, previous, next) {
+async function ttsOnce(voice, text, previous, next, stability = 0.55) {
   const r = await fetch(`${EL}/text-to-speech/${encodeURIComponent(voice)}/with-timestamps?output_format=${FORMAT}`, {
     method: 'POST', headers: elHeaders(),
     body: JSON.stringify({
       text, model_id: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2',
       previous_text: previous || undefined, next_text: next || undefined,
-      voice_settings: { stability: 0.55, similarity_boost: 0.8, style: 0.1, use_speaker_boost: true },
+      voice_settings: { stability, similarity_boost: 0.8, style: stability < 0.5 ? 0.35 : 0.1, use_speaker_boost: true },
     }),
   });
   if (!r.ok) {
@@ -215,6 +215,14 @@ async function ttsOnce(voice, text, previous, next) {
   return { audio: Buffer.from(d.audio_base64, 'base64'), alignment: d.alignment };
 }
 
+const SPEAKER_PAUSE = 0.5;
+const silenceCache = {};
+function silence(sec) {
+  if (silenceCache[sec]) return Promise.resolve(silenceCache[sec]);
+  return new Promise((resolve, reject) => execFile(ffmpegPath, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', String(sec),
+    '-c:a', 'libmp3lame', '-b:a', '64k', '-write_xing', '0', '-id3v2_version', '0', '-f', 'mp3', 'pipe:1'], { encoding: 'buffer', maxBuffer: 1 << 22 },
+    (err, out, stderr) => err ? reject(new Error('silencio: ' + String(stderr || err.message).slice(0, 200))) : resolve(silenceCache[sec] = Buffer.from(out))));
+}
 async function generate(book, chapter, force) {
   const script = await getScript(book, chapter, false);
   if (!script) return { ok: false, reason: 'sin_texto_kodesh' };
@@ -222,7 +230,7 @@ async function generate(book, chapter, force) {
   if (!voices.narrador) throw new Error('Falta la voz del narrador en el elenco');
   const intro = `${bookName(book)}, capítulo ${numberToSpanish(chapter)}.`;
   const calls = planCalls(script.segments, voices, { intro: `[reverent] ${intro}` });
-  const hash = await textHash(JSON.stringify({ s: script.segments, v: voices, m: process.env.ELEVENLABS_MODEL || '' }));
+  const hash = await textHash(JSON.stringify({ s: script.segments, v: voices, m: process.env.ELEVENLABS_MODEL || '', p: SPEAKER_PAUSE, st: 2 }));
   if (!force) {
     const ex = await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}&select=text_hash&limit=1`);
     if (ex?.[0]?.text_hash === hash) return { ok: true, skipped: true };
@@ -234,12 +242,17 @@ async function generate(book, chapter, force) {
     while (next < calls.length) {
       const i = next++;
       const c = calls[i];
-      results[i] = await tts(c.voice, c.text, i > 0 ? calls[i - 1].text.slice(-200) : '', i + 1 < calls.length ? calls[i + 1].text.slice(0, 200) : '');
+      // El narrador estable; los personajes con más libertad para expresar emoción
+      results[i] = await tts(c.voice, c.text, i > 0 ? calls[i - 1].text.slice(-200) : '', i + 1 < calls.length ? calls[i + 1].text.slice(0, 200) : '', c.role === 'narrador' ? 0.55 : 0.35);
     }
   }
   await Promise.all([worker(), worker()]);   // 2 a la vez: deja margen dentro del límite de 5
   const parts = []; const timings = []; let offset = 0;
+  const gap = await silence(SPEAKER_PAUSE);
+  const gapSec = mp3Duration(gap).seconds || SPEAKER_PAUSE;
   calls.forEach((c, i) => {
+    // Pausa breve cuando cambia quien habla («…y le dijo Yeshúa:» · pausa · Yeshúa)
+    if (i > 0 && calls[i - 1].voice !== c.voice) { parts.push(gap); offset += gapSec; }
     const { audio, alignment } = results[i];
     const { seconds } = mp3Duration(audio);
     const duration = seconds || (alignment?.character_end_times_seconds?.slice(-1)[0] ?? 0);
