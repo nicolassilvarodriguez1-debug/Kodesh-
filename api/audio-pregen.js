@@ -345,7 +345,10 @@ async function mix(book, chapter) {
   if (!st) return { ok: false, reason: 'sin_guion' };
   const lib = Object.fromEntries((await libRows()).map(r => [r.key, r]));
   const sfxSeconds = Object.fromEntries(Object.values(lib).filter(r => r.kind === 'sfx').map(r => [r.key, Number(r.seconds) || 3]));
-  const layers = mixPlan(st, row.timings, Number(row.duration_s), sfxSeconds).filter(l => lib[l.key]);
+  const planned = mixPlan(st, row.timings, Number(row.duration_s), sfxSeconds);
+  const layers = planned.filter(l => lib[l.key]);
+  // Sin los sonidos de la biblioteca no se hace una «película» que en realidad es solo voz
+  if (planned.length && !layers.length) return { ok: false, reason: 'faltan_sonidos', missing: [...new Set(planned.map(l => l.key))] };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mix-'));
   try {
     const voice = path.join(dir, 'voice.mp3');

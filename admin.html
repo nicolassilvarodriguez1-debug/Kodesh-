@@ -1128,11 +1128,13 @@ const AUDIO_ADMIN = (() => {
       const missing = b.chapters - b.done.length;
       const label = `${b.done.length} de ${b.chapters} capítulos` + (b.minutes ? ` · ${b.minutes} min` : '') + (b.cine && b.cine.length ? ` · 🎬 ${b.cine.length} en película` : '') + (b.outdated.length ? ` · ${b.outdated.length} desactualizados` : '');
       const toMix = b.done.filter(c => !(b.cine || []).includes(c));
+      const remix = (b.cine || []).length;
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
         <div><div style="font-size:0.8rem">${b.name}</div><div style="font-size:0.68rem;color:var(--text-dim)">${label}${b.withText < b.chapters ? ` · solo ${b.withText} con texto Kodesh` : ''}</div></div>
         <div style="display:flex;gap:6px">
           <button class="btn-sm" onclick="AUDIO_ADMIN.showScript('${b.book}')">Ver guion</button>
           ${toMix.length ? `<button class="btn-sm" onclick="AUDIO_ADMIN.mixBook('${b.book}')">🎬 Película ${toMix.length}</button>` : ''}
+          ${remix ? `<button class="btn-sm" onclick="AUDIO_ADMIN.mixBook('${b.book}', true)">Rehacer película</button>` : ''}
           ${b.outdated.length ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', true)">Regrabar ${b.outdated.length}</button>` : ''}
           ${missing > 0 ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', false)">Grabar ${missing}</button>` : '<span style="font-size:0.7rem;color:var(--green,#7fc98a)">✓ Completo</span>'}
         </div></div>`;
@@ -1302,10 +1304,10 @@ const AUDIO_ADMIN = (() => {
       }
     } finally { running = false; await renderLib(errs.length ? 'Algunos no se generaron: ' + errs.slice(0, 3).join(' · ') : '✓ Listo.'); }
   }
-  async function mixBook(book) {
+  async function mixBook(book, all) {
     if (running || !data) return;
     const b = data.books.find(x => x.book === book);
-    const list = b.done.filter(c => !(b.cine || []).includes(c));
+    const list = all ? b.done.slice() : b.done.filter(c => !(b.cine || []).includes(c));
     if (!list.length || !confirm(`¿Convertir ${list.length} capítulo(s) de ${b.name} en película (música, ambientes y efectos)? No vuelve a grabar las voces.`)) return;
     running = true; stopFlag = false;
     const msg = document.getElementById('audioMsg'), stopBtn = document.getElementById('audioStopBtn');
@@ -1316,6 +1318,7 @@ const AUDIO_ADMIN = (() => {
         msg.className = 'upload-msg'; msg.textContent = `🎬 Mezclando ${b.name} ${list[i]} (${i + 1} de ${list.length})…`;
         const r = await retry(() => api({ action: 'mix', book, chapter: list[i] }));
         if (r.ok) ok++;
+        else if (r.reason === 'faltan_sonidos') throw new Error('Primero genera la Biblioteca de sonido: faltan ' + (r.missing || []).join(', '));
       }
       msg.className = 'upload-msg ok'; msg.textContent = `✓ ${ok} capítulo(s) en modo película.`;
     } catch (e) { msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message; }
