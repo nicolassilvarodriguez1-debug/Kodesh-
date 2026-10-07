@@ -3304,7 +3304,7 @@ html.light .nav-ch-btn.current { color: #fffbf0; }
 /* Búsqueda */
 .search-modal { background: var(--bg2); border-color: var(--border2); }
 .search-input-main { border-radius: 24px; font-family: var(--font-body); padding-left: 18px; }
-.search-btn-run { border-radius: 24px; font-family: var(--font-body); letter-spacing: 0.5px; text-transform: none; font-size: 0.98rem; }
+.search-btn-run { background: var(--gold); border-color: var(--gold); color: #15120a; border-radius: 24px; font-family: var(--font-body); letter-spacing: 0.5px; text-transform: none; font-size: 0.98rem; }
 .search-placeholder-text { font-family: var(--font-body); letter-spacing: 0.5px; text-transform: none; font-size: 0.98rem; }
 .search-eg { font-family: var(--font-body); }
 
@@ -3364,6 +3364,45 @@ html.light .nav-ch-btn.current { color: #fffbf0; }
 html.light .stat-section-title { color: var(--text-dim); }
 .stat-bm-num { font-family: var(--font-body); font-size: 0.95rem; font-variant-numeric: lining-nums; }
 .stat-bm-name { font-size: 0.98rem; }
+
+/* ═══ Rediseño B · Buscar (Palabras | IA) ═══ */
+.search-modes { display: flex; gap: 6px; margin-top: 10px; }
+.search-mode {
+  height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text-mid); font-family: var(--font-body); font-size: 0.92rem; cursor: pointer;
+}
+html.light .search-btn-run { color: #fffbf0; }
+.search-mode.active { background: var(--gold); border-color: var(--gold); color: #15120a; }
+html.light .search-mode.active { color: #fffbf0; }
+.search-examples { margin-top: 10px; }
+.word-summary { padding: 4px 4px 8px; font-family: var(--font-body); font-size: 0.78rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); }
+.word-filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 0 12px; }
+.word-filter {
+  height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--border2); background: transparent;
+  color: var(--text-mid); font-family: var(--font-body); font-size: 0.86rem; cursor: pointer; font-variant-numeric: lining-nums;
+}
+.word-filter.active { border-color: var(--gold); color: var(--gold); }
+.word-result {
+  display: block; width: 100%; text-align: left; margin: 0 0 10px; padding: 12px 14px;
+  border-radius: 16px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); cursor: pointer;
+  font-family: var(--font-body);
+}
+.word-result:hover { border-color: var(--gold-dim); }
+.word-result-ref { display: block; font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: var(--gold); margin-bottom: 3px; font-variant-numeric: lining-nums; }
+.word-result-text { display: block; font-size: 1rem; line-height: 1.5; }
+.word-result mark { background: var(--gold-glow); color: var(--text); box-shadow: inset 0 -1px 0 var(--gold); border-radius: 3px; padding: 0 2px; }
+.word-more, .word-ref-card {
+  display: block; width: 100%; height: 44px; margin: 4px 0 12px; border-radius: 22px; border: 1px solid var(--border2);
+  background: transparent; color: var(--gold); font-family: var(--font-body); font-size: 0.98rem; cursor: pointer;
+}
+.word-ref-card { background: var(--gold-glow); border-color: var(--gold-dim); }
+.word-ai-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin: 6px 0 4px; padding: 12px 14px;
+  border-radius: 16px; border: 1px dashed var(--gold-dim); background: transparent; color: var(--text); cursor: pointer; font-family: var(--font-body);
+}
+.word-ai-icon { width: 36px; height: 36px; flex-shrink: 0; border-radius: 18px; background: var(--gold-glow); color: var(--gold); display: flex; align-items: center; justify-content: center; }
+.word-ai-q { display: block; font-size: 0.98rem; }
+.word-ai-sub { display: block; font-size: 0.82rem; color: var(--text-dim); }
 
 /* ── Cápsula inferior (teléfono y iPad vertical) ── */
 @media (max-width: 900px) {
@@ -3750,10 +3789,14 @@ html.light .stat-section-title { color: var(--text-dim); }
     <div class="search-header">
       <div class="search-title-row">
         <span class="search-icon-title">✦</span>
-        <span class="search-title">Búsqueda Inteligente</span>
-        <button class="search-close" onclick="closeSearch()">✕</button>
+        <span class="search-title">Buscar</span>
+        <button class="search-close" onclick="closeSearch()" aria-label="Cerrar">✕</button>
       </div>
-      <div class="search-examples">
+      <div class="search-modes" role="tablist" aria-label="Tipo de búsqueda">
+        <button class="search-mode active" id="searchModeWords" role="tab" aria-selected="true" onclick="setSearchMode('words')">Palabras</button>
+        <button class="search-mode" id="searchModeAi" role="tab" aria-selected="false" onclick="setSearchMode('ai')">✦ Pregunta con IA</button>
+      </div>
+      <div class="search-examples" id="searchExamples" style="display:none">
         <span class="search-eg-label">Prueba:</span>
         <button class="search-eg" onclick="fillSearch('versículo donde diga que me esfuerce y sea valiente')">esfuérzate y sé valiente</button>
         <button class="search-eg" onclick="fillSearch('promesa de que Dios no me abandonará')">Dios no me abandona</button>
@@ -3766,16 +3809,15 @@ html.light .stat-section-title { color: var(--text-dim); }
         class="search-input-main"
         id="searchInputMain"
         type="text"
-        placeholder="Escribe en tus propias palabras... ej: 'versículo sobre la fe que mueve montañas'"
+        placeholder="Palabra o frase exacta… ej: pacto, Abraham, «no temas»"
         onkeydown="if(event.key==='Enter') runSearch()"
       />
       <button class="search-btn-run" id="searchBtnRun" onclick="runSearch()">Buscar →</button>
     </div>
     <div class="search-results" id="searchResults">
       <div class="search-placeholder">
-        <div class="search-placeholder-icon">📖</div>
-        <div class="search-placeholder-text">Escribe una pregunta, tema o paráfrasis de un versículo</div>
-        <div class="search-placeholder-sub">La IA buscará en toda la Escritura y encontrará los pasajes más relevantes</div>
+        <div class="search-placeholder-text">Busca una palabra o frase en toda la Biblia</div>
+        <div class="search-placeholder-sub">Instantáneo, sin límite y sin conexión. También puedes escribir una cita, como «Juan 3:16».</div>
       </div>
     </div>
   </div>
@@ -8036,13 +8078,160 @@ function closeSearchOutside(e) {
 }
 
 function fillSearch(text) {
+  setSearchMode('ai', { keepResults: true });
   document.getElementById('searchInputMain').value = text;
+  runSearch();
+}
+
+/* ════════════════════════════════════
+   BUSCAR: "Palabras" (local, gratis, sin límite) | "Pregunta con IA"
+   La búsqueda por palabras recorre la Biblia guardada en el teléfono
+   (biblia-rvr.json): no gasta consultas ni necesita conexión.
+════════════════════════════════════ */
+let searchMode = 'words';
+const WORD_SEARCH_PAGE = 120;
+let wordSearchState = null;   // { query, matches, filter, shown }
+
+const SEARCH_PLACEHOLDERS = {
+  words: { input: 'Palabra o frase exacta… ej: pacto, Abraham, «no temas»',
+           text: 'Busca una palabra o frase en toda la Biblia',
+           sub: 'Instantáneo, sin límite y sin conexión. También puedes escribir una cita, como «Juan 3:16».' },
+  ai:    { input: 'Escribe en tus propias palabras… ej: versículo sobre la fe que mueve montañas',
+           text: 'Pregunta por un tema o por una idea',
+           sub: 'La IA busca en toda la Escritura los pasajes más relevantes. Usa 1 consulta de tu plan.' },
+};
+
+function setSearchMode(mode, { keepResults = false } = {}) {
+  searchMode = mode === 'ai' ? 'ai' : 'words';
+  document.getElementById('searchModeWords').classList.toggle('active', searchMode === 'words');
+  document.getElementById('searchModeAi').classList.toggle('active', searchMode === 'ai');
+  document.getElementById('searchModeWords').setAttribute('aria-selected', String(searchMode === 'words'));
+  document.getElementById('searchModeAi').setAttribute('aria-selected', String(searchMode === 'ai'));
+  document.getElementById('searchExamples').style.display = searchMode === 'ai' ? '' : 'none';
+  const ph = SEARCH_PLACEHOLDERS[searchMode];
+  document.getElementById('searchInputMain').placeholder = ph.input;
+  document.getElementById('searchBtnRun').textContent = searchMode === 'ai' ? 'Preguntar →' : 'Buscar →';
+  if (!keepResults) {
+    document.getElementById('searchResults').innerHTML = `
+      <div class="search-placeholder">
+        <div class="search-placeholder-text">${ph.text}</div>
+        <div class="search-placeholder-sub">${ph.sub}</div>
+      </div>`;
+  }
+}
+
+// Expresión que encuentra la palabra/frase sin importar tildes ni mayúsculas,
+// solo como palabra completa. Sin lookbehind (iOS 15 no lo soporta): el
+// carácter anterior va en el grupo 1.
+const ACCENT_CLASS = { a: '[aáàäâ]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöô]', u: '[uúùüû]', n: '[nñ]', c: '[cç]' };
+function buildWordRegex(query) {
+  const base = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[«»"“”'‘’]/g, '').trim().replace(/\s+/g, ' ');
+  if (!base) return null;
+  const body = [...base].map(ch => {
+    if (ch === ' ') return '[\\s,;:.¡!¿?]+';
+    if (ACCENT_CLASS[ch]) return ACCENT_CLASS[ch];
+    return ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).join('');
+  try { return new RegExp('(^|[^\\p{L}\\p{N}])(' + body + ')(?=[^\\p{L}\\p{N}]|$)', 'giu'); }
+  catch (e) { return new RegExp('(^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9])(' + body + ')(?=[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]|$)', 'gi'); }
+}
+
+function highlightMatches(text, re) {
+  re.lastIndex = 0;
+  let out = '', last = 0, m;
+  while ((m = re.exec(text))) {
+    const start = m.index + m[1].length;
+    out += escHtml(text.slice(last, start)) + '<mark>' + escHtml(m[2]) + '</mark>';
+    last = start + m[2].length;
+    if (m[0].length === 0) re.lastIndex++;
+  }
+  return out + escHtml(text.slice(last));
+}
+
+async function runWordSearch(query) {
+  const results = document.getElementById('searchResults');
+  const re = buildWordRegex(query);
+  if (!re) return;
+  let bible;
+  try { bible = await loadBibleData(); }
+  catch (e) { results.innerHTML = '<div class="search-error">No se pudo cargar la Biblia.</div>'; return; }
+
+  const matches = [];
+  for (const book of getAllBooks()) {
+    const chapters = bible[book.id];
+    if (!chapters) continue;
+    const isNT = BIBLE_BOOKS.NT.some(b => b.id === book.id);
+    const chNums = Object.keys(chapters).map(Number).sort((a, b) => a - b);
+    for (const ch of chNums) {
+      const verses = chapters[String(ch)];
+      for (const v of Object.keys(verses).map(Number).sort((a, b) => a - b)) {
+        const t = verses[String(v)];
+        re.lastIndex = 0;
+        if (re.test(t)) matches.push({ bookId: book.id, bookName: book.name, chapter: ch, verse: v, text: t, nt: isNT });
+      }
+    }
+  }
+  wordSearchState = { query, re, matches, filter: 'all', shown: WORD_SEARCH_PAGE };
+  renderWordSearch();
+}
+
+function renderWordSearch() {
+  const st = wordSearchState;
+  const results = document.getElementById('searchResults');
+  if (!st) return;
+  const at = st.matches.filter(m => !m.nt).length;
+  const nt = st.matches.length - at;
+  const list = st.filter === 'at' ? st.matches.filter(m => !m.nt) : st.filter === 'nt' ? st.matches.filter(m => m.nt) : st.matches;
+
+  // Si escribió una cita ("Juan 3:16"), ofrecer ir directo
+  const ref = parseVerseRef(st.query);
+  const refCard = ref ? `<button class="word-ref-card" onclick="goToVerse('${ref.bookId}',${ref.chapter},${ref.verse})">Ir a ${escHtml(st.query)} →</button>` : '';
+  const aiCard = `<button class="word-ai-card" onclick="askSearchWithAi()">
+      <span class="word-ai-icon">✦</span>
+      <span><span class="word-ai-q">¿Qué dice la Escritura sobre «${escHtml(st.query)}»?</span>
+      <span class="word-ai-sub">Búsqueda por tema con IA · 1 consulta</span></span>
+    </button>`;
+
+  if (!st.matches.length) {
+    results.innerHTML = ref ? refCard
+      : `<div class="search-error">«${escHtml(st.query)}» no aparece tal cual en la RVR60. Revisa la ortografía o pregúntale a la IA por el tema.</div>` + aiCard;
+    return;
+  }
+  const chip = (key, label, n) => `<button class="word-filter ${st.filter === key ? 'active' : ''}" onclick="setWordFilter('${key}')">${label} · ${n.toLocaleString('es')}</button>`;
+  let html = refCard + `
+    <div class="word-summary">${st.matches.length.toLocaleString('es')} versículo${st.matches.length === 1 ? '' : 's'}</div>
+    <div class="word-filters">${chip('all', 'Todo', st.matches.length)}${at ? chip('at', 'Tanaj', at) : ''}${nt ? chip('nt', 'Brit Hadashá', nt) : ''}</div>`;
+  html += list.slice(0, st.shown).map(m => `
+    <button class="word-result" onclick="goToVerse('${m.bookId}',${m.chapter},${m.verse})">
+      <span class="word-result-ref">${escHtml(m.bookName)} ${m.chapter}:${m.verse}</span>
+      <span class="word-result-text">${highlightMatches(m.text, st.re)}</span>
+    </button>`).join('');
+  if (list.length > st.shown) {
+    html += `<button class="word-more" onclick="wordSearchState.shown += ${WORD_SEARCH_PAGE}; renderWordSearch()">Ver más (${(list.length - st.shown).toLocaleString('es')} restantes)</button>`;
+  }
+  results.innerHTML = html + aiCard;
+}
+
+function setWordFilter(f) {
+  if (!wordSearchState) return;
+  wordSearchState.filter = f;
+  wordSearchState.shown = WORD_SEARCH_PAGE;
+  renderWordSearch();
+  document.getElementById('searchResults').scrollTop = 0;
+}
+
+function askSearchWithAi() {
+  const q = wordSearchState?.query || document.getElementById('searchInputMain').value.trim();
+  setSearchMode('ai', { keepResults: true });
+  document.getElementById('searchInputMain').value = `¿Qué dice la Escritura sobre ${q}?`;
   runSearch();
 }
 
 async function runSearch() {
   const query = document.getElementById('searchInputMain').value.trim();
   if (!query) return;
+  if (searchMode === 'words') return runWordSearch(query);
 
   const results = document.getElementById('searchResults');
   const btn = document.getElementById('searchBtnRun');
