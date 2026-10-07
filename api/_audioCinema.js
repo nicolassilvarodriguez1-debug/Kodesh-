@@ -127,7 +127,7 @@ export const MUSIC_KINDS = ['music', 'theme', 'bridge', 'motif'];
 export const MUSIC_SECONDS = 120;
 
 // ── Banda sonora del capítulo (la propone la IA, como director de radionovela) ──
-export const SOUNDTRACK_VERSION = 2;
+export const SOUNDTRACK_VERSION = 3;
 export function soundtrackPrompt(bookName, chapter, segments) {
   const byV = {};
   for (const s of segments) (byV[s.v] = byV[s.v] || []).push(`${s.character === 'narrador' ? '' : s.character + ': '}${s.text}`);
@@ -147,12 +147,13 @@ EL LENGUAJE DE LA RADIONOVELA
 2. MÚSICA DE FONDO SIEMPRE: la radionovela casi nunca queda en silencio musical. Cubre TODO el capítulo con tramos seguidos de música, cambiando de tema cuando cambia el ánimo o la escena (hasta 8 tramos): la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), batallas (m_batalla), promesas de Elohim (m_alianza), viajes (m_viaje), tensión (m_tension), tristeza (m_tristeza), triunfo (m_triunfo), asombro (m_asombro), paz (m_paz), reverencia (m_reverente). En genealogías o leyes usa m_reverente o m_paz.
 3. AMBIENTES: pinta cada lugar con su ambiente (hasta 8 tramos). Si el lugar se intuye, úsalo.
 4. EFECTOS: generosos, como en la radio: cada acción que se pueda oír lleva su sonido (la luz que irrumpe, las aguas, la tierra, las aves, los animales, el aliento de vida, pasos, puertas, golpes, fuego, espadas, llanto, el trueno). Hasta 16 por capítulo. "when": "start" (al comenzar el versículo) o "end" (al terminar).
+4b. EFECTOS QUE HACEN SOÑAR («hold»): en los momentos visuales grandes la narración se DETIENE y el efecto suena solo, fuerte, 2 a 4 segundos, para que el oyente imagine lo que pasa; luego sigue la voz. Úsalo cuando algo sucede ante los ojos: cada acto de la creación al cumplirse («y fue así», «y fue la luz», «creó Elohim…»), las aguas del diluvio, un trueno de juicio, una batalla, una puerta que se cierra para siempre. Ponle "hold" (segundos) y "after" con las ÚLTIMAS palabras EXACTAS del texto tras las cuales debe sonar (cópialas tal cual del versículo). Hasta 10 por capítulo. Ejemplo: {"v":9,"key":"aguas_separan","hold":3,"after":"y fue así"}.
 5. GOLPES MUSICALES: en los instantes que cortan la respiración (una revelación, un juicio, una muerte, una traición, una victoria, una bendición solemne). Hasta 6 por capítulo.
 6. SILENCIOS DRAMÁTICOS: el silencio también es lenguaje. En "pauses" indica antes de qué versículo hace falta un silencio de 1 a 2 segundos para que el momento respire (después de un golpe, antes de una frase decisiva). Hasta 6.
 7. Nunca tapes las palabras de Yeshúa con efectos salvo que el texto lo pida.
 
 Responde SOLO con JSON:
-{"scenes":[{"v":6,"bridge":"puente_asombro"}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","when":"end"}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
+{"scenes":[{"v":6,"bridge":"puente_asombro"}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","hold":3,"after":"y fue la luz"},{"v":11,"key":"vida_brota","when":"end"}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
     user: `${bookName} capítulo ${chapter}.\n${lines}`,
   };
 }
@@ -179,7 +180,14 @@ export function cleanSoundtrack(raw, verseNumbers) {
     for (const e of Array.isArray(arr) ? arr : []) {
       const key = String(e?.key || ''); const v = Math.round(Number(e?.v));
       if (!okKey(key, kind) || !(v >= min && v <= max)) continue;
-      out.push({ v, key, when: e.when === 'end' ? 'end' : 'start' });
+      const item = { v, key, when: e.when === 'end' ? 'end' : 'start' };
+      // «hold»: la narración se detiene y el efecto suena solo unos segundos
+      if (kind === 'sfx' && Number(e?.hold) > 0 && out.filter(x => x.hold).length < 10) {
+        item.hold = Math.round(Math.min(4, Math.max(1.5, Number(e.hold))) * 10) / 10;
+        const after = String(e?.after || '').trim().slice(0, 140);
+        if (after) item.after = after;
+      }
+      out.push(item);
       if (out.length >= limit) break;
     }
     return out;
@@ -223,7 +231,7 @@ export function verseSpans(timings, total) {
 }
 
 // Plan de mezcla: qué archivo suena, desde qué segundo, cuánto dura y a qué volumen.
-export const LEVELS = { amb: 0.22, music: 0.2, sfx: 0.55, bridge: 0.5, sting: 0.5, theme: 0.5, motif: 0.32 };
+export const LEVELS = { amb: 0.22, music: 0.2, sfx: 0.55, bridge: 0.5, sting: 0.5, theme: 0.5, motif: 0.32, hold: 0.85 };
 export function mixPlan(soundtrack, timings, total, sfxSeconds = {}) {
   const spans = verseSpans(timings, total);
   const at = v => spans[v];
@@ -261,18 +269,63 @@ export function radioTimeline(timings, total, st, opts = {}) {
   for (const p of st?.pauses || []) if (!inserts[p.v]) inserts[p.v] = { dur: p.s, kind: 'pause' };
   const cuts = [];
   for (const [v, start] of t) if (inserts[v] && start > 0.2) cuts.push({ v, at: Math.max(0, start - 0.05), ...inserts[v] });
-  cuts.sort((a, b) => a.at - b.at);
+  // Efectos con «hold»: la voz se abre en ese punto exacto (opts.holds trae el segundo)
+  for (const h of opts.holds || []) if (h.at > 0.2 && h.at < total - 0.1) cuts.push({ v: h.v, at: h.at, dur: h.dur, kind: 'hold', key: h.key });
+  // Un hold justo antes de un cambio de escena va primero; luego la cortina
+  cuts.sort((a, b) => a.at - b.at || (a.kind === 'hold' ? -1 : 1));
   const pieces = []; const gaps = [];
   let from = 0, shift = R.lead;
   for (const c of cuts) {
-    if (c.at <= from) continue;
-    pieces.push({ from: round(from), to: round(c.at), at: round(from + shift) });
-    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge });
+    if (c.at < from - 1e-6) continue;
+    if (c.at > from + 1e-6) pieces.push({ from: round(from), to: round(c.at), at: round(from + shift) });
+    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge, key: c.key, src: c.at });
     shift += c.dur; from = c.at;
   }
   pieces.push({ from: round(from), to: round(total), at: round(from + shift) });
-  const map = x => { let sh = R.lead; for (const c of cuts) if (c.at <= x + 1e-6 && gaps.some(g => g.v === c.v)) sh += c.dur; return round(x + sh); };
-  return { pieces, gaps, map, timings: t.map(([v, s]) => [v, map(s)]), total: round(total + shift + R.tail), voiceEnd: round(total + shift), lead: R.lead, tail: R.tail };
+  const map = x => { let sh = R.lead; for (const g of gaps) if (g.src <= x + 1e-6) sh += g.dur; return round(x + sh); };
+  // El versículo «empieza» después de los silencios que caen justo en su arranque
+  const vmap = x => map(x + 0.06) - 0.06;
+  return { pieces, gaps, map, timings: t.map(([v, s]) => [v, round(vmap(s))]), total: round(total + shift + R.tail), voiceEnd: round(total + shift), lead: R.lead, tail: R.tail };
+}
+
+// Silencios del audio de voz (salida de ffmpeg silencedetect) → [[inicio, fin]]
+export function parseSilences(stderr) {
+  const out = []; let start = null;
+  for (const line of String(stderr || '').split('\n')) {
+    const a = line.match(/silence_start:\s*(-?[\d.]+)/); if (a) start = Math.max(0, Number(a[1]));
+    const b = line.match(/silence_end:\s*([\d.]+)/); if (b && start != null) { out.push([start, Number(b[1])]); start = null; }
+  }
+  return out;
+}
+
+// Dónde abrir la voz para cada efecto con «hold»: tras las palabras indicadas
+// (posición estimada dentro del versículo) y ajustado al silencio más cercano,
+// para no cortar nunca una palabra.
+const norm = x => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim();
+export function holdPoints(st, segments, timings, total, silences) {
+  const spans = verseSpans(timings, total);
+  const out = [];
+  for (const e of st?.sfx || []) {
+    if (!e.hold) continue;
+    const sp = spans[e.v]; if (!sp) continue;
+    let est = e.when === 'start' && !e.after ? sp.start : sp.end;
+    if (e.after) {
+      const parts = (segments || []).filter(x => x.v === e.v).map(x => x.text);
+      const full = norm(parts.join(' ')), key = norm(e.after);
+      const k = key ? full.lastIndexOf(key) : -1;
+      if (k >= 0 && full.length) est = sp.start + ((k + key.length) / full.length) * (sp.end - sp.start);
+    }
+    // Silencio más cercano (dentro de ±2 s); se corta en su mitad
+    let best = null;
+    for (const [a, b] of silences || []) {
+      const mid = (a + b) / 2, d = Math.abs(mid - est);
+      if (d <= 2 && (!best || d < best.d)) best = { d, at: Math.min(b - 0.05, a + 0.2) };
+    }
+    const at = best ? best.at : (Math.abs(est - sp.end) < Math.abs(est - sp.start) ? sp.end - 0.05 : sp.start - 0.05);
+    out.push({ v: e.v, key: e.key, dur: e.hold, at: round(Math.max(0.25, Math.min(total - 0.2, at))) });
+  }
+  // dos holds casi en el mismo sitio → uno solo
+  return out.sort((a, b) => a.at - b.at).filter((h, i, arr) => !i || h.at - arr[i - 1].at > 0.5);
 }
 
 // Dónde habla Elohim (segundos del audio de voz). Si la grabación guardó los
@@ -303,7 +356,13 @@ export function divineSpans(segments, timings, total, exact) {
 // Plan completo de la radionovela sobre la línea de tiempo nueva.
 export function radioPlan(st, tl, divine, sfxSeconds = {}) {
   const body = tl.voiceEnd;   // donde termina la última palabra
-  const layers = mixPlan(st, tl.timings, body, sfxSeconds);
+  const layers = mixPlan({ ...st, sfx: (st?.sfx || []).filter(e => !e.hold) }, tl.timings, body, sfxSeconds);
+  // Efectos para imaginar: suenan en el silencio que abrió la voz
+  for (const g of tl.gaps) {
+    if (g.kind !== 'hold' || !g.key) continue;
+    const len = Math.max(sfxSeconds[g.key] || LIB[g.key]?.seconds || 3, g.dur + 1.2);
+    layers.push({ key: g.key, kind: 'sfx', start: round(Math.max(0, g.at - 0.25)), dur: round(len), fade: 0.4, loop: false, gain: LEVELS.hold });
+  }
   const spans = verseSpans(tl.timings, body);
   // Sintonía: sola al principio y se esconde bajo la voz del narrador
   layers.push({ key: 'sintonia', kind: 'theme', start: 0, dur: round(tl.lead + 6), fade: 2.5, loop: false, gain: LEVELS.theme });

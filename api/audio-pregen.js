@@ -25,7 +25,7 @@ import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, isValidBookId, isValidChapter } from './_security.js';
 import { speakable, numberToSpanish, mp3Duration, textHash } from './_audioCore.js';
 import { CAST, scriptPrompt, cleanScript, validateScript, planCalls, roleFor } from './_audioScript.js';
-import { LIBRARY, LIB, MUSIC_SECONDS, MUSIC_KINDS, SOUNDTRACK_VERSION, soundtrackPrompt, cleanSoundtrack, ffmpegArgs, radioTimeline, radioPlan, divineSpans } from './_audioCinema.js';
+import { LIBRARY, LIB, MUSIC_SECONDS, MUSIC_KINDS, SOUNDTRACK_VERSION, soundtrackPrompt, cleanSoundtrack, ffmpegArgs, radioTimeline, radioPlan, divineSpans, holdPoints, parseSilences } from './_audioCinema.js';
 import ffmpegPath from 'ffmpeg-static';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
@@ -371,6 +371,9 @@ async function download(url, file) {
   if (!r.ok) throw new Error(`descarga ${r.status} ${url.split('/').slice(-2).join('/')}`);
   fs.writeFileSync(file, Buffer.from(await r.arrayBuffer()));
 }
+function ffmpegStderr(args) {
+  return new Promise(resolve => execFile(ffmpegPath, args, { maxBuffer: 1 << 24 }, (_err, _o, stderr) => resolve(String(stderr || ''))));
+}
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => execFile(ffmpegPath, args, { maxBuffer: 1 << 24 }, (err, _o, stderr) => err ? reject(new Error('ffmpeg: ' + String(stderr || err.message).slice(0, 300))) : resolve()));
 }
@@ -388,17 +391,20 @@ async function mix(book, chapter) {
   const lib = Object.fromEntries((await libRows()).map(r => [r.key, r]));
   const sfxSeconds = Object.fromEntries(Object.values(lib).filter(r => r.kind === 'sfx' || r.kind === 'sting').map(r => [r.key, Number(r.seconds) || 3]));
   const total = Number(row.duration_s);
-  const tl = radioTimeline(row.timings, total, st);
-  const divine = divineSpans(segments, row.timings, total, row.voice_spans);
-  const planned = radioPlan(st, tl, divine, sfxSeconds);
-  // Las piezas propias de la radionovela no pueden faltar (si no, no suena a radionovela)
-  const missingRadio = [...new Set(planned.filter(l => RADIO_KINDS.includes(l.kind) && !lib[l.key]).map(l => l.key))];
-  if (missingRadio.length) return { ok: false, reason: 'faltan_sonidos', missing: missingRadio };
-  const layers = planned.filter(l => lib[l.key]);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mix-'));
   try {
     const voice = path.join(dir, 'voice.mp3');
     await download(publicUrl(row.path), voice);
+    // Silencios de la voz: ahí se abre la narración para los efectos «hold»
+    const silences = parseSilences(await ffmpegStderr(['-hide_banner', '-i', voice, '-af', 'silencedetect=noise=-38dB:d=0.22', '-f', 'null', '-']));
+    const holds = holdPoints(st, segments, row.timings, total, silences);
+    const tl = radioTimeline(row.timings, total, st, { holds });
+    const divine = divineSpans(segments, row.timings, total, row.voice_spans);
+    const planned = radioPlan(st, tl, divine, sfxSeconds);
+    // Las piezas propias de la radionovela no pueden faltar (si no, no suena a radionovela)
+    const missingRadio = [...new Set(planned.filter(l => RADIO_KINDS.includes(l.kind) && !lib[l.key]).map(l => l.key))];
+    if (missingRadio.length) return { ok: false, reason: 'faltan_sonidos', missing: missingRadio };
+    const layers = planned.filter(l => lib[l.key]);
     const files = {};
     for (const key of [...new Set(layers.map(l => l.key))]) {
       files[key] = path.join(dir, key + '.mp3');
@@ -413,7 +419,7 @@ async function mix(book, chapter) {
       body: JSON.stringify({ path_cine: p, cine_updated_at: new Date().toISOString(), timings_cine: tl.timings, duration_cine: tl.total }),
     });
     const missing = [...new Set(planned.map(l => l.key).filter(k => !lib[k]))];
-    return { ok: true, layers: layers.length, scenes: tl.gaps.filter(g => g.kind === 'scene').length, missing, soundtrack: st };
+    return { ok: true, layers: layers.length, scenes: tl.gaps.filter(g => g.kind === 'scene').length, holds: holds.length, missing, soundtrack: st };
   } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
   }

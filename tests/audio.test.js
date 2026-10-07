@@ -168,3 +168,22 @@ test('radionovela: la voz se abre en silencios y los tiempos se corren', () => {
   assert.ok(fc.includes('[motif]'));
   assert.ok(fc.includes("volume=enable='between("));
 });
+
+import { holdPoints, parseSilences } from '../api/_audioCinema.js';
+
+test('radionovela: el efecto «hold» detiene la voz tras las palabras indicadas, en un silencio', () => {
+  const sil = parseSilences('[silencedetect @ 0x1] silence_start: 5.1\n[silencedetect @ 0x1] silence_end: 5.6 | silence_duration: 0.5\n[silencedetect @ 0x1] silence_start: 9.7\n[silencedetect @ 0x1] silence_end: 10.1 | silence_duration: 0.4');
+  assert.deepEqual(sil, [[5.1, 5.6], [9.7, 10.1]]);
+  const segs = [{ v: 1, character: 'narrador', text: 'Y dijo Elohim: júntense las aguas, y fue así.' }, { v: 1, character: 'narrador', text: 'Y vio Elohim que era bueno.' }];
+  const st = cleanSoundtrack({ scenes: [], sfx: [{ v: 1, key: 'aguas_separan', hold: 3, after: 'y fue así' }, { v: 1, key: 'gallo', hold: 9 }] }, [1, 2]);
+  assert.deepEqual(st.sfx[0], { v: 1, key: 'aguas_separan', when: 'start', hold: 3, after: 'y fue así' });
+  assert.equal(st.sfx[1].hold, 4);
+  const holds = holdPoints({ sfx: [st.sfx[0]] }, segs, [[1, 0], [2, 10]], 15, sil);
+  assert.deepEqual(holds, [{ v: 1, key: 'aguas_separan', dur: 3, at: 5.3 }]);
+  const tl = radioTimeline([[1, 0], [2, 10]], 15, { scenes: [{ v: 2, bridge: 'puente_solemne' }] }, { holds });
+  assert.deepEqual(tl.gaps.map(g => [g.kind, g.at, g.dur]), [['hold', 12.3, 3], ['scene', 19.95, 3.5]]);
+  assert.deepEqual(tl.timings, [[1, 7], [2, 23.5]]);
+  const layers = radioPlan({ sfx: st.sfx.slice(0, 1) }, tl, [], { aguas_separan: 6 });
+  const fx = layers.find(l => l.key === 'aguas_separan');
+  assert.equal(fx.start, 12.05); assert.equal(fx.gain, 0.85);
+});
