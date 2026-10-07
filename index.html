@@ -8519,13 +8519,13 @@ if (window.visualViewport) {
 
 /* ════════════════════════════════════
    MENÚ LATERAL (☰)
-   En el teléfono el ☰ abre el menú de la app; el título del capítulo sigue
-   abriendo los libros. En pantallas medianas el ☰ sigue abriendo los libros.
+   El ☰ abre el menú de la app; el título del capítulo (teléfono) y el botón
+   Biblia de la barra inferior abren los libros.
 ════════════════════════════════════ */
-function onMenuButton() {
-  if (window.innerWidth <= 767) openAppMenu();
-  else openNav();
-}
+// El ☰ abre el menú de la app en teléfono y iPad. Los libros se abren con el
+// título del capítulo (teléfono), el botón Biblia de la barra inferior o
+// «Leer la Biblia» dentro del menú.
+function onMenuButton() { openAppMenu(); }
 function openAppMenu() {
   document.getElementById('appMenuOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
