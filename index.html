@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <script src="/recovery-guard.js"></script>
+<script src="/native-insets.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -4353,6 +4354,13 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
    LOAD CHAPTER
 ════════════════════════════════════ */
 async function loadChapter(bookId, chapterNum) {
+  // Capítulo nuevo: volver arriba. En el teléfono la que tiene scroll es la
+  // ventana (no #mainContent), así que el main.scrollTo(0,0) de
+  // renderBibleText no hacía nada y el capítulo nuevo abría a media altura,
+  // con el título o la parashá cortados bajo la barra superior.
+  if (state.currentBook !== bookId || state.currentChapter !== chapterNum) {
+    try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { window.scrollTo(0, 0); }
+  }
   state.currentBook = bookId;
   state.currentChapter = chapterNum;
 
