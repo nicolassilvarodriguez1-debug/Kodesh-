@@ -5,6 +5,7 @@
 <script src="/native-insets.js"></script>
 <script src="/bible-ref.js"></script>
 <script src="/verse-image.js" defer></script>
+<script src="/bible-audio.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -5109,6 +5110,7 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
   main.innerHTML = html;
   fitParashaWatermark();
   applyWordsOfJesus();
+  if (typeof onChapterAudio === 'function') onChapterAudio();
   main.scrollTo(0, 0);
   currentParashaBreak = parasha && parasha.nextInChapter ? parasha.nextInChapter : null;
   if (interlinearActive) renderInterlinearInline(state.currentBook, chapterNum, verses);

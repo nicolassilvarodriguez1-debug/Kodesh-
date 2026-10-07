@@ -83,6 +83,10 @@
       "maxDuration": 60,
       "includeFiles": "biblia-rvr.json"
     },
+    "api/audio-pregen.js": {
+      "memory": 512,
+      "maxDuration": 300
+    },
     "api/headings-pregen.js": {
       "memory": 1024,
       "maxDuration": 60,

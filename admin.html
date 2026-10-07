@@ -432,6 +432,19 @@ tr:hover td { background:rgba(255,255,255,0.02); }
           </div>
         </div>
         <div class="upload-msg" id="hpregenMsg" style="margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Audio de la Biblia · ElevenLabs</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Graba la Traducción Kodesh capítulo por capítulo (YHWH se lee «Adonai»). Se empieza por los Evangelios. Cada capítulo gasta tantos créditos de ElevenLabs como caracteres tiene (~4.000–7.000).</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" id="audioStopBtn" onclick="AUDIO_ADMIN.stop()" style="display:none">Detener</button>
+            <button class="btn-sm" onclick="AUDIO_ADMIN.load()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="audioMsg" style="margin-top:10px"></div>
+        <div id="audioBooks" style="display:grid;gap:8px;margin-top:10px"></div>
       </div>
 
       <!-- Cobertura por libro -->
@@ -1082,8 +1095,76 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), AUDIO_ADMIN.load()]);
 }
+
+// ── Audio de la Biblia (api/audio-pregen.js) ──
+const AUDIO_ADMIN = (() => {
+  let data = null, running = false, stopFlag = false;
+  const n = x => Number(x || 0).toLocaleString('es');
+  async function api(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const res = await fetch('/api/audio-pregen', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  function render() {
+    const msg = document.getElementById('audioMsg'), box = document.getElementById('audioBooks');
+    if (!msg || !box || !data) return;
+    const c = data.credits;
+    msg.className = 'upload-msg';
+    msg.textContent = c ? `Créditos de ElevenLabs: ${n(c.limit - c.used)} disponibles de ${n(c.limit)} (plan ${c.tier || '—'})${c.resetAt ? ' · se renuevan el ' + new Date(c.resetAt).toLocaleDateString('es') : ''}.` : 'No se pudieron leer los créditos de ElevenLabs.';
+    box.innerHTML = data.books.map(b => {
+      const missing = b.chapters - b.done.length;
+      const label = `${b.done.length} de ${b.chapters} capítulos` + (b.minutes ? ` · ${b.minutes} min` : '') + (b.outdated.length ? ` · ${b.outdated.length} desactualizados` : '');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
+        <div><div style="font-size:0.8rem">${b.name}</div><div style="font-size:0.68rem;color:var(--text-dim)">${label}${b.withText < b.chapters ? ` · solo ${b.withText} con texto Kodesh` : ''}</div></div>
+        <div style="display:flex;gap:6px">
+          ${b.outdated.length ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', true)">Regrabar ${b.outdated.length}</button>` : ''}
+          ${missing > 0 ? `<button class="btn-sm" onclick="AUDIO_ADMIN.run('${b.book}', false)">Grabar ${missing}</button>` : '<span style="font-size:0.7rem;color:var(--green,#7fc98a)">✓ Completo</span>'}
+        </div></div>`;
+    }).join('');
+  }
+  async function load() {
+    try { data = await api({ action: 'status' }); render(); }
+    catch (e) { const m = document.getElementById('audioMsg'); if (m) { m.className = 'upload-msg err'; m.textContent = e.message; } }
+  }
+  async function run(book, outdatedOnly) {
+    if (running || !data) return;
+    const b = data.books.find(x => x.book === book);
+    const list = outdatedOnly ? b.outdated : Array.from({ length: b.chapters }, (_, i) => i + 1).filter(c => !b.done.includes(c));
+    if (!list.length) return;
+    if (!confirm(`¿Grabar ${list.length} capítulo(s) de ${b.name} con ElevenLabs? Gasta créditos (aprox. ${n(list.length * 5500)} caracteres).`)) return;
+    running = true; stopFlag = false;
+    const msg = document.getElementById('audioMsg'), stopBtn = document.getElementById('audioStopBtn');
+    stopBtn.style.display = '';
+    let ok = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        if (stopFlag) break;
+        msg.className = 'upload-msg';
+        msg.textContent = `⏳ Grabando ${b.name} ${list[i]} (${i + 1} de ${list.length})… cada capítulo tarda 20–90 segundos.`;
+        const r = await api({ action: 'generate', book, chapter: list[i], force: outdatedOnly });
+        if (r.ok) ok++;
+        else if (r.reason === 'sin_texto_kodesh') msg.textContent = `${b.name} ${list[i]} no tiene texto Kodesh todavía; se salta.`;
+      }
+      msg.className = 'upload-msg ok';
+      msg.textContent = `✓ ${ok} capítulo(s) grabados${stopFlag ? ' (detenido)' : ''}.`;
+    } catch (e) {
+      msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message + ` (${ok} grabados antes del error)`;
+    } finally {
+      running = false; stopBtn.style.display = 'none';
+      const keep = msg.textContent, cls = msg.className;
+      await load(); msg.textContent = keep + ' ' + msg.textContent; msg.className = cls;
+    }
+  }
+  return { load, run, stop: () => { stopFlag = true; } };
+})();
 
 // ── HISTORIAL PREMIUM ──
 // Cada fila de premium_periods es un período (una suscripción de Stripe, una
