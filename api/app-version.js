@@ -14,7 +14,7 @@
 // pueden actualizar.
 
 const MIN_VERSIONS = {
-  ios:     '1.0.4',
+  ios:     '2.0',
   android: '1.0.4',
 };
 
