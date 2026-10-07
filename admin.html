@@ -421,6 +421,17 @@ tr:hover td { background:rgba(255,255,255,0.02); }
           </div>
         </div>
         <div class="upload-msg" id="tpregenMsg" style="margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Títulos de sección</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Subtítulos propios de KODESH para los 1.189 capítulos ("Mensaje a la iglesia en Pérgamo", "Parábola del sembrador"…). Se ven en RV y en Kodesh. Lote de Anthropic: ~$1 una sola vez.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" id="hpregenBtn" onclick="PREGEN.headings.action()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="hpregenMsg" style="margin-top:10px"></div>
       </div>
 
       <!-- Cobertura por libro -->
@@ -1063,10 +1074,15 @@ const PREGEN = {
     nothingText: '✓ Toda la Biblia Kodesh ya está en caché.',
     after: () => { if (typeof loadTraduccionKodesh === 'function') loadTraduccionKodesh(); },
   }),
+  headings: makePregen({
+    endpoint: '/api/headings-pregen', btnId: 'hpregenBtn', msgId: 'hpregenMsg', unit: 'capítulos', retry: true,
+    confirmText: '¿Generar los títulos de sección de toda la Biblia? Costo aproximado: ~$1 una sola vez.',
+    nothingText: '✓ Todos los capítulos ya tienen títulos.',
+  }),
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load()]);
 }
 
 // ── HISTORIAL PREMIUM ──

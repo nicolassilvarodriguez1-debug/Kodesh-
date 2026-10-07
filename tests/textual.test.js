@@ -143,3 +143,36 @@ describe('asistente — capítulo actual', () => {
     assert.doesNotMatch(buildAssistantSystem({ bookId: null, userName: '', userGoals: [] }), /CAPÍTULO ACTUAL/);
   });
 });
+
+// ── Títulos de sección ──
+import { headingsParams, parseHeadings } from '../api/_headings.js';
+import { buildHeadingRequests, headingLineToRow } from '../api/headings-pregen.js';
+describe('títulos de sección', () => {
+  const keys = sortedVerseKeys(BIBLE.REV['2']);
+  test('prompt con el texto del capítulo y reglas de nombres', () => {
+    const p = headingsParams('REV', 2, BIBLE.REV['2']);
+    assert.match(p.messages[0].content, /^Apocalipsis 2 \(Nuevo Testamento\), versículos 1–29/);
+    assert.match(p.system, /Yeshúa \(nunca "Jesús"\)/);
+    assert.match(p.system, /No copies/);
+  });
+  test('valida: orden, rango, primera en v1, sin inglés ni "Jesús"', () => {
+    const raw = JSON.stringify({ h: [
+      { v: 1, t: 'Mensaje a la iglesia en Éfeso.' }, { v: 8, t: 'Mensaje a la iglesia en Esmirna' },
+      { v: 8, t: 'duplicado' }, { v: 12, t: 'Message to the church of the city that they have' },
+      { v: 18, t: 'Jesús habla a Tiatira' }, { v: 99, t: 'Fuera de rango' }, { v: 12, t: 'Mensaje a Pérgamo' },
+    ] });
+    assert.deepEqual(parseHeadings(raw, keys), [
+      { v: 1, t: 'Mensaje a la iglesia en Éfeso' }, { v: 8, t: 'Mensaje a la iglesia en Esmirna' }, { v: 12, t: 'Mensaje a Pérgamo' },
+    ]);
+    assert.deepEqual(parseHeadings('{"h":[{"v":3,"t":"Empieza tarde"}]}', keys), [{ v: 1, t: 'Empieza tarde' }]);
+    assert.equal(parseHeadings('no json', keys), null);
+  });
+  test('lote: 1.189 pedidos y línea de resultado → fila', () => {
+    assert.equal(buildHeadingRequests(BIBLE, pendingChapters(BIBLE, new Set())).length, 1189);
+    const line = JSON.stringify({ custom_id: 'REV_2', result: { type: 'succeeded', message: { usage: { input_tokens: 900, output_tokens: 60 }, content: [{ type: 'text', text: '{"h":[{"v":1,"t":"A Éfeso"},{"v":12,"t":"A Pérgamo"}]}' }] } } });
+    const r = headingLineToRow(BIBLE, line);
+    assert.equal(r.failed, null);
+    assert.deepEqual(r.row.headings, [{ v: 1, t: 'A Éfeso' }, { v: 12, t: 'A Pérgamo' }]);
+    assert.equal(headingLineToRow(BIBLE, line.replace('succeeded', 'errored')).failed, 'REV_2');
+  });
+});

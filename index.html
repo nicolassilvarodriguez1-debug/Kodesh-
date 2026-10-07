@@ -957,6 +957,24 @@ html.light .btn-study-chapter { background: linear-gradient(150deg,#c8960a,#a070
   .verse:hover { background: var(--gold-soft); }
 }
 
+/* Títulos de sección (propios de KODESH, ver api/_headings.js) */
+.section-heading {
+  display: block;
+  margin: 1.5em 0 0.45em;
+  font-family: 'Cinzel', serif;
+  font-size: 0.74em;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  line-height: 1.45;
+  color: var(--gold);
+  animation: fadeIn 0.4s var(--ease-out);
+}
+.bible-text > .section-heading:first-child { margin-top: 0.2em; }
+.section-heading::after {
+  content: ''; display: block; width: 28px; height: 1px; margin-top: 5px;
+  background: var(--gold-dim); opacity: 0.7;
+}
+
 .verse-num {
   font-family: 'Cinzel', serif;
   font-size: 0.58em;
@@ -4347,6 +4365,76 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
 
   main.innerHTML = html;
   main.scrollTo(0, 0);
+  applySectionHeadings(state.currentBook, chapterNum);
+}
+
+/* ════════════════════════════════════
+   TÍTULOS DE SECCIÓN
+   Se cargan por libro desde Supabase (section_headings, lectura pública),
+   se guardan en el teléfono y se insertan antes del versículo donde empieza
+   cada sección. Si no hay red ni caché, el capítulo se ve igual que antes.
+════════════════════════════════════ */
+const HEADINGS_CACHE_PREFIX = 'kodesh_headings_v1_';
+const HEADINGS_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const headingsByBook = {};       // bookId → { [chapter]: [{v,t}] }
+const headingsLoading = {};
+
+function readHeadingsCache(bookId) {
+  try {
+    const raw = localStorage.getItem(HEADINGS_CACHE_PREFIX + bookId);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+async function loadBookHeadings(bookId) {
+  if (headingsByBook[bookId]) return headingsByBook[bookId];
+  const cached = readHeadingsCache(bookId);
+  if (cached && cached.data) {
+    headingsByBook[bookId] = cached.data;
+    if (Date.now() - (cached.at || 0) < HEADINGS_MAX_AGE) return cached.data;
+  }
+  if (!headingsLoading[bookId]) {
+    headingsLoading[bookId] = (async () => {
+      const sb = getSupabase();
+      if (!sb) return null;
+      const { data, error } = await sb.from('section_headings').select('chapter,headings').eq('book_id', bookId);
+      if (error || !data) return null;
+      const map = {};
+      data.forEach(r => { map[r.chapter] = r.headings; });
+      headingsByBook[bookId] = map;
+      // No se guarda un libro vacío (p. ej. antes de generar los títulos).
+      if (data.length) {
+        try { localStorage.setItem(HEADINGS_CACHE_PREFIX + bookId, JSON.stringify({ at: Date.now(), data: map })); } catch (e) {}
+      }
+      return map;
+    })().catch(() => null).finally(() => { delete headingsLoading[bookId]; });
+  }
+  const fresh = await headingsLoading[bookId];
+  return fresh || headingsByBook[bookId] || null;
+}
+
+function insertSectionHeadings(list) {
+  const text = document.querySelector('#mainContent .bible-text');
+  if (!text || !Array.isArray(list)) return;
+  text.querySelectorAll('.section-heading').forEach(h => h.remove());
+  list.forEach(h => {
+    const verse = text.querySelector('#v-' + Number(h.v));
+    if (!verse || !h.t) return;
+    const el = document.createElement('div');
+    el.className = 'section-heading';
+    el.setAttribute('role', 'heading');
+    el.setAttribute('aria-level', '3');
+    el.textContent = h.t;
+    verse.parentNode.insertBefore(el, verse);
+  });
+}
+
+async function applySectionHeadings(bookId, chapterNum) {
+  const known = headingsByBook[bookId];
+  if (known) { insertSectionHeadings(known[chapterNum]); }
+  const map = await loadBookHeadings(bookId);
+  if (!map || state.currentBook !== bookId || state.currentChapter !== chapterNum) return;
+  if (map !== known) insertSectionHeadings(map[chapterNum]);
 }
 
 
