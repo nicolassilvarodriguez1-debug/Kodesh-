@@ -1138,6 +1138,17 @@ const AUDIO_ADMIN = (() => {
     try { data = await api({ action: 'status' }); render(); }
     catch (e) { const m = document.getElementById('audioMsg'); if (m) { m.className = 'upload-msg err'; m.textContent = e.message; } }
   }
+  // Reintenta si se cae la conexión o el servidor se demora (no si es un error de datos).
+  async function retry(fn, tries = 3) {
+    for (let k = 1; ; k++) {
+      try { return await fn(); }
+      catch (e) {
+        const transient = /failed to fetch|network|load failed|timeout|504|502|503|500/i.test(e.message);
+        if (!transient || k >= tries || stopFlag) throw e;
+        await new Promise(r => setTimeout(r, 4000 * k));
+      }
+    }
+  }
   async function run(book, outdatedOnly) {
     if (running || !data) return;
     const b = data.books.find(x => x.book === book);
@@ -1153,7 +1164,12 @@ const AUDIO_ADMIN = (() => {
         if (stopFlag) break;
         msg.className = 'upload-msg';
         msg.textContent = `⏳ Grabando ${b.name} ${list[i]} (${i + 1} de ${list.length})… cada capítulo tarda 20–90 segundos.`;
-        const r = await api({ action: 'generate', book, chapter: list[i], force: outdatedOnly });
+        // Primero el guion (si no existe, la IA lo prepara) y luego la grabación:
+        // dos llamadas cortas en vez de una larga, con reintentos si se corta la red.
+        const sc = await retry(() => api({ action: 'script', book, chapter: list[i] }));
+        if (!sc.ok) { msg.textContent = `${b.name} ${list[i]} no tiene texto Kodesh todavía; se salta.`; continue; }
+        msg.textContent = `⏳ Grabando ${b.name} ${list[i]} (${i + 1} de ${list.length})… guion listo, grabando las voces.`;
+        const r = await retry(() => api({ action: 'generate', book, chapter: list[i], force: outdatedOnly }));
         if (r.ok) ok++;
         else if (r.reason === 'sin_texto_kodesh') msg.textContent = `${b.name} ${list[i]} no tiene texto Kodesh todavía; se salta.`;
       }
@@ -1233,7 +1249,8 @@ const AUDIO_ADMIN = (() => {
     const msg = document.getElementById('audioMsg');
     msg.className = 'upload-msg'; msg.textContent = `⏳ Grabando ${name} ${ch}… tarda 20–90 segundos.`;
     try {
-      const r = await api({ action: 'generate', book, chapter: ch, force: true });
+      await retry(() => api({ action: 'script', book, chapter: ch }));
+      const r = await retry(() => api({ action: 'generate', book, chapter: ch, force: true }));
       msg.className = 'upload-msg ok';
       msg.textContent = r.ok ? `✓ ${name} ${ch} grabado: ${Math.floor(r.seconds / 60)}:${String(r.seconds % 60).padStart(2, '0')} min, ${n(r.chars)} caracteres. Ábrelo en la app y toca «Escuchar».` : `No se grabó (${r.reason || 'error'}).`;
     } catch (e) { msg.className = 'upload-msg err'; msg.textContent = 'Error: ' + e.message; }
