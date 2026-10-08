@@ -11,13 +11,13 @@
 :root {
   --gold:#c9a84c; --gold-dim:rgba(201,168,76,0.25); --gold-glow:rgba(201,168,76,0.1);
   --bg:#05050a; --bg2:#0a0a12; --bg3:#0f0f18;
-  --text:#e8e0cc; --text-mid:#a09070; --text-dim:#5a5040;
+  --text:#e8e0cc; --text-mid:#c4b494; --text-dim:#9a8b6c;
   --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.1);
   --green:#4caf7d; --red:#e05c5c;
 }
 html[data-theme="light"] {
   --bg:#faf8f3; --bg2:#f3efe4; --bg3:#ede8d8;
-  --text:#1a1408; --text-mid:#6b5a38; --text-dim:#b0a080;
+  --text:#1a1408; --text-mid:#4a3c22; --text-dim:#6f6146; --gold:#8a6a1e; --gold-dim:rgba(138,106,30,0.35);
   --border:rgba(0,0,0,0.06); --border2:rgba(201,168,76,0.3);
 }
 html, body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; transition:background 0.3s,color 0.3s; }
@@ -136,6 +136,22 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 /* ROLES */
 .role-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border); }
 .role-row:last-child { border-bottom:none; }
+/* ── Pestaña Estudio: tarjetas legibles ── */
+.tools { max-width: 980px; }
+.tools-intro { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; color: var(--text-mid); margin: 0 0 18px; line-height: 1.5; }
+.tool { background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+.tool-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tool h3 { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 18px; font-weight: 650; color: var(--text); display: inline; }
+.tool-count { display: inline-block; margin-left: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 600; color: var(--gold); background: var(--gold-glow); border: 1px solid var(--gold-dim); border-radius: 999px; padding: 2px 10px; vertical-align: 2px; }
+.tool-desc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.55; color: var(--text-mid); margin: 8px 0 0; max-width: 760px; }
+.tool-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tool .btn-sm { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; letter-spacing: 0; text-transform: none; padding: 8px 14px; color: var(--text); border-color: var(--border2); }
+.btn-main { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 600; background: var(--gold); color: #1a1205; border: none; border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+html[data-theme="light"] .btn-main { color: #fffaf0; }
+.btn-main:hover { filter: brightness(1.08); }
+.tool .upload-msg { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--text); margin-top: 10px; text-align: left; }
+.tool .upload-msg:empty { display: none; }
+.tool-more summary { cursor: pointer; margin-top: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: var(--gold); }
 </style>
 </head>
 <body>
@@ -191,7 +207,8 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     <button class="admin-tab" onclick="switchTab('canciones',this)">🎵 Canciones</button>
     <button class="admin-tab" onclick="switchTab('actividades',this)">🎨 Actividades</button>
     <button class="admin-tab" onclick="switchTab('interlineal',this)">📜 Interlineal</button>
-    <button class="admin-tab" onclick="switchTab('traduccion',this)">✦ Traducción Kodesh</button>
+    <button class="admin-tab" onclick="switchTab('traduccion',this)">✦ Traducción y audio</button>
+    <button class="admin-tab" onclick="switchTab('estudio',this)">📚 Estudio</button>
     <button class="admin-tab" onclick="switchTab('notificaciones',this)">🔔 Notificaciones</button>
     <button class="admin-tab" id="tabPremium" onclick="switchTab('premium',this)" style="display:none">💎 Premium</button>
     <button class="admin-tab" id="tabRoles" onclick="switchTab('roles',this)" style="display:none">🔑 Editores</button>
@@ -462,72 +479,6 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div id="audioCast" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
         <div id="audioScript" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px;max-height:520px;overflow:auto"></div>
         <div id="audioBooks" style="display:grid;gap:8px;margin-top:10px"></div>
-        <div style="height:1px;background:var(--border);margin:16px 0"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Versículo del día · ElevenLabs</div>
-            <div style="font-size:0.72rem;color:var(--text-dim)">149 pasajes de aliento de la Traducción Kodesh, uno por día (el mismo para todos). <b>Preparar</b>: la IA escribe el contexto, la pregunta, la oración y la palabra hebrea/griega (validada con Strong's). <b>Grabar</b>: el narrador lo lee con música suave (~250 créditos cada uno). Llega a la app sin actualizarla.</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-sm" id="vddStop" onclick="VDD_ADMIN.stop()" style="display:none">Detener</button>
-            <button class="btn-sm" onclick="VDD_ADMIN.prepare()">Preparar textos</button>
-            <button class="btn-sm" onclick="VDD_ADMIN.recordAll()">Grabar audios</button>
-            <button class="btn-sm" onclick="VDD_ADMIN.load()">Revisar</button>
-          </div>
-        </div>
-        <div class="upload-msg" id="vddMsg" style="margin-top:10px"></div>
-        <div id="vddGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
-        <div style="height:1px;background:var(--border);margin:16px 0"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Preguntas para el grupo · <span id="gqCount">—</span> de 54</div>
-            <div style="font-size:0.72rem;color:var(--text-dim)">Para cada porción, la IA prepara preguntas para adultos, jóvenes y niños, la pregunta de la semana y la guía del líder, a partir de la Traducción Kodesh. Se validan las referencias y las citas. ~$0.05 por porción.</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-sm" id="gqStop" onclick="GQ_ADMIN.stop()" style="display:none">Detener</button>
-            <button class="btn-sm" onclick="GQ_ADMIN.run(false)">Preparar faltantes</button>
-            <button class="btn-sm" onclick="GQ_ADMIN.run(true)">Rehacer una…</button>
-          </div>
-        </div>
-        <div class="upload-msg" id="gqMsg" style="margin-top:10px"></div>
-        <div style="height:1px;background:var(--border);margin:16px 0"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Paralelos de los Evangelios · <span id="plCount">—</span></div>
-            <div style="font-size:0.72rem;color:var(--text-dim)">La IA compara cada hecho que cuentan dos o más Evangelios y anota lo que trae solo cada uno (se valida que cada frase esté de verdad en el texto). ~200 hechos, ~$4 en total. La armonía y los avisos ya funcionan sin esto.</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-sm" id="plStop" onclick="PL_ADMIN.stop()" style="display:none">Detener</button>
-            <button class="btn-sm" onclick="PL_ADMIN.run()">Comparar faltantes</button>
-          </div>
-        </div>
-        <div class="upload-msg" id="plMsg" style="margin-top:10px"></div>
-        <div style="height:1px;background:var(--border);margin:16px 0"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Fichas de personajes · <span id="peCount">—</span></div>
-            <div style="font-size:0.72rem;color:var(--text-dim)">Para los 245 personajes que aparecen en 10 versículos o más, la IA escribe el significado del nombre, un resumen, los momentos clave y las edades que dice el texto. Se valida todo: el nombre original con Strong's, cada momento en un capítulo donde el personaje aparece y cada edad en su versículo. ~$5 en total. La familia, la red y la fila del capítulo ya funcionan sin esto.</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-sm" id="peStop" onclick="PE_ADMIN.stop()" style="display:none">Detener</button>
-            <button class="btn-sm" onclick="PE_ADMIN.run()">Preparar fichas</button>
-          </div>
-        </div>
-        <div class="upload-msg" id="peMsg" style="margin-top:10px"></div>
-        <div style="height:1px;background:var(--border);margin:16px 0"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Insignias de las porciones · <span id="badgeCount">—</span> de 54</div>
-            <div style="font-size:0.72rem;color:var(--text-dim)">Toca una porción para subir o cambiar su insignia, o arrastra aquí varias imágenes nombradas por número (<b>5.png</b>, <b>6.png</b>…). Se achican a 512 px y llegan a la app en unos minutos, sin actualizarla.</div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <label class="btn-sm" style="cursor:pointer">Subir varias<input type="file" accept="image/*" multiple hidden onchange="BADGE_ADMIN.files(this.files);this.value=''"></label>
-            <button class="btn-sm" onclick="BADGE_ADMIN.load()">Revisar</button>
-          </div>
-        </div>
-        <div class="upload-msg" id="badgeMsg" style="margin-top:10px"></div>
-        <div id="badgeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:10px;padding:10px;border:1px dashed var(--border);border-radius:8px"></div>
-        <input type="file" id="badgeOne" accept="image/*" hidden>
       </div>
 
       <!-- Cobertura por libro -->
@@ -537,6 +488,57 @@ tr:hover td { background:rgba(255,255,255,0.02); }
       </div>
       <div id="tkBooks"><div class="loading">Cargando...</div></div>
 
+    </div>
+  </div>
+
+
+  <!-- TAB: ESTUDIO (contenido generado: personajes, paralelos, preguntas, versículo del día, insignias) -->
+  <div class="tab-content" id="tab-estudio">
+    <div class="main tools">
+      <p class="tools-intro">Contenido de estudio que se genera una vez y llega a la app sin actualizarla. Cada tarjeta muestra cuánto está listo; el botón dorado completa lo que falta.</p>
+      <section class="tool">
+        <div class="tool-head">
+          <div><h3>Fichas de personajes</h3><span class="tool-count" id="peCount">—</span></div>
+          <div class="tool-actions"><button class="btn-sm" id="peStop" onclick="PE_ADMIN.stop()" style="display:none">Detener</button><button class="btn-main" onclick="PE_ADMIN.run()">Preparar fichas</button></div>
+        </div>
+        <p class="tool-desc">La IA escribe el significado del nombre, un resumen, los momentos clave y las edades de los 245 personajes principales. Se valida con Strong's y con el texto. ~$5 en total.</p>
+        <div class="upload-msg" id="peMsg"></div>
+      </section>
+      <section class="tool">
+        <div class="tool-head">
+          <div><h3>Paralelos de los Evangelios</h3><span class="tool-count" id="plCount">—</span></div>
+          <div class="tool-actions"><button class="btn-sm" id="plStop" onclick="PL_ADMIN.stop()" style="display:none">Detener</button><button class="btn-main" onclick="PL_ADMIN.run()">Comparar faltantes</button></div>
+        </div>
+        <p class="tool-desc">Compara cada hecho que cuentan dos o más Evangelios y anota lo que trae solo cada uno. ~$4 en total.</p>
+        <div class="upload-msg" id="plMsg"></div>
+      </section>
+      <section class="tool">
+        <div class="tool-head">
+          <div><h3>Preguntas para el grupo</h3><span class="tool-count"><span id="gqCount">—</span> de 54</span></div>
+          <div class="tool-actions"><button class="btn-sm" id="gqStop" onclick="GQ_ADMIN.stop()" style="display:none">Detener</button><button class="btn-sm" onclick="GQ_ADMIN.run(true)">Rehacer una…</button><button class="btn-main" onclick="GQ_ADMIN.run(false)">Preparar faltantes</button></div>
+        </div>
+        <p class="tool-desc">Preguntas para adultos, jóvenes y niños, pregunta de la semana y guía del líder de cada porción. ~$0.05 por porción.</p>
+        <div class="upload-msg" id="gqMsg"></div>
+      </section>
+      <section class="tool">
+        <div class="tool-head">
+          <div><h3>Versículo del día</h3></div>
+          <div class="tool-actions"><button class="btn-sm" id="vddStop" onclick="VDD_ADMIN.stop()" style="display:none">Detener</button><button class="btn-sm" onclick="VDD_ADMIN.load()">Revisar</button><button class="btn-sm" onclick="VDD_ADMIN.prepare()">Preparar textos</button><button class="btn-main" onclick="VDD_ADMIN.recordAll()">Grabar audios</button></div>
+        </div>
+        <p class="tool-desc">149 pasajes de aliento (Traducción Kodesh) con audio del narrador y música suave. Aparecen en la tarjeta de la mañana.</p>
+        <div class="upload-msg" id="vddMsg"></div>
+        <details class="tool-more"><summary>Ver los 149 pasajes</summary><div id="vddGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div></details>
+      </section>
+      <section class="tool">
+        <div class="tool-head">
+          <div><h3>Insignias de las porciones</h3><span class="tool-count"><span id="badgeCount">—</span> de 54</span></div>
+          <div class="tool-actions"><button class="btn-sm" onclick="BADGE_ADMIN.load()">Revisar</button><label class="btn-main" style="cursor:pointer">Subir varias<input type="file" accept="image/*" multiple hidden onchange="BADGE_ADMIN.files(this.files);this.value=''"></label></div>
+        </div>
+        <p class="tool-desc">Toca una porción para subir o cambiar su insignia, o arrastra varias imágenes nombradas por número (5.png, 6.png…). Se achican a 512 px.</p>
+        <div class="upload-msg" id="badgeMsg"></div>
+        <div id="badgeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:12px"></div>
+        <input type="file" id="badgeOne" accept="image/*" hidden>
+      </section>
     </div>
   </div>
 
