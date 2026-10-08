@@ -3718,6 +3718,19 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
 </style>
 </head>
 <body>
+<script>
+/* Inicio: se cubre la pantalla desde el primer instante (antes de que se vea la Biblia) */
+(function () {
+  try {
+    if (/[?&](book|chapter|verse|study|play|upgrade|q)=/.test(location.search)) return;
+    if (localStorage.getItem('kodesh_home_on') === '0') return;
+    document.write('<div id="homeView" class="on boot" role="region" aria-label="Inicio" style="position:fixed;inset:0;z-index:260;background:var(--bg,#0b0b12)"></div>');
+    document.body.classList.add('home-on');
+    // Por si el inicio no llegara a cargar: nunca dejar la pantalla tapada
+    setTimeout(function () { if (!window.KodeshHome) { var h = document.getElementById('homeView'); if (h) h.remove(); document.body.classList.remove('home-on'); } }, 8000);
+  } catch (e) {}
+})();
+</script>
 
 <!-- ══ TOAST ══ -->
 <div class="toast" id="toast"></div>

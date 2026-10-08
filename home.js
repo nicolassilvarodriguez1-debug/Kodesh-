@@ -271,12 +271,15 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     const b = document.getElementById(home ? 'mnav-inicio' : 'mnav-biblia'); if (b) b.classList.add('active');
   }
   async function show() {
+    if (!el) el = document.getElementById('homeView');
     if (!el) { el = document.createElement('div'); el.id = 'homeView'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', 'Inicio'); document.body.appendChild(el); }
+    navActive(true);
     // La promesa ya está en el inicio: no se abre la tarjeta flotante hoy
     try { if (typeof getLocalDateStr === 'function') localStorage.setItem('kodesh_promise_' + getLocalDateStr(), '1'); } catch (e) {}
     await load();
     await render();
     el.scrollTop = 0;
+    el.removeAttribute('style'); el.classList.remove('boot');
     requestAnimationFrame(() => el.classList.add('on'));
     document.body.classList.add('home-on');
     navActive(true);
