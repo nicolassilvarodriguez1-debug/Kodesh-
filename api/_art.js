@@ -32,4 +32,6 @@ export const HOME_SCENES = {
 export const HOME_IDS = Object.keys(HOME_SCENES);
 // Porciones: la escena sale del tema de cada porción (parashot-data.json)
 export const parashaPrompt = p => `${PHOTO_STYLE}\n\nScene (landscape or symbolic objects from the biblical story, historically accurate ancient Israel / Ancient Near East, no faces): ${p.tema}. Portion «${p.nombre}» (${p.torah}). Wide 3:2 composition, the right side brighter and the left side calmer.`;
+// Si el filtro de OpenAI rechaza la escena, se usa una versión simbólica sin personas
+export const parashaSafePrompt = p => `${PHOTO_STYLE}\n\nScene: a quiet, symbolic landscape or still life of ancient Israel evoking the biblical portion «${p.nombre}» (${p.torah}) — natural scenery, ancient stone, oil lamps, scrolls, olive trees, wheat or sheep. Absolutely no people. Wide 3:2 composition, the right side brighter and the left side calmer.`;
 export const homePrompt = id => `${PHOTO_STYLE}\n\nScene: ${HOME_SCENES[id][0]}`;

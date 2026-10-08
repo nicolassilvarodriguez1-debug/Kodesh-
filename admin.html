@@ -1306,17 +1306,21 @@ const HI_ADMIN = (() => {
   }
   async function gen(ids, extra) {
     if (busy) return; busy = true;
-    try {
-      let i = 0;
-      for (const id of ids) {
-        msg(`Generando ${++i} de ${ids.length}… (≈1 minuto cada una)`);
+    const failed = [];
+    let i = 0;
+    for (const id of ids) {
+      msg(`Generando ${++i} de ${ids.length}… (≈1 minuto cada una)${failed.length ? ` · ${failed.length} con error` : ''}`);
+      try {
         const res = await fetch('/api/art-gen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await sb.auth.getSession()).data.session.access_token}` }, body: JSON.stringify({ id, extra: extra || '' }) });
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
         art = d.art || art; render();
+      } catch (e) {
+        failed.push(id.replace('parasha:', 'porción ').replace('home:', ''));
+        if (/OPENAI_API_KEY|sesión|401|403/.test(e.message)) { msg('Error: ' + e.message); busy = false; return; }
       }
-      msg('Listo ✓');
-    } catch (e) { msg('Error: ' + e.message + ' — vuelve a tocar para seguir.'); }
+    }
+    msg(failed.length ? `Listo, excepto: ${failed.join(', ')} — vuelve a tocar para reintentar esas.` : 'Listo ✓');
     busy = false;
   }
   function genMissing(kind) {

@@ -6,7 +6,7 @@
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions } from './_security.js';
 import fs from 'node:fs';
-import { ART_IDS, artPrompt, HOME_IDS, HOME_SCENES, homePrompt, parashaPrompt } from './_art.js';
+import { ART_IDS, artPrompt, HOME_IDS, HOME_SCENES, homePrompt, parashaPrompt, parashaSafePrompt } from './_art.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -26,7 +26,7 @@ function job(id) {
   const h = /^home:(\w+)$/.exec(id);
   if (h && HOME_IDS.includes(h[1])) return { set: 'inicio.json', key: h[1], prompt: homePrompt(h[1]), size: HOME_SCENES[h[1]][1] };
   const p = /^parasha:(\d{1,2})$/.exec(id);
-  if (p) { const x = parashot().find(q => q.num === +p[1]); if (x) return { set: 'inicio.json', key: 'p' + x.num, prompt: parashaPrompt(x), size: '1536x1024' }; }
+  if (p) { const x = parashot().find(q => q.num === +p[1]); if (x) return { set: 'inicio.json', key: 'p' + x.num, prompt: parashaPrompt(x), safe: parashaSafePrompt(x), size: '1536x1024' }; }
   return null;
 }
 async function manifest(file) {
@@ -62,7 +62,13 @@ export default async function handler(req, res) {
   const j = job(id);
   if (!j) return res.status(400).json({ error: 'Imagen inválida' });
   try {
-    const img = await generate(j, req.body?.extra);
+    let img;
+    try { img = await generate(j, req.body?.extra); }
+    catch (e) {
+      // El filtro de seguridad rechazó la escena: se intenta una versión simbólica, sin personas
+      if (!j.safe || !/safety|rejected/i.test(e.message)) throw e;
+      img = await generate({ ...j, prompt: j.safe }, '');
+    }
     const path = `${j.set === 'fiestas.json' ? 'fiesta' : 'inicio'}-${j.key}-${Date.now()}.webp`;
     await put(path, img, 'image/webp');
     const m = await manifest(j.set);
