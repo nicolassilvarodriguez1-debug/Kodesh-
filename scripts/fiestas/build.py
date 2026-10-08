@@ -1,0 +1,245 @@
+# KODESH — Fiestas de YHWH: datos curados (data/fiestas.json).
+# Uso: python3 scripts/fiestas/build.py   (valida citas y referencias contra biblia-rvr.json)
+# Las citas entre «» deben estar en el versículo (sin tildes ni mayúsculas).
+import json, re, sys, unicodedata, pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+BIBLE = json.loads((ROOT / 'biblia-rvr.json').read_text())
+
+F = [
+  dict(id='pesaj', n='Pésaj', alt='Pascua', he='פֶּסַח', sig='«pasar por encima»', hd=['Nisan', 14], dias=1,
+       fecha='14 de Nisán', mand='LEV 23:5', lee=['EXO 12', 'LEV 23', 'NUM 9', 'DEU 16'],
+       que=['Cada familia apartaba un cordero sin defecto el día 10 y lo sacrificaba el 14 por la tarde',
+            'Se comía de noche, asado, con pan sin levadura y hierbas amargas',
+            'Los padres contaban a sus hijos cómo YHWH los sacó de Egipto'],
+       siglo=['Los corderos se sacrificaban en el Templo y se comían en Jerusalén, en grupos',
+              'En la cena se bebían varias copas de vino y se cantaba el Hallel (Salmos 113–118)',
+              'Yeshúa celebró su última Pésaj con sus discípulos antes de padecer'],
+       hilo=[['Mandamiento', 'EXO 12:13', '«veré la sangre, y pasaré de vosotros»'],
+             ['Memoria', 'EXO 13:8', 'Se cuenta a los hijos lo que YHWH hizo'],
+             ['Historia', '2CH 35:18', 'Josías celebra una Pésaj como no se había hecho desde Samuel'],
+             ['Profecía', 'ISA 53:7', '«como cordero fué llevado al matadero»'],
+             ['Yeshúa en la fiesta', 'LUK 22:15', '«he deseado comer con vosotros esta pascua antes que padezca»'],
+             ['Eco', '1CO 5:7', '«nuestra pascua, que es el Mashíaj, fué sacrificada por nosotros»']]),
+  dict(id='matzot', n='Matzot', alt='Panes sin levadura', he='מַצּוֹת', sig='«panes sin levadura»', hd=['Nisan', 15], dias=7,
+       fecha='15 al 21 de Nisán', mand='LEV 23:6', lee=['EXO 12', 'LEV 23', 'DEU 16'],
+       que=['Siete días sin levadura: se saca toda de la casa',
+            'El primer y el séptimo día son santa convocación, sin trabajo',
+            'Recuerda la salida apresurada de Egipto: «pan de aflicción»'],
+       siglo=['Era una de las tres fiestas en que los varones subían a Jerusalén',
+              'La ciudad se llenaba de peregrinos de todo el mundo judío'],
+       hilo=[['Mandamiento', 'EXO 12:15', '«Siete días comeréis panes sin levadura»'],
+             ['Memoria', 'DEU 16:3', '«pan de aflicción, porque apriesa saliste de tierra de Egipto»'],
+             ['Historia', 'JOS 5:11', 'Al entrar a la tierra comen de su fruto y panes sin levadura'],
+             ['Yeshúa en la fiesta', 'MAT 26:17', 'El primer día de los panes sin levadura prepara la cena'],
+             ['Eco', '1CO 5:8', '«en ázimos de sinceridad y de verdad»']]),
+  dict(id='bikurim', n='Primicias', alt='Bikurim · el omer', he='בִּכּוּרִים', sig='«primeros frutos»', hd=['Nisan', 16], dias=1,
+       fecha='Al día siguiente del sábado de Pésaj', mand='LEV 23:10-11', lee=['LEV 23'],
+       que=['Se llevaba al sacerdote la primera gavilla (omer) de la cosecha de cebada',
+            'El sacerdote la mecía delante de YHWH «el siguiente día del sábado»',
+            'Hasta ese día no se comía nada de la nueva cosecha'],
+       siglo=['Los fariseos lo contaban el 16 de Nisán; los saduceos, el domingo después del sábado de la fiesta',
+              'Desde ese día se cuentan cincuenta días hasta Shavuot'],
+       nota='Este año: 16 de Nisán (cuenta rabínica). Otros lo celebran el domingo de la semana de Pésaj.',
+       hilo=[['Mandamiento', 'LEV 23:11', '«El cual mecerá el omer delante de YHWH»'],
+             ['Historia', 'RUT 1:22', 'Rut llega a Belén «en el principio de la siega de las cebadas»'],
+             ['Yeshúa en la fiesta', 'LUK 24:1', 'Resucita «el primer día de la semana», en la semana de la fiesta'],
+             ['Eco', '1CO 15:20', '«primicias de los que durmieron es hecho»'],
+             ['Eco', 'JAS 1:18', '«para que seamos primicias de sus criaturas»']]),
+  dict(id='shavuot', n='Shavuot', alt='Semanas · Pentecostés', he='שָׁבוּעוֹת', sig='«semanas»', hd=['Sivan', 6], dias=1,
+       fecha='50 días después de Primicias', mand='LEV 23:15-16', lee=['LEV 23', 'DEU 16', 'EXO 19'],
+       que=['Se cuentan siete semanas desde el omer: el día cincuenta es la fiesta',
+            'Se ofrecían dos panes de trigo «cocidos con levadura»',
+            'Fiesta de la cosecha del trigo, con alegría y generosidad'],
+       siglo=['La tradición judía la recuerda como el día en que se dio la Torá en Sinaí (Éxodo 19, «al mes tercero»)',
+              'Se lee el libro de Rut, que ocurre entre la siega de la cebada y la del trigo',
+              'Era una de las tres fiestas de peregrinación a Jerusalén'],
+       nota='Este año: 6 de Siván (cuenta rabínica). Otros la cuentan siempre en domingo.',
+       hilo=[['Mandamiento', 'LEV 23:16', '«contaréis cincuenta días»'],
+             ['Historia', 'EXO 19:1', 'Al tercer mes Israel llega al Sinaí para recibir la Torá'],
+             ['Historia', 'RUT 2:23', 'Rut espiga hasta que acaba «la de los trigos»'],
+             ['Profecía', 'JER 31:33', '«escribiréla en sus corazones»'],
+             ['Cumplimiento', 'ACT 2:1', '«como se cumplieron los días de Pentecostés»'],
+             ['Eco', 'ACT 2:41', 'Como tres mil personas se añaden aquel día']]),
+  dict(id='terua', n='Yom Teruá', alt='Día de las trompetas', he='יוֹם תְּרוּעָה', sig='«día del toque»', hd=['Tishri', 1], dias=1,
+       fecha='1 de Tishrí', mand='LEV 23:24', lee=['LEV 23', 'NUM 29', 'NEH 8'],
+       que=['Primer día del mes séptimo: reposo y «conmemoración al son de trompetas»',
+            'Se tocaba el shofar y se ofrecían sacrificios especiales',
+            'Abre los diez días que llevan a Yom Kipur'],
+       siglo=['Con el tiempo se llamó Rosh Hashaná, comienzo del año civil',
+              'Esdras leyó la Torá al pueblo ese mismo día (Nehemías 8:2)'],
+       hilo=[['Mandamiento', 'LEV 23:24', '«una conmemoración al son de trompetas»'],
+             ['Historia', 'NEH 8:9', '«Día santo es á YHWH nuestro Dios»'],
+             ['Profecía', 'ISA 27:13', '«se tañerá con gran trompeta»'],
+             ['Profecía', 'MAT 24:31', '«enviará sus ángeles con gran voz de trompeta»'],
+             ['Esperanza', '1TH 4:16', '«con trompeta de Dios, descenderá del cielo»']]),
+  dict(id='kipur', n='Yom Kipur', alt='Día de las expiaciones', he='יוֹם הַכִּפֻּרִים', sig='«día de las expiaciones»', hd=['Tishri', 10], dias=1,
+       fecha='10 de Tishrí', mand='LEV 23:27', lee=['LEV 16', 'LEV 23', 'HEB 9'],
+       que=['El único día en que el sumo sacerdote entraba al Lugar Santísimo, con sangre',
+            'Dos machos cabríos: uno por YHWH y otro enviado a Azazel al desierto',
+            'Ayuno y reposo completo «de tarde á tarde»'],
+       siglo=['Se le llamaba simplemente «el ayuno»: así lo nombra Lucas en Hechos 27:9',
+              'Es el día más solemne del año'],
+       hilo=[['Mandamiento', 'LEV 16:30', '«en este día se os reconciliará para limpiaros»'],
+             ['Historia', 'LEV 16:21', 'Aarón confiesa los pecados del pueblo sobre el macho cabrío'],
+             ['Profecía', 'ISA 1:18', '«como la nieve serán emblanquecidos»'],
+             ['Cumplimiento', 'HEB 9:12', '«por su propia sangre, entró una sola vez en el santuario»'],
+             ['Eco', 'MAT 27:51', '«el velo del templo se rompió en dos, de alto á bajo»']]),
+  dict(id='sukot', n='Sukot', alt='Cabañas · Tabernáculos', he='סֻכּוֹת', sig='«cabañas»', hd=['Tishri', 15], dias=7,
+       fecha='15 al 21 de Tishrí (y el día octavo)', mand='LEV 23:34', lee=['LEV 23', 'DEU 16', 'NEH 8', 'JHN 7'],
+       que=['Las familias viven siete días en cabañas',
+            'Se toman ramas de palmas, de árboles espesos, sauces y fruto de árbol hermoso',
+            'Fiesta de la cosecha y de gran alegría; el día octavo es santa convocación'],
+       siglo=['Cada mañana se sacaba agua del estanque de Siloé y se derramaba sobre el altar (Misná, Sucá 4:9)',
+              'De noche, grandes candelabros iluminaban el atrio de las mujeres (Misná, Sucá 5:2–3)',
+              'Por eso en esta fiesta Yeshúa ofrece agua viva y dice «Yo soy la luz del mundo»'],
+       hilo=[['Mandamiento', 'LEV 23:42', '«En cabañas habitaréis siete días»'],
+             ['Memoria', 'LEV 23:43', 'Recuerdo de las cabañas al salir de Egipto'],
+             ['Historia', 'NEH 8:17', 'Al volver del exilio la celebran: «hubo alegría muy grande»'],
+             ['Profecía', 'ZEC 14:16', 'Todas las naciones subirán a celebrar la fiesta de las Cabañas'],
+             ['Yeshúa en la fiesta', 'JHN 7:37', '«Si alguno tiene sed, venga á mí y beba»'],
+             ['Eco', 'JHN 1:14', '«habitó entre nosotros» (en griego: puso su tienda)'],
+             ['Eco', 'REV 21:3', '«He aquí el tabernáculo de Dios con los hombres»']]),
+  dict(id='januca', n='Janucá', alt='Dedicación', he='חֲנֻכָּה', sig='«dedicación»', hd=['Kislev', 25], dias=8, extra=True,
+       fecha='25 de Kislev, ocho días', mand='JHN 10:22', lee=['JHN 10'],
+       que=['Recuerda la nueva dedicación del Templo en el año 164 a.C., tras la profanación de Antíoco IV',
+            'Ocho días de luces'],
+       siglo=['La historia está en 1 Macabeos 4:52–59',
+              'Yeshúa estaba en el Templo en esta fiesta, en invierno'],
+       hilo=[['Historia', 'JHN 10:22', '«se hacía la fiesta de la dedicación en Jerusalem; y era invierno»'],
+             ['Yeshúa en la fiesta', 'JHN 10:23', 'Camina por el pórtico de Salomón'],
+             ['Eco', 'JHN 10:36', '«¿A quien el Padre santificó y envió al mundo…?»']]),
+  dict(id='purim', n='Purim', alt='Suertes', he='פּוּרִים', sig='«suertes»', hd=['Adar', 14], dias=1, extra=True,
+       fecha='14 de Adar', mand='EST 9:21', lee=['EST 9'],
+       que=['Recuerda cómo Elohim libró a los judíos del plan de Amán, en tiempos de Ester',
+            'Días de banquete, de enviar porciones a los vecinos y dádivas a los pobres'],
+       siglo=['Se lee en voz alta el libro de Ester (la Meguilá)'],
+       hilo=[['Historia', 'EST 3:7', 'Amán echa Pur, «esto es, la suerte»'],
+             ['Mandamiento', 'EST 9:22', '«de enviar porciones cada uno á su vecino, y dádivas á los pobres»'],
+             ['Memoria', 'EST 9:28', '«la memoria de ellos no cesará de su simiente»']]),
+]
+
+# Capítulos que ocurren durante una fiesta (o que la mandan): [ids, qué pasaba]
+CH = {
+  'EXO:12': [['pesaj', 'matzot'], 'La primera Pésaj: la noche en que Israel sale de Egipto.'],
+  'EXO:13': [['matzot'], 'Siete días sin levadura para recordar la salida.'],
+  'EXO:19': [['shavuot'], 'Israel llega al Sinaí al mes tercero: la tradición une Shavuot con la entrega de la Torá.'],
+  'EXO:23': [['matzot', 'shavuot', 'sukot'], 'Las tres fiestas de peregrinación: ázimos, siega y cosecha.'],
+  'EXO:34': [['matzot', 'shavuot', 'sukot'], 'YHWH renueva el pacto y repite las tres fiestas.'],
+  'LEV:16': [['kipur'], 'El ritual completo del día de las expiaciones.'],
+  'LEV:23': [['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot'], 'El calendario de las fiestas de YHWH.'],
+  'LEV:25': [['kipur'], 'El jubileo se anuncia con trompeta el día de las expiaciones.'],
+  'NUM:9': [['pesaj'], 'La Pésaj en el desierto y la segunda Pésaj para quien estaba impuro.'],
+  'NUM:28': [['pesaj', 'matzot', 'shavuot'], 'Las ofrendas de cada fiesta de primavera.'],
+  'NUM:29': [['terua', 'kipur', 'sukot'], 'Las ofrendas de las fiestas del mes séptimo.'],
+  'DEU:16': [['pesaj', 'shavuot', 'sukot'], 'Tres veces al año todo varón se presenta ante YHWH.'],
+  'DEU:31': [['sukot'], 'Cada siete años, en Sukot, se lee la Torá a todo Israel.'],
+  'JOS:5': [['pesaj', 'matzot'], 'La primera Pésaj en la tierra; deja de caer el maná.'],
+  '1KI:8': [['sukot'], 'Salomón dedica el Templo en la fiesta del mes séptimo.'],
+  '2KI:23': [['pesaj'], 'Josías restaura la Pésaj.'],
+  '2CH:30': [['pesaj'], 'Ezequías invita a todo Israel a celebrar la Pésaj en Jerusalén.'],
+  '2CH:35': [['pesaj'], 'La gran Pésaj del rey Josías.'],
+  'EZR:3': [['sukot'], 'Los que vuelven del exilio celebran las Cabañas sobre el altar recién levantado.'],
+  'EZR:6': [['pesaj', 'matzot'], 'Pésaj al terminar el segundo Templo.'],
+  'NEH:8': [['terua', 'sukot'], 'Esdras lee la Torá el primer día del mes séptimo y el pueblo vuelve a vivir en cabañas.'],
+  'EST:9': [['purim'], 'El origen de Purim.'],
+  'EZK:45': [['pesaj', 'sukot'], 'Las fiestas en la visión del Templo de Ezequiel.'],
+  'ZEC:14': [['sukot'], 'Las naciones subirán a celebrar la fiesta de las Cabañas.'],
+  'MAT:26': [['pesaj', 'matzot'], 'La última cena de Pésaj y la noche de la entrega.'],
+  'MAT:27': [['pesaj'], 'La crucifixión, en la fiesta de Pésaj.'],
+  'MAT:28': [['bikurim'], 'La resurrección, el primer día de la semana de la fiesta.'],
+  'MRK:14': [['pesaj', 'matzot'], 'La cena de Pésaj «cuando sacrificaban la pascua».'],
+  'MRK:15': [['pesaj'], 'La crucifixión, en la fiesta de Pésaj.'],
+  'MRK:16': [['bikurim'], 'La resurrección, el primer día de la semana.'],
+  'LUK:2': [['pesaj'], 'Yeshúa, a los doce años, sube con sus padres a la Pésaj.'],
+  'LUK:22': [['pesaj', 'matzot'], 'La cena de Pésaj: «este vaso es el nuevo pacto en mi sangre».'],
+  'LUK:23': [['pesaj'], 'La crucifixión, en la fiesta de Pésaj.'],
+  'LUK:24': [['bikurim'], 'La resurrección, el primer día de la semana.'],
+  'JHN:2': [['pesaj'], 'Primera Pésaj del ministerio: Yeshúa limpia el Templo.'],
+  'JHN:6': [['pesaj'], 'Cerca de la Pésaj Yeshúa da pan a la multitud y dice «Yo soy el pan de vida».'],
+  'JHN:7': [['sukot'], 'Yeshúa sube a la fiesta de las Cabañas y ofrece agua viva.'],
+  'JHN:8': [['sukot'], 'Sigue la fiesta: «Yo soy la luz del mundo», junto al atrio de los candelabros.'],
+  'JHN:10': [['januca'], 'Yeshúa en el Templo en la fiesta de la dedicación, en invierno.'],
+  'JHN:11': [['pesaj'], 'La Pésaj está cerca y muchos suben a purificarse.'],
+  'JHN:12': [['pesaj'], 'Seis días antes de la Pésaj: Betania y la entrada a Jerusalén.'],
+  'JHN:13': [['pesaj'], 'Antes de la fiesta de la Pésaj, Yeshúa lava los pies a los suyos.'],
+  'JHN:18': [['pesaj'], 'Los acusadores no entran al pretorio «por no ser contaminados»: querían comer la Pésaj.'],
+  'JHN:19': [['pesaj'], 'Era la víspera de la Pésaj: «Hueso no quebrantaréis de él».'],
+  'JHN:20': [['bikurim'], 'La resurrección, el primer día de la semana.'],
+  'ACT:2': [['shavuot'], 'El Espíritu desciende en Shavuot (Pentecostés).'],
+  'ACT:12': [['pesaj', 'matzot'], 'Pedro preso cuando «eran entonces los días de los ázimos».'],
+  'ACT:20': [['matzot', 'shavuot'], 'Pablo navega después de los ázimos y se apresura para llegar a Shavuot.'],
+  'ACT:27': [['kipur'], '«Ya era pasado el ayuno»: Yom Kipur marca el fin de la navegación segura.'],
+  '1CO:5': [['pesaj', 'matzot'], 'Limpiad la vieja levadura: «nuestra pascua, que es el Mashíaj».'],
+  '1CO:15': [['bikurim'], 'El Mashíaj, primicias de los que durmieron.'],
+  '1CO:16': [['shavuot'], 'Pablo se queda en Éfeso hasta Pentecostés.'],
+  'HEB:9': [['kipur'], 'El sumo sacerdote entraba una vez al año; el Mashíaj entró una sola vez.'],
+  'HEB:10': [['kipur'], 'La sangre de toros y machos cabríos no puede quitar los pecados.'],
+}
+
+# D · Lugares del Templo (esquema simplificado del siglo I, no a escala)
+TEMPLO = [
+  dict(id='gentiles', n='Atrio de los gentiles', t='El gran patio abierto a todos. Allí estaban los cambistas y vendedores.',
+       refs=['MAT 21:12', 'MRK 11:16', 'JHN 2:14']),
+  dict(id='salomon', n='Pórtico de Salomón', t='La columnata del lado oriental, donde se reunía la gente a conversar.',
+       refs=['JHN 10:23', 'ACT 3:11', 'ACT 5:12']),
+  dict(id='almenas', n='Las almenas', t='El punto más alto de los muros del Templo (por tradición, la esquina sureste).',
+       refs=['MAT 4:5', 'LUK 4:9']),
+  dict(id='hermosa', n='Puerta la Hermosa', t='Probablemente la puerta oriental hacia el atrio de las mujeres.',
+       refs=['ACT 3:2', 'ACT 3:10']),
+  dict(id='mujeres', n='Atrio de las mujeres', t='Allí estaban las arcas de las ofrendas y, en Sukot, los grandes candelabros.',
+       refs=['JHN 8:20', 'MRK 12:41', 'LUK 21:1']),
+  dict(id='altar', n='El altar', t='El altar de los holocaustos, en el atrio de los sacerdotes.',
+       refs=['MAT 5:23', 'MAT 23:35']),
+  dict(id='santo', n='El santuario', t='El Lugar Santo, donde un sacerdote ofrecía el incienso.',
+       refs=['LUK 1:9']),
+  dict(id='santisimo', n='Lugar Santísimo', t='Detrás del velo; solo el sumo sacerdote entraba, en Yom Kipur.',
+       refs=['MAT 27:51', 'MRK 15:38', 'LUK 23:45', 'HEB 9:7']),
+]
+
+def norm(s):
+    s = unicodedata.normalize('NFD', s.lower())
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', ' ', s)).strip()
+
+def verse(ref):
+    m = re.match(r'^([1-3]?[A-Z]{2,3}) (\d+):(\d+)(?:-(\d+))?$', ref)
+    if not m: return None
+    ch = BIBLE.get(m[1], {}).get(m[2])
+    if not ch: return None
+    v2 = int(m[4] or m[3])
+    out = [ch.get(str(v)) for v in range(int(m[3]), v2 + 1)]
+    return None if None in out else ' '.join(out)
+
+errs = []
+def check(ref, text=''):
+    t = verse(ref)
+    if t is None: errs.append(f'ref inexistente: {ref}'); return
+    for q in re.findall(r'«([^»]+)»', text):
+        if norm(q) not in norm(t): errs.append(f'cita no está en {ref}: {q}')
+
+ids = {f['id'] for f in F}
+for f in F:
+    check(f['mand'])
+    for k, ref, t in f['hilo']: check(ref, t)
+    for b in f['lee']:
+        bk, c = b.split(' ')
+        if c not in BIBLE.get(bk, {}): errs.append(f'capítulo inexistente: {b}')
+for k, (fs, t) in CH.items():
+    bk, c = k.split(':')
+    if c not in BIBLE.get(bk, {}): errs.append(f'capítulo inexistente: {k}')
+    for q in re.findall(r'«([^»]+)»', t):
+        if c in BIBLE.get(bk, {}) and norm(q) not in norm(' '.join(BIBLE[bk][c].values())): errs.append(f'cita no está en {k}: {q}')
+    for x in fs:
+        if x not in ids: errs.append(f'fiesta desconocida {x} en {k}')
+for p in TEMPLO:
+    for r in p['refs']: check(r)
+if errs:
+    print('\n'.join(errs)); sys.exit(1)
+
+# Capítulos del Templo: dónde se nombra cada lugar
+for p in TEMPLO:
+    p['ch'] = sorted({r.split(':')[0].replace(' ', ':') for r in p['refs']})
+out = dict(f=F, ch=CH, templo=TEMPLO)
+(ROOT / 'data' / 'fiestas.json').write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')))
+print('ok', len(F), 'fiestas ·', len(CH), 'capítulos ·', len(TEMPLO), 'lugares del Templo')

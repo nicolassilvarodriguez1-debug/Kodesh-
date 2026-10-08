@@ -506,6 +506,14 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
       </section>
       <section class="tool">
         <div class="tool-head">
+          <div><h3>Raíces hebreas</h3><span class="tool-count" id="rtCount">—</span></div>
+          <div class="tool-actions"><button class="btn-sm" id="rtStop" onclick="RT_ADMIN.stop()" style="display:none">Detener</button><button class="btn-main" onclick="RT_ADMIN.run()">Preparar raíces</button></div>
+        </div>
+        <p class="tool-desc">La IA marca en los Evangelios, Hechos, Hebreos y los capítulos de fiestas las frases que se entienden desde el trasfondo hebreo (fiestas, Templo, costumbres) y explica cada una. Se valida contra el texto. ~$4 en total.</p>
+        <div class="upload-msg" id="rtMsg"></div>
+      </section>
+      <section class="tool">
+        <div class="tool-head">
           <div><h3>Paralelos de los Evangelios</h3><span class="tool-count" id="plCount">—</span></div>
           <div class="tool-actions"><button class="btn-sm" id="plStop" onclick="PL_ADMIN.stop()" style="display:none">Detener</button><button class="btn-main" onclick="PL_ADMIN.run()">Comparar faltantes</button></div>
         </div>
@@ -1185,8 +1193,39 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load(), PE_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load(), PE_ADMIN.load(), RT_ADMIN.load()]);
 }
+
+// ── Raíces hebreas (api/roots-pregen.js) ──
+const RT_ADMIN = (() => {
+  let running = false, stopFlag = false;
+  const msg = t => { const m = document.getElementById('rtMsg'); if (m) m.textContent = t || ''; };
+  const count = d => { document.getElementById('rtCount').textContent = `${d.ready} de ${d.total} capítulos · ${d.notes || 0} notas`; };
+  async function api(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const res = await fetch('/api/roots-pregen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  async function load() { try { count(await api({ action: 'status' })); } catch (e) { msg('No se pudo cargar: ' + e.message); } }
+  async function run() {
+    if (running) return; running = true; stopFlag = false; document.getElementById('rtStop').style.display = '';
+    try {
+      for (;;) {
+        if (stopFlag) break;
+        const r = await api({ action: 'generate' });
+        count(r);
+        msg(`Preparando raíces… faltan ${r.remaining} capítulos`);
+        if (!r.done || !r.remaining) break;
+      }
+      msg('Listo ✓');
+    } catch (e) { msg('Error: ' + e.message + ' — vuelve a tocar «Preparar raíces» para seguir.'); }
+    running = false; document.getElementById('rtStop').style.display = 'none';
+  }
+  return { load, run, stop: () => { stopFlag = true; } };
+})();
 
 // ── Fichas de personajes (api/people-pregen.js) ──
 const PE_ADMIN = (() => {
