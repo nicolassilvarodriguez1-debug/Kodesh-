@@ -435,7 +435,7 @@ async function mix(book, chapter) {
       await download(publicUrl(lib[key].path), files[key]);
     }
     const out = path.join(dir, 'out.mp3');
-    await runFfmpeg(ffmpegArgs(voice, layers, files, out, { pieces: tl.pieces, total: tl.total, divine: divine.map(([a, b]) => [tl.map(a), tl.map(b)]) }));
+    await runFfmpeg(ffmpegArgs(voice, layers, files, out, { pieces: tl.pieces, total: tl.total, divine: divine.map(([a, b]) => [tl.map(a), tl.map(b)]), swell: tl.gaps.filter(g => g.kind === 'scene' && g.dur > 5).map(g => [g.at + 0.8, g.at + g.dur - 0.3]) }));
     const p = `${VERSION}/${book}/${chapter}.cine.mp3`;
     await upload(p, fs.readFileSync(out));
     await sbJson(`bible_audio?version=eq.${VERSION}&book=eq.${book}&chapter=eq.${chapter}`, {

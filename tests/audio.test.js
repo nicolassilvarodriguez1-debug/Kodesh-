@@ -142,7 +142,7 @@ test('radionovela: escenas, silencios y música que cubre todo el capítulo', ()
   }, [1, 2, 3, 4, 5, 6]);
   assert.equal(st.v, SOUNDTRACK_VERSION);
   assert.deepEqual(st.scenes, [{ v: 3, bridge: 'puente_asombro' }, { v: 5, bridge: 'puente_solemne' }]);
-  assert.deepEqual(st.pauses, [{ v: 4, s: 2.5 }]);                 // el v3 ya es escena; tope 2.5 s
+  assert.deepEqual(st.pauses, [{ v: 4, s: 3 }]);                 // el v3 ya es escena; tope 3 s
   assert.deepEqual(st.music, [{ from: 1, to: 4, key: 'm_creacion' }, { from: 5, to: 6, key: 'm_paz' }]);
   assert.deepEqual(st.stings, [{ v: 4, key: 'golpe_juicio', when: 'start' }]);
 });
@@ -177,7 +177,7 @@ test('radionovela: el efecto «hold» detiene la voz tras las palabras indicadas
   const segs = [{ v: 1, character: 'narrador', text: 'Y dijo Elohim: júntense las aguas, y fue así.' }, { v: 1, character: 'narrador', text: 'Y vio Elohim que era bueno.' }];
   const st = cleanSoundtrack({ scenes: [], sfx: [{ v: 1, key: 'aguas_separan', hold: 3, after: 'y fue así' }, { v: 1, key: 'gallo', hold: 9 }] }, [1, 2]);
   assert.deepEqual(st.sfx[0], { v: 1, key: 'aguas_separan', when: 'start', hold: 3, after: 'y fue así' });
-  assert.equal(st.sfx[1].hold, 6);
+  assert.equal(st.sfx[1].hold, 9);
   const holds = holdPoints({ sfx: [st.sfx[0]] }, segs, [[1, 0], [2, 10]], 15, sil);
   assert.deepEqual(holds, [{ v: 1, keys: ['aguas_separan'], dur: 3, at: 5.3 }]);
   const tl = radioTimeline([[1, 0], [2, 10]], 15, { scenes: [{ v: 2, bridge: 'puente_solemne' }] }, { holds });
@@ -233,4 +233,14 @@ test('radionovela: látigos y martillazos se repiten, y el fondo de la acción s
   assert.ok(hammer.length >= 5, 'se repite dentro de la escena');
   const args = ffmpegArgs('v.mp3', plan, Object.fromEntries(plan.map(l => [l.key, l.key + '.mp3'])), 'o.mp3', {}).join(' ');
   assert.match(args, /\[voice\]\[ducked\]\[actd\]amix/, 'la voz va primero y el fondo de acción baja poco');
+});
+
+test('radionovela: transiciones largas cuando cambia el tiempo o el tema', () => {
+  const st = cleanSoundtrack({ scenes: [{ v: 2, bridge: 'puente_tiempo', s: 12 }, { v: 3, bridge: 'puente_asombro', s: 40 }], sfx: [{ v: 1, key: 'zarza', hold: 15, after: 'ardía' }] }, [1, 2, 3]);
+  assert.deepEqual(st.scenes, [{ v: 2, bridge: 'puente_tiempo', s: 12 }, { v: 3, bridge: 'puente_asombro', s: 14 }]);
+  assert.equal(st.sfx[0].hold, 10, 'los grandes momentos pueden durar hasta 10 s');
+  const tl = radioTimeline([[1, 0], [2, 5], [3, 9]], 14, st);
+  assert.deepEqual(tl.gaps.map(g => g.dur), [12, 14]);
+  const args = ffmpegArgs('v.mp3', [{ key: 'm_paz', kind: 'music', start: 0, dur: 40, fade: 2, loop: true, gain: 0.28 }], { m_paz: 'm.mp3' }, 'o.mp3', { swell: [[12, 23]] }).join(' ');
+  assert.match(args, /volume=enable='between\(t,12,23\)':volume=1.6/);
 });

@@ -158,6 +158,9 @@ export const LIBRARY = [
   { key: 'puente_drama', kind: 'bridge', seconds: 10, label: 'Cortina: dramática', prompt: 'Short radio drama music bridge: dramatic tense orchestral phrase with low strings, timpani hit and dark brass, ends on a suspended chord, no vocals' },
   { key: 'puente_tristeza', kind: 'bridge', seconds: 10, label: 'Cortina: tristeza', prompt: 'Short radio drama music bridge: sorrowful duduk phrase over soft strings, slow and tender, resolves sadly, no vocals' },
   { key: 'puente_esperanza', kind: 'bridge', seconds: 10, label: 'Cortina: esperanza', prompt: 'Short radio drama music bridge: hopeful warm phrase with lyre, harp and gentle strings, rising and luminous, no vocals' },
+  { key: 'puente_tiempo', kind: 'bridge', seconds: 20, label: 'Cortina larga: pasa el tiempo', prompt: 'Long radio drama music transition of about 20 seconds marking that years have passed: a melancholic yet hopeful theme on oud and strings slowly evolves, swells and settles into a new calm chord, cinematic, no vocals' },
+  { key: 'puente_epico', kind: 'bridge', seconds: 20, label: 'Cortina larga: épica / cambio de historia', prompt: 'Long epic radio drama music transition of about 20 seconds for a new chapter of the story: rising cinematic orchestral swell with horns, strings and frame drums, a powerful climax and a dramatic resolution, no vocals' },
+  { key: 'puente_tenso', kind: 'bridge', seconds: 20, label: 'Cortina larga: tensión', prompt: 'Long tense radio drama music transition of about 20 seconds: dark pulsing low strings and percussion building suspense, dissonant brass rising, ends on an unresolved ominous chord, no vocals' },
   { key: 'puente_viaje', kind: 'bridge', seconds: 10, label: 'Cortina: travesía', prompt: 'Short radio drama music bridge: oud and frame drum phrase suggesting a journey and passing of time, ends cleanly, no vocals' },
   // Golpes musicales (subrayan un momento dramático)
   { key: 'golpe_drama', kind: 'sting', seconds: 3, label: 'Golpe: dramático', prompt: 'Dramatic orchestral stinger hit, low brass and timpani, short and powerful' },
@@ -247,19 +250,19 @@ export function soundtrackPrompt(bookName, chapter, segments) {
 (La sintonía de entrada, el cierre y el tema de Elohim cuando Dios habla se ponen solos; no los elijas.)
 
 EL LENGUAJE DE LA RADIONOVELA
-1. ESCENAS: divide el capítulo en escenas. Hay escena nueva cuando cambia el lugar, el tiempo (otro día, «después de esto», años después) o el bloque de la historia. En Génesis 1 cada día de la creación es una escena. Marca en "scenes" el versículo donde EMPIEZA cada escena (no el primero del capítulo) y la cortina que la anuncia según el ánimo de lo que viene. Entre escenas habrá un silencio de voces de unos segundos lleno por esa cortina. De 2 a 10 escenas por capítulo si la historia lo permite.
+1. ESCENAS: divide el capítulo en escenas. Hay escena nueva cuando cambia el lugar, el tiempo (otro día, «después de esto», años después) o el bloque de la historia. En Génesis 1 cada día de la creación es una escena. Marca en "scenes" el versículo donde EMPIEZA cada escena (no el primero del capítulo), la cortina que la anuncia según el ánimo de lo que viene y cuántos segundos dura la transición sin voces ("s"). Las transiciones respiran: un cambio de lugar dura 5–7 s; un cambio de TIEMPO o de TEMA (años después, una nueva generación, un giro de la historia, el paso de la esclavitud al nacimiento de Moisés) dura 9–14 s, con las cortinas largas puente_tiempo, puente_epico o puente_tenso. De 2 a 10 escenas por capítulo si la historia lo permite.
 2. MÚSICA DE FONDO SIEMPRE, CINEMATOGRÁFICA: la radionovela nunca queda en silencio musical. Cubre TODO el capítulo con tramos seguidos de música y CAMBIA de tema con cada cambio de ánimo o de escena (hasta 8 tramos; mejor varios tramos que uno largo). Elige la música más dramática que el momento permita: la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), batallas (m_batalla), promesas de Elohim (m_alianza), viajes (m_viaje), tensión (m_tension), tristeza (m_tristeza), triunfo (m_triunfo), asombro (m_asombro), paz (m_paz), reverencia (m_reverente), esclavitud y opresión (m_opresion), el faraón o un rey enemigo (m_faraon), la zarza ardiente, el Sinaí o cuando Elohim se manifiesta con fuego (m_zarza), las plagas o un juicio en suspenso (m_plagas — intrigante, dramática), un milagro poderoso como el mar que se abre (m_milagro), persecuciones y huidas (m_persecucion). En genealogías o leyes usa m_reverente o m_paz.
 3. AMBIENTES: pinta cada lugar con su ambiente (hasta 8 tramos). Si el lugar se intuye, úsalo.
 3b. FONDO DE LA ACCIÓN MIENTRAS PASA — MUY IMPORTANTE: el oyente debe ESCUCHAR SIEMPRE de fondo lo que está ocurriendo mientras se narra. Si una acción dura uno o varios versículos (trabajo forzado, construcción, una plaga, la zarza que arde, una tormenta, una batalla, una huida, el mar abierto), ponla en "action" cubriendo TODOS esos versículos, aunque también haya un ambiente de lugar. Ejemplos: los israelitas oprimidos en Egipto → {"from":11,"to":14,"key":"obra_esclavos"}; la zarza → {"from":2,"to":5,"key":"zarza"}; la plaga de ranas → {"from":2,"to":14,"key":"ranas"}. Hasta 6 tramos.
 4. EFECTOS: generosos, como en la radio: cada acción que se pueda oír lleva su sonido (además de las escenas «hold») (la luz que irrumpe, las aguas, la tierra, las aves, los animales, el aliento de vida, pasos, puertas, golpes, fuego, espadas, llanto, el trueno). Hasta 16 por capítulo. "when": "start" (al comenzar el versículo) o "end" (al terminar).
 4a. REPETICIONES: lo que en la realidad no suena una sola vez, repítelo: látigos, martillazos, golpes, truenos, pasos de un ejército. Usa "repeat" (cuántas veces, 2 a 8) y "every" (segundos entre cada una, 0.8 a 4). Ejemplo: {"v":11,"key":"latigazo","repeat":5,"every":1.6} · {"v":14,"key":"martillazo","repeat":6,"every":1.2,"hold":5,"after":"en toda labor del campo"}.
-4b. ESCENAS SONORAS PARA IMAGINAR («hold») — LO MÁS IMPORTANTE: cada vez que el texto narra una acción que se puede oír, la narración se DETIENE y el oyente escucha la escena unos segundos, sin voz, para imaginarla y soñarla; luego sigue la voz. Aplícalo en CUALQUIER libro y tema: una batalla o pelea (5–6 s de espadas, gritos de guerra, ambiente de batalla), alguien que parte a caballo, en carro o en caravana (4–5 s), un ejército que marcha, una huida, el mar que se abre, una ciudad que arde, muros que caen, una tormenta, un banquete, una construcción, una lucha, una barca que rema, un rebaño que avanza, y cada acto de la creación al cumplirse («y fue así», «y fue la luz»). Duración "hold": 2–3 s para algo breve (una puerta, un golpe), 4–6 s para escenas largas (batallas, viajes, diluvio, huidas). Para combinar varios sonidos en la misma escena repite el mismo "v" y "after" con otra "key" (por ejemplo choque_espadas + gritos_batalla + el ambiente batalla). En un hold también puedes usar un ambiente. "after" = las ÚLTIMAS palabras EXACTAS del texto tras las cuales empieza la escena (cópialas tal cual). Hasta 12 escenas así por capítulo. Ejemplos: {"v":9,"key":"aguas_separan","hold":3,"after":"y fue así"} · {"v":15,"key":"choque_espadas","hold":6,"after":"y pelearon contra ellos"} · {"v":15,"key":"gritos_batalla","hold":6,"after":"y pelearon contra ellos"} · {"v":3,"key":"caravana","hold":4,"after":"y partió con sus siervos"}.
+4b. ESCENAS SONORAS PARA IMAGINAR («hold») — LO MÁS IMPORTANTE: cada vez que el texto narra una acción que se puede oír, la narración se DETIENE y el oyente escucha la escena unos segundos, sin voz, para imaginarla y soñarla; luego sigue la voz. Aplícalo en CUALQUIER libro y tema: una batalla o pelea (5–6 s de espadas, gritos de guerra, ambiente de batalla), alguien que parte a caballo, en carro o en caravana (4–5 s), un ejército que marcha, una huida, el mar que se abre, una ciudad que arde, muros que caen, una tormenta, un banquete, una construcción, una lucha, una barca que rema, un rebaño que avanza, y cada acto de la creación al cumplirse («y fue así», «y fue la luz»). Duración "hold": 2–3 s para algo breve (una puerta, un golpe), 5–8 s para escenas largas (batallas, viajes, huidas, trabajo forzado) y hasta 10 s para los grandes momentos (el diluvio, la zarza que arde, una plaga, el mar que se abre). Para combinar varios sonidos en la misma escena repite el mismo "v" y "after" con otra "key" (por ejemplo choque_espadas + gritos_batalla + el ambiente batalla). En un hold también puedes usar un ambiente. "after" = las ÚLTIMAS palabras EXACTAS del texto tras las cuales empieza la escena (cópialas tal cual). Hasta 12 escenas así por capítulo. Ejemplos: {"v":9,"key":"aguas_separan","hold":3,"after":"y fue así"} · {"v":15,"key":"choque_espadas","hold":6,"after":"y pelearon contra ellos"} · {"v":15,"key":"gritos_batalla","hold":6,"after":"y pelearon contra ellos"} · {"v":3,"key":"caravana","hold":4,"after":"y partió con sus siervos"}.
 5. GOLPES MUSICALES: en los instantes que cortan la respiración (una revelación, un juicio, una muerte, una traición, una victoria, una bendición solemne). Hasta 6 por capítulo.
-6. SILENCIOS DRAMÁTICOS: el silencio también es lenguaje. En "pauses" indica antes de qué versículo hace falta un silencio de 1 a 2 segundos para que el momento respire (después de un golpe, antes de una frase decisiva). Hasta 6.
+6. SILENCIOS DRAMÁTICOS: el silencio también es lenguaje. En "pauses" indica antes de qué versículo hace falta un silencio de 1 a 3 segundos para que el momento respire (después de un golpe, antes de una frase decisiva). Hasta 6.
 7. Nunca tapes las palabras de Yeshúa con efectos salvo que el texto lo pida.
 
 Responde SOLO con JSON:
-{"scenes":[{"v":6,"bridge":"puente_asombro"}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"action":[{"from":11,"to":14,"key":"obra_esclavos"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","hold":3,"after":"y fue la luz"},{"v":11,"key":"vida_brota","when":"end"},{"v":13,"key":"latigazo","repeat":4,"every":1.8}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
+{"scenes":[{"v":6,"bridge":"puente_asombro","s":6},{"v":15,"bridge":"puente_tiempo","s":12}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"action":[{"from":11,"to":14,"key":"obra_esclavos"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","hold":3,"after":"y fue la luz"},{"v":11,"key":"vida_brota","when":"end"},{"v":13,"key":"latigazo","repeat":4,"every":1.8}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
     user: `${bookName} capítulo ${chapter}.\n${lines}`,
   };
 }
@@ -293,7 +296,7 @@ export function cleanSoundtrack(raw, verseNumbers) {
       if (kind === 'sfx' && rep >= 2) { item.repeat = Math.min(8, rep); item.every = Math.round(Math.min(4, Math.max(0.8, Number(e?.every) || 1.6)) * 10) / 10; }
       // «hold»: la narración se detiene y el efecto suena solo unos segundos
       if (kind === 'sfx' && Number(e?.hold) > 0 && out.filter(x => x.hold).length < 14) {
-        item.hold = Math.round(Math.min(6, Math.max(1.5, Number(e.hold))) * 10) / 10;
+        item.hold = Math.round(Math.min(10, Math.max(1.5, Number(e.hold))) * 10) / 10;
         const after = String(e?.after || '').trim().slice(0, 140);
         if (after) item.after = after;
       }
@@ -319,14 +322,16 @@ export function cleanSoundtrack(raw, verseNumbers) {
     for (const e of Array.isArray(raw?.scenes) ? raw.scenes : []) {
       const v = Math.round(Number(e?.v)); if (!(v > min && v <= max) || seen.has(v)) continue;
       const bridge = okKey(String(e?.bridge || ''), 'bridge') ? e.bridge : 'puente_solemne';
-      seen.add(v); out.scenes.push({ v, bridge });
+      seen.add(v);
+      const sec = Number(e?.s);
+      out.scenes.push(sec > 0 ? { v, bridge, s: Math.round(Math.min(14, Math.max(3.5, sec)) * 10) / 10 } : { v, bridge });
       if (out.scenes.length >= 10) break;
     }
     out.scenes.sort((a, b) => a.v - b.v);
     out.pauses = [];
     for (const e of Array.isArray(raw?.pauses) ? raw.pauses : []) {
       const v = Math.round(Number(e?.v)); if (!(v > min && v <= max) || seen.has(v)) continue;
-      seen.add(v); out.pauses.push({ v, s: Math.min(2.5, Math.max(0.8, Number(e?.s) || 1.5)) });
+      seen.add(v); out.pauses.push({ v, s: Math.min(3, Math.max(0.8, Number(e?.s) || 1.5)) });
       if (out.pauses.length >= 6) break;
     }
     out.stings = points(raw?.stings, 'sting', 6);
@@ -385,7 +390,7 @@ export function radioTimeline(timings, total, st, opts = {}) {
   const R = { ...RADIO, ...opts };
   const t = [...(timings || [])].sort((a, b) => a[1] - b[1]);
   const inserts = {};
-  for (const sc of st?.scenes || []) inserts[sc.v] = { dur: R.scene, kind: 'scene', bridge: sc.bridge };
+  for (const sc of st?.scenes || []) inserts[sc.v] = { dur: sc.s || R.scene, kind: 'scene', bridge: sc.bridge };
   for (const p of st?.pauses || []) if (!inserts[p.v]) inserts[p.v] = { dur: p.s, kind: 'pause' };
   const cuts = [];
   for (const [v, start] of t) if (inserts[v] && start > 0.2) cuts.push({ v, at: Math.max(0, start - 0.05), ...inserts[v] });
@@ -578,7 +583,9 @@ export function ffmpegArgs(voicePath, layers, files, outPath, opts = {}) {
       if (!actFinal) parts.push('[vfull]asplit=2[voice][key]');
       // Cuando habla Elohim la música de fondo baja un poco más para dejar sitio a su tema
       const dv = (opts.divine || []).map(([a, b]) => `between(t,${round(a)},${round(b)})`).join('+');
-      parts.push(`${bed.join('')}amix=inputs=${bed.length}:normalize=0:duration=longest${dv ? `,volume=enable='${dv}':volume=0.5` : ''}[bed]`);
+      // En las transiciones largas (sin voces) la música sube y llena el cambio de escena
+      const sw = (opts.swell || []).map(([a, b]) => `between(t,${round(a)},${round(b)})`).join('+');
+      parts.push(`${bed.join('')}amix=inputs=${bed.length}:normalize=0:duration=longest${dv ? `,volume=enable='${dv}':volume=0.5` : ''}${sw ? `,volume=enable='${sw}':volume=1.6` : ''}[bed]`);
       // La música y los ambientes bajan solos cuando alguien habla
       parts.push('[bed][key]sidechaincompress=threshold=0.04:ratio=5:attack=30:release=500:makeup=1[ducked]');
       finals.push('[voice]', '[ducked]');
