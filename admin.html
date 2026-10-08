@@ -435,6 +435,17 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Red bíblica (Tanaj ↔ Nuevo Testamento)</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Citas, cumplimientos y alusiones a los profetas, la Torá y los Salmos en los 260 capítulos del NT. Se subrayan en el lector y abren un panel de conexiones (también en sentido inverso). Lote de Anthropic: ~$2–4 una sola vez.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" id="lpregenBtn" onclick="PREGEN.links.action()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="lpregenMsg" style="margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Audio de la Biblia · ElevenLabs</div>
             <div style="font-size:0.72rem;color:var(--text-dim)">Lectura dramatizada de la Traducción Kodesh: narrador, Yeshúa, discípulos y demás personajes con su propia voz (las multitudes las lee el narrador; YHWH se lee «Adonai»). La IA prepara el guion de cada capítulo sin cambiar una palabra; puedes revisarlo antes de grabar. Cada capítulo gasta ~4.000–7.000 créditos de ElevenLabs.</div>
           </div>
@@ -1098,10 +1109,15 @@ const PREGEN = {
     confirmText: '¿Generar los títulos de sección de toda la Biblia? Costo aproximado: ~$1 una sola vez.',
     nothingText: '✓ Todos los capítulos ya tienen títulos.',
   }),
+  links: makePregen({
+    endpoint: '/api/links-pregen', btnId: 'lpregenBtn', msgId: 'lpregenMsg', unit: 'capítulos', retry: true,
+    confirmText: '¿Generar la red bíblica (citas del Tanaj en el Nuevo Testamento)? Costo aproximado: $2–4 una sola vez.',
+    nothingText: '✓ Todos los capítulos del NT ya tienen sus conexiones.',
+  }),
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), AUDIO_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load()]);
 }
 
 // ── Audio de la Biblia (api/audio-pregen.js) ──
