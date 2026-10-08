@@ -5,7 +5,8 @@
 // Solo superadmin (JWT + 2FA). POST { action: 'generate', id, extra? }
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions } from './_security.js';
-import { ART_IDS, artPrompt } from './_art.js';
+import fs from 'node:fs';
+import { ART_IDS, artPrompt, HOME_IDS, HOME_SCENES, homePrompt, parashaPrompt } from './_art.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -17,19 +18,30 @@ async function put(path, body, type, cache = 'max-age=31536000') {
   });
   if (!r.ok) throw new Error(`storage → ${r.status}`);
 }
-async function manifest() {
-  const r = await fetch(`${pub('fiestas.json')}?t=${Date.now()}`, { cache: 'no-store' });
+let PARASHOT = null;
+const parashot = () => PARASHOT || (PARASHOT = JSON.parse(fs.readFileSync(new URL('../parashot-data.json', import.meta.url), 'utf8')));
+// id: fiesta («pesaj») · «home:hero_day» · «parasha:2»
+function job(id) {
+  if (ART_IDS.includes(id)) return { set: 'fiestas.json', key: id, prompt: artPrompt(id), size: '1536x1024' };
+  const h = /^home:(\w+)$/.exec(id);
+  if (h && HOME_IDS.includes(h[1])) return { set: 'inicio.json', key: h[1], prompt: homePrompt(h[1]), size: HOME_SCENES[h[1]][1] };
+  const p = /^parasha:(\d{1,2})$/.exec(id);
+  if (p) { const x = parashot().find(q => q.num === +p[1]); if (x) return { set: 'inicio.json', key: 'p' + x.num, prompt: parashaPrompt(x), size: '1536x1024' }; }
+  return null;
+}
+async function manifest(file) {
+  const r = await fetch(`${pub(file)}?t=${Date.now()}`, { cache: 'no-store' });
   if (!r.ok) return {};
   try { return await r.json(); } catch (e) { return {}; }
 }
-async function generate(id, extra) {
+async function generate(j, extra) {
   const models = [process.env.OPENAI_IMAGE_MODEL, 'gpt-image-1'].filter(Boolean);
   let last = '';
   for (const model of [...new Set(models)]) {
     const r = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt: artPrompt(id) + (extra ? `\n\nAlso: ${String(extra).slice(0, 400)}` : ''), size: '1536x1024', quality: 'high', n: 1, output_format: 'webp', output_compression: 86 }),
+      body: JSON.stringify({ model, prompt: j.prompt + (extra ? `\n\nAlso: ${String(extra).slice(0, 400)}` : ''), size: j.size, quality: 'high', n: 1, output_format: 'webp', output_compression: 86 }),
     });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.data && d.data[0] && d.data[0].b64_json) return Buffer.from(d.data[0].b64_json, 'base64');
@@ -47,15 +59,16 @@ export default async function handler(req, res) {
   if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
   if (!process.env.OPENAI_API_KEY) return res.status(503).json({ error: 'Falta OPENAI_API_KEY en Vercel' });
   const id = String(req.body?.id || '');
-  if (!ART_IDS.includes(id)) return res.status(400).json({ error: 'Fiesta inválida' });
+  const j = job(id);
+  if (!j) return res.status(400).json({ error: 'Imagen inválida' });
   try {
-    const img = await generate(id, req.body?.extra);
-    const path = `fiesta-${id}-${Date.now()}.webp`;
+    const img = await generate(j, req.body?.extra);
+    const path = `${j.set === 'fiestas.json' ? 'fiesta' : 'inicio'}-${j.key}-${Date.now()}.webp`;
     await put(path, img, 'image/webp');
-    const m = await manifest();
-    m[id] = pub(path);
-    await put('fiestas.json', JSON.stringify(m), 'application/json', 'max-age=0');
-    return res.status(200).json({ art: m, url: m[id] });
+    const m = await manifest(j.set);
+    m[j.key] = pub(path);
+    await put(j.set, JSON.stringify(m), 'application/json', 'max-age=0');
+    return res.status(200).json({ art: m, url: m[j.key] });
   } catch (e) {
     console.error('art-gen', e.message);
     return res.status(500).json({ error: String(e.message).slice(0, 300) });

@@ -14,3 +14,22 @@ export const ART_SCENES = {
 };
 export const ART_IDS = Object.keys(ART_SCENES);
 export const artPrompt = id => `${ART_STYLE}\n\nScene: ${ART_SCENES[id]}`;
+
+// ── Imágenes del inicio: fotografía realista (no óleo) ──
+export const PHOTO_STYLE = 'Photorealistic, cinematic photograph shot on a full-frame camera with a 35mm lens, natural golden-hour light, soft atmospheric haze, shallow depth of field, warm cream, sand, ochre and olive-green tones, gentle film grain, high dynamic range, ultra detailed, calm and reverent mood. Real textures (stone, linen, parchment, wood, leaves). No text, no letters, no logos, no watermarks, no modern objects, no faces visible (people, if any, only small and distant or seen from behind).';
+export const HOME_SCENES = {
+  hero_day: ['Jerusalem\'s ancient stone walls at golden sunset seen from the Mount of Olives, tall cypress trees along the wall, the sun low and glowing on the horizon, out-of-focus olive branches framing the upper right corner. The left half of the frame is open, bright, softly hazy sky fading to warm cream, empty for a title.', '1536x1024'],
+  hero_night: ['Jerusalem\'s ancient stone walls seen from the Mount of Olives at blue hour, deep indigo sky with the first stars and a thin crescent moon, warm lamplight glowing on the stones, olive branches in the upper right corner. The left half is calm, dark, empty sky.', '1536x1024'],
+  promesa: ['An ancient parchment scroll partly unrolled on soft, wrinkled cream linen, gentle window light from the right, very shallow depth of field. The left two thirds are plain, bright and out of focus.', '1536x1024'],
+  continua: ['An old open Bible with worn pages on a dark walnut table, a small fresh olive branch beside it, warm candlelight from the right, deep shadows. The left two thirds are dark and empty.', '1536x1024'],
+  ex_asistente: ['Soft, low-contrast macro photograph of an aged parchment with handwritten Hebrew letters and a quill, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+  ex_ciclo: ['Soft, low-contrast photograph of weathered limestone temple columns in warm light, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+  ex_mapas: ['Soft, low-contrast macro photograph of an antique brass compass resting on an old parchment map of the Mediterranean, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+  ex_buscar: ['Soft, low-contrast macro photograph of an old magnifying glass over the pages of an ancient book, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+  ex_estudio: ['Soft, low-contrast photograph of a wooden desk with an open notebook, a pen and an olive sprig, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+  ex_tutorial: ['Soft, low-contrast macro photograph of an old leather-bound guidebook and a small oil lamp, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+};
+export const HOME_IDS = Object.keys(HOME_SCENES);
+// Porciones: la escena sale del tema de cada porción (parashot-data.json)
+export const parashaPrompt = p => `${PHOTO_STYLE}\n\nScene (landscape or symbolic objects from the biblical story, historically accurate ancient Israel / Ancient Near East, no faces): ${p.tema}. Portion «${p.nombre}» (${p.torah}). Wide 3:2 composition, the right side brighter and the left side calmer.`;
+export const homePrompt = id => `${PHOTO_STYLE}\n\nScene: ${HOME_SCENES[id][0]}`;

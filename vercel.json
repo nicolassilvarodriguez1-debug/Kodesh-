@@ -120,7 +120,8 @@
     },
     "api/art-gen.js": {
       "memory": 1024,
-      "maxDuration": 300
+      "maxDuration": 300,
+      "includeFiles": "parashot-data.json"
     },
     "api/roots-pregen.js": {
       "memory": 1024,

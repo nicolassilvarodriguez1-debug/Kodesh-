@@ -151,6 +151,7 @@ async function badgeSaveManifest(m) {
 
 
 // ── Arte de las fiestas y ajustes del calendario bíblico (mismo bucket público) ──
+import { HOME_IDS } from './_art.js';
 const FEAST_IDS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'shabat'];
 async function publicJson(path, fallback) {
   const r = await fetch(`${badgePublic(path)}?t=${Date.now()}`, { cache: 'no-store' });
@@ -222,27 +223,28 @@ export default async function handler(req, res) {
 
   // ── ACTION: arte de las fiestas ──
   if (action === 'feast_art_list') {
-    try { return res.status(200).json({ art: await publicJson('fiestas.json', {}) }); }
+    try { return res.status(200).json({ art: await publicJson(req.body.set === 'inicio' ? 'inicio.json' : 'fiestas.json', {}) }); }
     catch (err) { return res.status(500).json({ error: err.message }); }
   }
   if (action === 'feast_art_upload' || action === 'feast_art_delete') {
     if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
     const id = String(req.body.id || '');
-    if (!FEAST_IDS.includes(id)) return res.status(400).json({ error: 'Fiesta inválida' });
+    const home = req.body.set === 'inicio', file = home ? 'inicio.json' : 'fiestas.json';
+    if (home ? !(HOME_IDS.includes(id) || /^p([1-9]|[1-4]\d|5[0-4])$/.test(id)) : !FEAST_IDS.includes(id)) return res.status(400).json({ error: 'Imagen inválida' });
     try {
       await badgeEnsureBucket();
-      const m = await publicJson('fiestas.json', {});
+      const m = await publicJson(file, {});
       if (action === 'feast_art_delete') delete m[id];
       else {
         const type = ['image/webp', 'image/png', 'image/jpeg'].includes(req.body.type) ? req.body.type : null;
         if (!type || typeof req.body.data !== 'string') return res.status(400).json({ error: 'Imagen inválida' });
         const buf = Buffer.from(req.body.data, 'base64');
         if (buf.length < 1000 || buf.length > 3145728) return res.status(400).json({ error: 'La imagen debe pesar menos de 3 MB' });
-        const path = `fiesta-${id}-${Date.now()}.${type.split('/')[1].replace('jpeg', 'jpg')}`;
+        const path = `${home ? 'inicio' : 'fiesta'}-${id}-${Date.now()}.${type.split('/')[1].replace('jpeg', 'jpg')}`;
         await badgePut(path, buf, type);
         m[id] = badgePublic(path);
       }
-      await badgePut('fiestas.json', JSON.stringify(m), 'application/json', 'max-age=0');
+      await badgePut(file, JSON.stringify(m), 'application/json', 'max-age=0');
       return res.status(200).json({ art: m });
     } catch (err) { return res.status(500).json({ error: err.message }); }
   }

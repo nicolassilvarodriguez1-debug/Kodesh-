@@ -549,6 +549,20 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
       </section>
       <section class="tool">
         <div class="tool-head">
+          <div><h3>Imágenes del inicio</h3><span class="tool-count" id="hiCount">—</span></div>
+          <div class="tool-actions"><button class="btn-sm" onclick="HI_ADMIN.load()">Revisar</button><button class="btn-main" onclick="HI_ADMIN.genMissing('home')">✦ Generar las del inicio</button></div>
+        </div>
+        <p class="tool-desc">Fotos realistas (OpenAI) de la portada de día y de noche, la promesa, «Continúa tu lectura» y las 6 tarjetas de Explora. «✦» genera una nueva (~1 minuto); «Subir» usa una imagen tuya.</p>
+        <div class="upload-msg" id="hiMsg"></div>
+        <div id="hiGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px"></div>
+        <details class="tool-more" style="margin-top:14px"><summary>Las 54 porciones (<span id="hiPCount">0</span> de 54)</summary>
+          <div style="margin:10px 0"><button class="btn-main" onclick="HI_ADMIN.genMissing('parasha')">✦ Generar las porciones que faltan</button> <span style="color:var(--text-dim);font-size:.85rem">~$0.25 cada una</span></div>
+          <div id="hiPGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
+        </details>
+        <input type="file" id="hiOne" accept="image/*" hidden>
+      </section>
+      <section class="tool">
+        <div class="tool-head">
           <div><h3>Arte de las fiestas</h3><span class="tool-count"><span id="faCount">—</span> de 8</span></div>
           <div class="tool-actions"><button class="btn-sm" onclick="FA_ADMIN.load()">Revisar</button><button class="btn-main" onclick="FA_ADMIN.genMissing()">✦ Pintar las que faltan</button></div>
         </div>
@@ -1213,7 +1227,7 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load(), PE_ADMIN.load(), RT_ADMIN.load(), CAL_ADMIN.load(), FA_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load(), PE_ADMIN.load(), RT_ADMIN.load(), CAL_ADMIN.load(), FA_ADMIN.load(), HI_ADMIN.load()]);
 }
 
 // ── Calendario bíblico observado (ajustes) ──
@@ -1259,6 +1273,77 @@ const CAL_ADMIN = (() => {
     catch (e) { msg('Error: ' + e.message); }
   }
   return { load, save };
+})();
+
+// ── Imágenes del inicio (fotos realistas) ──
+const HI_ADMIN = (() => {
+  const HOME = [['hero_day', 'Portada · día'], ['hero_night', 'Portada · noche'], ['promesa', 'Promesa del día'], ['continua', 'Continúa tu lectura'], ['ex_asistente', 'Explora · Asistente'], ['ex_ciclo', 'Explora · Ciclo'], ['ex_mapas', 'Explora · Mapas'], ['ex_buscar', 'Explora · Buscar'], ['ex_estudio', 'Explora · Mi estudio'], ['ex_tutorial', 'Explora · Tutorial']];
+  let art = {}, parashot = [], busy = false;
+  const msg = t => { const m = document.getElementById('hiMsg'); if (m) m.textContent = t || ''; };
+  async function call(body) { const res = await adminApi(body); const d = await res.json().catch(() => ({})); if (!res.ok) throw new Error(d.error || `Error ${res.status}`); return d; }
+  const tile = (key, label, gen) => `<div style="border:1px solid var(--border);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px">
+      ${art[key] ? `<img src="${art[key]}" alt="" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:6px">` : '<span style="width:100%;aspect-ratio:3/2;border:1.5px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">sin imagen</span>'}
+      <b style="font-size:.85rem">${label}</b><div style="display:flex;gap:6px"><button class="btn-sm" data-gen="${gen}">✦</button><button class="btn-sm" data-up="${key}">Subir</button></div></div>`;
+  function render() {
+    const g = document.getElementById('hiGrid'), pg = document.getElementById('hiPGrid'); if (!g) return;
+    g.innerHTML = HOME.map(([k, l]) => tile(k, l, 'home:' + k)).join('');
+    pg.innerHTML = parashot.map(p => tile('p' + p.num, `${p.num}. ${p.nombre}`, 'parasha:' + p.num)).join('');
+    document.getElementById('hiCount').textContent = `${HOME.filter(([k]) => art[k]).length} de ${HOME.length}`;
+    document.getElementById('hiPCount').textContent = parashot.filter(p => art['p' + p.num]).length;
+    document.querySelectorAll('#hiGrid [data-gen], #hiPGrid [data-gen]').forEach(b => b.onclick = () => {
+      const key = b.dataset.gen.replace('home:', '').replace('parasha:', 'p');
+      let extra = '';
+      if (art[key]) { const x = prompt('¿Algo que quieras cambiar en esta imagen? (opcional)', ''); if (x === null) return; extra = x; }
+      gen([b.dataset.gen], extra);
+    });
+    document.querySelectorAll('#hiGrid [data-up], #hiPGrid [data-up]').forEach(b => b.onclick = () => pick(b.dataset.up));
+  }
+  async function load() {
+    try {
+      if (!parashot.length) parashot = await fetch('/parashot-data.json').then(r => r.json());
+      art = (await call({ action: 'feast_art_list', set: 'inicio' })).art || {}; render(); msg('');
+    } catch (e) { msg('No se pudo cargar: ' + e.message); }
+  }
+  async function gen(ids, extra) {
+    if (busy) return; busy = true;
+    try {
+      let i = 0;
+      for (const id of ids) {
+        msg(`Generando ${++i} de ${ids.length}… (≈1 minuto cada una)`);
+        const res = await fetch('/api/art-gen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await sb.auth.getSession()).data.session.access_token}` }, body: JSON.stringify({ id, extra: extra || '' }) });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+        art = d.art || art; render();
+      }
+      msg('Listo ✓');
+    } catch (e) { msg('Error: ' + e.message + ' — vuelve a tocar para seguir.'); }
+    busy = false;
+  }
+  function genMissing(kind) {
+    const ids = kind === 'home' ? HOME.filter(([k]) => !art[k]).map(([k]) => 'home:' + k) : parashot.filter(p => !art['p' + p.num]).map(p => 'parasha:' + p.num);
+    if (!ids.length) return msg('Ya están todas ✓');
+    gen(ids);
+  }
+  async function shrink(file) {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / bmp.width), c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    let blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.84));
+    if (!blob || blob.type !== 'image/webp') blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.86));
+    const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+    return { data, type: blob.type };
+  }
+  function pick(id) {
+    const inp = document.getElementById('hiOne');
+    inp.onchange = async () => {
+      const f = inp.files[0]; inp.value = ''; if (!f) return;
+      try { msg('Subiendo…'); const { data, type } = await shrink(f); art = (await call({ action: 'feast_art_upload', set: 'inicio', id, data, type })).art || art; render(); msg('Listo ✓'); }
+      catch (e) { msg('Error: ' + e.message); }
+    };
+    inp.click();
+  }
+  return { load, genMissing };
 })();
 
 // ── Arte de las fiestas ──
