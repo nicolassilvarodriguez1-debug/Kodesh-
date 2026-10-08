@@ -44,6 +44,9 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
 .xl-item .t { font-size: .62rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
 .xl-item.soft { opacity: .75; }
 .xl-net-btn { gap: 6px; }
+@keyframes xlGlow { 0%, 100% { box-shadow: 0 0 0 4px rgba(201,168,76,.28), 0 0 18px rgba(201,168,76,.25); } 50% { box-shadow: 0 0 0 7px rgba(201,168,76,.42), 0 0 30px rgba(201,168,76,.4); } }
+.verse.xl-target { background: rgba(201,168,76,.2) !important; border-radius: 8px; animation: xlGlow 1.6s ease-in-out infinite; transition: background 1.4s ease, box-shadow 1.4s ease; }
+.verse.xl-target.xl-target-out { background: transparent !important; animation: none; box-shadow: none; }
 .xl-overlay { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s; }
 .xl-overlay.open { opacity: 1; pointer-events: auto; }
 .xl-sheet { position: fixed; left: 50%; bottom: 0; z-index: 401; width: min(640px, 100%); max-height: 78vh; overflow-y: auto; transform: translate(-50%, 105%);
@@ -199,8 +202,17 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     close();
     const after = () => setTimeout(() => {
       const el = document.getElementById('v-' + v);
-      if (el) { const top = el.getBoundingClientRect().top + window.scrollY - 110; window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); el.classList.add('audio-now'); setTimeout(() => el.classList.remove('audio-now'), 2200); }
-    }, 350);
+      if (!el) return;
+      const main = $('mainContent');
+      if (main && main.scrollHeight > main.clientHeight + 10 && getComputedStyle(main).overflowY !== 'visible') el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else { const top = el.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.3; window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
+      // Se ilumina 8 segundos para ubicarse, y se apaga suave
+      document.querySelectorAll('.verse.xl-target').forEach(x => x.classList.remove('xl-target', 'xl-target-out'));
+      el.classList.add('xl-target');
+      clearTimeout(el._xlT1); clearTimeout(el._xlT2);
+      el._xlT1 = setTimeout(() => el.classList.add('xl-target-out'), 8000);
+      el._xlT2 = setTimeout(() => el.classList.remove('xl-target', 'xl-target-out'), 9500);
+    }, 450);
     if (typeof selectBook === 'function' && book !== state.currentBook) selectBook(book);
     Promise.resolve(loadChapter(book, ch)).then(after);
   }
