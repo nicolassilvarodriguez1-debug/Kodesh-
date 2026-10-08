@@ -177,10 +177,17 @@
     }
     if (v !== st.verse) { st.verse = v; highlight(); }
   }
+  // El versículo en pantalla: en el capítulo abierto o, en «Leer como libro»,
+  // en un capítulo que se añadió debajo.
+  function verseNode(book, chapter, v) {
+    if (book === state.currentBook && chapter === state.currentChapter)
+      return document.querySelector(`#mainContent .bible-text:not(.book-cont) .verse[data-verse="${v}"]`);
+    return document.querySelector(`#mainContent .book-cont[data-book="${book}"][data-chapter="${chapter}"] .verse[data-verse="${v}"]`);
+  }
   function highlight() {
     document.querySelectorAll('.verse.audio-now').forEach(e => e.classList.remove('audio-now'));
-    if (st.book !== state.currentBook || st.chapter !== state.currentChapter || !st.verse) return;
-    const el = document.querySelector(`#mainContent .verse[data-verse="${st.verse}"]`);
+    if (!st.verse || !st.book) return;
+    const el = verseNode(st.book, st.chapter, st.verse);
     if (!el) return;
     el.classList.add('audio-now');
     if (audio && !audio.paused && Date.now() - st.userScrollAt > 5000) {
@@ -196,7 +203,13 @@
     if (u && st.book === u.book && st.chapter >= u.chapter) { st.until = null; if (typeof showToast === 'function') showToast('Fin de la porción ✦ Shabat shalom'); return; }
     const next = st.chapter + 1;
     const rows = await rowsFor(st.book);
-    if (rows[next] && typeof loadChapter === 'function') {
+    if (!rows[next]) return;
+    // «Leer como libro»: el siguiente capítulo se añade debajo y se sigue leyendo sin recargar
+    if (window.KodeshBook && window.KodeshBook.active()) {
+      const box = await window.KodeshBook.ensure(st.book, next);
+      if (box) { start(st.book, next, rows[next]); return; }
+    }
+    if (typeof loadChapter === 'function') {
       await loadChapter(st.book, next);
       start(st.book, next, rows[next]);
     }

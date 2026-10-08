@@ -155,6 +155,22 @@ html.book-mode .book-cont { margin-top: 0; }
     }, { rootMargin: '-45% 0px -50% 0px' });
   }
 
+  // Para el reproductor: en modo libro, el capítulo siguiente se añade debajo
+  // (no se recarga la página) y se puede seguir leyendo lo anterior.
+  window.KodeshBook = {
+    active() { const m = document.getElementById('mainContent'); return on() && !!m && m.classList.contains('book-flow'); },
+    async ensure(book, chapter) {
+      const find = () => document.querySelector(`#mainContent .book-cont[data-book="${book}"][data-chapter="${chapter}"]`);
+      for (let i = 0; i < 12 && !find(); i++) {
+        if (loading) { await new Promise(r => setTimeout(r, 150)); continue; }
+        const before = cursor && `${cursor.book}.${cursor.chapter}`;
+        await appendNext();
+        if (!cursor || `${cursor.book}.${cursor.chapter}` === before) break;   // no hay más
+      }
+      return find();
+    },
+  };
+
   // Cada vez que el lector pinta un capítulo nuevo, se prepara la lectura continua
   const main = document.getElementById('mainContent');
   if (main) {
