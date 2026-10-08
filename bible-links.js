@@ -24,8 +24,26 @@
 
   const css = document.createElement('style');
   css.textContent = `
-.word.xlink { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--gold); text-decoration-thickness: 2px; text-underline-offset: 4px; cursor: pointer; }
-.verse.xlink-verse .word { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: color-mix(in srgb, var(--gold) 55%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: 4px; cursor: pointer; }
+/* Profecías cumplidas y citas: subrayado dorado claro + ✦ al final del versículo */
+.word.xl-strong { text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 2px; text-underline-offset: 4px; cursor: pointer; }
+.verse.xlv-strong .word { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--gold) 70%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: 4px; cursor: pointer; }
+/* Alusiones: punteado tenue */
+.word.xl-soft { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: color-mix(in srgb, var(--gold) 45%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: 4px; cursor: pointer; }
+.verse.xlv-soft .word { text-decoration: underline; text-decoration-style: dotted; text-decoration-color: color-mix(in srgb, var(--gold) 35%, transparent); text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: pointer; }
+html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { text-decoration: none; cursor: inherit; }
+.xl-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.35em; height: 1.35em; margin-left: 2px; border-radius: 50%; border: none; background: var(--gold-glow, rgba(201,168,76,.14)); color: var(--gold); font-size: .78em; line-height: 1; vertical-align: .15em; cursor: pointer; padding: 0; }
+.xl-tip { border: 1px solid var(--gold-dim, #3a3220); border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; background: var(--gold-soft, rgba(201,168,76,.06)); font-size: .92rem; line-height: 1.5; }
+.xl-tip button { margin-top: 8px; border: none; background: var(--gold); color: #15120a; border-radius: 14px; padding: 6px 14px; font: inherit; font-size: .85rem; cursor: pointer; }
+.xl-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; font-size: .74rem; color: var(--text-dim); margin: -2px 0 8px; }
+.xl-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 5px; vertical-align: -1px; }
+.xl-sum { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+.xl-sum span { border: 1px solid var(--border2, #2A2836); border-radius: 12px; padding: 4px 10px; font-size: .8rem; color: var(--text-mid); }
+.xl-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--border, #2A2836); border-radius: 12px; padding: 10px 12px; margin: 6px 0; background: transparent; color: var(--text); font: inherit; cursor: pointer; }
+.xl-item .v { font-family: var(--font-display); color: var(--gold); min-width: 48px; }
+.xl-item .r { flex: 1; font-size: .95rem; }
+.xl-item .t { font-size: .62rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.xl-item.soft { opacity: .75; }
+.xl-net-btn { gap: 6px; }
 .xl-overlay { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s; }
 .xl-overlay.open { opacity: 1; pointer-events: auto; }
 .xl-sheet { position: fixed; left: 50%; bottom: 0; z-index: 401; width: min(640px, 100%); max-height: 78vh; overflow-y: auto; transform: translate(-50%, 105%);
@@ -64,7 +82,10 @@
   }
 
   // ── Subrayar ──
-  function markPhrase(vEl, phrase) {
+  const STRONG = k => k === 'cita' || k === 'cumplimiento';
+  const alusionesOn = () => { try { return localStorage.getItem('kodesh_xl_alusiones') !== '0'; } catch (e) { return true; } };
+  document.documentElement.classList.toggle('xl-no-alusion', !alusionesOn());
+  function markPhrase(vEl, phrase, cls) {
     const words = [...vEl.querySelectorAll('.word')];
     const target = norm(phrase).split(' ').filter(Boolean);
     if (!target.length) return false;
@@ -76,7 +97,7 @@
         const parts = toks[k].split(' ');
         if (parts.every((p, n) => p === target[j + n])) { j += parts.length; k++; } else break;
       }
-      if (j >= target.length) { for (let m = i; m < k; m++) words[m].classList.add('xlink'); return true; }
+      if (j >= target.length) { for (let m = i; m < k; m++) words[m].classList.add(cls); return true; }
     }
     return false;
   }
@@ -85,15 +106,50 @@
     const rows = (await rowsFor(book)).filter(r => NT.has(book) ? r.nt_chapter === chapter : r.ot_chapter === chapter);
     if (!rows.length) return;
     const isNT = NT.has(book);
-    for (const r of rows) {
+    // primero las alusiones y después lo fuerte, para que lo fuerte gane si se pisan
+    const sorted = [...rows].sort((a, b) => (STRONG(a.kind) ? 1 : 0) - (STRONG(b.kind) ? 1 : 0));
+    for (const r of sorted) {
+      const strong = STRONG(r.kind);
       const vs = isNT ? [r.nt_verse] : Array.from({ length: (r.ot_verse_end || r.ot_verse) - r.ot_verse + 1 }, (_, i) => r.ot_verse + i);
       for (const v of vs) {
         const vEl = container.querySelector(`.verse[data-verse="${v}"]`);
         if (!vEl) continue;
         vEl.dataset.xlink = '1';
-        if (!(isNT && r.phrase && markPhrase(vEl, r.phrase))) vEl.classList.add('xlink-verse');
+        if (strong) vEl.dataset.xlStrong = '1';
+        if (!(isNT && r.phrase && markPhrase(vEl, r.phrase, strong ? 'xl-strong' : 'xl-soft'))) {
+          vEl.classList.add(strong ? 'xlv-strong' : 'xlv-soft');
+          if (strong) vEl.classList.remove('xlv-soft');
+        }
+        // ✦ al final del versículo cuando hay profecía o cita
+        if (strong && !vEl.querySelector('.xl-mark')) {
+          const b = document.createElement('button');
+          b.className = 'xl-mark'; b.type = 'button'; b.textContent = '✦';
+          b.setAttribute('aria-label', 'Ver la conexión con el Tanaj');
+          vEl.appendChild(b);
+        }
       }
     }
+    if (container === $('mainContent')?.querySelector('.bible-text:not(.book-cont)')) addNetButton(book, chapter, rows);
+    if (rows.some(r => STRONG(r.kind))) firstHint();
+  }
+
+  // Aviso único la primera vez que alguien ve una profecía marcada
+  function firstHint() {
+    try { if (localStorage.getItem('kodesh_xl_hint')) return; localStorage.setItem('kodesh_xl_hint', '1'); } catch (e) { return; }
+    if (typeof showToast === 'function') setTimeout(() => showToast('✦ Lo subrayado en dorado viene del Tanaj: tócalo para ver la conexión'), 900);
+  }
+
+  // Botón «Red» en el encabezado del capítulo
+  function addNetButton(book, chapter, rows) {
+    const meta = document.querySelector('#mainContent .chapter-meta');
+    if (!meta || meta.querySelector('.xl-net-btn')) return;
+    const b = document.createElement('button');
+    b.className = 'version-chip xl-net-btn';
+    b.innerHTML = `<span style="color:var(--gold)">✦</span><span>Red ${rows.length}</span>`;
+    b.setAttribute('aria-label', 'Conexiones del capítulo con ' + (NT.has(book) ? 'el Tanaj' : 'el Nuevo Testamento'));
+    b.onclick = () => openChapter(book, chapter);
+    const notes = meta.querySelector('.btn-notes-chapter');
+    meta.insertBefore(b, notes || null);
   }
   function decorateAll() {
     const main = $('mainContent'); if (!main || typeof state === 'undefined') return;
@@ -104,10 +160,14 @@
 
   // ── Tocar: abre el panel en vez del lexicón ──
   document.addEventListener('click', ev => {
+    const mark = ev.target.closest && ev.target.closest('#mainContent .xl-mark');
     const w = ev.target.closest && ev.target.closest('#mainContent .word');
-    if (!w) return;
-    const v = w.closest('.verse[data-xlink]');
-    if (!v || !(w.classList.contains('xlink') || v.classList.contains('xlink-verse'))) return;
+    if (!w && !mark) return;
+    const v = (mark || w).closest('.verse[data-xlink]');
+    if (!v) return;
+    const soft = w && (w.classList.contains('xl-soft') || (v.classList.contains('xlv-soft') && !w.classList.contains('xl-strong')));
+    const hit = mark || (w && (w.classList.contains('xl-strong') || v.classList.contains('xlv-strong') || (soft && alusionesOn())));
+    if (!hit) return;
     if (document.body.classList.contains('verse-select-mode')) return;
     ev.preventDefault(); ev.stopPropagation();
     const box = v.closest('.book-cont');
@@ -216,11 +276,49 @@
     sheet.innerHTML = `<div class="xl-grab"></div>
       <div class="xl-kicker">${isNT ? 'Red bíblica · el Tanaj en este versículo' : 'Red bíblica · cumplido en el Nuevo Testamento'}</div>
       <div class="xl-title">${esc(me)}</div>
-      ${nodes.length ? graph(me, nodes) : ''}
+      ${tipHtml()}
+      ${nodes.length ? graph(me, nodes) + `<div class="xl-legend"><span><i style="background:var(--gold)"></i>Este versículo</span><span><i style="background:color-mix(in srgb, var(--gold) 35%, var(--bg3));border:1px solid var(--gold)"></i>${isNT ? 'Pasaje del Tanaj' : 'Dónde se cumple'}</span>${isNT ? '<span><i style="background:var(--bg3);border:1px solid var(--text-dim)"></i>Otros que lo citan</span>' : ''}</div>` : ''}
       ${cards || '<div class="xl-note">No hay conexiones registradas.</div>'}`;
+    bindTip();
     sheet.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const [bb, c, v] = b.dataset.go.split('|'); goTo(bb, Number(c), Number(v)); });
     sheet.querySelectorAll('g.nd').forEach(g => g.onclick = () => goTo(g.dataset.b, Number(g.dataset.c), Number(g.dataset.v)));
   }
+  function tipHtml() {
+    try { if (localStorage.getItem('kodesh_xl_tip')) return ''; } catch (e) { return ''; }
+    return `<div class="xl-tip"><b>La red bíblica</b><br>Lo subrayado en el texto viene del Tanaj o se cumple en el Nuevo Testamento. El punto del centro es el versículo que lees; alrededor, los pasajes con los que se conecta. Toca cualquiera para ir ahí.<br><b>✦ dorado</b> = profecía cumplida o cita · <b>punteado</b> = alusión<br><button type="button" data-tip-ok>Entendido</button></div>`;
+  }
+  function bindTip() {
+    const b = sheet && sheet.querySelector('[data-tip-ok]');
+    if (b) b.onclick = () => { try { localStorage.setItem('kodesh_xl_tip', '1'); } catch (e) {} b.closest('.xl-tip').remove(); };
+  }
+
+  // Todas las conexiones del capítulo, en lista
+  async function openChapter(book, chapter) {
+    ensureSheet();
+    const isNT = NT.has(book);
+    const rows = (await rowsFor(book)).filter(r => (isNT ? r.nt_chapter : r.ot_chapter) === chapter)
+      .sort((a, b) => (isNT ? a.nt_verse - b.nt_verse : a.ot_verse - b.ot_verse) || (STRONG(b.kind) - STRONG(a.kind)));
+    const count = k => rows.filter(r => r.kind === k).length;
+    const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const items = rows.map(r => {
+      const v = isNT ? r.nt_verse : r.ot_verse;
+      const other = isNT ? refLabel(r.ot_book, r.ot_chapter, r.ot_verse, r.ot_verse_end) : refLabel(r.nt_book, r.nt_chapter, r.nt_verse);
+      return `<button type="button" class="xl-item${STRONG(r.kind) ? '' : ' soft'}" data-v="${v}"><span class="v">${STRONG(r.kind) ? '✦ ' : ''}v. ${v}</span><span class="r">${esc(other)}${r.note ? `<br><span style="font-size:.8rem;color:var(--text-dim)">${esc(r.note)}</span>` : ''}</span><span class="t">${KIND[r.kind] || ''}</span></button>`;
+    }).join('');
+    sheet.innerHTML = `<div class="xl-grab"></div>
+      <div class="xl-kicker">${isNT ? 'Red bíblica · el Tanaj en este capítulo' : 'Red bíblica · cumplido en el Nuevo Testamento'}</div>
+      <div class="xl-title">${esc(bookName(book))} ${chapter}</div>
+      ${tipHtml()}
+      <div class="xl-sum">${count('cumplimiento') ? `<span>✦ ${pl(count('cumplimiento'), 'profecía cumplida', 'profecías cumplidas')}</span>` : ''}${count('cita') ? `<span>✦ ${pl(count('cita'), 'cita', 'citas')}</span>` : ''}${count('alusion') ? `<span>${pl(count('alusion'), 'alusión', 'alusiones')}</span>` : ''}</div>
+      ${items || '<div class="xl-note">No hay conexiones registradas en este capítulo.</div>'}
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.85rem;color:var(--text-mid)"><input type="checkbox" data-alu ${alusionesOn() ? 'checked' : ''}> Mostrar también las alusiones (punteado)</label>`;
+    overlay.classList.add('open'); requestAnimationFrame(() => sheet.classList.add('open'));
+    bindTip();
+    sheet.querySelectorAll('.xl-item').forEach(b => b.onclick = () => open(book, chapter, Number(b.dataset.v)));
+    const cb = sheet.querySelector('[data-alu]');
+    if (cb) cb.onchange = () => { try { localStorage.setItem('kodesh_xl_alusiones', cb.checked ? '1' : '0'); } catch (e) {} document.documentElement.classList.toggle('xl-no-alusion', !cb.checked); };
+  }
+
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   // Cada vez que se pinta un capítulo (o se añade uno en «Leer como libro»)
