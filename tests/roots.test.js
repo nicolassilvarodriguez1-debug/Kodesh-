@@ -10,7 +10,7 @@ const FEST = read('../data/fiestas.json');
 
 test('fiestas: datos curados válidos (citas y referencias contra el texto)', () => {
   const out = execFileSync('python3', [new URL('../scripts/fiestas/build.py', import.meta.url).pathname], { encoding: 'utf8' });
-  assert.match(out, /^ok 9 fiestas/);
+  assert.match(out, /^ok 7 fiestas/);
   const ids = FEST.f.map(f => f.id);
   assert.deepEqual(ids.slice(0, 7), ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot']);
   assert.deepEqual(FEST.ch['JHN:7'][0], ['sukot']);
@@ -26,7 +26,7 @@ test('fiestas: el calendario hebreo del sistema ubica las fiestas', () => {
 
 test('raíces: capítulos a preparar', () => {
   const ch = rootsChapters(FEST);
-  assert.ok(ch.includes('MAT:1') && ch.includes('HEB:13') && ch.includes('LEV:23') && ch.includes('EST:9'));
+  assert.ok(ch.includes('MAT:1') && ch.includes('HEB:13') && ch.includes('LEV:23') && ch.includes('NEH:8') && !ch.includes('EST:9'));
   assert.equal(new Set(ch).size, ch.length);
   const it = chapterItem(BIBLE, 'JHN:7');
   assert.match(rootsPrompt([it], FEST), /CAPÍTULO JHN:7/);

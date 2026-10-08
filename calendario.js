@@ -36,7 +36,7 @@
     if (!T) return null;
     const ms = months(adj), i = nisanIndex(String(y), ms, adj);
     if (i < 1 || i + 9 >= ms.length) return null;
-    const N = ms[i], S7 = ms[i + 6], K9 = ms[i + 8], A = ms[i - 1];
+    const N = ms[i], S7 = ms[i + 6];
     let bik = null;
     for (let n = 15; n <= 21; n++) { const d = day(N, n); if (d.getDay() === 0) { bik = d; break; } }
     const shav = new Date(bik); shav.setDate(bik.getDate() + 49);
@@ -45,7 +45,6 @@
       year: y, nisan: N, tishri: S7,
       pesaj: f(day(N, 14), 1, N), matzot: f(day(N, 15), 7, N), bikurim: f(bik, 1, N), shavuot: f(shav, 1, N),
       terua: f(day(S7, 1), 1, S7), kipur: f(day(S7, 10), 1, S7), sukot: f(day(S7, 15), 8, S7),
-      januca: f(day(K9, 25), 8, K9), purim: f(day(A, 14), 1, A),
     };
   }
   // Próxima fecha de una fiesta (o la actual si está en curso)

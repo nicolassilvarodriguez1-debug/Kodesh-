@@ -7,7 +7,7 @@
 import { parseRef, refText } from './_people.js';
 
 export const ROOTS_MODEL = 'claude-sonnet-4-5';
-export const TEMAS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'januca', 'purim', 'shabat', 'templo', 'costumbre', 'torá', 'idioma'];
+export const TEMAS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'shabat', 'templo', 'costumbre', 'torá', 'idioma'];
 const GOSPELS_ACTS = { MAT: 28, MRK: 16, LUK: 24, JHN: 21, ACT: 28, HEB: 13 };
 const NAMES = { MAT: 'Mateo', MRK: 'Marcos', LUK: 'Lucas', JHN: 'Juan', ACT: 'Hechos', HEB: 'Hebreos' };
 

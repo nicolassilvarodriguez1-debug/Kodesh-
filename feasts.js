@@ -170,7 +170,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
     const inBible = Object.entries(DATA.ch).filter(([, v]) => v[0].includes(f.id)).sort((a, b) => (b[0] === ctx.key) - (a[0] === ctx.key));
     return `<a class="fr-why fr-why-top" href="${WHY}">🌙 Calendario por la luna nueva visible · ¿por qué no Hilel II? →</a><div class="fr-sec" style="margin-top:10px">Primavera</div><div class="fr-strip">${main.slice(0, 4).map(fe).join('')}</div>
       <div class="fr-line"></div><div class="fr-sec" style="margin-top:0">Otoño</div><div class="fr-strip fall">${main.slice(4).map(fe).join('')}</div>
-      <div class="fr-sec">También en la Biblia</div><div class="fr-strip fall">${extra.map(fe).join('')}</div>
+      ${extra.length ? `<div class="fr-sec">También en la Biblia</div><div class="fr-strip fall">${extra.map(fe).join('')}</div>` : ''}
       <div class="fr-sec">${esc(f.n)} en la Biblia</div>
       ${inBible.map(([k, v]) => `<div class="fr-card${k === ctx.key ? ' here' : ''}" data-go="${k.replace(':', ' ')}"><div>${esc(nice(k.replace(':', ' ')))}</div><div class="fr-src" style="margin-top:2px">${esc(v[1])}</div>${k === ctx.key ? '<div class="fr-q">Estás aquí</div>' : ''}</div>`).join('')}
       <div class="fr-card fr-disc"><div class="fr-kick">Calendario bíblico observado</div><div class="fr-p" style="margin-top:4px;font-size:.95rem">Los meses comienzan con la primera luna nueva visible desde Jerusalén y el año con la cebada aviv, como en tiempos de la Torá. No usamos el calendario calculado de Hilel II, por eso algunas fechas difieren uno o más días de los calendarios judíos comunes.</div><a class="fr-why" href="${WHY}">¿Por qué este calendario? →</a></div>

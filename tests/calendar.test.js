@@ -33,7 +33,6 @@ test('calendario bíblico: fiestas del año', async () => {
     const d = (Y.bikurim.start - Y.pesaj.start) / 864e5; assert.ok(d >= 1 && d <= 7);
     assert.equal((Y.kipur.start - Y.terua.start) / 864e5, 9);
     assert.equal((Y.sukot.start - Y.terua.start) / 864e5, 14);
-    assert.ok(Y.purim.start < Y.pesaj.start && (Y.pesaj.start - Y.purim.start) / 864e5 < 32);
     assert.equal(Y.pesaj.start.getMonth() >= 2 && Y.pesaj.start.getMonth() <= 3, true, `Pésaj ${y} en marzo/abril`);
   }
   assert.equal(iso(C.year(2026).pesaj.start), '2026-04-03');
