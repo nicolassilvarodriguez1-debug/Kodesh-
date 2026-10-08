@@ -336,7 +336,7 @@ const TEXT_SIZES = [14, 16, 20, 24, 28, 32, 40, 48, 64];
 const RULE = 36, RULE_FIRST = 70.5, TEXT_PAD = 4;
 const DEFAULT_FS = font => font === 'hand' ? 32 : 24;
 function linedBoxFor(page, el) {
-  if (!study || study.format === 'free') return null;
+  if (!study || study.format === 'free' || el.free) return null;   // texto libre: no sigue renglones
   const b = boxAt(page, el.x + 10, el.y + 20);
   return b && b.lined ? b : null;
 }
@@ -760,10 +760,15 @@ function renderPage(page) {
   growToContent(page);
 }
 
+function elTransform(e) {
+  const sc = e.s && e.s !== 1 ? e.s : 1, r = e.r || 0;
+  return `${r ? `rotate(${r}deg) ` : ''}${sc !== 1 ? `scale(${sc})` : ''}`.trim();
+}
 function elHtml(e) {
   const sel = e.id === selectedId ? ' selected' : '';
   const sc = e.s && e.s !== 1 ? e.s : 1;
-  const base = `class="el el-${e.type}${sel}" data-el="${e.id}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;${sc !== 1 ? `transform:scale(${sc});` : ''}--inv:${1 / sc}"`;
+  const tf = elTransform(e);
+  const base = `class="el el-${e.type}${sel}" data-el="${e.id}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;${tf ? `transform:${tf};` : ''}--inv:${1 / sc}"`;
   const handle = e.id === selectedId ? '<span class="el-handle" data-handle="w" aria-hidden="true" title="Ancho"></span><span class="el-corner" data-handle="s" aria-hidden="true" title="Tamaño"></span>' : '';
   if (e.type === 'text') {
     const pg = study.pages.find(p => p.els.includes(e));
@@ -795,7 +800,8 @@ function selBarHtml(page) {
   const isText = f.type === 'text';
   return `<div class="sel-bar" style="left:${f.x}px;top:${Math.max(4, f.y - 54 * inv)}px;transform:scale(${inv})">
     ${isText ? `<button class="ibtn" onclick="editSelected()" aria-label="Editar texto">${ICON('M4 20l4-1 11-11-3-3L5 16z')}</button>
-    <button class="ibtn" onclick="toggleHand()" aria-label="Cambiar letra" title="Letra manuscrita / de libro"><span style="font-family:var(--font-hand);font-size:20px">Aa</span></button>` : ''}
+    <button class="ibtn" onclick="toggleHand()" aria-label="Cambiar letra" title="Letra manuscrita / de libro"><span style="font-family:var(--font-hand);font-size:20px">Aa</span></button>
+    ${f.free || f.r ? `<button class="ibtn" onclick="straightenSelected()" aria-label="Alinear al renglón" title="Volver a alinear al renglón">${ICON('M4 6h16M4 12h16M4 18h10')}</button>` : ''}` : ''}
     <button class="ibtn" onclick="resizeSelected(1 / 1.15)" aria-label="Más pequeño" title="Más pequeño"><span style="font-size:13px">A−</span></button>
     <button class="ibtn" onclick="resizeSelected(1.15)" aria-label="Más grande" title="Más grande"><span style="font-size:17px">A+</span></button>
     <button class="ibtn" onclick="duplicateSelected()" aria-label="Duplicar">${ICON('M8 8h11v12H8zM5 16V4h11')}</button>
@@ -877,10 +883,90 @@ function canDraw(ev) {
   return ev.button === 0;
 }
 
+/* Dos dedos sobre un recuadro o un texto: pellizcar para agrandar/encoger,
+   arrastrar para mover y (en el texto) girar libremente. */
+const fingers = new Map();   // pointerId → { x, y, elId }
+let gesture = null;
+function startGesture(page, node, elId, ids) {
+  const f = findEl(elId); if (!f) return false;
+  if (editingId) commitEditing();
+  const elNode = node.querySelector(`[data-el="${elId}"]`); if (!elNode) return false;
+  const pts = ids.map(id => fingers.get(id));
+  live = null; drag = null; pendingText = null;
+  snapshot();
+  if (selectedId !== elId) { selectedId = elId; updateFmtBar(); }
+  const bar = node.querySelector('.sel-bar'); if (bar) bar.style.display = 'none';
+  gesture = { page: f.page, node, el: f.el, elNode, ids, p0: pts.map(p => ({ x: p.x, y: p.y })),
+    orig: { x: f.el.x, y: f.el.y, s: f.el.s || 1, r: f.el.r || 0, h: elNode.offsetHeight } };
+  elNode.classList.add('selected');
+  return true;
+}
+function moveGesture() {
+  const g = gesture;
+  const a = fingers.get(g.ids[0]), b = fingers.get(g.ids[1]);
+  if (!a || !b) return;
+  const [p1, p2] = g.p0;
+  const d0 = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1, d1 = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const isText = g.el.type === 'text';
+  const k = clamp(g.orig.s * d1 / d0, isText ? 0.3 : 0.35, isText ? 5 : 3) / g.orig.s;
+  let ang = isText ? (Math.atan2(b.y - a.y, b.x - a.x) - Math.atan2(p2.y - p1.y, p2.x - p1.x)) * 180 / Math.PI : 0;
+  let r = g.orig.r + ang;
+  r = ((r + 540) % 360) - 180;
+  for (const snapTo of [0, 90, -90, 180, -180]) if (Math.abs(r - snapTo) < 4) r = snapTo;   // fácil dejarlo recto
+  ang = r - g.orig.r;
+  const rad = ang * Math.PI / 180;
+  // El centro del elemento se mueve como un punto más bajo los dedos
+  const pm = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, qm = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const c0 = { x: g.orig.x + g.el.w / 2, y: g.orig.y + g.orig.h / 2 };
+  const vx = c0.x - pm.x, vy = c0.y - pm.y;
+  const c1 = { x: qm.x + k * (vx * Math.cos(rad) - vy * Math.sin(rad)), y: qm.y + k * (vx * Math.sin(rad) + vy * Math.cos(rad)) };
+  g.el.x = Math.round(g.orig.x + c1.x - c0.x);
+  g.el.y = Math.round(g.orig.y + c1.y - c0.y);
+  g.el.s = Math.round(g.orig.s * k * 100) / 100;
+  g.el.r = Math.round(r * 10) / 10 || 0;
+  g.moved = true;
+  g.elNode.style.left = g.el.x + 'px'; g.elNode.style.top = g.el.y + 'px';
+  g.elNode.style.transform = elTransform(g.el);
+  g.elNode.style.setProperty('--inv', 1 / g.el.s);
+}
+function endGesture() {
+  const g = gesture; gesture = null;
+  if (!g) return;
+  if (g.el.type === 'text' && g.moved) g.el.free = true;   // colocado a mano: ya no se ajusta a los renglones
+  if (!g.el.r) delete g.el.r;
+  growPage(g.page, g.el.x + g.el.w * (g.el.s || 1), g.el.y + g.orig.h * (g.el.s || 1));
+  renderPage(g.page); markDirty();
+}
+function straightenSelected() {
+  const f = selectedId && findEl(selectedId);
+  if (!f || f.el.type !== 'text') return;
+  snapshot();
+  delete f.el.free; delete f.el.r;
+  snapText(f.page, f.el);
+  renderPage(f.page); markDirty();
+}
+
 function onPointerDown(ev) {
   const node = ev.currentTarget;
   const page = pageById(node.dataset.page);
   if (!page) return;
+  if (ev.pointerType === 'touch' && !['pen', 'hl', 'eraser'].includes(tool)) {
+    if (ev.isPrimary) fingers.clear();   // primer dedo de un toque nuevo: olvida restos
+    const ptT = pagePoint(node, ev);
+    const onEl = ev.target.closest && ev.target.closest('.el');
+    fingers.set(ev.pointerId, { x: ptT.x, y: ptT.y, elId: onEl ? onEl.dataset.el : null, page: page.id });
+    if (gesture) return;
+    if (fingers.size === 2) {
+      const ids = [...fingers.keys()];
+      const first = fingers.get(ids[0]);
+      const target = first.elId || fingers.get(ids[1]).elId || null;
+      if (target && first.page === page.id && startGesture(page, node, target, ids)) {
+        ev.preventDefault();
+        try { node.setPointerCapture(ev.pointerId); } catch (e) {}
+        return;
+      }
+    }
+  }
   const act = ev.target.closest && ev.target.closest('.tpl-act');
   if (act) {
     ev.preventDefault(); ev.stopPropagation();
@@ -911,9 +997,9 @@ function onPointerDown(ev) {
   if (elNode) {
     const f = findEl(elNode.dataset.el);
     if (!f) return;
-    if (tool === 'text' && f.el.type === 'text') { select(f.el.id); editSelected(); return; }
-    const wasSelected = selectedId === f.el.id;
-    if (!wasSelected) select(f.el.id, false);
+    // con la herramienta de texto, tocar un texto lo abre para escribir (al soltar, si no se movió)
+    const wasSelected = selectedId === f.el.id || (tool === 'text' && f.el.type === 'text');
+    if (selectedId !== f.el.id) select(f.el.id, false);
     ev.preventDefault();
     node.setPointerCapture(ev.pointerId);
     drag = { page: f.page, node, el: f.el, start: pt, orig: { x: f.el.x, y: f.el.y, w: f.el.w, s: f.el.s || 1 }, mode: handle ? (handle.dataset.handle === 's' ? 'scale' : 'resize') : 'move', moved: false, wasSelected,
@@ -930,6 +1016,10 @@ function onPointerDown(ev) {
 let pendingText = null;
 
 function onPointerMove(ev) {
+  if (fingers.has(ev.pointerId)) {
+    const pt = pagePoint(ev.currentTarget, ev); const fg = fingers.get(ev.pointerId); fg.x = pt.x; fg.y = pt.y;
+    if (gesture) { if (gesture.ids.includes(ev.pointerId)) moveGesture(); return; }
+  }
   if (live && ev.pointerId === live.pointerId) {
     const evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev];
     for (const e2 of evs) {
@@ -975,6 +1065,8 @@ function onPointerMove(ev) {
 }
 
 function onPointerUp(ev) {
+  fingers.delete(ev.pointerId);
+  if (gesture) { if (gesture.ids.includes(ev.pointerId)) endGesture(); return; }
   if (pendingText && ev.pointerId === pendingText.pointerId) {
     const p = pendingText; pendingText = null;
     if (ev.type === 'pointerup' && Math.hypot(ev.clientX - p.cx, ev.clientY - p.cy) < 8) createTextAt(p.page, p.pt);
@@ -998,7 +1090,7 @@ function onPointerUp(ev) {
   }
   if (drag) {
     const d = drag; drag = null;
-    if (d.moved && d.el.type === 'text') snapText(d.page, d.el);
+    if (d.moved && d.el.type === 'text' && !d.el.free) snapText(d.page, d.el);
     if (d.moved) { renderPage(d.page); markDirty(); }
     else if (d.wasSelected && d.el.type === 'text') { editSelected(); }
     else renderPage(d.page);
