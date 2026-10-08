@@ -85,7 +85,9 @@ async function onUserLoggedIn(user) {
 
   // Check if this is a different user than before
   const lastUserId = localStorage.getItem('kodesh_last_user');
-  if (lastUserId && lastUserId !== user.id) {
+  // Venía del modo invitado: lo guardado en el teléfono pasa a su cuenta
+  if (isGuest()) await migrateGuestData(user);
+  else if (lastUserId && lastUserId !== user.id) {
     localStorage.removeItem('kodesh_read');
     localStorage.removeItem('kodesh_bookmarks');
     const keysToRemove = [];
@@ -292,14 +294,37 @@ function showTermsGateModal(userId) {
 }
 
 /* ── USER LOGGED OUT ── */
+function isGuest() { try { return localStorage.getItem('kodesh_guest') === '1'; } catch (e) { return false; } }
 function onUserLoggedOut() {
-  // Mandatory login — redirect to login page
+  // Modo invitado: quien eligió «Explorar sin cuenta» usa la app sin iniciar
+  // sesión (leer, escuchar, explorar). Sin esa elección, va a la bienvenida.
   const isLoginPage = window.location.pathname.includes('login') ||
                       window.location.pathname.includes('onboarding');
-  if (!isLoginPage) {
+  if (!isLoginPage && !isGuest()) {
     window.location.href = '/login.html';
   }
   updateUserUI(null);
+}
+
+/* Al crear cuenta o entrar desde el modo invitado, lo que guardó en este
+   teléfono (capítulos leídos, marcadores y notas) pasa a su cuenta. */
+async function migrateGuestData(user) {
+  const sb = getSupabase();
+  if (!sb || !isGuest()) return;
+  try {
+    const read = Object.keys(JSON.parse(localStorage.getItem('kodesh_read') || '{}'));
+    const rows = read.map(k => { const [book_id, ch] = k.split(':'); return { user_id: user.id, book_id, chapter: Number(ch) }; }).filter(r => r.book_id && r.chapter > 0);
+    for (let i = 0; i < rows.length; i += 200) await sb.from('reading_progress').upsert(rows.slice(i, i + 200), { onConflict: 'user_id,book_id,chapter' });
+    const bms = Object.values(JSON.parse(localStorage.getItem('kodesh_bookmarks') || '{}'));
+    if (bms.length) await sb.from('bookmarks').upsert(bms.map(bm => ({ user_id: user.id, book_id: bm.book, chapter: bm.chapter, verse: bm.verse, verse_text: bm.text, color: bm.color, note: bm.note || null })), { onConflict: 'user_id,book_id,chapter,verse' });
+    const notes = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i), m = k && /^note:([A-Z0-9]{3}):(\d+)$/.exec(k);
+      if (m) notes.push({ user_id: user.id, book_id: m[1], chapter: Number(m[2]), note_text: localStorage.getItem(k), updated_at: new Date().toISOString() });
+    }
+    if (notes.length) await sb.from('chapter_notes').upsert(notes, { onConflict: 'user_id,book_id,chapter' });
+  } catch (e) { console.warn('Guest migration:', e.message); }
+  try { localStorage.removeItem('kodesh_guest'); } catch (e) {}
 }
 
 /* ── UPDATE TOPBAR UI ── */
@@ -379,6 +404,7 @@ function closeUserMenu(e) {
 async function signOut() {
   const sb = getSupabase();
   if (sb) await sb.auth.signOut();
+  localStorage.removeItem('kodesh_guest');
   // Clear all local data on logout
   localStorage.removeItem('kodesh_last_user');
   localStorage.removeItem('kodesh_read');

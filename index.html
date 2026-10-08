@@ -19,6 +19,7 @@
 <script src="/feasts.js" defer></script>
 <script src="/moedim.js" defer></script>
 <script src="/home.js" defer></script>
+<script src="/account-gate.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -4806,7 +4807,7 @@ async function syncPremiumWithSupabase() {
 // salir de este modal ni pasar por profile.html.
 async function purchasePremiumDirect() {
   const btn = document.getElementById('btnPresentationSubscribe');
-  if (!currentUser) { window.location.href = 'login.html'; return; }
+  if (!currentUser) { if (window.askAccount) askAccount('premium'); else window.location.href = 'login.html'; return; }
 
   if (userUsage && userUsage.plan === 'premium') {
     showToast('✦ Ya tienes KODESH Premium activo');
@@ -5580,6 +5581,7 @@ function toggleTextualVersion() {
 }
 
 async function loadTextualVersion() {
+  if (!currentUser && window.askAccount) return askAccount('kodesh');
   if (_textualLoading) return;
   _textualLoading = true;
   textualActive = true;
@@ -6341,10 +6343,12 @@ let userUsage = null;
 async function loadUsage() {
   if (!currentUser) return;
   try {
+    const authH = await authHeaders();
+    if (!authH) return;
     const res = await kapiFetch('/api/usage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id })
+      headers: authH,
+      body: JSON.stringify({})
     });
     if (res.ok) {
       userUsage = await res.json();
@@ -6470,6 +6474,7 @@ function selectRvrVersion() {
 
 function toggleInterlinearMode(on) {
   const next = typeof on === 'boolean' ? on : !interlinearActive;
+  if (next && !currentUser && window.askAccount) return askAccount('interlineal');
   if (next === interlinearActive && !textualActive) return;
   interlinearActive = next;
   if (textualActive) { textualActive = false; state.version = 'RVR60'; }
@@ -6621,7 +6626,7 @@ async function goToPremium() {
   document.getElementById('limitOverlay')?.classList.remove('open');
 
   if (!currentUser) {
-    window.location.href = 'login.html';
+    if (window.askAccount) askAccount('premium'); else window.location.href = 'login.html';
     return;
   }
 
@@ -7227,7 +7232,7 @@ async function syncNotesFromCloud() {
 ════════════════════════════════════ */
 function openProfile() {
   const user = currentUser;
-  if (!user) { window.location.href = 'login.html'; return; }
+  if (!user) { if (window.askAccount) askAccount('perfil'); else window.location.href = 'login.html'; return; }
 
   const name = (typeof userProfile !== 'undefined' && userProfile?.display_name)
     || user.user_metadata?.display_name
@@ -8569,6 +8574,7 @@ let assistantSession = { key: null, closedAt: 0 };
 const ASSISTANT_KEEP_MS = 30 * 60 * 1000;
 
 async function openAssistant(bookName, chapter, bookIdOverride, { resume = false } = {}) {
+  if (!currentUser && window.askAccount) return askAccount('asistente');
   if (!bookName) {   // llamado sin argumentos: el capítulo que se está leyendo
     bookName = getAllBooks().find(b => b.id === state.currentBook)?.name || state.currentBook;
     chapter = state.currentChapter;
@@ -9376,6 +9382,7 @@ async function runSearch() {
   const query = document.getElementById('searchInputMain').value.trim();
   if (!query) return;
   if (searchMode === 'words') return runWordSearch(query);
+  if (!currentUser && window.askAccount) return askAccount('busqueda');
 
   const results = document.getElementById('searchResults');
   const btn = document.getElementById('searchBtnRun');

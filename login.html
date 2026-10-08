@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="KODESH">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Frank+Ruhl+Libre:wght@500&display=swap" rel="stylesheet">
 <style>
 :root {
   --gold:#c9a84c; --gold-bright:#e8c96a; --gold-dim:#5a4820; --gold-glow:rgba(201,168,76,0.15);
@@ -586,5 +586,148 @@ function updateThemeToggle(isLight) {
   }
 })();
 </script>
+<!-- ══ Bienvenida (solo la primera vez) y pantalla de entrada ══ -->
+<style>
+body.entry-mode .auth-wrap, body.entry-mode .theme-toggle { display: none; }
+#entry, #welcome { position: fixed; inset: 0; z-index: 50; overflow: hidden; color: #f6efdf; font-family: 'Crimson Pro', Georgia, serif; }
+#entry { display: none; background: #0d0a07; }
+body.entry-mode #entry { display: block; }
+#entry .bg { position: absolute; inset: -4%; background-size: cover; background-position: center; animation: entryZoom 14s ease-out forwards; }
+#entry .bg.none { background: radial-gradient(ellipse at 50% 30%, #6a4a24 0%, #2a1c0e 50%, #0d0a07 100%); }
+body.light #entry .bg.none { background: radial-gradient(ellipse at 50% 30%, #f3d9a6 0%, #c99d5c 55%, #5a3e20 100%); }
+@keyframes entryZoom { from { transform: scale(1.08); } to { transform: scale(1); } }
+#entry .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,.35) 0%, rgba(10,8,5,.05) 30%, rgba(10,8,5,.15) 52%, rgba(10,8,5,.82) 74%, rgba(10,8,5,.95) 100%); }
+#entry .mid { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 9vh); text-align: center; padding: 0 28px; }
+#entry .icon { width: 84px; height: 84px; border-radius: 20px; display: block; margin: 0 auto 14px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+#entry .heb { font-family: 'Frank Ruhl Libre', serif; font-size: 2rem; color: #e8c27a; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+#entry .name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 2.3rem; letter-spacing: 8px; margin-top: 2px; text-shadow: 0 2px 14px rgba(0,0,0,.55); }
+#entry .orn { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 12px auto; color: #e8c27a; }
+#entry .orn i { width: 70px; height: 1px; background: rgba(232,194,122,.6); }
+#entry .verse { font-style: italic; font-size: 1.45rem; line-height: 1.35; max-width: 420px; margin: 0 auto; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+#entry .verse span { opacity: 0; transition: opacity 1.2s ease; }
+#entry .verse span.on { opacity: 1; }
+#entry .ref { font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: 3px; margin-top: 10px; color: #e8c27a; opacity: 0; transition: opacity 1s 1s; }
+#entry .ref.on { opacity: 1; }
+#entry .panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 22px calc(env(safe-area-inset-bottom, 0px) + 18px); max-width: 480px; margin: 0 auto; }
+#entry .eb { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 54px; margin-top: 10px; border-radius: 16px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.12); color: #fff; font: 600 1.05rem -apple-system, system-ui, sans-serif; cursor: pointer; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+#entry .eb.apple { background: #f6efdf; color: #15120a; border-color: #f6efdf; }
+#entry .eb svg { width: 20px; height: 20px; }
+#entry .guest { display: block; margin: 16px auto 0; border: none; background: none; color: #e8c27a; font: inherit; font-size: 1.1rem; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+#entry .legal { text-align: center; font-size: .82rem; color: rgba(246,239,223,.75); margin-top: 12px; line-height: 1.4; }
+#entry .legal a { color: #f6efdf; }
+#entry .msg { text-align: center; font-size: .9rem; color: #ffb4a8; margin-top: 8px; min-height: 1em; }
+#welcome { display: none; background: #0d0a07; z-index: 60; }
+#welcome.on { display: block; }
+#welcome .track { display: flex; height: 100%; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+#welcome .card { flex: 0 0 100%; height: 100%; position: relative; }
+#welcome .ph { position: absolute; inset: 0 0 42% 0; background-size: cover; background-position: center; }
+#welcome .ph.none { background: radial-gradient(ellipse at 50% 40%, #6a4a24 0%, #2a1c0e 60%, #0d0a07 100%); }
+#welcome .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, #0d0a07 100%); }
+#welcome .tx { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); padding: 0 28px; max-width: 480px; margin: 0 auto; }
+#welcome .k { font-family: 'Cinzel', serif; font-size: .66rem; letter-spacing: 3px; text-transform: uppercase; color: #e8c27a; }
+#welcome h2 { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.7rem; line-height: 1.2; margin: 8px 0; }
+#welcome p { font-size: 1.15rem; line-height: 1.45; color: #e3d8c2; }
+#welcome .ask { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+#welcome .ask button { height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid rgba(232,194,122,.5); background: none; color: #f6efdf; font: inherit; font-size: 1rem; cursor: pointer; }
+#welcome .ask button.on { background: #e8c27a; color: #15120a; border-color: #e8c27a; }
+#welcome .foot { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 28px calc(env(safe-area-inset-bottom, 0px) + 26px); display: flex; align-items: center; justify-content: space-between; max-width: 480px; margin: 0 auto; }
+#welcome .dots { display: flex; gap: 8px; }
+#welcome .dots i { width: 8px; height: 8px; border-radius: 4px; background: rgba(246,239,223,.3); transition: all .3s; }
+#welcome .dots i.on { width: 22px; background: #e8c27a; }
+#welcome .next { height: 50px; padding: 0 26px; border-radius: 25px; border: none; background: #e8c27a; color: #15120a; font: 600 1.05rem -apple-system, system-ui, sans-serif; cursor: pointer; }
+#welcome .skip { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 18px; z-index: 2; border: none; background: rgba(0,0,0,.3); color: #f6efdf; border-radius: 16px; padding: 6px 14px; font: inherit; cursor: pointer; }
+.email-back { display: none; margin: 0 auto 14px; border: none; background: none; color: var(--text-dim); font: inherit; font-size: .95rem; cursor: pointer; }
+body.email-mode .email-back { display: block; }
+</style>
+<div id="welcome" aria-label="Bienvenida">
+  <button class="skip" data-w="skip">Saltar</button>
+  <div class="track">
+    <section class="card"><div class="ph none" data-img="continua"></div><div class="tx"><div class="k">Bienvenido a Kodesh</div><h2>Lee y escucha la Palabra</h2><p>La Biblia completa, con audio dramatizado y la promesa de cada día.</p></div></section>
+    <section class="card"><div class="ph none" data-img="ex_mapas"></div><div class="tx"><div class="k">Estudia sus raíces</div><h2>Entiende el texto en su mundo</h2><p>Palabras en hebreo y griego, mapas reales, personajes y el trasfondo de cada pasaje.</p></div></section>
+    <section class="card"><div class="ph none" data-img="promesa"></div><div class="tx"><div class="k">Tu camino diario</div><h2>Un poco cada día</h2><p>Tu lectura de hoy, la porción de la semana y tu avance, siempre donde lo dejaste.</p>
+      <p style="margin-top:14px;font-size:1rem;color:#cbbfa6">¿Guardas el Shabat y las fiestas bíblicas?</p>
+      <div class="ask"><button data-cal="1">Sí, muéstramelos</button><button data-cal="0">Ahora no</button></div></div></section>
+  </div>
+  <div class="foot"><div class="dots"><i class="on"></i><i></i><i></i></div><button class="next" data-w="next">Siguiente</button></div>
+</div>
+<div id="entry" aria-label="Entrar a Kodesh">
+  <div class="bg none"></div><div class="shade"></div>
+  <div class="mid">
+    <img class="icon" src="/entry-icon.png" alt="">
+    <div class="heb" lang="he">קֹדֶשׁ</div>
+    <div class="name">KODESH</div>
+    <div class="orn"><i></i>✦<i></i></div>
+    <div class="verse" id="entryVerse"></div>
+    <div class="ref" id="entryRef"></div>
+  </div>
+  <div class="panel">
+    <button class="eb apple" onclick="loginApple()"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>Continuar con Apple</button>
+    <button class="eb" onclick="loginGoogle()"><span class="google-icon"></span>Continuar con Google</button>
+    <button class="eb" data-email>Usar mi correo</button>
+    <button class="guest" data-guest>Explorar sin cuenta</button>
+    <div class="msg" id="entryMsg"></div>
+    <div class="legal">Al continuar aceptas nuestros <a href="/terminos.html">Términos de Servicio</a> y la <a href="/privacidad.html">Política de Privacidad</a>.</div>
+  </div>
+</div>
+<script src="/verse-day.js"></script>
+<script>
+(function () {
+  const IMG_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co/storage/v1/object/public/insignias/inicio.json';
+  const q = new URLSearchParams(location.search);
+  const mode = q.get('mode');
+  let special = false;
+  try { special = !!(RECOVERY_LINK || RESET_REQUESTED || LINK_ERROR || isProcessingRecovery); } catch (e) {}
+  let IMG = {}; try { IMG = JSON.parse(localStorage.getItem('kodesh_home_img') || '{}') || {}; } catch (e) {}
+  const light = () => document.body.classList.contains('light');
+  function paintBg() {
+    const el = document.querySelector('#entry .bg');
+    const key = light() ? (IMG.login_day ? 'login_day' : 'hero_day') : (IMG.login_night ? 'login_night' : (IMG.hero_night ? 'hero_night' : 'hero_day'));
+    if (IMG[key]) { el.style.backgroundImage = `url('${IMG[key]}')`; el.classList.remove('none'); }
+    document.querySelectorAll('#welcome [data-img]').forEach(p => { const k = p.dataset.img; if (IMG[k]) { p.style.backgroundImage = `url('${IMG[k]}')`; p.classList.remove('none'); } });
+  }
+  fetch(IMG_URL + '?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => { if (j) { IMG = j; try { localStorage.setItem('kodesh_home_img', JSON.stringify(j)); } catch (e) {} paintBg(); } }).catch(() => {});
+  paintBg();
+  // Versículo del día, frase por frase
+  function showVerse(text, ref) {
+    const parts = String(text).split(/(?<=[,;:.])\s+/).filter(Boolean);
+    const v = document.getElementById('entryVerse');
+    v.innerHTML = '«' + parts.map(p => `<span>${p.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span>`).join(' ') + '»';
+    document.getElementById('entryRef').textContent = '— ' + ref;
+    v.querySelectorAll('span').forEach((s, i) => setTimeout(() => s.classList.add('on'), 400 + i * 900));
+    setTimeout(() => document.getElementById('entryRef').classList.add('on'), 400 + parts.length * 900);
+  }
+  let shown = false;
+  const fallback = () => { if (!shown) { shown = true; showVerse('Y conoceréis la verdad, y la verdad os libertará.', 'Juan 8:32'); } };
+  if (window.KodeshVerseDay) KodeshVerseDay.load().then(() => { const t = KodeshVerseDay.today(); if (t && !shown) { shown = true; showVerse(t.text, t.refText); } else fallback(); }).catch(fallback);
+  setTimeout(fallback, 2500);
+  // Botones
+  document.querySelector('[data-guest]').onclick = () => { try { localStorage.setItem('kodesh_guest', '1'); } catch (e) {} location.href = 'index.html'; };
+  document.querySelector('[data-email]').onclick = () => { document.body.classList.remove('entry-mode'); document.body.classList.add('email-mode'); switchTab('register'); };
+  const wrap = document.querySelector('.auth-wrap');
+  if (wrap) { const b = document.createElement('button'); b.className = 'email-back'; b.textContent = '‹ Volver'; b.onclick = () => { document.body.classList.add('entry-mode'); document.body.classList.remove('email-mode'); }; wrap.insertBefore(b, wrap.firstChild); }
+  // Bienvenida en 3 tarjetas (solo la primera vez)
+  const W = document.getElementById('welcome');
+  let i = 0;
+  function go(n) {
+    i = n; W.querySelector('.track').style.transform = `translateX(${-100 * i}%)`;
+    W.querySelectorAll('.dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+    W.querySelector('.next').textContent = i === 2 ? 'Comenzar' : 'Siguiente';
+  }
+  function done() { try { localStorage.setItem('kodesh_welcome_seen', '1'); } catch (e) {} W.classList.remove('on'); }
+  W.querySelector('[data-w="next"]').onclick = () => (i < 2 ? go(i + 1) : done());
+  W.querySelector('[data-w="skip"]').onclick = done;
+  W.querySelectorAll('[data-cal]').forEach(b => b.onclick = () => { try { localStorage.setItem('kodesh_home_cal', b.dataset.cal); } catch (e) {} W.querySelectorAll('[data-cal]').forEach(x => x.classList.toggle('on', x === b)); });
+  let x0 = null;
+  W.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  W.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (dx < -50 && i < 2) go(i + 1); else if (dx > 50 && i > 0) go(i - 1); }, { passive: true });
+  // Qué mostrar
+  if (special) return;                                   // recuperar contraseña: formularios de siempre
+  if (mode === 'signup' || mode === 'login') { document.body.classList.add('email-mode'); switchTab(mode === 'signup' ? 'register' : 'login'); return; }
+  document.body.classList.add('entry-mode');
+  let seen = false; try { seen = localStorage.getItem('kodesh_welcome_seen') === '1'; } catch (e) {}
+  if (!seen) W.classList.add('on');
+})();
+</script>
+
 </body>
 </html>

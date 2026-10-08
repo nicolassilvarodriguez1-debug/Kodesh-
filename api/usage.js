@@ -1,17 +1,17 @@
-import { getUserPlanAndUsage, PLAN_LIMITS } from './_limits.js';
+// KODESH — Plan y uso del mes del usuario que llama (requiere sesión: el
+// userId sale del token, nunca del cuerpo, para que nadie consulte a otro).
+import { getUserPlanAndUsage } from './_limits.js';
+import { requireUser } from './_auth.js';
+import { applyCors, handleOptions } from './_security.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  applyCors(req, res);
+  if (handleOptions(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ error: 'userId requerido' });
-
+  const user = await requireUser(req, res);
+  if (!user) return;
   try {
-    const info = await getUserPlanAndUsage(userId);
+    const info = await getUserPlanAndUsage(user.id);
     return res.status(200).json({
       plan: info.plan,
       limits: info.limits,
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         assistant: Math.max(0, info.limits.assistant - info.usage.assistant),
       }
     });
-  } catch(err) {
-    return res.status(500).json({ error: err.message });
+  } catch (err) {
+    return res.status(500).json({ error: 'usage_failed' });
   }
 }
