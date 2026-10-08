@@ -493,6 +493,18 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Paralelos de los Evangelios · <span id="plCount">—</span></div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">La IA compara cada hecho que cuentan dos o más Evangelios y anota lo que trae solo cada uno (se valida que cada frase esté de verdad en el texto). ~200 hechos, ~$4 en total. La armonía y los avisos ya funcionan sin esto.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm" id="plStop" onclick="PL_ADMIN.stop()" style="display:none">Detener</button>
+            <button class="btn-sm" onclick="PL_ADMIN.run()">Comparar faltantes</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="plMsg" style="margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Insignias de las porciones · <span id="badgeCount">—</span> de 54</div>
             <div style="font-size:0.72rem;color:var(--text-dim)">Toca una porción para subir o cambiar su insignia, o arrastra aquí varias imágenes nombradas por número (<b>5.png</b>, <b>6.png</b>…). Se achican a 512 px y llegan a la app en unos minutos, sin actualizarla.</div>
           </div>
@@ -1159,8 +1171,38 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load()]);
 }
+
+// ── Paralelos de los Evangelios (api/parallels-pregen.js) ──
+const PL_ADMIN = (() => {
+  let running = false, stopFlag = false;
+  const msg = t => { const m = document.getElementById('plMsg'); if (m) m.textContent = t || ''; };
+  async function api(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const res = await fetch('/api/parallels-pregen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  async function load() { try { const d = await api({ action: 'status' }); document.getElementById('plCount').textContent = `${d.ready} de ${d.total}`; } catch (e) { msg('No se pudo cargar: ' + e.message); } }
+  async function run() {
+    if (running) return; running = true; stopFlag = false; document.getElementById('plStop').style.display = '';
+    try {
+      for (;;) {
+        if (stopFlag) break;
+        const r = await api({ action: 'generate' });
+        document.getElementById('plCount').textContent = `${r.ready} de ${r.total}`;
+        msg(`Comparando… faltan ${r.remaining}`);
+        if (!r.done || !r.remaining) break;
+      }
+      msg('Listo ✓');
+    } catch (e) { msg('Error: ' + e.message + ' — vuelve a tocar «Comparar faltantes» para seguir.'); }
+    running = false; document.getElementById('plStop').style.display = 'none';
+  }
+  return { load, run, stop: () => { stopFlag = true; } };
+})();
 
 // ── Preguntas para el grupo (api/groups-pregen.js) ──
 const GQ_ADMIN = (() => {

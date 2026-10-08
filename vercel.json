@@ -107,6 +107,11 @@
       "memory": 1024,
       "maxDuration": 120,
       "includeFiles": "{biblia-rvr.json,parashot-data.json}"
+    },
+    "api/parallels-pregen.js": {
+      "memory": 1024,
+      "maxDuration": 120,
+      "includeFiles": "{biblia-rvr.json,data/paralelos.json}"
     }
   },
   "crons": [
