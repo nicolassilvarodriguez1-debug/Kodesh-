@@ -7,6 +7,7 @@
 <script src="/verse-image.js" defer></script>
 <script src="/bible-audio.js" defer></script>
 <script src="/swipe-chapters.js" defer></script>
+<script src="/book-mode.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -3893,6 +3894,15 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
           <div class="settings-row-desc">Resalta en rojo lo que dijo Yeshúa en los Evangelios, Hechos y Apocalipsis</div>
         </div>
         <div class="toggle-switch on" id="wjToggle" role="switch" aria-checked="true" aria-label="Palabras de Yeshúa en rojo" onclick="toggleWJPref()">
+          <div class="toggle-switch-knob"></div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Leer como libro</div>
+          <div class="settings-row-desc">Sin números de capítulo ni de versículo: el texto corre seguido y el siguiente capítulo aparece al terminar, como en un libro</div>
+        </div>
+        <div class="toggle-switch" id="bookToggle" role="switch" aria-checked="false" aria-label="Leer como libro" onclick="toggleBookMode()">
           <div class="toggle-switch-knob"></div>
         </div>
       </div>
