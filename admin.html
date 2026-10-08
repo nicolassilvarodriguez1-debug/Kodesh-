@@ -556,7 +556,7 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
         <div class="upload-msg" id="hiMsg"></div>
         <div id="hiGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px"></div>
         <details class="tool-more" style="margin-top:14px"><summary>Las 54 porciones (<span id="hiPCount">0</span> de 54)</summary>
-          <div style="margin:10px 0"><button class="btn-main" onclick="HI_ADMIN.genMissing('parasha')">✦ Generar las porciones que faltan</button> <span style="color:var(--text-dim);font-size:.85rem">~$0.25 cada una</span></div>
+          <div style="margin:10px 0"><button class="btn-main" onclick="HI_ADMIN.genMissing('parasha')">✦ Generar las porciones que faltan</button> <button class="btn-sm" onclick="HI_ADMIN.genAll()">Repintar todas</button> <span style="color:var(--text-dim);font-size:.85rem">~$0.25 cada una</span></div>
           <div id="hiPGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
         </details>
         <input type="file" id="hiOne" accept="image/*" hidden>
@@ -1347,7 +1347,8 @@ const HI_ADMIN = (() => {
     };
     inp.click();
   }
-  return { load, genMissing };
+  const genAll = () => { if (confirm('¿Repintar las 54 porciones con las escenas nuevas? (~$13, ~1 hora)')) gen(parashot.map(p => 'parasha:' + p.num)); };
+  return { load, genMissing, genAll };
 })();
 
 // ── Arte de las fiestas ──
