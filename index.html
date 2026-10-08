@@ -8,6 +8,7 @@
 <script src="/bible-audio.js" defer></script>
 <script src="/swipe-chapters.js" defer></script>
 <script src="/book-mode.js" defer></script>
+<script src="/last-position.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -9421,8 +9422,13 @@ function init() {
     window.history.replaceState({}, '', '/index.html');
   }
 
-  const book = params.get('book') || 'GEN';
-  const chapter = parseInt(params.get('chapter')) || 1;
+  // Sin enlace a un capítulo concreto: se vuelve a donde se quedó leyendo
+  const lastPos = (() => {
+    if (params.get('book')) return null;
+    try { const p = JSON.parse(localStorage.getItem('kodesh_last_position') || 'null'); return p && /^[A-Z0-9]{3}$/.test(p.book) && p.chapter >= 1 ? p : null; } catch (e) { return null; }
+  })();
+  const book = params.get('book') || (lastPos && lastPos.book) || 'GEN';
+  const chapter = parseInt(params.get('chapter')) || (lastPos && lastPos.chapter) || 1;
 
   const isNT = BIBLE_BOOKS.NT.some(b => b.id === book);
   if (isNT) {
@@ -9434,10 +9440,19 @@ function init() {
   selectBook(book);
   // Desde el Ciclo de estudio: ?verse=9 lleva al versículo y ?study=1 abre
   // el asistente sobre ese capítulo.
-  const verse = parseInt(params.get('verse')) || 0;
+  const verse = parseInt(params.get('verse')) || (lastPos && lastPos.verse) || 0;
   const study = params.get('study') === '1';
   loadChapter(book, chapter).then(() => {
-    if (verse > 1) setTimeout(() => document.getElementById('v-' + verse)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    if (verse > 1) setTimeout(() => {
+      const el = document.getElementById('v-' + verse);
+      if (!el) return;
+      // deja el versículo justo debajo de la barra superior
+      const top = el.getBoundingClientRect().top + window.scrollY - 110;
+      const main = document.getElementById('mainContent');
+      if (main && main.scrollHeight > main.clientHeight + 10) el.scrollIntoView({ block: 'start' });
+      else window.scrollTo({ top: Math.max(0, top), behavior: lastPos ? 'instant' : 'smooth' });
+      if (lastPos && typeof showToast === 'function') showToast('Continúas donde te quedaste');
+    }, 400);
     if (study) setTimeout(() => openAssistant(), 500);
     if (verse || study) window.history.replaceState({}, '', `/index.html?book=${encodeURIComponent(book)}&chapter=${chapter}`);
   });
