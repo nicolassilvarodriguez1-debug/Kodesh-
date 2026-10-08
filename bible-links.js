@@ -139,7 +139,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
   // Aviso único la primera vez que alguien ve una profecía marcada
   function firstHint() {
     try { if (localStorage.getItem('kodesh_xl_hint')) return; localStorage.setItem('kodesh_xl_hint', '1'); } catch (e) { return; }
-    if (typeof showToast === 'function') setTimeout(() => showToast('✦ Lo subrayado en dorado viene del Tanaj: tócalo para ver la conexión'), 900);
+    if (typeof showToast === 'function') setTimeout(() => showToast('✦ Lo subrayado en dorado viene del Tanaj: toca la ✦ para ver la conexión'), 900);
   }
 
   // Botón «Red» en el encabezado del capítulo
@@ -161,23 +161,51 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     main.querySelectorAll('.book-cont[data-book]').forEach(b => { if (!b.dataset.xl) { b.dataset.xl = '1'; decorate(b, b.dataset.book, Number(b.dataset.chapter)); } });
   }
 
-  // ── Tocar: abre el panel en vez del lexicón ──
+  // ── Tocar ──
+  // La palabra sigue abriendo el lexicón; si es parte de una conexión, el
+  // lexicón muestra arriba un aviso «✦ Viene de Isaías 7:14 · Ver conexión».
+  // El botón ✦ al final del versículo y el botón «Red» abren las conexiones.
+  function where(v) {
+    const box = v.closest('.book-cont');
+    return { book: (box && box.dataset.book) || state.currentBook, chapter: Number((box && box.dataset.chapter) || state.currentChapter), verse: Number(v.dataset.verse) };
+  }
   document.addEventListener('click', ev => {
     const mark = ev.target.closest && ev.target.closest('#mainContent .xl-mark');
+    if (mark) {
+      const v = mark.closest('.verse[data-xlink]'); if (!v) return;
+      ev.preventDefault(); ev.stopPropagation();
+      const p = where(v); open(p.book, p.chapter, p.verse);
+      return;
+    }
     const w = ev.target.closest && ev.target.closest('#mainContent .word');
-    if (!w && !mark) return;
-    const v = (mark || w).closest('.verse[data-xlink]');
-    if (!v) return;
-    const soft = w && (w.classList.contains('xl-soft') || (v.classList.contains('xlv-soft') && !w.classList.contains('xl-strong')));
-    const hit = mark || (w && (w.classList.contains('xl-strong') || v.classList.contains('xlv-strong') || (soft && alusionesOn())));
-    if (!hit) return;
-    if (document.body.classList.contains('verse-select-mode')) return;
-    ev.preventDefault(); ev.stopPropagation();
-    const box = v.closest('.book-cont');
-    const book = (box && box.dataset.book) || state.currentBook;
-    const chapter = Number((box && box.dataset.chapter) || state.currentChapter);
-    open(book, chapter, Number(v.dataset.verse));
+    if (!w) return;
+    const old = document.getElementById('xlLexBanner'); if (old) old.remove();
+    const v = w.closest('.verse[data-xlink]');
+    if (!v || document.body.classList.contains('verse-select-mode')) return;
+    const linked = w.classList.contains('xl-strong') || v.classList.contains('xlv-strong') || ((w.classList.contains('xl-soft') || v.classList.contains('xlv-soft')) && alusionesOn());
+    if (!linked) return;
+    lexBanner(where(v), w.classList.contains('xl-strong') || v.classList.contains('xlv-strong'));
   }, true);
+  async function lexBanner(p, strong) {
+    const isNT = NT.has(p.book);
+    const rows = (await rowsFor(p.book)).filter(r => isNT ? (r.nt_chapter === p.chapter && r.nt_verse === p.verse)
+      : (r.ot_chapter === p.chapter && p.verse >= r.ot_verse && p.verse <= (r.ot_verse_end || r.ot_verse)));
+    if (!rows.length) return;
+    rows.sort((a, b) => STRONG(b.kind) - STRONG(a.kind));
+    const r = rows[0];
+    const other = isNT ? refLabel(r.ot_book, r.ot_chapter, r.ot_verse, r.ot_verse_end) : refLabel(r.nt_book, r.nt_chapter, r.nt_verse);
+    const label = isNT ? (r.kind === 'cumplimiento' ? 'Cumple' : r.kind === 'cita' ? 'Cita' : 'Eco de') : 'Se cumple en';
+    // espera a que el lexicón esté abierto
+    for (let i = 0; i < 20; i++) { const pop = document.getElementById('lexiconPopup'); if (pop && pop.classList.contains('visible')) break; await new Promise(res => setTimeout(res, 60)); }
+    const pop = document.getElementById('lexiconPopup');
+    if (!pop || document.getElementById('xlLexBanner')) return;
+    const b = document.createElement('button');
+    b.id = 'xlLexBanner'; b.type = 'button';
+    b.style.cssText = 'display:flex;align-items:center;gap:8px;width:calc(100% - 24px);margin:10px 12px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--gold-dim,#3a3220);background:var(--gold-soft,rgba(201,168,76,.06));color:var(--text);font:inherit;font-size:.9rem;text-align:left;cursor:pointer';
+    b.innerHTML = `<span style="color:var(--gold)">✦</span><span style="flex:1">${label} <b style="color:var(--gold)">${esc(other)}</b>${rows.length > 1 ? ` y ${rows.length - 1} más` : ''}</span><span style="color:var(--gold);white-space:nowrap">Ver conexión →</span>`;
+    b.onclick = e => { e.stopPropagation(); if (typeof closeLexicon === 'function') closeLexicon(); open(p.book, p.chapter, p.verse); };
+    pop.insertBefore(b, pop.firstChild);
+  }
 
   // ── Panel ──
   let overlay = null, sheet = null;
@@ -297,7 +325,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
   }
   function tipHtml() {
     try { if (localStorage.getItem('kodesh_xl_tip')) return ''; } catch (e) { return ''; }
-    return `<div class="xl-tip"><b>La red bíblica</b><br>Lo subrayado en el texto viene del Tanaj o se cumple en el Nuevo Testamento. El punto del centro es el versículo que lees; alrededor, los pasajes con los que se conecta. Toca cualquiera para ir ahí.<br><b>✦ dorado</b> = profecía cumplida o cita · <b>punteado</b> = alusión<br><button type="button" data-tip-ok>Entendido</button></div>`;
+    return `<div class="xl-tip"><b>La red bíblica</b><br>Lo subrayado en el texto viene del Tanaj o se cumple en el Nuevo Testamento. Las palabras siguen abriendo el lexicón; la <b>✦</b> al final del versículo (o el aviso dentro del lexicón) abre estas conexiones. El punto del centro es el versículo que lees; alrededor, los pasajes con los que se conecta. Toca cualquiera para ir ahí.<br><b>✦ dorado</b> = profecía cumplida o cita · <b>punteado</b> = alusión<br><button type="button" data-tip-ok>Entendido</button></div>`;
   }
   function bindTip() {
     const b = sheet && sheet.querySelector('[data-tip-ok]');
