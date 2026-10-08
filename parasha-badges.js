@@ -1,9 +1,9 @@
 /* KODESH — Rachas por porción: insignias de las 54 porciones de la Torá.
    - Una porción se gana al marcar leídos todos sus capítulos en el lector
      (o al marcar la lectura de Torá en Parashot).
-   - La insignia usa el arte de www.kodeshbible.com/insignias/{num}.webp cuando
-     aparece en insignias/index.json (remoto: llegan sin actualizar la app); si
-     no, una medalla dorada con el nombre en hebreo.
+   - La insignia usa el arte que figura en el index.json del bucket «insignias»
+     (se sube desde el admin; llega sin actualizar la app); si no hay, una
+     medalla dorada con el nombre en hebreo.
    - Semanas seguidas: una semana cuenta si la porción de esa semana se ganó
      entre el domingo anterior (con una semana de margen para leer adelantado)
      y el Shabat. Usa las fechas de reading_days (servidor) y las locales.
@@ -20,12 +20,13 @@
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
-  // Arte remoto: insignias/index.json = { "1": versión, ... }
-  const ART_BASE = 'https://www.kodeshbible.com/insignias/';
-  let ART = rj('kodesh_badges_art', {});
-  const artReady = fetch(ART_BASE + 'index.json', { cache: 'no-store' })
+  // Arte remoto: index.json en Storage («insignias») = { "1": url, ... }; se sube desde el admin
+  const ART_INDEX = `${SB_URL}/storage/v1/object/public/insignias/index.json`;
+  const ART_SEED = Object.fromEntries([1, 2, 3, 4].map(n => [n, `https://www.kodeshbible.com/insignias/${n}.webp?v=20261008`]));
+  let ART = rj('kodesh_badges_art2', ART_SEED);
+  const artReady = fetch(`${ART_INDEX}?t=${Date.now()}`, { cache: 'no-store' })
     .then(r => r.ok ? r.json() : null)
-    .then(j => { if (j && typeof j === 'object') { ART = j; wj('kodesh_badges_art', j); } })
+    .then(j => { if (j && typeof j === 'object') { ART = j; wj('kodesh_badges_art2', j); } })
     .catch(() => {});
 
   let DATA = null;
@@ -77,7 +78,7 @@
     const fs = Math.max(11, Math.round(size * (p.heb.length > 8 ? 0.17 : 0.24)));
     return `<div class="kb-badge ${earned ? 'on' : 'off'}${ART[p.num] ? ' art' : ''}" style="width:${size}px;height:${size}px">
       <span class="kb-he" style="font-size:${fs}px" lang="he">${esc(p.heb)}</span>
-      ${ART[p.num] ? `<img src="${ART_BASE}${p.num}.webp?v=${esc(ART[p.num])}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('art');this.remove()">` : ''}
+      ${ART[p.num] ? `<img src="${esc(ART[p.num])}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('art');this.remove()">` : ''}
       ${ART[p.num] && size >= 100 ? `<span class="kb-rib" style="font-size:${Math.round(size * 0.058)}px">${esc(p.nombre)}</span>` : ''}
     </div>`;
   }

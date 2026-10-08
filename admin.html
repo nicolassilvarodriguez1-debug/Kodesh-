@@ -462,6 +462,20 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div id="audioCast" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
         <div id="audioScript" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px;max-height:520px;overflow:auto"></div>
         <div id="audioBooks" style="display:grid;gap:8px;margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Insignias de las porciones · <span id="badgeCount">—</span> de 54</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Toca una porción para subir o cambiar su insignia, o arrastra aquí varias imágenes nombradas por número (<b>5.png</b>, <b>6.png</b>…). Se achican a 512 px y llegan a la app en unos minutos, sin actualizarla.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <label class="btn-sm" style="cursor:pointer">Subir varias<input type="file" accept="image/*" multiple hidden onchange="BADGE_ADMIN.files(this.files);this.value=''"></label>
+            <button class="btn-sm" onclick="BADGE_ADMIN.load()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="badgeMsg" style="margin-top:10px"></div>
+        <div id="badgeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:10px;padding:10px;border:1px dashed var(--border);border-radius:8px"></div>
+        <input type="file" id="badgeOne" accept="image/*" hidden>
       </div>
 
       <!-- Cobertura por libro -->
@@ -1117,8 +1131,92 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load()]);
 }
+
+// ── Insignias de las 54 porciones (api/admin.js · badge_art_*) ──
+const BADGE_ADMIN = (() => {
+  let list = [], art = {}, busy = false;
+  const msg = t => { const m = document.getElementById('badgeMsg'); if (m) m.textContent = t || ''; };
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function call(body) {
+    const res = await adminApi(body);
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  function render() {
+    const g = document.getElementById('badgeGrid'); if (!g) return;
+    document.getElementById('badgeCount').textContent = Object.keys(art).length;
+    g.innerHTML = list.map(p => `
+      <button type="button" data-num="${p.num}" style="background:none;border:1px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;color:var(--text);display:flex;flex-direction:column;align-items:center;gap:6px">
+        ${art[p.num]
+          ? `<img src="${esc(art[p.num])}" alt="" style="width:68px;height:68px;object-fit:contain">`
+          : `<span style="width:68px;height:68px;border-radius:50%;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-family:'Frank Ruhl Libre',serif;font-size:13px;color:var(--text-dim)" lang="he">${esc(p.heb)}</span>`}
+        <span style="font-size:0.66rem;line-height:1.2">${p.num}. ${esc(p.nombre)}</span>
+      </button>`).join('');
+    g.querySelectorAll('button[data-num]').forEach(b => b.onclick = () => pick(+b.dataset.num));
+  }
+  async function load() {
+    try {
+      if (!list.length) list = await fetch('/parashot-data.json').then(r => r.json());
+      art = (await call({ action: 'badge_art_list' })).art || {};
+      render(); msg('');
+    } catch (e) { msg('No se pudo cargar: ' + e.message); }
+  }
+  function pick(num) {
+    const inp = document.getElementById('badgeOne');
+    const p = list.find(x => x.num === num);
+    inp.onchange = () => { const f = inp.files[0]; inp.value = ''; if (f) upload([[num, f]]); };
+    if (art[num] && !confirm(`${p.num}. ${p.nombre} ya tiene insignia. ¿Reemplazarla?`)) return;
+    inp.click();
+  }
+  // Achica a 512 px (WebP si el navegador puede; si no, PNG) conservando la transparencia
+  async function shrink(file) {
+    const bmp = await createImageBitmap(file);
+    const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
+    const k = Math.min(S / bmp.width, S / bmp.height), w = bmp.width * k, h = bmp.height * k;
+    c.getContext('2d').drawImage(bmp, (S - w) / 2, (S - h) / 2, w, h);
+    let blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.86));
+    if (!blob || blob.type !== 'image/webp') blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+    return { data, type: blob.type };
+  }
+  async function upload(pairs) {
+    if (busy) return; busy = true;
+    let ok = 0;
+    for (const [num, file] of pairs) {
+      const p = list.find(x => x.num === num);
+      msg(`Subiendo ${num}. ${p ? p.nombre : ''}… (${ok + 1} de ${pairs.length})`);
+      try {
+        const { data, type } = await shrink(file);
+        art = (await call({ action: 'badge_art_upload', num, data, type })).art || art;
+        ok++; render();
+      } catch (e) { msg(`Error en ${num}: ${e.message}`); busy = false; return; }
+    }
+    busy = false;
+    msg(`✓ ${ok} insignia${ok === 1 ? '' : 's'} subida${ok === 1 ? '' : 's'}. La app las mostrará en unos minutos.`);
+  }
+  function files(fl) {
+    const pairs = [], bad = [];
+    for (const f of fl) {
+      const m = f.name.match(/(\d{1,2})/); const n = m ? +m[1] : 0;
+      if (n >= 1 && n <= 54) pairs.push([n, f]); else bad.push(f.name);
+    }
+    pairs.sort((a, b) => a[0] - b[0]);
+    if (bad.length) alert(`Estos archivos no tienen número de porción (1–54) en el nombre y se omitieron:\n${bad.join('\n')}`);
+    if (pairs.length) upload(pairs);
+  }
+  // Arrastrar y soltar sobre la cuadrícula
+  const dnd = () => {
+    const g = document.getElementById('badgeGrid'); if (!g) return;
+    g.addEventListener('dragover', e => { e.preventDefault(); g.style.borderColor = 'var(--gold)'; });
+    g.addEventListener('dragleave', () => { g.style.borderColor = ''; });
+    g.addEventListener('drop', e => { e.preventDefault(); g.style.borderColor = ''; files(e.dataTransfer.files); });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', dnd); else dnd();
+  return { load, files };
+})();
 
 // ── Audio de la Biblia (api/audio-pregen.js) ──
 const AUDIO_ADMIN = (() => {

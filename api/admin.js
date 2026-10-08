@@ -120,6 +120,35 @@ async function logNotification({ admin, kind, targetLabel, title, body, sent, fa
   }).catch(err => console.warn('logNotification: fallo al guardar en el historial:', err.message));
 }
 
+// ── Insignias de las porciones (Storage público «insignias» + index.json) ──
+const BADGE_BUCKET = 'insignias';
+const BADGE_SEED = Object.fromEntries([1, 2, 3, 4].map(n => [n, `https://www.kodeshbible.com/insignias/${n}.webp?v=20261008`]));
+const badgePublic = p => `${SB_URL}/storage/v1/object/public/${BADGE_BUCKET}/${p}`;
+async function badgeEnsureBucket() {
+  const r = await fetch(`${SB_URL}/storage/v1/bucket`, {
+    method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: BADGE_BUCKET, name: BADGE_BUCKET, public: true, allowed_mime_types: ['image/webp', 'image/png', 'image/jpeg', 'application/json'], file_size_limit: 3145728 }),
+  });
+  if (!r.ok && r.status !== 409 && r.status !== 400) throw new Error(`bucket → ${r.status}`);
+}
+async function badgeManifest() {
+  const r = await fetch(`${badgePublic('index.json')}?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) return { ...BADGE_SEED };
+  try { return await r.json(); } catch (e) { return { ...BADGE_SEED }; }
+}
+async function badgePut(path, body, type, cache = 'max-age=31536000') {
+  const r = await fetch(`${SB_URL}/storage/v1/object/${BADGE_BUCKET}/${path}`, {
+    method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': type, 'x-upsert': 'true', 'cache-control': cache },
+    body,
+  });
+  if (!r.ok) throw new Error(`storage → ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`);
+}
+async function badgeSaveManifest(m) {
+  const sorted = Object.fromEntries(Object.entries(m).sort((a, b) => a[0] - b[0]));
+  await badgePut('index.json', JSON.stringify(sorted), 'application/json', 'max-age=0');
+  return sorted;
+}
+
 export default async function handler(req, res) {
   // Was previously hand-rolled with `Access-Control-Allow-Headers: Content-Type`
   // only (missing Authorization) — the only authenticated POST endpoint in
@@ -145,6 +174,30 @@ export default async function handler(req, res) {
   const isDashboard = !action; // default (no action) branch = full user dashboard
   if (admin.role !== 'superadmin' && (SUPERADMIN_ONLY_ACTIONS.has(action) || isDashboard)) {
     return res.status(403).json({ error: 'forbidden_role' });
+  }
+
+  // ── ACTION: insignias (arte de las 54 porciones) ──
+  if (action === 'badge_art_list') {
+    try { return res.status(200).json({ art: await badgeManifest() }); }
+    catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  if (action === 'badge_art_upload' || action === 'badge_art_delete') {
+    const num = parseInt(req.body.num, 10);
+    if (!(num >= 1 && num <= 54)) return res.status(400).json({ error: 'Número de porción inválido (1–54)' });
+    try {
+      await badgeEnsureBucket();
+      const m = await badgeManifest();
+      if (action === 'badge_art_delete') { delete m[num]; return res.status(200).json({ art: await badgeSaveManifest(m) }); }
+      const type = ['image/webp', 'image/png', 'image/jpeg'].includes(req.body.type) ? req.body.type : null;
+      if (!type || typeof req.body.data !== 'string') return res.status(400).json({ error: 'Imagen inválida' });
+      const buf = Buffer.from(req.body.data, 'base64');
+      if (buf.length < 1000 || buf.length > 3145728) return res.status(400).json({ error: 'La imagen debe pesar menos de 3 MB' });
+      const ext = type.split('/')[1].replace('jpeg', 'jpg');
+      const path = `${num}-${Date.now()}.${ext}`;
+      await badgePut(path, buf, type);
+      m[num] = badgePublic(path);
+      return res.status(200).json({ art: await badgeSaveManifest(m), url: m[num] });
+    } catch (err) { return res.status(500).json({ error: err.message }); }
   }
 
   // ── ACTION: find_user (used by roles tab) ──
