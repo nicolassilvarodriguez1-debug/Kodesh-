@@ -131,7 +131,7 @@ test('película: capas en el tiempo de cada versículo y comando de mezcla', () 
   assert.ok(args.includes('-stream_loop'));
 });
 
-import { radioTimeline, radioPlan, divineSpans, SOUNDTRACK_VERSION } from '../api/_audioCinema.js';
+import { radioTimeline, radioPlan, divineSpans, SOUNDTRACK_VERSION, LEVELS } from '../api/_audioCinema.js';
 
 test('radionovela: escenas, silencios y música que cubre todo el capítulo', () => {
   const st = cleanSoundtrack({
@@ -185,7 +185,7 @@ test('radionovela: el efecto «hold» detiene la voz tras las palabras indicadas
   assert.deepEqual(tl.timings, [[1, 7], [2, 23.5]]);
   const layers = radioPlan({ sfx: st.sfx.slice(0, 1) }, tl, [], { aguas_separan: 6 });
   const fx = layers.find(l => l.key === 'aguas_separan');
-  assert.equal(fx.start, 12.05); assert.equal(fx.gain, 0.85);
+  assert.equal(fx.start, 12.05); assert.equal(fx.gain, LEVELS.hold);
 });
 
 test('radionovela: varias capas en una misma escena «hold» (batalla de 6 s)', () => {
@@ -212,4 +212,25 @@ test('variantes: cada repetición usa otra grabación y solo las que existen', (
   assert.equal(pickVariant('llanto', new Set(['llanto']), 'GEN.23', 1), 'llanto');
   assert.equal(pickVariant('trueno', new Set(['trueno', 'trueno~3']), 'X', 0) !== undefined, true);
   assert.ok(LIBRARY.some(x => x.key === 'choque_espadas~3' && x.kind === 'sfx'));
+});
+
+test('radionovela: látigos y martillazos se repiten, y el fondo de la acción suena mientras pasa', () => {
+  const st = cleanSoundtrack({ scenes: [], action: [{ from: 2, to: 3, key: 'obra_esclavos' }, { from: 2, to: 3, key: 'viento_desierto' }],
+    sfx: [{ v: 2, key: 'latigazo', repeat: 5, every: 1.5 }, { v: 3, key: 'martillazo', repeat: 20, every: 0.1, hold: 4, after: 'y trabajaban' }] }, [1, 2, 3]);
+  assert.deepEqual(st.action, [{ from: 2, to: 3, key: 'obra_esclavos' }], 'solo fondos de acción');
+  assert.deepEqual([st.sfx[0].repeat, st.sfx[0].every], [5, 1.5]);
+  assert.deepEqual([st.sfx[1].repeat, st.sfx[1].every], [8, 0.8], 'con topes');
+  const plan = mixPlan(st, [[1, 0], [2, 4], [3, 12]], 20);
+  const lashes = plan.filter(l => l.key === 'latigazo');
+  assert.equal(lashes.length, 5);
+  assert.deepEqual(lashes.map(l => l.start), [4.2, 5.7, 7.2, 8.7, 10.2]);
+  assert.ok(lashes[0].gain > LEVELS.sfx, 'el látigo suena más fuerte');
+  const bed = plan.find(l => l.key === 'obra_esclavos');
+  assert.equal(bed.bus, 'action'); assert.ok(bed.start <= 4 && bed.start + bed.dur >= 20);
+  const holds = holdPoints({ sfx: [st.sfx[1]] }, [{ v: 3, text: 'Y los obligaban y trabajaban. Fin.' }], [[1, 0], [2, 4], [3, 12]], 20, [[16, 16.4]]);
+  const tl = radioTimeline([[1, 0], [2, 4], [3, 12]], 20, { scenes: [] }, { holds });
+  const hammer = radioPlan({ sfx: [st.sfx[1]] }, tl, [], { martillazo: 2 }).filter(l => l.key === 'martillazo');
+  assert.ok(hammer.length >= 5, 'se repite dentro de la escena');
+  const args = ffmpegArgs('v.mp3', plan, Object.fromEntries(plan.map(l => [l.key, l.key + '.mp3'])), 'o.mp3', {}).join(' ');
+  assert.match(args, /\[voice\]\[ducked\]\[actd\]amix/, 'la voz va primero y el fondo de acción baja poco');
 });

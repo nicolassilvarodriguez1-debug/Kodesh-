@@ -43,8 +43,8 @@ export const LIBRARY = [
   { key: 'grito_multitud', kind: 'sfx', seconds: 4, label: 'Multitud que grita', prompt: 'Angry ancient crowd shouting, indistinct, no clear words' },
   { key: 'asombro', kind: 'sfx', seconds: 3, label: 'Asombro de la gente', prompt: 'A crowd gasping in amazement, then murmuring' },
   { key: 'monedas_mesas', kind: 'sfx', seconds: 4, label: 'Mesas y monedas volcadas', prompt: 'Wooden tables overturned and coins scattering on a stone floor' },
-  { key: 'latigo', kind: 'sfx', seconds: 2, label: 'Látigo', prompt: 'A single whip crack' },
-  { key: 'martillo', kind: 'sfx', seconds: 4, label: 'Martillo y clavos', prompt: 'Slow heavy hammer strikes on nails into wood' },
+  { key: 'latigo', kind: 'sfx', seconds: 2, gain: 1.4, label: 'Látigo', prompt: 'A single loud close whip crack' },
+  { key: 'martillo', kind: 'sfx', seconds: 4, gain: 1.4, label: 'Martillo y clavos', prompt: 'Slow heavy hammer strikes on nails into wood, loud and close' },
   { key: 'terremoto', kind: 'sfx', seconds: 6, label: 'Terremoto', prompt: 'Deep earthquake rumble, rocks shaking and cracking' },
   { key: 'piedra', kind: 'sfx', seconds: 5, label: 'Piedra que se rueda', prompt: 'A large heavy round stone rolling away from a cave entrance' },
   { key: 'shofar', kind: 'sfx', seconds: 4, label: 'Shofar', prompt: 'A single long shofar ram horn blast' },
@@ -91,6 +91,37 @@ export const LIBRARY = [
   { key: 'm_batalla', kind: 'music', label: 'Música: batalla', prompt: 'Epic ancient battle music, thunderous war drums, driving low strings, heroic brass, Middle Eastern percussion, intense, no vocals, film score' },
   { key: 'm_alianza', kind: 'music', label: 'Música: alianza / promesa', prompt: 'Majestic and warm covenant theme, noble horns and strings, hopeful and solemn, ancient Middle Eastern color, no vocals, film score' },
   { key: 'm_viaje', kind: 'music', label: 'Música: travesía', prompt: 'Journey through the desert, steady frame drum, oud and ney flute melody, sense of movement and destiny, no vocals, film score' },
+  // Música cinematográfica para momentos fuertes (Éxodo y en adelante)
+  { key: 'm_opresion', kind: 'music', label: 'Música: opresión / esclavitud', prompt: 'Oppressive dark cinematic score for slavery in ancient Egypt, heavy driving low strings ostinato, deep war drums pulsing like forced labor, menacing brass swells, suffering and cruelty, intense, no vocals, film score' },
+  { key: 'm_faraon', kind: 'music', label: 'Música: el faraón / imperio', prompt: 'Imperial menacing theme for Pharaoh and the Egyptian empire, ancient Egyptian modes, large low brass, harp glissandi, ominous frame drums and sistrum, proud and threatening, no vocals, film score' },
+  { key: 'm_zarza', kind: 'music', label: 'Música: la zarza ardiente / teofanía', prompt: 'Intense dramatic sacred theophany score: starts with mysterious shimmering strings, builds to an overwhelming powerful orchestral climax with choir-like pads without words, timpani and brass, holy fire and awe, cinematic, no vocals, film score' },
+  { key: 'm_plagas', kind: 'music', label: 'Música: las plagas / juicio en suspenso', prompt: 'Intriguing dramatic cinematic score for divine plagues: pulsing suspense ostinato in low strings, dark brass stabs, eerie high string clusters, relentless percussion building tension, ominous and mysterious, no vocals, film score' },
+  { key: 'm_milagro', kind: 'music', label: 'Música: milagro / poder de Elohim', prompt: 'Epic miraculous power theme: rushing strings, triumphant brass, massive drums, soaring and overwhelming, divine intervention, cinematic, no vocals, film score' },
+  { key: 'm_persecucion', kind: 'music', label: 'Música: persecución / huida', prompt: 'Urgent chase score, fast driving percussion and staccato strings, rising brass, panic and danger, ancient Middle Eastern color, no vocals, film score' },
+  // Fondos de acción (suenan en bucle MIENTRAS dura lo que se narra)
+  { key: 'obra_esclavos', kind: 'amb', action: true, label: 'Fondo: trabajo forzado', prompt: 'Huge ancient Egyptian construction site with slaves at forced labor: loud hammer blows on stone, chisels, heavy blocks dragged on ropes, overseers whips cracking often, men groaning in pain, dust and shouting, intense, no music' },
+  { key: 'ladrillos', kind: 'amb', action: true, label: 'Fondo: fabricando ladrillos', prompt: 'Many workers making mud bricks: wet mud slapped into wooden molds, straw rustling, bricks stacked, tired groans, occasional whip crack, hot sun, no music' },
+  { key: 'zarza', kind: 'amb', action: true, label: 'Fondo: la zarza que arde', prompt: 'A bush burning with a strong steady supernatural fire that never dies: loud roaring and crackling flames, deep mystical low hum, desert wind around, awe-inspiring, no music' },
+  { key: 'granizo', kind: 'amb', action: true, label: 'Fondo: granizo y fuego', prompt: 'Violent hailstorm mixed with fire: heavy hailstones smashing on ground and roofs, constant thunder, fire running along the ground, terrifying, no music' },
+  { key: 'enjambre', kind: 'amb', action: true, label: 'Fondo: enjambre (moscas, piojos)', prompt: 'Dense swarm of flies and insects everywhere, loud intense buzzing filling the air, people swatting and crying out, disturbing, no music' },
+  { key: 'langostas', kind: 'amb', action: true, label: 'Fondo: langostas', prompt: 'Massive cloud of locusts descending, roaring wings like wind, crunching and devouring crops, overwhelming, no music' },
+  { key: 'ranas', kind: 'amb', action: true, label: 'Fondo: ranas', prompt: 'Countless frogs croaking loudly everywhere, in houses and fields, wet hopping, chaotic and unsettling, no music' },
+  { key: 'tinieblas', kind: 'amb', action: true, label: 'Fondo: tinieblas', prompt: 'Thick palpable darkness: eerie low drone, cold wind, distant frightened whispers, total stillness and dread, no music' },
+  { key: 'lamento_egipto', kind: 'amb', action: true, label: 'Fondo: gran clamor en Egipto', prompt: 'At midnight a great cry across a whole city: many people wailing and lamenting in every house, dogs barking, distant chaos, devastating, no music' },
+  { key: 'peste_ganado', kind: 'amb', action: true, label: 'Fondo: peste del ganado', prompt: 'Sick dying cattle, horses and camels moaning and collapsing in fields, flies, herdsmen distressed, grim, no music' },
+  { key: 'rio_sangre', kind: 'amb', action: true, label: 'Fondo: el río hecho sangre', prompt: 'A thick dark river flowing slowly, heavy viscous gurgling, dead fish, people gasping in horror at the water, ominous, no music' },
+  { key: 'mar_muro', kind: 'amb', action: true, label: 'Fondo: muros de agua', prompt: 'Walking between two towering walls of water held back by a mighty wind: deep roaring water on both sides, strong wind, a multitude walking on dry ground, cinematic, no music' },
+  { key: 'tormenta_fuerte', kind: 'amb', action: true, label: 'Fondo: tormenta intensa', prompt: 'Intense storm, constant heavy rain, howling wind, frequent close thunder, dramatic, no music' },
+  { key: 'batalla_fondo', kind: 'amb', action: true, label: 'Fondo: batalla en curso', prompt: 'A fierce ongoing ancient battle nearby: constant clash of swords and shields, war cries, horses, arrows, chaos, intense, no music' },
+  // Efectos fuertes (para repetir varias veces)
+  { key: 'martillazo', kind: 'sfx', seconds: 2, gain: 1.4, label: 'Martillazo fuerte', prompt: 'A single very loud heavy hammer blow on stone, sharp close impact with ringing' },
+  { key: 'latigazo', kind: 'sfx', seconds: 2, gain: 1.5, label: 'Latigazo con quejido', prompt: 'A loud sharp whip lash on a back followed by a man crying out in pain, close and dramatic' },
+  { key: 'latigazos', kind: 'sfx', seconds: 5, gain: 1.4, label: 'Serie de latigazos', prompt: 'Several loud whip lashes in a row with an overseer shouting and a slave groaning, brutal, close' },
+  { key: 'vara_serpiente', kind: 'sfx', seconds: 4, label: 'La vara se vuelve serpiente', prompt: 'A wooden staff thrown to the ground transforming with a magical whoosh into a large hissing serpent, cinematic' },
+  { key: 'fuego_llamarada', kind: 'sfx', seconds: 3, gain: 1.3, label: 'Llamarada', prompt: 'A sudden huge burst of fire flaring up, roaring whoosh, close and powerful' },
+  { key: 'agua_golpe', kind: 'sfx', seconds: 4, label: 'Vara que golpea el agua', prompt: 'A staff striking water hard with a splash, then an ominous deep swell' },
+  { key: 'bebe_llanto', kind: 'sfx', seconds: 4, label: 'Llanto de un bebé', prompt: 'A newborn baby crying, then softly whimpering' },
+  { key: 'canasta_rio', kind: 'sfx', seconds: 4, label: 'Canasta en el río', prompt: 'A small reed basket placed on a river among the reeds, water lapping, rustling reeds' },
   // Más efectos (foley)
   { key: 'aves_vuelo', kind: 'sfx', seconds: 4, label: 'Aves que alzan el vuelo', prompt: 'A flock of birds suddenly taking flight, many wings flapping, chirping' },
   { key: 'rugido_leon', kind: 'sfx', seconds: 3, label: 'Rugido de león', prompt: 'A lion roaring in the distance across open land' },
@@ -106,7 +137,7 @@ export const LIBRARY = [
   { key: 'ejercito_marcha', kind: 'sfx', seconds: 6, label: 'Ejército en marcha', prompt: 'Ancient army marching in step, armor clanking, spears, heavy footsteps, distant war drums' },
   { key: 'gritos_batalla', kind: 'sfx', seconds: 6, label: 'Gritos de guerra', prompt: 'Soldiers shouting war cries and charging into battle, chaotic, indistinct, no clear words' },
   { key: 'huida', kind: 'sfx', seconds: 5, label: 'Gente que huye', prompt: 'Crowd of people fleeing in panic, running footsteps, frightened cries, indistinct' },
-  { key: 'construccion', kind: 'sfx', seconds: 6, label: 'Construcción', prompt: 'Ancient construction site, stones being cut and stacked, hammers and chisels, workers, ropes' },
+  { key: 'construccion', kind: 'sfx', seconds: 6, gain: 1.3, label: 'Construcción', prompt: 'Ancient construction site, loud hammers and chisels on stone close up, stones being cut and stacked, workers, ropes' },
   { key: 'remos', kind: 'sfx', seconds: 5, label: 'Barca a remo', prompt: 'Wooden boat rowed across water, oars splashing rhythmically, wood creaking' },
   { key: 'fuego_ciudad', kind: 'sfx', seconds: 6, label: 'Ciudad en llamas', prompt: 'A city consumed by roaring fire falling from the sky, burning buildings collapsing, intense' },
   { key: 'derrumbe', kind: 'sfx', seconds: 6, label: 'Muros que caen', prompt: 'Massive stone walls collapsing and crumbling, rumble and debris, cinematic' },
@@ -174,6 +205,12 @@ const VARIANTS = {
   multitud: ['Crowd gathered in a city square, many indistinct voices, animals and footsteps, no music'],
   batalla: ['Distant battle on a plain seen from a hill, echoes of clashing and cries, wind, no music'],
   viento_desierto: ['Strong hot desert wind, sand blowing over dunes, no music'],
+  latigo: ['A whip cracking twice quickly, loud', 'A long leather whip swung and cracked with a slave crying out'],
+  latigazo: ['A brutal whip strike and a woman screaming', 'A whip lash and a deep male groan, then heavy breathing'],
+  martillazo: ['A heavy mallet striking a stone block, loud thud and crack', 'A metal chisel hammered into rock, loud ringing clang'],
+  construccion: ['Workers lifting a huge stone block with ropes and shouts, then a loud thud as it lands', 'Many hammers striking stone in rhythm, loud, dust and voices'],
+  obra_esclavos: ['Endless forced labor under the sun: rhythmic hammering, stones grinding, whips cracking, exhausted groans, overseers shouting, no music'],
+  zarza: ['Supernatural fire burning steadily with a deep roar and soft crackle, holy presence, low resonant hum, no music'],
 };
 for (const [key, prompts] of Object.entries(VARIANTS)) {
   const base = LIBRARY.find(x => x.key === key);
@@ -193,15 +230,16 @@ export const MUSIC_KINDS = ['music', 'theme', 'bridge', 'motif'];
 export const MUSIC_SECONDS = 120;
 
 // ── Banda sonora del capítulo (la propone la IA, como director de radionovela) ──
-export const SOUNDTRACK_VERSION = 4;
+export const SOUNDTRACK_VERSION = 5;
 export function soundtrackPrompt(bookName, chapter, segments) {
   const byV = {};
   for (const s of segments) (byV[s.v] = byV[s.v] || []).push(`${s.character === 'narrador' ? '' : s.character + ': '}${s.text}`);
   const lines = Object.keys(byV).map(Number).sort((a, b) => a - b).map(v => `${v}| ${byV[v].join(' ')}`).join('\n');
-  const list = kind => LIBRARY.filter(x => x.kind === kind && !x.variantOf).map(x => `${x.key} (${x.label})`).join(', ');
+  const list = (kind, action = false) => LIBRARY.filter(x => x.kind === kind && !x.variantOf && !!x.action === action).map(x => `${x.key} (${x.label})`).join(', ');
   return {
     system: `Eres el director de sonido de una RADIONOVELA bíblica de gran producción, al estilo de las radionovelas clásicas pero con calidad de cine. El oyente no ve nada: todo lo que imagina sale del sonido. Recibes un capítulo con sus versículos y eliges sonidos SOLO de esta biblioteca:
 - Ambientes (fondo continuo de un lugar): ${list('amb')}
+- Fondos de acción (lo que está pasando, en bucle mientras dura): ${list('amb', true)}
 - Efectos sonoros: ${list('sfx')}
 - Música de fondo (colchón musical): ${list('music')}
 - Cortinas musicales (puente entre escenas): ${list('bridge')}
@@ -210,16 +248,18 @@ export function soundtrackPrompt(bookName, chapter, segments) {
 
 EL LENGUAJE DE LA RADIONOVELA
 1. ESCENAS: divide el capítulo en escenas. Hay escena nueva cuando cambia el lugar, el tiempo (otro día, «después de esto», años después) o el bloque de la historia. En Génesis 1 cada día de la creación es una escena. Marca en "scenes" el versículo donde EMPIEZA cada escena (no el primero del capítulo) y la cortina que la anuncia según el ánimo de lo que viene. Entre escenas habrá un silencio de voces de unos segundos lleno por esa cortina. De 2 a 10 escenas por capítulo si la historia lo permite.
-2. MÚSICA DE FONDO SIEMPRE: la radionovela casi nunca queda en silencio musical. Cubre TODO el capítulo con tramos seguidos de música, cambiando de tema cuando cambia el ánimo o la escena (hasta 8 tramos): la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), batallas (m_batalla), promesas de Elohim (m_alianza), viajes (m_viaje), tensión (m_tension), tristeza (m_tristeza), triunfo (m_triunfo), asombro (m_asombro), paz (m_paz), reverencia (m_reverente). En genealogías o leyes usa m_reverente o m_paz.
+2. MÚSICA DE FONDO SIEMPRE, CINEMATOGRÁFICA: la radionovela nunca queda en silencio musical. Cubre TODO el capítulo con tramos seguidos de música y CAMBIA de tema con cada cambio de ánimo o de escena (hasta 8 tramos; mejor varios tramos que uno largo). Elige la música más dramática que el momento permita: la creación (m_creacion), el Edén (m_eden), la caída o una traición (m_caida), el juicio o el diluvio (m_juicio), batallas (m_batalla), promesas de Elohim (m_alianza), viajes (m_viaje), tensión (m_tension), tristeza (m_tristeza), triunfo (m_triunfo), asombro (m_asombro), paz (m_paz), reverencia (m_reverente), esclavitud y opresión (m_opresion), el faraón o un rey enemigo (m_faraon), la zarza ardiente, el Sinaí o cuando Elohim se manifiesta con fuego (m_zarza), las plagas o un juicio en suspenso (m_plagas — intrigante, dramática), un milagro poderoso como el mar que se abre (m_milagro), persecuciones y huidas (m_persecucion). En genealogías o leyes usa m_reverente o m_paz.
 3. AMBIENTES: pinta cada lugar con su ambiente (hasta 8 tramos). Si el lugar se intuye, úsalo.
+3b. FONDO DE LA ACCIÓN MIENTRAS PASA — MUY IMPORTANTE: el oyente debe ESCUCHAR SIEMPRE de fondo lo que está ocurriendo mientras se narra. Si una acción dura uno o varios versículos (trabajo forzado, construcción, una plaga, la zarza que arde, una tormenta, una batalla, una huida, el mar abierto), ponla en "action" cubriendo TODOS esos versículos, aunque también haya un ambiente de lugar. Ejemplos: los israelitas oprimidos en Egipto → {"from":11,"to":14,"key":"obra_esclavos"}; la zarza → {"from":2,"to":5,"key":"zarza"}; la plaga de ranas → {"from":2,"to":14,"key":"ranas"}. Hasta 6 tramos.
 4. EFECTOS: generosos, como en la radio: cada acción que se pueda oír lleva su sonido (además de las escenas «hold») (la luz que irrumpe, las aguas, la tierra, las aves, los animales, el aliento de vida, pasos, puertas, golpes, fuego, espadas, llanto, el trueno). Hasta 16 por capítulo. "when": "start" (al comenzar el versículo) o "end" (al terminar).
+4a. REPETICIONES: lo que en la realidad no suena una sola vez, repítelo: látigos, martillazos, golpes, truenos, pasos de un ejército. Usa "repeat" (cuántas veces, 2 a 8) y "every" (segundos entre cada una, 0.8 a 4). Ejemplo: {"v":11,"key":"latigazo","repeat":5,"every":1.6} · {"v":14,"key":"martillazo","repeat":6,"every":1.2,"hold":5,"after":"en toda labor del campo"}.
 4b. ESCENAS SONORAS PARA IMAGINAR («hold») — LO MÁS IMPORTANTE: cada vez que el texto narra una acción que se puede oír, la narración se DETIENE y el oyente escucha la escena unos segundos, sin voz, para imaginarla y soñarla; luego sigue la voz. Aplícalo en CUALQUIER libro y tema: una batalla o pelea (5–6 s de espadas, gritos de guerra, ambiente de batalla), alguien que parte a caballo, en carro o en caravana (4–5 s), un ejército que marcha, una huida, el mar que se abre, una ciudad que arde, muros que caen, una tormenta, un banquete, una construcción, una lucha, una barca que rema, un rebaño que avanza, y cada acto de la creación al cumplirse («y fue así», «y fue la luz»). Duración "hold": 2–3 s para algo breve (una puerta, un golpe), 4–6 s para escenas largas (batallas, viajes, diluvio, huidas). Para combinar varios sonidos en la misma escena repite el mismo "v" y "after" con otra "key" (por ejemplo choque_espadas + gritos_batalla + el ambiente batalla). En un hold también puedes usar un ambiente. "after" = las ÚLTIMAS palabras EXACTAS del texto tras las cuales empieza la escena (cópialas tal cual). Hasta 12 escenas así por capítulo. Ejemplos: {"v":9,"key":"aguas_separan","hold":3,"after":"y fue así"} · {"v":15,"key":"choque_espadas","hold":6,"after":"y pelearon contra ellos"} · {"v":15,"key":"gritos_batalla","hold":6,"after":"y pelearon contra ellos"} · {"v":3,"key":"caravana","hold":4,"after":"y partió con sus siervos"}.
 5. GOLPES MUSICALES: en los instantes que cortan la respiración (una revelación, un juicio, una muerte, una traición, una victoria, una bendición solemne). Hasta 6 por capítulo.
 6. SILENCIOS DRAMÁTICOS: el silencio también es lenguaje. En "pauses" indica antes de qué versículo hace falta un silencio de 1 a 2 segundos para que el momento respire (después de un golpe, antes de una frase decisiva). Hasta 6.
 7. Nunca tapes las palabras de Yeshúa con efectos salvo que el texto lo pida.
 
 Responde SOLO con JSON:
-{"scenes":[{"v":6,"bridge":"puente_asombro"}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","hold":3,"after":"y fue la luz"},{"v":11,"key":"vida_brota","when":"end"}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
+{"scenes":[{"v":6,"bridge":"puente_asombro"}],"pauses":[{"v":26,"s":1.5}],"ambience":[{"from":1,"to":5,"key":"abismo"}],"action":[{"from":11,"to":14,"key":"obra_esclavos"}],"music":[{"from":1,"to":31,"key":"m_creacion"}],"sfx":[{"v":3,"key":"luz","hold":3,"after":"y fue la luz"},{"v":11,"key":"vida_brota","when":"end"},{"v":13,"key":"latigazo","repeat":4,"every":1.8}],"stings":[{"v":27,"key":"golpe_revelacion","when":"start"}]}`,
     user: `${bookName} capítulo ${chapter}.\n${lines}`,
   };
 }
@@ -228,7 +268,7 @@ Responde SOLO con JSON:
 export function cleanSoundtrack(raw, verseNumbers) {
   const vs = [...verseNumbers].map(Number).sort((a, b) => a - b);
   const min = vs[0] || 1, max = vs[vs.length - 1] || 1;
-  const okKey = (key, kind) => LIB[key] && LIB[key].kind === kind;
+  const okKey = (key, kind) => LIB[key] && LIB[key].kind === kind && (kind !== 'action' || LIB[key].action);
   const ranges = (arr, kind, limit) => {
     const out = [];
     for (const r of Array.isArray(arr) ? arr : []) {
@@ -248,6 +288,9 @@ export function cleanSoundtrack(raw, verseNumbers) {
       const asAmb = kind === 'sfx' && Number(e?.hold) > 0 && okKey(key, 'amb');
       if ((!okKey(key, kind) && !asAmb) || !(v >= min && v <= max)) continue;
       const item = { v, key, when: e.when === 'end' ? 'end' : 'start' };
+      // Repeticiones (látigos, martillazos, truenos…)
+      const rep = Math.round(Number(e?.repeat));
+      if (kind === 'sfx' && rep >= 2) { item.repeat = Math.min(8, rep); item.every = Math.round(Math.min(4, Math.max(0.8, Number(e?.every) || 1.6)) * 10) / 10; }
       // «hold»: la narración se detiene y el efecto suena solo unos segundos
       if (kind === 'sfx' && Number(e?.hold) > 0 && out.filter(x => x.hold).length < 14) {
         item.hold = Math.round(Math.min(6, Math.max(1.5, Number(e.hold))) * 10) / 10;
@@ -260,10 +303,12 @@ export function cleanSoundtrack(raw, verseNumbers) {
     return out;
   };
   const ambience = ranges(raw?.ambience, 'amb', 8);
+  const action = ranges(raw?.action, 'amb', 6);
   const music = ranges(raw?.music, 'music', 8);
   const sfx = points(raw?.sfx, 'sfx', 24).filter(x => !x.hold || okKey(x.key, 'sfx') || okKey(x.key, 'amb'));
   for (let k = sfx.length - 1, plain = sfx.filter(x => !x.hold).length; k >= 0 && plain > 16; k--) if (!sfx[k].hold) { sfx.splice(k, 1); plain--; }
   const out = { ambience, music, sfx };
+  if (action.length) out.action = action;
   if (raw && (raw.scenes || raw.stings || raw.pauses || raw.v === SOUNDTRACK_VERSION)) {
     // Música de fondo siempre: los tramos se tocan entre sí y cubren todo el capítulo
     if (!music.length) music.push({ from: min, to: max, key: 'm_reverente' });
@@ -299,26 +344,33 @@ export function verseSpans(timings, total) {
 }
 
 // Plan de mezcla: qué archivo suena, desde qué segundo, cuánto dura y a qué volumen.
-export const LEVELS = { amb: 0.22, music: 0.2, sfx: 0.55, bridge: 0.5, sting: 0.5, theme: 0.5, motif: 0.32, hold: 0.85 };
+export const LEVELS = { amb: 0.22, action: 0.4, music: 0.28, sfx: 0.75, bridge: 0.55, sting: 0.6, theme: 0.5, motif: 0.32, hold: 1.0 };
+const gainOf = key => LIB[key]?.gain || 1;
 export function mixPlan(soundtrack, timings, total, sfxSeconds = {}) {
   const spans = verseSpans(timings, total);
   const at = v => spans[v];
   const layers = [];
-  for (const kind of ['ambience', 'music']) {
+  for (const kind of ['ambience', 'music', 'action']) {
     for (const r of soundtrack?.[kind] || []) {
       const a = at(r.from), b = at(r.to);
       if (!a || !b) continue;
       const start = Math.max(0, a.start - (kind === 'music' ? 1.5 : 0.5));
       const end = Math.min(total, b.end + (kind === 'music' ? 2.5 : 1));
       if (end - start < 3) continue;
-      layers.push({ key: r.key, kind: kind === 'music' ? 'music' : 'amb', start: round(start), dur: round(end - start), fade: kind === 'music' ? 4 : 2, loop: true, gain: kind === 'music' ? LEVELS.music : LEVELS.amb });
+      const k = kind === 'music' ? 'music' : 'amb';
+      const gain = kind === 'music' ? LEVELS.music : kind === 'action' ? LEVELS.action * gainOf(r.key) : LEVELS.amb;
+      layers.push({ key: r.key, kind: k, start: round(start), dur: round(end - start), fade: kind === 'music' ? 4 : 2, loop: true, gain: round(gain), ...(kind === 'action' ? { bus: 'action' } : {}) });
     }
   }
   for (const e of soundtrack?.sfx || []) {
     const s = at(e.v); if (!s) continue;
     const len = sfxSeconds[e.key] || LIB[e.key]?.seconds || 3;
     const start = e.when === 'end' ? Math.max(s.start, s.end - len * 0.6) : s.start + 0.2;
-    layers.push({ key: e.key, kind: 'sfx', start: round(start), dur: round(len), fade: 0.3, loop: false, gain: LEVELS.sfx });
+    for (let i = 0; i < (e.repeat || 1); i++) {
+      const t0 = start + i * (e.every || 0);
+      if (t0 > total) break;
+      layers.push({ key: e.key, kind: 'sfx', start: round(t0), dur: round(len), fade: 0.3, loop: false, gain: round(LEVELS.sfx * gainOf(e.key)) });
+    }
   }
   return layers;
 }
@@ -338,7 +390,7 @@ export function radioTimeline(timings, total, st, opts = {}) {
   const cuts = [];
   for (const [v, start] of t) if (inserts[v] && start > 0.2) cuts.push({ v, at: Math.max(0, start - 0.05), ...inserts[v] });
   // Efectos con «hold»: la voz se abre en ese punto exacto (opts.holds trae el segundo)
-  for (const h of opts.holds || []) if (h.at > 0.2 && h.at < total - 0.1) cuts.push({ v: h.v, at: h.at, dur: h.dur, kind: 'hold', keys: h.keys || [h.key] });
+  for (const h of opts.holds || []) if (h.at > 0.2 && h.at < total - 0.1) cuts.push({ v: h.v, at: h.at, dur: h.dur, kind: 'hold', keys: h.keys || [h.key], ...(h.reps ? { reps: h.reps } : {}) });
   // Un hold justo antes de un cambio de escena va primero; luego la cortina
   cuts.sort((a, b) => a.at - b.at || (a.kind === 'hold' ? -1 : 1));
   const pieces = []; const gaps = [];
@@ -346,7 +398,7 @@ export function radioTimeline(timings, total, st, opts = {}) {
   for (const c of cuts) {
     if (c.at < from - 1e-6) continue;
     if (c.at > from + 1e-6) pieces.push({ from: round(from), to: round(c.at), at: round(from + shift) });
-    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge, keys: c.keys, src: c.at });
+    gaps.push({ v: c.v, at: round(c.at + shift), dur: c.dur, kind: c.kind, bridge: c.bridge, keys: c.keys, ...(c.reps ? { reps: c.reps } : {}), src: c.at });
     shift += c.dur; from = c.at;
   }
   pieces.push({ from: round(from), to: round(total), at: round(from + shift) });
@@ -390,15 +442,16 @@ export function holdPoints(st, segments, timings, total, silences) {
       if (d <= 2 && (!best || d < best.d)) best = { d, at: Math.min(b - 0.05, a + 0.2) };
     }
     const at = best ? best.at : (Math.abs(est - sp.end) < Math.abs(est - sp.start) ? sp.end - 0.05 : sp.start - 0.05);
-    out.push({ v: e.v, key: e.key, dur: e.hold, at: round(Math.max(0.25, Math.min(total - 0.2, at))) });
+    out.push({ v: e.v, key: e.key, dur: e.hold, at: round(Math.max(0.25, Math.min(total - 0.2, at))), ...(e.repeat ? { repeat: e.repeat, every: e.every } : {}) });
   }
   // Varios sonidos en el mismo punto forman UNA escena (dura lo que el más largo)
   out.sort((a, b) => a.at - b.at);
   const merged = [];
   for (const h of out) {
     const last = merged[merged.length - 1];
-    if (last && h.at - last.at <= 0.6) { if (!last.keys.includes(h.key)) last.keys.push(h.key); last.dur = Math.max(last.dur, h.dur); }
-    else merged.push({ v: h.v, keys: [h.key], dur: h.dur, at: h.at });
+    const rep = h.repeat ? { [h.key]: { repeat: h.repeat, every: h.every } } : {};
+    if (last && h.at - last.at <= 0.6) { if (!last.keys.includes(h.key)) last.keys.push(h.key); last.dur = Math.max(last.dur, h.dur); if (h.repeat) last.reps = { ...(last.reps || {}), ...rep }; }
+    else merged.push({ v: h.v, keys: [h.key], dur: h.dur, at: h.at, ...(h.repeat ? { reps: rep } : {}) });
   }
   return merged;
 }
@@ -440,8 +493,13 @@ export function radioPlan(st, tl, divine, sfxSeconds = {}) {
       const amb = LIB[key]?.kind === 'amb';
       // un ambiente llena toda la escena (en bucle); un efecto suena entero
       const len = amb ? g.dur + 1.5 : Math.max(sfxSeconds[key] || LIB[key]?.seconds || 3, Math.min(g.dur + 1.2, 6));
-      const gain = (amb ? LEVELS.hold * 0.7 : LEVELS.hold) / Math.sqrt(Math.max(1, n));
-      layers.push({ key, kind: amb ? 'amb' : 'sfx', start: round(Math.max(0, g.at - 0.25)), dur: round(len), fade: amb ? 0.8 : 0.4, loop: amb, gain: round(gain) });
+      const gain = (amb ? LEVELS.hold * 0.7 : LEVELS.hold) * gainOf(key) / Math.sqrt(Math.max(1, n));
+      const rep = (g.reps || {})[key];
+      const times = rep ? Math.max(1, Math.min(rep.repeat, Math.floor((g.dur + 0.6) / rep.every) + 1)) : 1;
+      for (let i = 0; i < times; i++) {
+        const t0 = Math.max(0, g.at - 0.25) + i * (rep ? rep.every : 0);
+        layers.push({ key, kind: amb ? 'amb' : 'sfx', start: round(t0), dur: round(rep ? Math.max(sfxSeconds[key] || LIB[key]?.seconds || 2, 1.5) : len), fade: amb ? 0.8 : 0.4, loop: amb, gain: round(gain) });
+      }
     }
   }
   const spans = verseSpans(tl.timings, body);
@@ -495,25 +553,36 @@ export function ffmpegArgs(voicePath, layers, files, outPath, opts = {}) {
   } else {
     parts.push(`[0:a]${fmt}[vfull]`);
   }
-  const bed = [], motif = [];
+  const bed = [], motif = [], action = [];
   used.forEach((l, i) => {
     const d = l.dur, f = Math.min(l.fade, d / 3);
     const ms = Math.round(l.start * 1000);
     parts.push(`[${i + 1}:a]${fmt},atrim=0:${d},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${f},afade=t=out:st=${round(d - f)}:d=${f},volume=${l.gain},adelay=${ms}|${ms}[l${i}]`);
-    (l.bus === 'motif' ? motif : bed).push(`[l${i}]`);
+    (l.bus === 'motif' ? motif : l.bus === 'action' ? action : bed).push(`[l${i}]`);
   });
-  if (!bed.length && !motif.length) {
+  if (!bed.length && !motif.length && !action.length) {
     parts.push('[vfull]anull[mix]');
   } else {
     const finals = [];
+    let actFinal = null;
+    if (bed.length && action.length) {
+      parts.push('[vfull]asplit=3[voice][key][key2]');
+      // El fondo de la acción baja poco cuando alguien habla: se sigue oyendo lo que pasa
+      parts.push(`${action.join('')}amix=inputs=${action.length}:normalize=0:duration=longest[actmix]`);
+      parts.push('[actmix][key2]sidechaincompress=threshold=0.05:ratio=2.5:attack=40:release=400:makeup=1[actd]');
+      actFinal = '[actd]';
+    } else if (!bed.length && action.length) {
+      bed.push(...action); action.length = 0;
+    }
     if (bed.length) {
-      parts.push('[vfull]asplit=2[voice][key]');
+      if (!actFinal) parts.push('[vfull]asplit=2[voice][key]');
       // Cuando habla Elohim la música de fondo baja un poco más para dejar sitio a su tema
       const dv = (opts.divine || []).map(([a, b]) => `between(t,${round(a)},${round(b)})`).join('+');
       parts.push(`${bed.join('')}amix=inputs=${bed.length}:normalize=0:duration=longest${dv ? `,volume=enable='${dv}':volume=0.5` : ''}[bed]`);
       // La música y los ambientes bajan solos cuando alguien habla
       parts.push('[bed][key]sidechaincompress=threshold=0.04:ratio=5:attack=30:release=500:makeup=1[ducked]');
       finals.push('[voice]', '[ducked]');
+      if (actFinal) finals.push(actFinal);
     } else finals.push('[vfull]');
     if (motif.length) {
       parts.push(`${motif.join('')}amix=inputs=${motif.length}:normalize=0:duration=longest[motif]`);
