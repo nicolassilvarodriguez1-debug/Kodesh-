@@ -87,8 +87,25 @@ html.light .pl-u { background: rgba(47,93,148,.16); }
 .pl-tog { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--text-mid, #b8af9c); margin: 4px 0 6px; }
 .pl-pop { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 90px); transform: translateX(-50%); width: min(440px, calc(100% - 32px)); z-index: 580; background: var(--bg2, #12111a); border: 1px solid rgba(110,160,220,.5); border-radius: 14px; padding: 14px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.45); font-family: var(--font-body, serif); color: var(--text, #e9e3d3); line-height: 1.5; }
 .pl-pop .pl-kick { color: #8fb6e6; }
-@media (max-width: 420px) { .pl-col p { font-size: .92rem; } }`;
+@media (max-width: 420px) { .pl-col p { font-size: .92rem; } }
+html.pl-off .pl-row, html.pl-off .pl-mark { display: none !important; }
+html.pl-off .word.pl-solo { text-decoration: none; }`;
   document.head.appendChild(css);
+
+  /* ── Ajustes: activar o desactivar los avisos y marcas en el lector ── */
+  const isOn = () => { try { return localStorage.getItem('kodesh_pl_on') !== '0'; } catch (e) { return true; } };
+  function paintToggle() {
+    document.documentElement.classList.toggle('pl-off', !isOn());
+    const t = document.getElementById('plToggle');
+    if (t) { t.classList.toggle('on', isOn()); t.setAttribute('aria-checked', String(isOn())); }
+  }
+  window.toggleParallels = function () {
+    try { localStorage.setItem('kodesh_pl_on', isOn() ? '0' : '1'); } catch (e) {}
+    paintToggle();
+    if (typeof showToast === 'function') showToast(isOn() ? 'Paralelos activados' : 'Paralelos desactivados');
+  };
+  paintToggle();
+  document.addEventListener('DOMContentLoaded', paintToggle);
 
   /* ── A + E · En el lector ── */
   function markPhrase(vEl, phrase, cls) {
