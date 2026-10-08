@@ -66,6 +66,7 @@ html.book-mode .book-cont { margin-top: 0; }
       const name = (books().find(b => b.id === book) || {}).name || book;
       if (typeof recordTodayChapter === 'function') recordTodayChapter(book, name, ch);
       if (typeof updateProgress === 'function') updateProgress();
+      if (window.KodeshBadges) KodeshBadges.check(book, ch, { quiet: true });
     } catch (e) {}
   }
 

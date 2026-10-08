@@ -138,6 +138,24 @@ a { color: var(--gold); }
 
 /* ── Tu año ── */
 .year { padding: 14px 16px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--border); }
+.wk-prog { margin-top: 14px; }
+.wk-prog-bars { display: flex; gap: 5px; }
+.wk-prog-bars span { flex: 1; height: 7px; border-radius: 4px; background: var(--border2); }
+.wk-prog-bars span.on { background: var(--gold); }
+.wk-prog-row { display: flex; justify-content: space-between; font-size: 14px; margin-top: 7px; color: var(--text-mid); }
+.wk-prog-row b { color: var(--gold); font-weight: 500; }
+.kb-sec { padding: 14px 16px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--border); }
+.kb-tabs { display: flex; gap: 6px; margin: 10px 0 14px; overflow-x: auto; }
+.kb-tab { flex-shrink: 0; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--border2); background: transparent; color: var(--text-mid); font: inherit; font-size: 14px; cursor: pointer; }
+.kb-tab.on { border-color: var(--gold); color: var(--text); }
+.kb-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 6px; }
+.kb-item { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+.kb-name { font-size: 12.5px; color: var(--text-mid); text-align: center; line-height: 1.2; }
+.kb-weeks { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.kb-wk { height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid var(--border); color: var(--text-dim); }
+.kb-wk.ok { background: var(--gold); border-color: var(--gold); color: var(--on-gold, #15120a); }
+.kb-wk.open { border: 1.5px dashed var(--gold-line); color: var(--gold); }
+.kb-big { font-family: var(--font-display); font-size: 54px; font-weight: 700; line-height: 1; color: var(--gold); }
 .year-head { display: flex; align-items: baseline; justify-content: space-between; }
 .year-count { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--gold); }
 .year-count small { font-size: 15px; font-weight: 500; color: var(--text-dim); }
@@ -287,6 +305,7 @@ a { color: var(--gold); }
       <span class="readings-count" id="readingsCount"></span>
     </div>
     <div class="readings" id="weekReadings"></div>
+    <div class="wk-prog" id="weekChapters" hidden></div>
     <div class="week-actions">
       <a class="btn btn-primary" id="weekContinue" href="index.html">Seguir leyendo</a>
       <a class="btn btn-ghost-gold" id="weekListen" href="index.html" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Escuchar</a>
@@ -309,6 +328,16 @@ a { color: var(--gold); }
     </div>
     <div class="year-bars" id="yearBars"></div>
   </section>
+
+  <section class="kb-sec" id="kbStreak" aria-label="Semanas seguidas"></section>
+
+  <section class="kb-sec" id="kbBadges" aria-label="Mis insignias">
+    <div class="year-head"><span class="label">Mis insignias</span><span class="year-count"><span id="kbCount">0</span> <small>de 54</small></span></div>
+    <div class="kb-tabs" id="kbTabs" role="tablist"></div>
+    <div class="kb-grid" id="kbGrid"></div>
+  </section>
+
+  <section class="kb-sec" id="kbCommunity" hidden aria-label="La comunidad esta semana"></section>
 
   <div id="path"></div>
 
@@ -375,6 +404,7 @@ a { color: var(--gold); }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="/bible-ref.js"></script>
+<script src="/parasha-badges.js"></script>
 <script>
 /* ── DATOS ── */
 let PARASHOT = [];
@@ -494,6 +524,71 @@ async function paintListen(id, p) {
   a.href = listenUrl(p); a.hidden = false;
 }
 
+/* ── INSIGNIAS Y RACHAS POR PORCIÓN ── */
+let kbBook = null;
+function readMapLocal() { return readJSON('kodesh_read', {}); }
+function paintWeekChapters(ps) {
+  const box = document.getElementById('weekChapters'); if (!box || !window.KodeshBadges) return;
+  const map = readMapLocal();
+  const chs = ps.flatMap(p => KodeshBadges.chaptersOf(p));
+  const uniq = [...new Set(chs)];
+  const done = uniq.filter(k => map[k]).length;
+  const reading = getNextReading(ps[0].num);
+  let days = '';
+  if (reading) { const d = Math.round((localDate(reading.date) - today0()) / 86400000); days = d > 1 ? `Shabat en <b>${d} días</b>` : d === 1 ? '<b>Shabat es mañana</b>' : d === 0 ? '<b>Hoy es Shabat</b>' : ''; }
+  box.hidden = false;
+  box.innerHTML = `<div class="wk-prog-bars">${uniq.map(k => `<span class="${map[k] ? 'on' : ''}"></span>`).join('')}</div>
+    <div class="wk-prog-row"><span>${done === uniq.length ? '<b>✓ Porción completa</b>' : `${done} de ${uniq.length} capítulos leídos`}</span><span>${days}</span></div>`;
+}
+const KB_BOOKS = [['GEN', 'Génesis'], ['EXO', 'Éxodo'], ['LEV', 'Levítico'], ['NUM', 'Números'], ['DEU', 'Deut.']];
+function paintBadges() {
+  if (!window.KodeshBadges || !PARASHOT.length) return;
+  const map = readMapLocal();
+  const earned = PARASHOT.filter(p => KodeshBadges.isEarned(p, map));
+  document.getElementById('kbCount').textContent = earned.length;
+  if (!kbBook) { const cur = PARASHOT.find(p => p.num === (getCurrentParashaNums()[0] || 1)); kbBook = cur ? cur.book : 'GEN'; }
+  document.getElementById('kbTabs').innerHTML = KB_BOOKS.map(([id, n]) => `<button class="kb-tab ${id === kbBook ? 'on' : ''}" role="tab" aria-selected="${id === kbBook}" onclick="kbBook='${id}';paintBadges()">${n}</button>`).join('');
+  document.getElementById('kbGrid').innerHTML = PARASHOT.filter(p => p.book === kbBook).map(p => {
+    const on = KodeshBadges.isEarned(p, map);
+    return `<button class="kb-item" onclick="openSheet(${PARASHOT.indexOf(p)})" aria-label="${esc(p.nombre)}${on ? ' (ganada)' : ''}">${KodeshBadges.badgeHtml(p, { size: 64, earned: on })}<span class="kb-name">${esc(p.nombre)}</span></button>`;
+  }).join('');
+}
+async function paintStreak() {
+  const box = document.getElementById('kbStreak'); if (!box || !window.KodeshBadges) return;
+  const st = await KodeshBadges.weekStreak();
+  const cells = st.weeks.slice(-14).map(w => {
+    const label = w.nums.map(n => (PARASHOT.find(p => p.num === n) || {}).nombre || n).join(' – ');
+    return `<div class="kb-wk ${w.ok ? 'ok' : w.open ? 'open' : ''}" title="${esc(label)} · ${w.shabbat}">${w.ok ? '✓' : w.open ? 'hoy' : ''}</div>`;
+  }).join('');
+  box.innerHTML = `<div class="year-head"><span class="label">Semanas con la Torá</span></div>
+    <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+      <div class="kb-big">${st.streak}</div>
+      <div style="font-size:15px;color:var(--text-mid);line-height:1.4">${st.streak === 1 ? 'semana seguida' : 'semanas seguidas'} completando la porción<br><span style="font-size:13px;color:var(--text-dim)">Cuenta si la terminas antes del Shabat${st.loggedIn ? '' : ' · inicia sesión para contar también lo leído en otros dispositivos'}</span></div>
+    </div>
+    <div class="kb-weeks">${cells}</div>`;
+}
+async function paintCommunity(ps) {
+  const box = document.getElementById('kbCommunity'); if (!box || !window.KodeshBadges) return;
+  const reading = getNextReading(ps[0].num);
+  if (!reading) return;
+  const sh = localDate(reading.date); sh.setDate(sh.getDate() - 13);
+  const since = `${sh.getFullYear()}-${String(sh.getMonth() + 1).padStart(2, '0')}-${String(sh.getDate()).padStart(2, '0')}`;
+  const n = await KodeshBadges.community(ps[0], since);
+  if (!n) { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `<div class="year-head"><span class="label">La comunidad Kodesh</span></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:8px">
+      <div class="kb-big" style="font-size:40px">${n}</div>
+      <div style="font-size:15px;color:var(--text-mid);line-height:1.4">lectores ya completaron <b style="color:var(--text)">${esc(ps[0].nombre)}</b> esta semana. ¡Léela con ellos!</div>
+    </div>`;
+}
+function paintBadgeAreas() {
+  const nums = getCurrentParashaNums();
+  const ps = nums.map(n => PARASHOT.find(x => x.num === n)).filter(Boolean);
+  if (!ps.length) return;
+  paintWeekChapters(ps); paintBadges(); paintStreak(); paintCommunity(ps);
+}
+
 /* ── CARGA ── */
 async function loadData() {
   try {
@@ -509,6 +604,7 @@ async function loadData() {
   renderWeek();
   renderYear();
   renderPath();
+  paintBadgeAreas();
   const fromLink = parseInt(new URLSearchParams(location.search).get('p'));
   if (fromLink >= 1 && fromLink <= 54) openSheet(fromLink - 1);
 }
@@ -580,7 +676,8 @@ function toggleReading(num, key) {
     writeJSON('kodesh_parashot', studiedParashot);
     showToast('Porción completada · Shabat shalom');
   }
-  renderWeek(); renderYear(); renderPath();
+  renderWeek(); renderYear(); renderPath(); paintBadgeAreas();
+  if (key === 'torah' && c.torah && window.KodeshBadges) KodeshBadges.checkPortion(num).then(paintBadges);
 }
 
 /* ── TU AÑO ── */
