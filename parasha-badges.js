@@ -57,12 +57,17 @@
 .kb-badge.off { border: 1.5px dashed var(--border2, #2a2836); color: var(--text-dim, #6e6656); background: transparent; }
 .kb-badge .kb-he { font-family: 'Frank Ruhl Libre', serif; line-height: 1.1; padding: 0 8%; }
 .kb-badge img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.kb-badge.art.on { background: none; box-shadow: none; }
+.kb-badge.art.off { border: none; }
+.kb-rib { position: absolute; left: 27%; right: 27%; top: 75.6%; height: 6.4%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', var(--font-display, serif); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #3b2a07; text-shadow: 0 1px 0 rgba(255,235,170,.55); white-space: nowrap; overflow: hidden; z-index: 1; }
+.kb-badge.off .kb-rib { color: #2a2a2a; opacity: .6; }
 .kb-badge.off img { filter: grayscale(1) brightness(.45); opacity: .5; }
 .kb-cele { position: fixed; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 38%, rgba(60,46,14,.96), rgba(8,8,12,.97) 62%); opacity: 0; transition: opacity .3s; padding: 24px; }
 .kb-cele.open { opacity: 1; }
 .kb-cele-in { width: min(420px, 100%); text-align: center; color: #e9e3d3; }
 .kb-cele .kb-badge { margin: 22px auto 0; animation: kbPop .7s cubic-bezier(.2,1.4,.4,1) both; }
 @keyframes kbPop { from { transform: scale(.3) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.kb-badge.art.kb-glow { box-shadow: none !important; filter: drop-shadow(0 0 40px rgba(201,168,76,.55)); }
 .kb-glow { box-shadow: 0 0 0 6px #3a3220, 0 0 80px rgba(201,168,76,.5) !important; }
 .kb-btn { display: block; width: 100%; margin-top: 10px; height: 48px; border-radius: 24px; border: 1px solid #6e5a2a; background: transparent; color: #c9a84c; font: inherit; font-size: 1rem; cursor: pointer; text-decoration: none; line-height: 48px; }
 .kb-btn.pri { background: #c9a84c; color: #15120a; border-color: #c9a84c; }`;
@@ -70,9 +75,10 @@
 
   function badgeHtml(p, { size = 64, earned = true } = {}) {
     const fs = Math.max(11, Math.round(size * (p.heb.length > 8 ? 0.17 : 0.24)));
-    return `<div class="kb-badge ${earned ? 'on' : 'off'}" style="width:${size}px;height:${size}px">
+    return `<div class="kb-badge ${earned ? 'on' : 'off'}${ART[p.num] ? ' art' : ''}" style="width:${size}px;height:${size}px">
       <span class="kb-he" style="font-size:${fs}px" lang="he">${esc(p.heb)}</span>
-      ${ART[p.num] ? `<img src="${ART_BASE}${p.num}.webp?v=${esc(ART[p.num])}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      ${ART[p.num] ? `<img src="${ART_BASE}${p.num}.webp?v=${esc(ART[p.num])}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('art');this.remove()">` : ''}
+      ${ART[p.num] && size >= 100 ? `<span class="kb-rib" style="font-size:${Math.round(size * 0.058)}px">${esc(p.nombre)}</span>` : ''}
     </div>`;
   }
 
