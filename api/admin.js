@@ -149,6 +149,26 @@ async function badgeSaveManifest(m) {
   return sorted;
 }
 
+
+// ── Arte de las fiestas y ajustes del calendario bíblico (mismo bucket público) ──
+const FEAST_IDS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'januca', 'purim'];
+async function publicJson(path, fallback) {
+  const r = await fetch(`${badgePublic(path)}?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) return fallback;
+  try { return await r.json(); } catch (e) { return fallback; }
+}
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+export function cleanCalendarAdj(raw) {
+  const out = { m: {}, n: {} };
+  for (const [k, v] of Object.entries(raw?.m || {})) {
+    if (!ISO.test(k) || !ISO.test(v)) continue;
+    const d = (Date.parse(v) - Date.parse(k)) / 864e5;
+    if (Math.abs(d) <= 2 && d !== 0) out.m[k] = v;
+  }
+  for (const [y, v] of Object.entries(raw?.n || {})) if (/^\d{4}$/.test(y) && ISO.test(v)) out.n[y] = v;
+  return out;
+}
+
 export default async function handler(req, res) {
   // Was previously hand-rolled with `Access-Control-Allow-Headers: Content-Type`
   // only (missing Authorization) — the only authenticated POST endpoint in
@@ -197,6 +217,48 @@ export default async function handler(req, res) {
       await badgePut(path, buf, type);
       m[num] = badgePublic(path);
       return res.status(200).json({ art: await badgeSaveManifest(m), url: m[num] });
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+
+  // ── ACTION: arte de las fiestas ──
+  if (action === 'feast_art_list') {
+    try { return res.status(200).json({ art: await publicJson('fiestas.json', {}) }); }
+    catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  if (action === 'feast_art_upload' || action === 'feast_art_delete') {
+    if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
+    const id = String(req.body.id || '');
+    if (!FEAST_IDS.includes(id)) return res.status(400).json({ error: 'Fiesta inválida' });
+    try {
+      await badgeEnsureBucket();
+      const m = await publicJson('fiestas.json', {});
+      if (action === 'feast_art_delete') delete m[id];
+      else {
+        const type = ['image/webp', 'image/png', 'image/jpeg'].includes(req.body.type) ? req.body.type : null;
+        if (!type || typeof req.body.data !== 'string') return res.status(400).json({ error: 'Imagen inválida' });
+        const buf = Buffer.from(req.body.data, 'base64');
+        if (buf.length < 1000 || buf.length > 3145728) return res.status(400).json({ error: 'La imagen debe pesar menos de 3 MB' });
+        const path = `fiesta-${id}-${Date.now()}.${type.split('/')[1].replace('jpeg', 'jpg')}`;
+        await badgePut(path, buf, type);
+        m[id] = badgePublic(path);
+      }
+      await badgePut('fiestas.json', JSON.stringify(m), 'application/json', 'max-age=0');
+      return res.status(200).json({ art: m });
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  // ── ACTION: ajustes del calendario bíblico (luna vista / cebada aviv) ──
+  if (action === 'calendar_get') {
+    try { return res.status(200).json({ adj: cleanCalendarAdj(await publicJson('calendario.json', {})) }); }
+    catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  if (action === 'calendar_save') {
+    if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
+    try {
+      await badgeEnsureBucket();
+      const adj = cleanCalendarAdj(req.body.adj);
+      adj.updated = new Date().toISOString();
+      await badgePut('calendario.json', JSON.stringify(adj), 'application/json', 'max-age=0');
+      return res.status(200).json({ adj });
     } catch (err) { return res.status(500).json({ error: err.message }); }
   }
 

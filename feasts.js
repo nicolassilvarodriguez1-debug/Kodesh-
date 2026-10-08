@@ -33,33 +33,15 @@
   const placesOf = key => (DATA ? DATA.templo.filter(p => p.ch.includes(key)) : []);
   const temaName = t => (fest(t) ? fest(t).n : TEMA[t] || 'Raíz hebrea');
 
-  /* ── Calendario: fechas de este año con el calendario hebreo del sistema ── */
-  let CAL = null;
-  function calendar() {
-    if (CAL) return CAL;
-    CAL = {};
-    try {
-      const fmt = new Intl.DateTimeFormat('en-u-ca-hebrew', { month: 'long', day: 'numeric' });
-      const start = new Date(); start.setHours(12, 0, 0, 0); start.setDate(start.getDate() - 8);
-      for (let i = 0; i < 400; i++) {
-        const d = new Date(start); d.setDate(start.getDate() + i);
-        const p = fmt.formatToParts(d), m = (p.find(x => x.type === 'month') || {}).value, day = +(p.find(x => x.type === 'day') || {}).value;
-        const k = `${m === 'Adar II' ? 'Adar' : m}|${day}`;
-        if (m === 'Adar I') continue;                 // Purim cae en Adar II en año bisiesto
-        (CAL[k] = CAL[k] || []).push(d);
-      }
-    } catch (e) {}
-    return CAL;
+  /* ── Calendario bíblico observado (calendario.js): luna nueva visible + Aviv ── */
+  function dateOf(f) { return window.KodeshCal ? KodeshCal.next(f.id) : null; }
+  let ART = rj('kodesh_fr_art', {}), artP = null;
+  function loadArt() {
+    if (!artP) artP = fetch('https://fvknbqdsgqdmwirrgcvb.supabase.co/storage/v1/object/public/insignias/fiestas.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null).then(j => { if (j && typeof j === 'object') { ART = j; wj('kodesh_fr_art', j); } return ART; }).catch(() => ART);
+    return artP;
   }
-  // Próxima fecha (o la actual si la fiesta está en curso)
-  function dateOf(f) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    for (const first of calendar()[`${f.hd[0]}|${f.hd[1]}`] || []) {
-      const end = new Date(first); end.setDate(end.getDate() + (f.dias || 1) - 1);
-      if (end >= today) return { start: first, end, now: first <= new Date() };
-    }
-    return null;
-  }
+  const WHY = 'calendario-biblico.html';
   const fmtDay = d => d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
 
   /* ── Ajustes ── */
@@ -133,7 +115,12 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-step span { font-size: 1.02rem; line-height: 1.45; }
 .fr-step small { display: block; color: var(--text-dim, #6e6656); font-size: .82rem; }
 .fr-tpl svg { width: 100%; height: auto; display: block; max-width: 420px; margin: 0 auto; }
-.fr-tpl .z { cursor: pointer; }`;
+.fr-tpl .z { cursor: pointer; }
+.fr-why { display: inline-block; margin-top: 8px; color: #5a9cf0; font-size: .9rem; text-decoration: none; }
+.fr-why-top { display: block; margin: 2px 0 0; padding: 9px 12px; border-radius: 12px; background: rgba(90,156,240,.08); border: 1px solid rgba(90,156,240,.3); }
+.fr-disc { border-color: rgba(90,156,240,.35); }
+.fr-art { margin: 0 0 12px; border-radius: 16px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--bg2, #12111a); }
+.fr-art img { width: 100%; height: 100%; object-fit: cover; display: block; }`;
   document.head.appendChild(css);
 
   /* ── Hoja ── */
@@ -169,11 +156,11 @@ html.fr-off .word.fr-u { text-decoration: none; }
   function feastHtml(f) {
     const d = dateOf(f), ch = ctx.key && DATA.ch[ctx.key];
     const others = ch ? ch[0].filter(x => x !== f.id && fest(x)) : [];
-    return `${others.length ? `<div class="fr-chips" style="margin-top:0">${ch[0].map(x => `<button class="fr-tab${x === f.id ? ' on' : ''}" data-fest="${x}">${esc(fest(x).n)}</button>`).join('')}</div>` : ''}
+    return `${ART[f.id] ? `<div class="fr-art"><img src="${esc(ART[f.id])}" alt="${esc(f.n)}" loading="lazy"></div>` : ''}${others.length ? `<div class="fr-chips" style="margin-top:0">${ch[0].map(x => `<button class="fr-tab${x === f.id ? ' on' : ''}" data-fest="${x}">${esc(fest(x).n)}</button>`).join('')}</div>` : ''}
       ${ch ? `<div class="fr-card here"><div class="fr-kick">En este capítulo</div><div class="fr-p" style="margin-top:4px">${esc(ch[1])}</div></div>` : ''}
       <div class="fr-sec">Qué mandó YHWH</div><ul class="fr-ul">${f.que.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       <div class="fr-sec">En tiempos de Yeshúa</div><ul class="fr-ul">${f.siglo.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-      ${d ? `<div class="fr-card" style="border-color:rgba(90,156,240,.5)"><div class="fr-kick">${d.now ? 'Se celebra ahora' : 'Este año'}</div><div class="fr-p" style="margin-top:2px">${esc(fmtDay(d.start))}${f.dias > 1 ? ` al ${esc(fmtDay(d.end))}` : ''}</div><div class="fr-src">Las fiestas comienzan al atardecer del día anterior.${f.nota ? ' ' + esc(f.nota.replace(/^Este año: /, '')) : ''}</div></div>` : ''}
+      ${d ? `<div class="fr-card" style="border-color:rgba(90,156,240,.5)"><div class="fr-kick">${d.now ? 'Se celebra ahora' : 'Próxima fecha'}</div><div class="fr-p" style="margin-top:2px">${esc(fmtDay(d.start))}${f.dias > 1 ? ` al ${esc(fmtDay(d.end))}` : ''}</div><div class="fr-src">Comienza al atardecer del ${esc(fmtDay(d.eve))}.${d.confirmed ? ' Luna nueva confirmada.' : d.maybeEarlier ? ' Si la luna se ve una tarde antes, se adelanta un día.' : ''}</div><a class="fr-why" href="${WHY}">Calendario bíblico observado · ¿por qué? →</a></div>` : ''}
       <div class="fr-sec">Para leer</div><div class="fr-refs">${[f.mand, ...f.lee].filter((x, i, a) => a.indexOf(x) === i).map(r => `<a class="fr-ref" href="${readUrl(r)}">${esc(nice(r))}</a>`).join('')}</div>`;
   }
   const initial = he => he.normalize('NFD').replace(/[\u0591-\u05C7]/g, '').replace(/^יום\s+/, '').replace(/^ה(?=כ)/, '')[0];
@@ -181,12 +168,13 @@ html.fr-off .word.fr-u { text-decoration: none; }
     const fe = x => { const d = dateOf(x); return `<button class="fr-fe${x.id === f.id ? ' on' : ''}" data-fest="${x.id}"><i>${esc(initial(x.he))}</i><span>${esc(x.n)}</span><small>${d ? esc(d.start.toLocaleDateString('es', { day: 'numeric', month: 'short' })) : esc(x.fecha.split(' (')[0])}</small></button>`; };
     const main = DATA.f.filter(x => !x.extra), extra = DATA.f.filter(x => x.extra);
     const inBible = Object.entries(DATA.ch).filter(([, v]) => v[0].includes(f.id)).sort((a, b) => (b[0] === ctx.key) - (a[0] === ctx.key));
-    return `<div class="fr-sec" style="margin-top:6px">Primavera</div><div class="fr-strip">${main.slice(0, 4).map(fe).join('')}</div>
+    return `<a class="fr-why fr-why-top" href="${WHY}">🌙 Calendario por la luna nueva visible · ¿por qué no Hilel II? →</a><div class="fr-sec" style="margin-top:10px">Primavera</div><div class="fr-strip">${main.slice(0, 4).map(fe).join('')}</div>
       <div class="fr-line"></div><div class="fr-sec" style="margin-top:0">Otoño</div><div class="fr-strip fall">${main.slice(4).map(fe).join('')}</div>
       <div class="fr-sec">También en la Biblia</div><div class="fr-strip fall">${extra.map(fe).join('')}</div>
       <div class="fr-sec">${esc(f.n)} en la Biblia</div>
       ${inBible.map(([k, v]) => `<div class="fr-card${k === ctx.key ? ' here' : ''}" data-go="${k.replace(':', ' ')}"><div>${esc(nice(k.replace(':', ' ')))}</div><div class="fr-src" style="margin-top:2px">${esc(v[1])}</div>${k === ctx.key ? '<div class="fr-q">Estás aquí</div>' : ''}</div>`).join('')}
-      <p class="fr-src">Fechas según el calendario hebreo. Las fiestas comienzan al atardecer del día anterior.</p>`;
+      <div class="fr-card fr-disc"><div class="fr-kick">Calendario bíblico observado</div><div class="fr-p" style="margin-top:4px;font-size:.95rem">Los meses comienzan con la primera luna nueva visible desde Jerusalén y el año con la cebada aviv, como en tiempos de la Torá. No usamos el calendario calculado de Hilel II, por eso algunas fechas difieren uno o más días de los calendarios judíos comunes.</div><a class="fr-why" href="${WHY}">¿Por qué este calendario? →</a></div>
+      <p class="fr-src">Las fiestas comienzan al atardecer del día anterior. Fechas calculadas por la visibilidad de la luna; se confirman con cada avistamiento.</p>`;
   }
   function threadHtml(f) {
     return `<div class="fr-thread">${f.hilo.map(([k, r, t]) => `<div class="fr-step${/Yeshúa|Cumplimiento/.test(k) ? ' y' : ''}" data-go="${esc(r)}"><b>${esc(k)}</b><span>${esc(t)}</span><small>${esc(nice(r))}</small></div>`).join('')}</div>`;
@@ -237,7 +225,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
     if (ctx.tab === 'raices' && ctx.note != null) { const n = s.querySelector('#frn' + ctx.note); if (n) setTimeout(() => n.scrollIntoView({ block: 'start' }), 30); }
   }
   async function open(opts = {}) {
-    await loadData(); if (!DATA) return;
+    await Promise.all([loadData(), window.KodeshCal ? KodeshCal.load() : null, loadArt()]); if (!DATA) return;
     if (opts.key) await loadRoots();
     const ch = opts.key && DATA.ch[opts.key];
     let f = opts.fest || (ch && ch[0][0]);

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script src="/native-insets.js"></script>
+<title>KODESH · Calendario bíblico observado</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b0b12">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Frank+Ruhl+Libre:wght@500&display=swap" rel="stylesheet">
+<script>try { if (localStorage.getItem('kodesh_theme') === 'light') document.documentElement.classList.add('light'); } catch (e) {}</script>
+<style>
+:root { --bg: #0b0b12; --bg2: #12111a; --border: #2a2836; --text: #e9e3d3; --mid: #b8af9c; --dim: #8e8676; --gold: #c9a84c; --blue: #5a9cf0; color-scheme: dark; }
+html.light { --bg: #f6f1e6; --bg2: #fffdf8; --border: #d9cdb2; --text: #241d12; --mid: #4f4636; --dim: #7a6f5c; --gold: #8a6a1e; --blue: #2f6fc4; color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'EB Garamond', Georgia, serif; font-size: 18px; line-height: 1.65; }
+.top { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 10px) 16px 10px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.top button { width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border); background: none; color: var(--text); font-size: 20px; cursor: pointer; }
+.top b { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; font-weight: 600; }
+main { max-width: 680px; margin: 0 auto; padding: 18px 18px calc(env(safe-area-inset-bottom, 0px) + 48px); }
+.kick { font-family: 'Cinzel', 'Cormorant Garamond', serif; font-size: .7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--blue); }
+h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.1rem; line-height: 1.1; margin: 6px 0 4px; }
+h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; margin: 30px 0 6px; }
+.lead { color: var(--mid); font-size: 1.1rem; }
+.he { font-family: 'Frank Ruhl Libre', serif; color: var(--gold); }
+blockquote { margin: 12px 0; padding: 10px 14px; border-left: 3px solid var(--gold); background: var(--bg2); border-radius: 0 12px 12px 0; }
+blockquote cite { display: block; font-style: normal; color: var(--dim); font-size: .9rem; margin-top: 2px; }
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.cmp div { border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; background: var(--bg2); font-size: .98rem; }
+.cmp div.us { border-color: var(--blue); }
+.cmp h3 { margin: 0 0 6px; font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; }
+.cmp ul { margin: 0; padding-left: 18px; }
+.note { border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; color: var(--mid); font-size: .95rem; margin-top: 14px; }
+#hoy { margin-top: 18px; border: 1px solid var(--blue); border-radius: 14px; padding: 12px 14px; background: var(--bg2); display: none; }
+@media (max-width: 520px) { .cmp { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="top"><button onclick="history.length > 1 ? history.back() : (location.href = 'index.html')" aria-label="Volver">‹</button><b>Calendario bíblico</b></div>
+<main>
+  <div class="kick">Moadim de YHWH</div>
+  <h1>¿Por qué usamos el calendario observado?</h1>
+  <p class="lead">En Kodesh las fechas de las fiestas siguen las señales que da la Escritura: <b>la luna nueva que se ve</b> y <b>la cebada aviv</b> en la tierra de Israel. No usamos el calendario calculado que se fijó en tiempos de Hilel II.</p>
+  <div id="hoy"></div>
+
+  <h2>1 · Lo que dice la Torá</h2>
+  <p>Elohim puso las lumbreras del cielo para marcar los tiempos señalados. La palabra que traducimos «estaciones» es <span class="he" lang="he">מוֹעֲדִים</span> (<i>moadim</i>), la misma que se usa para las fiestas de Levítico 23.</p>
+  <blockquote>«Sean lumbreras en la expansión de los cielos para apartar el día y la noche: y sean por señales, y para las estaciones, y para días y años».<cite>Génesis 1:14</cite></blockquote>
+  <p>El mes hebreo, <span class="he" lang="he">חֹדֶשׁ</span> (<i>jódesh</i>), viene de la raíz «nuevo» (<span class="he" lang="he">חָדָשׁ</span>): el mes comienza cuando la luna se renueva. Por eso la Biblia habla de «la nueva luna» como un día conocido por todos (1 Samuel 20:5; 2 Reyes 4:23; Ezequiel 46:1).</p>
+  <p>Y el primer mes del año no es una fecha fija: es el mes en que la cebada está <span class="he" lang="he">אָבִיב</span> (<i>aviv</i>), es decir, espigada y a punto de madurar.</p>
+  <blockquote>«Vosotros salís hoy en el mes de Abib».<cite>Éxodo 13:4 · ver también Éxodo 12:2 y Deuteronomio 16:1</cite></blockquote>
+  <blockquote>«El lino, pues, y la cebada fueron heridos; porque la cebada estaba ya espigada» (en hebreo, <span class="he" lang="he">אָבִיב</span>).<cite>Éxodo 9:31</cite></blockquote>
+
+  <h2>2 · Cómo se hacía en tiempos del Templo</h2>
+  <p>Mientras hubo Templo y Sanedrín en Jerusalén, el mes se declaraba cuando llegaban testigos que habían visto el creciente de la luna (así lo describe la Misná, en el tratado Rosh Hashaná, capítulos 1 y 2). Y cuando la cebada y la estación no estaban listas, se agregaba un mes al año antes de Aviv.</p>
+
+  <h2>3 · Qué cambió con Hilel II</h2>
+  <p>Después de la destrucción del Templo, con el pueblo disperso y bajo persecución, ya no era posible avisar a todas las comunidades a tiempo. Según la tradición, hacia el año 359 d.C. el patriarca Hilel II hizo público un calendario <b>calculado</b>, que es el que usa hoy la mayoría del pueblo judío. Fue una solución práctica para mantener unido a un pueblo disperso, y lo respetamos.</p>
+  <div class="cmp">
+    <div><h3>Calendario de Hilel II</h3><ul>
+      <li>El mes empieza con la conjunción <i>promedio</i> (el <i>molad</i>), que no se ve.</li>
+      <li>Siete años bisiestos fijos en cada ciclo de 19 años, sin mirar la cebada.</li>
+      <li>Reglas de aplazamiento (<i>dejiyot</i>): Yom Teruá nunca cae domingo, miércoles ni viernes, aunque eso mueva la fecha uno o dos días.</li>
+      <li>Primicias el 16 de Nisán y Shavuot el 6 de Siván.</li>
+    </ul></div>
+    <div class="us"><h3>Calendario observado (Kodesh)</h3><ul>
+      <li>El mes empieza la tarde en que se ve el primer creciente desde Jerusalén.</li>
+      <li>El año empieza con el mes en que la cebada está aviv en Israel.</li>
+      <li>Sin aplazamientos: la fiesta cae el día que corresponde a la luna.</li>
+      <li>Primicias el domingo dentro de los Panes sin levadura y Shavuot 50 días después, siempre en domingo.</li>
+    </ul></div>
+  </div>
+
+  <h2>4 · Primicias y Shavuot: «el siguiente día del sábado»</h2>
+  <p>La Torá no da una fecha para Primicias ni para Shavuot: manda contarlas desde un día de la semana.</p>
+  <blockquote>«Y os habéis de contar desde el siguiente día del sábado, desde el día en que ofrecisteis el omer de la ofrenda mecida; siete semanas cumplidas serán: hasta el siguiente día del sábado séptimo contaréis cincuenta días».<cite>Levítico 23:15–16</cite></blockquote>
+  <p>Contar «siete semanas cumplidas» hasta «el siguiente día del sábado séptimo» lleva siempre a un domingo. En el siglo I los fariseos lo entendían como el 16 de Nisán; los saduceos y después los caraítas, como el domingo. Fue un domingo, «el primer día de la semana», cuando Yeshúa resucitó como primicias de los que durmieron (1 Corintios 15:20).</p>
+
+  <h2>5 · Cómo calcula la app las fechas</h2>
+  <p>Kodesh calcula para cada mes la primera tarde en que el creciente puede verse <b>a simple vista</b> desde Jerusalén (criterio astronómico de visibilidad de Odeh). El mes de Aviv se estima cada año y se confirma con los reportes de la cebada en Israel. Si la luna se ve un día antes o después, o si la cebada todavía no está aviv, las fechas se corrigen y llegan a la app sin actualizarla.</p>
+  <p>Recuerda que el día bíblico comienza al atardecer: cada fiesta empieza la tarde anterior a la fecha que se muestra.</p>
+
+  <div class="note">Muchos hermanos y congregaciones guardan las fiestas con el calendario de Hilel II por unidad con el pueblo judío, y eso también es honroso. Nuestra meta no es dividir, sino volver a las señales de la Escritura. «Nadie os juzgue en comida, ó en bebida, ó en parte de día de fiesta, ó de nueva luna, ó de sábados» (Colosenses 2:16).</div>
+</main>
+<script src="/calendario.js"></script>
+<script>
+(async () => {
+  const C = await KodeshCal.load(); if (!C) return;
+  const t = C.today(), y = C.year(new Date().getFullYear());
+  const el = document.getElementById('hoy');
+  if (!t) return;
+  const names = ['Aviv (Nisán)', 'segundo mes', 'tercer mes', 'cuarto mes', 'quinto mes', 'sexto mes', 'séptimo mes', 'octavo mes', 'noveno mes', 'décimo mes', 'undécimo mes', 'duodécimo mes', 'mes trece (Adar II)'];
+  el.innerHTML = `<div class="kick">Hoy en el calendario bíblico</div><div style="font-size:1.15rem;margin-top:2px">Día ${t.day} del ${names[t.month - 1] || 'mes ' + t.month}</div>`;
+  el.style.display = 'block';
+})();
+</script>
+</body>
+</html>
