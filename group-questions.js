@@ -1,5 +1,4 @@
 /* KODESH — Preguntas para el grupo (células, congregación y familias).
-   - A · Al terminar la porción: tarjeta al final del último capítulo en el lector.
    - B · Guía del líder: la reunión armada paso a paso, con tiempos.
    - C · Compartir: imagen + mensaje listos para el grupo de WhatsApp.
    - D · Según quién estudia: niños, jóvenes y adultos.
@@ -193,42 +192,6 @@
     document.body.style.overflow = 'hidden';
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && ov && ov.classList.contains('open')) close(); });
-
-  /* ── A · Tarjeta al terminar la porción (lector) ── */
-  async function cardFor(book, chapter) {
-    const list = await loadList();
-    const p = list.find(x => x.book === book && x.endChapter === chapter);
-    if (!p) return null;
-    const d = await get(p.num);
-    if (!d) return null;
-    const el = document.createElement('div');
-    el.className = 'kg-card';
-    el.innerHTML = `<div class="kg-kick">Fin de la porción · Para el grupo</div>
-      <div class="kg-title"><b>Preguntas de ${esc(p.nombre)}</b><span lang="he">${esc(p.heb)}</span></div>
-      ${qHtml(d.adultos || [])}
-      <div class="kg-btns"><button class="kg-btn" data-s>Compartir</button><button class="kg-btn pri" data-g>Guía del líder</button></div>`;
-    el.querySelector('[data-s]').onclick = () => open(p.num, 'compartir');
-    el.querySelector('[data-g]').onclick = () => open(p.num, 'guia');
-    return el;
-  }
-  async function decorate() {
-    const blocks = [...document.querySelectorAll('#mainContent .bible-text')];
-    for (const bt of blocks) {
-      if (bt.dataset.kg) continue;
-      bt.dataset.kg = '1';
-      const book = bt.dataset.book || (typeof state !== 'undefined' && state.currentBook);
-      const ch = Number(bt.dataset.chapter || (typeof state !== 'undefined' && state.currentChapter));
-      if (!book || !ch) continue;
-      const card = await cardFor(book, ch);
-      if (card && bt.isConnected) bt.after(card);
-    }
-  }
-  const main = document.getElementById('mainContent');
-  if (main) {
-    let t = null;
-    new MutationObserver(() => { clearTimeout(t); t = setTimeout(decorate, 120); }).observe(main, { childList: true });
-    setTimeout(decorate, 400);
-  }
 
   /* ── E · Pregunta de la semana (Parashot) ── */
   async function weekly(container, p) {
