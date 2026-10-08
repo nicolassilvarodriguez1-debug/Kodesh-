@@ -119,7 +119,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-why { display: inline-block; margin-top: 8px; color: #5a9cf0; font-size: .9rem; text-decoration: none; }
 .fr-why-top { display: block; margin: 2px 0 0; padding: 9px 12px; border-radius: 12px; background: rgba(90,156,240,.08); border: 1px solid rgba(90,156,240,.3); }
 .fr-disc { border-color: rgba(90,156,240,.35); }
-.fr-art { margin: 0 0 12px; border-radius: 16px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--bg2, #12111a); }
+.fr-art { margin: 0 0 12px; border-radius: 16px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--bg2, #12111a); }
 .fr-art img { width: 100%; height: 100%; object-fit: cover; display: block; }`;
   document.head.appendChild(css);
 

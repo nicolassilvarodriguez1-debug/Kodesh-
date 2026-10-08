@@ -29,7 +29,7 @@ async function generate(id, extra) {
     const r = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt: artPrompt(id) + (extra ? `\n\nAlso: ${String(extra).slice(0, 400)}` : ''), size: '1024x1536', quality: 'high', n: 1, output_format: 'webp', output_compression: 86 }),
+      body: JSON.stringify({ model, prompt: artPrompt(id) + (extra ? `\n\nAlso: ${String(extra).slice(0, 400)}` : ''), size: '1536x1024', quality: 'high', n: 1, output_format: 'webp', output_compression: 86 }),
     });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.data && d.data[0] && d.data[0].b64_json) return Buffer.from(d.data[0].b64_json, 'base64');

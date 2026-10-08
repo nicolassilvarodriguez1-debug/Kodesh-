@@ -552,9 +552,9 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
           <div><h3>Arte de las fiestas</h3><span class="tool-count"><span id="faCount">—</span> de 8</span></div>
           <div class="tool-actions"><button class="btn-sm" onclick="FA_ADMIN.load()">Revisar</button><button class="btn-main" onclick="FA_ADMIN.genMissing()">✦ Pintar las que faltan</button></div>
         </div>
-        <p class="tool-desc">La IA (OpenAI) pinta cada fiesta al óleo en vertical, con el mismo estilo. «✦ Pintar» genera una nueva (≈1 minuto, ~$0.25 cada una); «Subir» usa una imagen tuya. Requiere OPENAI_API_KEY en Vercel.</p>
+        <p class="tool-desc">La IA (OpenAI) pinta cada fiesta al óleo en horizontal (3:2), con el mismo estilo. «✦ Pintar» genera una nueva (≈1 minuto, ~$0.25 cada una); «Subir» usa una imagen tuya. Requiere OPENAI_API_KEY en Vercel.</p>
         <div class="upload-msg" id="faMsg"></div>
-        <div id="faGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px"></div>
+        <div id="faGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px"></div>
         <input type="file" id="faOne" accept="image/*" hidden>
       </section>
       <section class="tool">
@@ -1271,7 +1271,7 @@ const FA_ADMIN = (() => {
     const g = document.getElementById('faGrid'); if (!g) return;
     document.getElementById('faCount').textContent = Object.keys(art).filter(k => LIST.some(x => x[0] === k)).length;
     g.innerHTML = LIST.map(([id, n]) => `<div style="border:1px solid var(--border);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px">
-      ${art[id] ? `<img src="${art[id]}" alt="" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px">` : '<span style="width:100%;aspect-ratio:2/3;border:1.5px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">sin pintura</span>'}
+      ${art[id] ? `<img src="${art[id]}" alt="" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:6px">` : '<span style="width:100%;aspect-ratio:3/2;border:1.5px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">sin pintura</span>'}
       <b style="font-size:.9rem">${n}</b><div style="display:flex;gap:6px"><button class="btn-sm" data-gen="${id}">✦ Pintar</button><button class="btn-sm" data-up="${id}">Subir</button></div></div>`).join('');
     g.querySelectorAll('[data-up]').forEach(b => b.onclick = () => pick(b.dataset.up));
     g.querySelectorAll('[data-gen]').forEach(b => b.onclick = () => { if (art[b.dataset.gen]) { const x = prompt('¿Algo que quieras cambiar en esta pintura? (opcional, en español o inglés)', ''); if (x === null) return; gen([b.dataset.gen], x); } else gen([b.dataset.gen]); });

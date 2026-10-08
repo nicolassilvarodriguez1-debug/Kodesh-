@@ -114,7 +114,7 @@
   const css = document.createElement('style');
   css.textContent = `
 .md-card { position: relative; display: block; width: 100%; border: none; padding: 0; margin: 0; text-align: left; border-radius: 22px; overflow: hidden; background: #1a140c; color: #f6efdf; font: inherit; cursor: pointer; box-shadow: 0 14px 34px rgba(0,0,0,.28); }
-.md-card .md-img { position: absolute; inset: 0; background-size: cover; background-position: center 30%; }
+.md-card .md-img { position: absolute; inset: 0; background-size: cover; background-position: center 40%; }
 .md-card .md-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,0) 20%, rgba(10,8,5,.55) 55%, rgba(14,10,6,.96) 100%); }
 .md-card .md-in { position: relative; padding: 170px 20px 18px; }
 .md-kick { font-family: 'Cinzel', 'Cormorant Garamond', serif; font-size: .62rem; letter-spacing: 2.5px; text-transform: uppercase; color: #e1a35a; }
@@ -135,10 +135,12 @@
 .md-sh small { color: var(--text-mid, #b8af9c); font-size: .92rem; }
 .md-ov { position: fixed; inset: 0; z-index: 590; background: #0d0a07; color: #f6efdf; opacity: 0; pointer-events: none; transition: opacity .3s; overflow: hidden; }
 .md-ov.open { opacity: 1; pointer-events: auto; }
-.md-ov .md-bg { position: absolute; inset: 0; background-size: cover; background-position: center 28%; transform: scale(1.03); transition: background-image .3s; }
+.md-ov .md-bg { position: absolute; left: 0; right: 0; top: 0; height: 100%; background-size: cover; background-position: center; transition: background-image .3s; }
+@media (orientation: portrait) { .md-ov .md-bg:not(.none) { height: min(56vh, 92vw); } .md-ov .md-bg:not(.none)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 45%; background: linear-gradient(180deg, rgba(13,10,7,0), #0d0a07); } }
 .md-ov .md-bg.none { background: radial-gradient(ellipse at 50% 25%, #5a3a1a 0%, #24170c 45%, #0d0a07 80%); }
 .md-ov .md-wm { position: absolute; top: 16%; left: 0; right: 0; text-align: center; font-family: 'Frank Ruhl Libre', serif; font-size: 9rem; color: rgba(225,163,90,.16); }
-.md-ov .md-fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,.35) 0%, rgba(10,8,5,0) 18%, rgba(10,8,5,0) 38%, rgba(12,9,6,.82) 62%, #0d0a07 92%); }
+.md-ov .md-fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,.35) 0%, rgba(10,8,5,0) 16%, rgba(10,8,5,0) 100%); }
+@media (orientation: landscape) { .md-ov .md-fade { background: linear-gradient(180deg, rgba(10,8,5,.3) 0%, rgba(10,8,5,0) 25%, rgba(12,9,6,.7) 60%, #0d0a07 95%); } }
 .md-top { position: absolute; left: 0; right: 0; top: 0; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 10px) 14px 0; display: flex; justify-content: space-between; z-index: 2; }
 .md-top button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(225,163,90,.35); background: rgba(13,10,7,.55); color: #e1a35a; font-size: 17px; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .md-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 18px calc(env(safe-area-inset-bottom, 0px) + 18px); text-align: center; z-index: 2; max-height: 72%; overflow-y: auto; }
