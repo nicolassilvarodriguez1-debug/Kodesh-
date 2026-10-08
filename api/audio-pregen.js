@@ -86,7 +86,26 @@ async function status() {
   });
   const scripts = await sbJson(`bible_audio_scripts?version=eq.${VERSION}&select=book,chapter,edited`).catch(() => []);
   for (const b of books) b.scripts = scripts.filter(x => x.book === b.book).map(x => x.chapter).sort((x, y) => x - y);
-  return { books, credits: await credits(), model: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2' };
+  // Escuchas (anónimas) por capítulo y por día
+  const [stats, daily] = await Promise.all([
+    sbJson('bible_audio_stats?select=book,chapter,plays,cine_plays,completes,seconds').catch(() => []),
+    sbJson('bible_audio_daily?select=day,plays,completes,seconds&order=day.desc&limit=30').catch(() => []),
+  ]);
+  for (const b of books) {
+    const mine = (stats || []).filter(x => x.book === b.book);
+    b.plays = mine.reduce((a, x) => a + x.plays, 0);
+    b.completes = mine.reduce((a, x) => a + x.completes, 0);
+    b.listenMin = Math.round(mine.reduce((a, x) => a + Number(x.seconds), 0) / 60);
+    b.top = mine.sort((x, y) => y.plays - x.plays).slice(0, 5).map(x => ({ chapter: x.chapter, plays: x.plays, completes: x.completes }));
+  }
+  const listening = {
+    plays: (stats || []).reduce((a, x) => a + x.plays, 0),
+    cine: (stats || []).reduce((a, x) => a + x.cine_plays, 0),
+    completes: (stats || []).reduce((a, x) => a + x.completes, 0),
+    hours: Math.round((stats || []).reduce((a, x) => a + Number(x.seconds), 0) / 360) / 10,
+    daily: daily || [],
+  };
+  return { books, listening, credits: await credits(), model: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2' };
 }
 
 // ── Elenco ──

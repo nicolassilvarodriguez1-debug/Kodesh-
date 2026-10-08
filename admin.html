@@ -445,6 +445,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
             <button class="btn-sm" onclick="AUDIO_ADMIN.load()">Revisar</button>
           </div>
         </div>
+        <div id="audioListen" style="margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px"></div>
         <div class="upload-msg" id="audioMsg" style="margin-top:10px"></div>
         <div id="audioLib" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
         <div id="audioCast" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px"></div>
@@ -1123,10 +1124,26 @@ const AUDIO_ADMIN = (() => {
     if (!msg || !box || !data) return;
     const c = data.credits;
     msg.className = 'upload-msg';
+    const L = data.listening;
+    const lb = document.getElementById('audioListen');
+    if (lb && L) {
+      const today = (L.daily || [])[0];
+      const week = (L.daily || []).slice(0, 7).reduce((a, d) => a + d.plays, 0);
+      const max = Math.max(1, ...(L.daily || []).map(d => d.plays));
+      lb.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:18px;font-size:0.78rem;margin-bottom:6px">
+          <span><b style="font-size:1.1rem">${n(L.plays)}</b> escuchas</span>
+          <span><b style="font-size:1.1rem">${n(L.completes)}</b> completas</span>
+          <span><b style="font-size:1.1rem">${n(L.cine)}</b> en radionovela 🎬</span>
+          <span><b style="font-size:1.1rem">${L.hours}</b> horas escuchadas</span>
+          <span><b style="font-size:1.1rem">${n(week)}</b> esta semana${today ? ` · ${n(today.plays)} hoy` : ''}</span></div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:38px" title="Escuchas por día (últimos 30 días)">${(L.daily || []).slice().reverse().map(d => `<div title="${d.day}: ${d.plays} escuchas" style="flex:1;max-width:14px;background:var(--gold);opacity:.8;border-radius:2px 2px 0 0;height:${Math.max(2, Math.round(d.plays / max * 38))}px"></div>`).join('')}</div>
+        <div style="font-size:0.66rem;color:var(--text-dim);margin-top:4px">Cuenta como escucha a los 10 segundos; «completa» si llegó al final del capítulo o de la porción. Anónimo.</div>`;
+    }
     msg.textContent = c ? `Créditos de ElevenLabs: ${n(c.limit - c.used)} disponibles de ${n(c.limit)} (plan ${c.tier || '—'})${c.resetAt ? ' · se renuevan el ' + new Date(c.resetAt).toLocaleDateString('es') : ''}.` : 'No se pudieron leer los créditos de ElevenLabs.';
     box.innerHTML = data.books.map(b => {
       const missing = b.chapters - b.done.length;
-      const label = `${b.done.length} de ${b.chapters} capítulos` + (b.minutes ? ` · ${b.minutes} min` : '') + (b.cine && b.cine.length ? ` · 🎬 ${b.cine.length} en película` : '') + (b.outdated.length ? ` · ${b.outdated.length} desactualizados` : '');
+      const top = (b.top || []).filter(t => t.plays).map(t => `${t.chapter} (${t.plays})`).join(', ');
+      const label = (b.plays ? `▶ ${n(b.plays)} escuchas · ${n(b.completes)} completas · ${n(b.listenMin)} min${top ? ` · más oídos: ${top}` : ''} — ` : '') + `${b.done.length} de ${b.chapters} capítulos` + (b.minutes ? ` · ${b.minutes} min` : '') + (b.cine && b.cine.length ? ` · 🎬 ${b.cine.length} en película` : '') + (b.outdated.length ? ` · ${b.outdated.length} desactualizados` : '');
       const toMix = b.done.filter(c => !(b.cine || []).includes(c));
       const remix = (b.cine || []).length;
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">

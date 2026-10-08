@@ -18,6 +18,32 @@
   try { st.speedIdx = Math.max(0, SPEEDS.indexOf(Number(localStorage.getItem('kodesh_audio_speed')) || 1)); } catch (e) {}
   let audio = null;
 
+  // ── Estadísticas anónimas (cuántas veces se escucha cada capítulo) ──
+  const stat = { key: null, listened: 0, sent: 0, counted: false, done: false, lastT: null };
+  function logEvent(event, seconds) {
+    const c = sb(); if (!c || !st.book) return;
+    try { c.rpc('log_audio_event', { p_book: st.book, p_chapter: st.chapter, p_event: event, p_cine: !!(st.cine && st.row?.path_cine), p_seconds: Math.round(seconds || 0) }).then(() => {}, () => {}); } catch (e) {}
+  }
+  function statFlush(event) {
+    if (!stat.key || !st.book) return;
+    const delta = stat.listened - stat.sent;
+    if (event === 'complete') { if (stat.done) return; stat.done = true; logEvent('complete', delta); stat.sent = stat.listened; return; }
+    if (stat.counted && delta >= 1) { logEvent('leave', delta); stat.sent = stat.listened; }
+  }
+  function statTick() {
+    if (!audio || audio.paused) { stat.lastT = null; return; }
+    const t = audio.currentTime;
+    if (stat.lastT != null) { const d = t - stat.lastT; if (d > 0 && d < 3) stat.listened += d / (audio.playbackRate || 1); }
+    stat.lastT = t;
+    // Cuenta como escucha a los 10 segundos reales
+    if (!stat.counted && stat.listened >= 10) { stat.counted = true; logEvent('play', 0); }
+  }
+  function statStart(book, chapter) {
+    statFlush('leave');
+    Object.assign(stat, { key: `${book}.${chapter}`, listened: 0, sent: 0, counted: false, done: false, lastT: null });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') statFlush('leave'); });
+
   function sb() { try { return typeof getSupabase === 'function' ? getSupabase() : null; } catch (e) { return null; } }
   function rowsFor(book) {
     if (!byBook[book]) {
@@ -138,13 +164,14 @@
   }
   function onTime() {
     if (!audio) return;
+    statTick();
     const d = audio.duration || Number((usingCine() && st.row?.duration_cine) || st.row?.duration_s) || 0;
     $('kaBar').value = d ? Math.round(audio.currentTime / d * 1000) : 0;
     $('kaSub').textContent = `Kodesh · ${fmt(audio.currentTime)} / ${fmt(d)}`;
     const v = verseAt(audio.currentTime);
     const u = st.until;
     if (u && st.book === u.book && st.chapter === u.chapter && v > u.verse && !audio.paused) {
-      audio.pause(); st.until = null;   // fin de la porción
+      statFlush('complete'); audio.pause(); st.until = null;   // fin de la porción
       if (typeof showToast === 'function') showToast('Fin de la porción ✦ Shabat shalom');
       return;
     }
@@ -164,6 +191,7 @@
   }
   async function onEnded() {
     syncButtons();
+    statFlush('complete');
     const u = st.until;
     if (u && st.book === u.book && st.chapter >= u.chapter) { st.until = null; if (typeof showToast === 'function') showToast('Fin de la porción ✦ Shabat shalom'); return; }
     const next = st.chapter + 1;
@@ -174,6 +202,7 @@
     }
   }
   function close() {
+    statFlush('leave');
     if (audio) audio.pause();
     $('kaPlayer')?.classList.remove('open');
     st.book = st.chapter = st.verse = null; st.until = null;
@@ -192,6 +221,7 @@
   }
   function start(book, chapter, row, fromVerse) {
     injectUI();
+    statStart(book, chapter);
     st.book = book; st.chapter = chapter; st.row = row; st.verse = null;
     setSource();
     applySpeed();
