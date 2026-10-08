@@ -38,6 +38,7 @@ import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, sendError, ERR } from './_security.js';
 import { getFcm } from './_firebase.js';
 import { getDailyPromiseForUser } from './_promises.js';
+import { VERSES, dayIndex, nyDate } from './_verseDay.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -120,12 +121,35 @@ function groupTokensByUser(tokens) {
 }
 
 // ── type=promise — mañana, a todos ──
+// Versículo del día (api/verse-day.js): el mismo para todos; si está listo,
+// reemplaza a la promesa. Tocar la notificación lo abre y suena (data.kind).
+async function todayVerse() {
+  try {
+    const r = await fetch(`${SB_URL}/storage/v1/object/public/bible-audio/verso-dia/index.json?t=${Date.now()}`);
+    if (!r.ok) return null;
+    const idx = await r.json();
+    const it = idx?.items?.[dayIndex(nyDate(), idx.count || VERSES.length)];
+    return it && it.text ? it : null;
+  } catch (e) { return null; }
+}
+
 async function buildPromiseReminders() {
   const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
   const tokensByUser = groupTokensByUser(tokens);
+  const verse = await todayVerse();
 
   const jobs = [];
   for (const [userId, userTokens] of tokensByUser) {
+    if (verse) {
+      const text = verse.text.length > 170 ? verse.text.slice(0, 167).replace(/\s+\S*$/, '') + '…' : verse.text;
+      jobs.push({
+        userId, tokens: userTokens, category: 'verse_day',
+        title: '☀️ Versículo del día',
+        body: `«${text}» — ${verse.refText}${verse.audio ? '\nToca para escucharlo ▸' : ''}`,
+        data: { kind: 'verse_day' },
+      });
+      continue;
+    }
     const promesa = getDailyPromiseForUser(userId);
     jobs.push({
       userId,
@@ -224,7 +248,7 @@ async function sendReminders(jobs) {
   const results = await Promise.allSettled(
     jobs.flatMap(job =>
       job.tokens.map(t =>
-        fcm.send({ token: t.token, notification: { title: job.title, body: job.body } })
+        fcm.send({ token: t.token, notification: { title: job.title, body: job.body }, ...(job.data ? { data: job.data } : {}) })
           .then(() => { byCategory[job.category] = (byCategory[job.category] || 0) + 1; })
           .catch(err => {
             const code = err?.errorInfo?.code || err?.code || '';

@@ -465,6 +465,21 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Versículo del día · ElevenLabs</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">149 pasajes de aliento de la Traducción Kodesh, uno por día (el mismo para todos). <b>Preparar</b>: la IA escribe el contexto, la pregunta, la oración y la palabra hebrea/griega (validada con Strong's). <b>Grabar</b>: el narrador lo lee con música suave (~250 créditos cada uno). Llega a la app sin actualizarla.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm" id="vddStop" onclick="VDD_ADMIN.stop()" style="display:none">Detener</button>
+            <button class="btn-sm" onclick="VDD_ADMIN.prepare()">Preparar textos</button>
+            <button class="btn-sm" onclick="VDD_ADMIN.recordAll()">Grabar audios</button>
+            <button class="btn-sm" onclick="VDD_ADMIN.load()">Revisar</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="vddMsg" style="margin-top:10px"></div>
+        <div id="vddGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Insignias de las porciones · <span id="badgeCount">—</span> de 54</div>
             <div style="font-size:0.72rem;color:var(--text-dim)">Toca una porción para subir o cambiar su insignia, o arrastra aquí varias imágenes nombradas por número (<b>5.png</b>, <b>6.png</b>…). Se achican a 512 px y llegan a la app en unos minutos, sin actualizarla.</div>
           </div>
@@ -1131,8 +1146,62 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load()]);
 }
+
+// ── Versículo del día (api/verse-day.js) ──
+const VDD_ADMIN = (() => {
+  let data = null, running = false, stopFlag = false;
+  const msg = t => { const m = document.getElementById('vddMsg'); if (m) m.innerHTML = t || ''; };
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function api(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const res = await fetch('/api/verse-day', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  function render() {
+    if (!data) return;
+    const c = data.credits;
+    msg(`Preparados <b>${data.prepared}</b> de ${data.total} · con audio <b>${data.recorded}</b>` +
+      (data.pendingChars ? ` · faltan ~${data.pendingChars.toLocaleString('es')} créditos por grabar` : '') +
+      (c ? ` · ElevenLabs: ${Number(c.used).toLocaleString('es')} / ${Number(c.limit).toLocaleString('es')}` : ''));
+    document.getElementById('vddGrid').innerHTML = data.items.map(x => `<span title="${esc(x.ref)}${x.dur ? ' · ' + Math.round(x.dur) + ' s' : ''}" style="font-size:0.66rem;padding:3px 7px;border-radius:10px;border:1px solid ${x.audio ? 'var(--gold)' : 'var(--border)'};color:${x.audio ? 'var(--gold)' : x.ready ? 'var(--text)' : 'var(--text-dim)'}">${esc(x.ref)}</span>`).join('');
+  }
+  async function load() { try { data = await api({ action: 'status' }); render(); } catch (e) { msg('No se pudo cargar: ' + esc(e.message)); } }
+  function busy(on) { running = on; stopFlag = false; document.getElementById('vddStop').style.display = on ? '' : 'none'; }
+  async function prepare() {
+    if (running) return; busy(true);
+    try {
+      for (;;) {
+        if (stopFlag) break;
+        const r = await api({ action: 'prepare' });
+        msg(`Preparando… faltan ${r.remaining}`);
+        if (!r.prepared || !r.remaining) break;
+      }
+    } catch (e) { busy(false); return msg('Error: ' + esc(e.message)); }
+    busy(false); load();
+  }
+  async function recordAll() {
+    if (running) return;
+    if (!data) await load();
+    const todo = (data?.items || []).filter(x => x.ready && !x.audio);
+    if (!todo.length) return msg(data?.prepared ? 'Todos los preparados ya tienen audio.' : 'Primero toca «Preparar textos».');
+    if (!confirm(`Grabar ${todo.length} versículos (~${(data.pendingChars || 0).toLocaleString('es')} créditos de ElevenLabs)?`)) return;
+    busy(true);
+    let ok = 0;
+    for (const x of todo) {
+      if (stopFlag) break;
+      msg(`Grabando ${esc(x.ref)}… (${ok + 1} de ${todo.length})`);
+      try { await api({ action: 'record', n: x.n }); ok++; }
+      catch (e) { busy(false); msg(`Error en ${esc(x.ref)}: ${esc(e.message)}`); return; }
+    }
+    busy(false); await load();
+  }
+  return { load, prepare, recordAll, stop: () => { stopFlag = true; } };
+})();
 
 // ── Insignias de las 54 porciones (api/admin.js · badge_art_*) ──
 const BADGE_ADMIN = (() => {

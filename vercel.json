@@ -97,6 +97,11 @@
       "memory": 1024,
       "maxDuration": 120,
       "includeFiles": "biblia-rvr.json"
+    },
+    "api/verse-day.js": {
+      "memory": 1024,
+      "maxDuration": 120,
+      "includeFiles": "{strongs-hebrew.json,strongs-greek.json,node_modules/ffmpeg-static/ffmpeg}"
     }
   },
   "crons": [
