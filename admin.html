@@ -549,12 +549,12 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
       </section>
       <section class="tool">
         <div class="tool-head">
-          <div><h3>Arte de las fiestas</h3><span class="tool-count"><span id="faCount">—</span> de 7</span></div>
-          <div class="tool-actions"><button class="btn-sm" onclick="FA_ADMIN.load()">Revisar</button></div>
+          <div><h3>Arte de las fiestas</h3><span class="tool-count"><span id="faCount">—</span> de 8</span></div>
+          <div class="tool-actions"><button class="btn-sm" onclick="FA_ADMIN.load()">Revisar</button><button class="btn-main" onclick="FA_ADMIN.genMissing()">✦ Pintar las que faltan</button></div>
         </div>
-        <p class="tool-desc">Toca una fiesta para subir o cambiar su pintura (horizontal 16:9). Se muestra arriba en «La fiesta». Se achica a 1600 px.</p>
+        <p class="tool-desc">La IA (OpenAI) pinta cada fiesta al óleo en vertical, con el mismo estilo. «✦ Pintar» genera una nueva (≈1 minuto, ~$0.25 cada una); «Subir» usa una imagen tuya. Requiere OPENAI_API_KEY en Vercel.</p>
         <div class="upload-msg" id="faMsg"></div>
-        <div id="faGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px"></div>
+        <div id="faGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px"></div>
         <input type="file" id="faOne" accept="image/*" hidden>
       </section>
       <section class="tool">
@@ -1263,18 +1263,36 @@ const CAL_ADMIN = (() => {
 
 // ── Arte de las fiestas ──
 const FA_ADMIN = (() => {
-  const LIST = [['pesaj', 'Pésaj'], ['matzot', 'Matzot'], ['bikurim', 'Primicias'], ['shavuot', 'Shavuot'], ['terua', 'Yom Teruá'], ['kipur', 'Yom Kipur'], ['sukot', 'Sukot']];
+  const LIST = [['pesaj', 'Pésaj'], ['matzot', 'Matzot'], ['bikurim', 'Primicias'], ['shavuot', 'Shavuot'], ['terua', 'Yom Teruá'], ['kipur', 'Yom Kipur'], ['sukot', 'Sukot'], ['shabat', 'Shabat']];
   let art = {};
   const msg = t => { const m = document.getElementById('faMsg'); if (m) m.textContent = t || ''; };
   async function call(body) { const res = await adminApi(body); const d = await res.json().catch(() => ({})); if (!res.ok) throw new Error(d.error || `Error ${res.status}`); return d; }
   function render() {
     const g = document.getElementById('faGrid'); if (!g) return;
-    document.getElementById('faCount').textContent = Object.keys(art).length;
-    g.innerHTML = LIST.map(([id, n]) => `<button type="button" data-id="${id}" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px;cursor:pointer;color:var(--text);display:flex;flex-direction:column;gap:6px">
-      ${art[id] ? `<img src="${art[id]}" alt="" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px">` : '<span style="width:100%;aspect-ratio:16/9;border:1.5px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">+ subir</span>'}
-      <span style="font-size:.85rem">${n}</span></button>`).join('');
-    g.querySelectorAll('[data-id]').forEach(b => b.onclick = () => pick(b.dataset.id));
+    document.getElementById('faCount').textContent = Object.keys(art).filter(k => LIST.some(x => x[0] === k)).length;
+    g.innerHTML = LIST.map(([id, n]) => `<div style="border:1px solid var(--border);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px">
+      ${art[id] ? `<img src="${art[id]}" alt="" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px">` : '<span style="width:100%;aspect-ratio:2/3;border:1.5px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">sin pintura</span>'}
+      <b style="font-size:.9rem">${n}</b><div style="display:flex;gap:6px"><button class="btn-sm" data-gen="${id}">✦ Pintar</button><button class="btn-sm" data-up="${id}">Subir</button></div></div>`).join('');
+    g.querySelectorAll('[data-up]').forEach(b => b.onclick = () => pick(b.dataset.up));
+    g.querySelectorAll('[data-gen]').forEach(b => b.onclick = () => gen([b.dataset.gen]));
   }
+  let busy = false;
+  async function gen(ids) {
+    if (busy) return; busy = true;
+    try {
+      for (const id of ids) {
+        const n = (LIST.find(x => x[0] === id) || [])[1];
+        msg(`Pintando ${n}… (≈1 minuto)`);
+        const res = await fetch('/api/art-gen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await sb.auth.getSession()).data.session.access_token}` }, body: JSON.stringify({ id }) });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+        art = d.art || art; render();
+      }
+      msg('Listo ✓');
+    } catch (e) { msg('Error: ' + e.message); }
+    busy = false;
+  }
+  const genMissing = () => { const ids = LIST.map(x => x[0]).filter(id => !art[id]); if (!ids.length) return msg('Todas tienen pintura ✓'); gen(ids); };
   async function load() { try { art = (await call({ action: 'feast_art_list' })).art || {}; render(); msg(''); } catch (e) { msg('No se pudo cargar: ' + e.message); } }
   async function shrink(file) {
     const bmp = await createImageBitmap(file);
@@ -1296,7 +1314,7 @@ const FA_ADMIN = (() => {
     };
     inp.click();
   }
-  return { load };
+  return { load, genMissing };
 })();
 
 // ── Raíces hebreas (api/roots-pregen.js) ──

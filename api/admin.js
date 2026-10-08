@@ -151,7 +151,7 @@ async function badgeSaveManifest(m) {
 
 
 // ── Arte de las fiestas y ajustes del calendario bíblico (mismo bucket público) ──
-const FEAST_IDS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot'];
+const FEAST_IDS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'shabat'];
 async function publicJson(path, fallback) {
   const r = await fetch(`${badgePublic(path)}?t=${Date.now()}`, { cache: 'no-store' });
   if (!r.ok) return fallback;

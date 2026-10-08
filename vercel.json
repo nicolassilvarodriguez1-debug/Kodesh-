@@ -118,6 +118,10 @@
       "maxDuration": 120,
       "includeFiles": "{biblia-rvr.json,data/personas.json,api/_personas-easton.json,strongs-hebrew.json,strongs-greek.json}"
     },
+    "api/art-gen.js": {
+      "memory": 1024,
+      "maxDuration": 300
+    },
     "api/roots-pregen.js": {
       "memory": 1024,
       "maxDuration": 120,
