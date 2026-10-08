@@ -136,7 +136,8 @@ async function todayVerse() {
 async function buildPromiseReminders() {
   const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
   const tokensByUser = groupTokensByUser(tokens);
-  const verse = await todayVerse();
+  // Versículo del día archivado (8 oct): por ahora sale la promesa de siempre.
+  const verse = null;
 
   const jobs = [];
   for (const [userId, userTokens] of tokensByUser) {
