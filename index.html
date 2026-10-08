@@ -14,6 +14,7 @@
 <script src="/verse-day.js" defer></script>
 <script src="/parallels.js" defer></script>
 <script src="/maps.js" defer></script>
+<script src="/people.js" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · קֹדֶשׁ</title>
@@ -3937,6 +3938,15 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
           <div class="settings-row-desc">Subraya los nombres de lugar; al tocarlos, el lexicón muestra «Ver en el mapa». También los avisos de las rutas de viaje</div>
         </div>
         <div class="toggle-switch on" id="mpToggle" role="switch" aria-checked="true" aria-label="Lugares en el mapa" onclick="toggleMapPlaces()">
+          <div class="toggle-switch-knob"></div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Personajes del capítulo</div>
+          <div class="settings-row-desc">Una fila arriba de cada capítulo con quién aparece; toca un nombre para ver dónde está y su ficha</div>
+        </div>
+        <div class="toggle-switch on" id="ppToggle" role="switch" aria-checked="true" aria-label="Personajes del capítulo" onclick="togglePeople()">
           <div class="toggle-switch-knob"></div>
         </div>
       </div>

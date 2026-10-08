@@ -505,6 +505,18 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Fichas de personajes · <span id="peCount">—</span></div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Para los 245 personajes que aparecen en 10 versículos o más, la IA escribe el significado del nombre, un resumen, los momentos clave y las edades que dice el texto. Se valida todo: el nombre original con Strong's, cada momento en un capítulo donde el personaje aparece y cada edad en su versículo. ~$5 en total. La familia, la red y la fila del capítulo ya funcionan sin esto.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm" id="peStop" onclick="PE_ADMIN.stop()" style="display:none">Detener</button>
+            <button class="btn-sm" onclick="PE_ADMIN.run()">Preparar fichas</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="peMsg" style="margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Insignias de las porciones · <span id="badgeCount">—</span> de 54</div>
             <div style="font-size:0.72rem;color:var(--text-dim)">Toca una porción para subir o cambiar su insignia, o arrastra aquí varias imágenes nombradas por número (<b>5.png</b>, <b>6.png</b>…). Se achican a 512 px y llegan a la app en unos minutos, sin actualizarla.</div>
           </div>
@@ -1171,8 +1183,38 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load(), PL_ADMIN.load(), PE_ADMIN.load()]);
 }
+
+// ── Fichas de personajes (api/people-pregen.js) ──
+const PE_ADMIN = (() => {
+  let running = false, stopFlag = false;
+  const msg = t => { const m = document.getElementById('peMsg'); if (m) m.textContent = t || ''; };
+  async function api(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const res = await fetch('/api/people-pregen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  async function load() { try { const d = await api({ action: 'status' }); document.getElementById('peCount').textContent = `${d.ready} de ${d.total}`; } catch (e) { msg('No se pudo cargar: ' + e.message); } }
+  async function run() {
+    if (running) return; running = true; stopFlag = false; document.getElementById('peStop').style.display = '';
+    try {
+      for (;;) {
+        if (stopFlag) break;
+        const r = await api({ action: 'generate' });
+        document.getElementById('peCount').textContent = `${r.ready} de ${r.total}`;
+        msg(`Preparando fichas… faltan ${r.remaining}`);
+        if (!r.done || !r.remaining) break;
+      }
+      msg('Listo ✓');
+    } catch (e) { msg('Error: ' + e.message + ' — vuelve a tocar «Preparar fichas» para seguir.'); }
+    running = false; document.getElementById('peStop').style.display = 'none';
+  }
+  return { load, run, stop: () => { stopFlag = true; } };
+})();
 
 // ── Paralelos de los Evangelios (api/parallels-pregen.js) ──
 const PL_ADMIN = (() => {
