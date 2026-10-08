@@ -1,8 +1,9 @@
 /* KODESH — Rachas por porción: insignias de las 54 porciones de la Torá.
    - Una porción se gana al marcar leídos todos sus capítulos en el lector
      (o al marcar la lectura de Torá en Parashot).
-   - La insignia usa el arte de /insignias/{num}.webp (o .png) si existe; si no,
-     una medalla dorada con el nombre en hebreo.
+   - La insignia usa el arte de www.kodeshbible.com/insignias/{num}.webp cuando
+     aparece en insignias/index.json (remoto: llegan sin actualizar la app); si
+     no, una medalla dorada con el nombre en hebreo.
    - Semanas seguidas: una semana cuenta si la porción de esa semana se ganó
      entre el domingo anterior (con una semana de margen para leer adelantado)
      y el Shabat. Usa las fechas de reading_days (servidor) y las locales.
@@ -19,12 +20,21 @@
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
+  // Arte remoto: insignias/index.json = { "1": versión, ... }
+  const ART_BASE = 'https://www.kodeshbible.com/insignias/';
+  let ART = rj('kodesh_badges_art', {});
+  const artReady = fetch(ART_BASE + 'index.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && typeof j === 'object') { ART = j; wj('kodesh_badges_art', j); } })
+    .catch(() => {});
+
   let DATA = null;
   function load() {
     if (!DATA) DATA = Promise.all([
+      artReady,
       fetch('./parashot-data.json').then(r => r.json()),
       fetch('./parashot-calendar.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
-    ]).then(([list, cal]) => ({ list, cal })).catch(() => { DATA = null; return { list: [], cal: {} }; });
+    ]).then(([, list, cal]) => ({ list, cal })).catch(() => { DATA = null; return { list: [], cal: {} }; });
     return DATA;
   }
   const chaptersOf = p => { const out = []; for (let c = p.startChapter; c <= p.endChapter; c++) out.push(`${p.book}:${c}`); return out; };
@@ -62,7 +72,7 @@
     const fs = Math.max(11, Math.round(size * (p.heb.length > 8 ? 0.17 : 0.24)));
     return `<div class="kb-badge ${earned ? 'on' : 'off'}" style="width:${size}px;height:${size}px">
       <span class="kb-he" style="font-size:${fs}px" lang="he">${esc(p.heb)}</span>
-      <img src="/insignias/${p.num}.webp" alt="" loading="lazy" onerror="if(!this.dataset.png){this.dataset.png=1;this.src='/insignias/${p.num}.png'}else{this.remove()}">
+      ${ART[p.num] ? `<img src="${ART_BASE}${p.num}.webp?v=${esc(ART[p.num])}" alt="" loading="lazy" onerror="this.remove()">` : ''}
     </div>`;
   }
 
