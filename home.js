@@ -107,7 +107,7 @@ html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%
 .hm-play { width: 52px; height: 48px; border: none; border-radius: 12px; background: rgba(255,255,255,.12); color: #e8c27a; font-size: 1.1rem; cursor: pointer; }
 .hm-sh { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
 .hm-sh a { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); text-decoration: none; }
-.hm-par .pimg { height: 160px; background-size: cover; background-position: center; background-color: #cbb48a; }
+.hm-par .pimg { display: block; height: 170px; background-size: cover; background-position: center; background-color: #cbb48a; }
 .hm-par .pimg.noimg { background: linear-gradient(160deg, #e9dcc0 0%, #cbb48a 60%, #9a8058 100%); }
 html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c28 0%, #2a2014 70%, #12111a 100%); }
 .hm-par h3 { margin: 0; font-family: var(--font-display, serif); font-size: 2.2rem; font-weight: 600; line-height: 1; display: flex; align-items: baseline; gap: 10px; }
@@ -207,7 +207,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
             : '<button class="hm-go" data-act="gen1">Génesis 1</button><button class="hm-go" data-act="jhn1" style="background:rgba(255,255,255,.12);color:#e8c27a">Juan 1</button>'}</div>
         </div></div>
         ${p ? `<div class="hm-sh"><span class="hm-k">Parashá de la semana</span><a href="parashot.html">Ver más ›</a></div>
-        <div class="hm-card hm-par"><a href="parashot.html" class="pimg${IMG['p' + p.num] ? '' : ' noimg'}"${bg('p' + p.num)} style="display:block" aria-label="Abrir el ciclo de estudio"></a><div class="hm-pad">
+        <div class="hm-card hm-par"><a href="parashot.html" class="pimg${IMG['p' + p.num] ? '' : ' noimg'}"${bg('p' + p.num)} aria-label="Abrir el ciclo de estudio"></a><div class="hm-pad">
           <h3>${esc(w.ps.map(x => x.nombre).join(' – '))}<span lang="he">${esc(p.heb)}</span></h3>
           <div class="hm-k" style="color:var(--text-mid);margin-top:6px">${esc(p.torah)}</div>
           <div class="tm">${esc(p.tema)}</div>
