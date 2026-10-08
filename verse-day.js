@@ -407,8 +407,14 @@
     return true;
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && el && el.classList.contains('open')) close(); });
-  if (/[?&]vdd=1/.test(location.search)) document.addEventListener('DOMContentLoaded', () => open({ autoplay: true }));
+  // Compartir la historia (imagen) del versículo desde la tarjeta de la Promesa
+  async function shareStory(it) {
+    item = it;
+    const cv = drawCard(1080, 1920);
+    shareBlob(await toBlob(cv), `KODESH ${it.refText}.png`, 'image/png');
+  }
   load();
 
-  window.KodeshVerseDay = { load, today, open, close, maybeShowDaily, dayIndex };
+  // La pantalla completa queda archivada (8 oct): se usa solo la tarjeta de la Promesa.
+  window.KodeshVerseDay = { load, today, shareStory, open, close, dayIndex };
 })();

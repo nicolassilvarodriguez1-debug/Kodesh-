@@ -11,6 +11,7 @@
 <script src="/last-position.js" defer></script>
 <script src="/bible-links.js" defer></script>
 <script src="/parasha-badges.js" defer></script>
+<script src="/verse-day.js" defer></script>
 <script src="/parallels.js" defer></script>
 <script src="/maps.js" defer></script>
 <meta charset="UTF-8">
@@ -1964,6 +1965,14 @@ html.light .promise-overlay { background: rgba(60,45,15,0.45); }
 .promise-hebrew { font-family: var(--font-display); font-size:1.3rem; color:var(--gold); text-align:center; padding:20px 24px 4px; letter-spacing:3px; direction:rtl; opacity:0.75; }
 .promise-text { font-family: var(--font-body); font-size:1.15rem; font-style:italic; color:var(--text); line-height:1.7; text-align:center; padding:12px 28px 8px; }
 .promise-ref { font-family: var(--font-display); font-size:0.62rem; letter-spacing:2px; color:var(--gold); text-align:center; padding:4px 24px 20px; text-transform:uppercase; }
+.promise-listen { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; padding:0 20px 16px; margin-top:-8px; }
+.promise-listen[hidden] { display:none; }
+.promise-play { border:1px solid var(--gold); background:var(--gold); color:#15120a; border-radius:18px; padding:7px 16px; font-family:var(--font-body); font-size:.95rem; cursor:pointer; }
+.promise-play[hidden] { display:none; }
+.promise-share { border:1px solid var(--gold-dim); background:none; color:var(--gold); border-radius:18px; padding:7px 14px; font-family:var(--font-body); font-size:.95rem; cursor:pointer; }
+.promise-time { font-size:.8rem; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+.promise-bar { flex-basis:100%; height:3px; border-radius:2px; background:var(--border2); overflow:hidden; }
+.promise-bar i { display:block; height:100%; width:0; background:var(--gold); transition:width .25s linear; }
 .promise-actions { display:flex; gap:10px; padding:16px 20px; border-top:1px solid var(--border2); }
 .promise-btn-goto {
   flex:1; background:transparent; border:1px solid var(--gold-dim); color:var(--gold);
@@ -6686,23 +6695,66 @@ function showDailyPromise() {
   const todayKey = 'kodesh_promise_' + getLocalDateStr();
   if (localStorage.getItem(todayKey)) return;
 
-  const promesa = getDailyPromise(currentUser.id);
-  currentPromise = promesa;
+  const fill = (verse) => {
+    const listen = document.getElementById('promiseListen');
+    if (verse) {
+      // Versículo del día (verse-day.js): el mismo para todos, con su audio
+      currentPromise = { libro: verse.book, cap: verse.chapter, verso: verse.v1, ref: verse.refText, verse };
+      document.getElementById('promiseLabel').textContent = '✦ VERSÍCULO DEL DÍA';
+      document.getElementById('promiseHebrew').textContent = verse.word ? verse.word.lemma : '';
+      document.getElementById('promiseText').textContent = `«${verse.text}»`;
+      document.getElementById('promiseRef').textContent = verse.refText;
+      listen.hidden = false;
+      document.getElementById('promisePlay').hidden = !verse.audio;
+      document.getElementById('promiseTime').textContent = verse.dur ? fmtPromiseTime(verse.dur) : '';
+    } else {
+      const promesa = getDailyPromise(currentUser.id);
+      currentPromise = promesa;
+      document.getElementById('promiseLabel').textContent = '✦ PROMESA DEL DÍA';
+      document.getElementById('promiseHebrew').textContent = promesa.hebreo;
+      document.getElementById('promiseText').textContent = `"${promesa.texto}"`;
+      document.getElementById('promiseRef').textContent = promesa.ref;
+      listen.hidden = true;
+    }
+    // Show after a small delay so the app loads first
+    setTimeout(() => {
+      document.getElementById('promiseOverlay').classList.add('open');
+    }, 1200);
+    if (typeof trackEvent === 'function') trackEvent('promise_viewed', { ref: currentPromise.ref });
+  };
+  const vd = window.KodeshVerseDay;
+  if (vd) vd.load().then(() => fill(vd.today())).catch(() => fill(null));
+  else fill(null);
+}
 
-  document.getElementById('promiseHebrew').textContent = promesa.hebreo;
-  document.getElementById('promiseText').textContent = `"${promesa.texto}"`;
-  document.getElementById('promiseRef').textContent = promesa.ref;
-
-  // Show after a small delay so the app loads first
-  setTimeout(() => {
-    document.getElementById('promiseOverlay').classList.add('open');
-  }, 1200);
-
-  if (typeof trackEvent === 'function') trackEvent('promise_viewed', { ref: promesa.ref });
+/* Audio del versículo dentro de la tarjeta (sin abrir otra pantalla) */
+let promiseAudio = null;
+function fmtPromiseTime(s) { s = Math.max(0, Math.round(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function togglePromiseAudio() {
+  const v = currentPromise && currentPromise.verse;
+  if (!v || !v.audio) return;
+  const btn = document.getElementById('promisePlay');
+  const bar = document.getElementById('promiseBar');
+  if (!promiseAudio) {
+    const a = promiseAudio = new Audio(v.audio);
+    a.addEventListener('timeupdate', () => {
+      bar.style.width = `${Math.min(100, (a.currentTime / (v.dur || a.duration || 1)) * 100)}%`;
+      document.getElementById('promiseTime').textContent = `${fmtPromiseTime(a.currentTime)} / ${fmtPromiseTime(v.dur)}`;
+    });
+    a.addEventListener('play', () => { btn.textContent = '❚❚ Pausa'; });
+    a.addEventListener('pause', () => { btn.textContent = '▸ Escuchar'; });
+    a.addEventListener('ended', () => { btn.textContent = '▸ Escuchar'; bar.style.width = '0%'; a.currentTime = 0; });
+  }
+  if (promiseAudio.paused) promiseAudio.play().catch(() => {}); else promiseAudio.pause();
+}
+function sharePromise() {
+  const v = currentPromise && currentPromise.verse;
+  if (v && window.KodeshVerseDay) window.KodeshVerseDay.shareStory(v);
 }
 
 function closePromise() {
   document.getElementById('promiseOverlay').classList.remove('open');
+  if (promiseAudio) { promiseAudio.pause(); promiseAudio = null; }
   // Mark as seen today
   const todayKey = 'kodesh_promise_' + getLocalDateStr();
   localStorage.setItem(todayKey, '1');
@@ -6710,9 +6762,11 @@ function closePromise() {
 
 function goToPromiseVerse() {
   if (!currentPromise) return;
+  const verso = currentPromise.verso;
   closePromise();
   selectBook(currentPromise.libro);
   loadChapter(currentPromise.libro, currentPromise.cap);
+  if (verso) setTimeout(() => { const el = document.querySelector(`.verse[data-verse="${verso}"]`); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 700);
 }
 
 /* ════════════════════════════════════
@@ -9498,12 +9552,18 @@ window.__STRONGS_INLINE__ = {"bereshit":{"h":"בְּרֵאשִׁית","t":"bər�
 <div class="promise-overlay" id="promiseOverlay">
   <div class="promise-card" id="promiseCard">
     <div class="promise-header">
-      <div class="promise-label">✦ PROMESA DEL DÍA</div>
+      <div class="promise-label" id="promiseLabel">✦ PROMESA DEL DÍA</div>
       <button class="promise-close" onclick="closePromise()">✕</button>
     </div>
     <div class="promise-hebrew" id="promiseHebrew"></div>
     <div class="promise-text" id="promiseText"></div>
     <div class="promise-ref" id="promiseRef"></div>
+    <div class="promise-listen" id="promiseListen" hidden>
+      <button type="button" class="promise-play" id="promisePlay" onclick="togglePromiseAudio()">▸ Escuchar</button>
+      <span class="promise-time" id="promiseTime"></span>
+      <button type="button" class="promise-share" onclick="sharePromise()">Compartir</button>
+      <div class="promise-bar"><i id="promiseBar"></i></div>
+    </div>
     <div class="promise-actions">
       <button class="promise-btn-goto" onclick="goToPromiseVerse()">📖 Ir al versículo</button>
       <button class="promise-btn-close" onclick="closePromise()">Amén — Cerrar</button>

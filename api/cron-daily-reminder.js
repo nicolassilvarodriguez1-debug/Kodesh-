@@ -136,8 +136,8 @@ async function todayVerse() {
 async function buildPromiseReminders() {
   const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
   const tokensByUser = groupTokensByUser(tokens);
-  // Versículo del día archivado (8 oct): por ahora sale la promesa de siempre.
-  const verse = null;
+  // Versículo del día (el mismo que muestra la tarjeta de la app); si no hay, la promesa de siempre.
+  const verse = await todayVerse();
 
   const jobs = [];
   for (const [userId, userTokens] of tokensByUser) {
@@ -146,8 +146,7 @@ async function buildPromiseReminders() {
       jobs.push({
         userId, tokens: userTokens, category: 'verse_day',
         title: '☀️ Versículo del día',
-        body: `«${text}» — ${verse.refText}${verse.audio ? '\nToca para escucharlo ▸' : ''}`,
-        data: { kind: 'verse_day' },
+        body: `«${text}» — ${verse.refText}${verse.audio ? '\nÁbrelo en Kodesh para escucharlo ▸' : ''}`,
       });
       continue;
     }
