@@ -36,6 +36,7 @@
   /* ── Estilos ── */
   const css = document.createElement('style');
   css.textContent = `
+.mp-head, .mp-tabs { flex-shrink: 0; }
 :root { --mp-sea: #0d1420; --mp-land: #1d1a22; --mp-coast: #5b4c2a; --mp-river: #3f6f99; --mp-label: #d9d0bb; --mp-halo: #0d1420; }
 html.light { --mp-sea: #dfe8ee; --mp-land: #f3ecdc; --mp-coast: #b49a5c; --mp-river: #6f9cc4; --mp-label: #3b3326; --mp-halo: #f3ecdc; }
 .word.mp-place { text-decoration: underline; text-decoration-color: rgba(201,168,76,.6); text-underline-offset: 4px; }

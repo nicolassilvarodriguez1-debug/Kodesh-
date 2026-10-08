@@ -38,6 +38,7 @@
   /* ── Estilos ── */
   const css = document.createElement('style');
   css.textContent = `
+.pl-head { flex-shrink: 0; }
 .pl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 6px; font-family: var(--font-body, serif); }
 .pl-row .pl-t { width: 100%; font-family: 'Cinzel', var(--font-display, serif); font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); }
 .pl-chip { border: 1px solid var(--gold-dim, #6e5a2a); color: var(--gold, #c9a84c); background: none; border-radius: 14px; padding: 3px 10px; font: inherit; font-size: .82rem; cursor: pointer; }

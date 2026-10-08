@@ -53,6 +53,7 @@
   /* ── Estilos ── */
   const css = document.createElement('style');
   css.textContent = `
+.kg-head, .kg-tabs, .kg-foot { flex-shrink: 0; }
 .kg-card { margin: 34px 0 10px; border: 1px solid var(--gold-dim, #6e5a2a); border-radius: 16px; padding: 18px 18px 14px; background: linear-gradient(180deg, rgba(201,168,76,.08), transparent); font-family: var(--font-body, serif); }
 .kg-kick { font-family: 'Cinzel', var(--font-display, serif); font-size: .62rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .kg-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 4px 0 10px; }
