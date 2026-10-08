@@ -306,6 +306,7 @@ a { color: var(--gold); }
     </div>
     <div class="readings" id="weekReadings"></div>
     <div class="wk-prog" id="weekChapters" hidden></div>
+    <div id="weekQuestion" hidden></div>
     <div class="week-actions">
       <a class="btn btn-primary" id="weekContinue" href="index.html">Seguir leyendo</a>
       <a class="btn btn-ghost-gold" id="weekListen" href="index.html" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Escuchar</a>
@@ -394,6 +395,7 @@ a { color: var(--gold); }
       <button class="btn" id="sheetStudied" onclick="toggleStudied()" aria-pressed="false">Marcar estudiada</button>
     </div>
     <a class="btn btn-ghost-gold" id="sheetListen" href="index.html" style="width:100%;margin-bottom:10px" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Escuchar la porción (audio dramatizado)</a>
+    <button class="btn btn-ghost-gold" id="sheetGroup" style="width:100%;margin-bottom:10px" onclick="window.KodeshGroups && KodeshGroups.open(PARASHOT[sheetIndex].num)">Preguntas para el grupo</button>
     <a class="btn btn-ghost-gold" id="sheetCanvas" href="estudio.html?new=parasha" style="width:100%">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>
       Estudiar en el lienzo (escribe y dibuja)
@@ -405,6 +407,7 @@ a { color: var(--gold); }
 
 <script src="/bible-ref.js"></script>
 <script src="/parasha-badges.js"></script>
+<script src="/group-questions.js"></script>
 <script>
 /* ── DATOS ── */
 let PARASHOT = [];
@@ -587,6 +590,7 @@ function paintBadgeAreas() {
   const ps = nums.map(n => PARASHOT.find(x => x.num === n)).filter(Boolean);
   if (!ps.length) return;
   paintWeekChapters(ps); paintBadges(); paintStreak(); paintCommunity(ps);
+  if (window.KodeshGroups) KodeshGroups.weekly(document.getElementById('weekQuestion'), ps[0]);
 }
 
 /* ── CARGA ── */

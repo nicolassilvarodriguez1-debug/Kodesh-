@@ -480,6 +480,19 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Preguntas para el grupo · <span id="gqCount">—</span> de 54</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Para cada porción, la IA prepara preguntas para adultos, jóvenes y niños, la pregunta de la semana y la guía del líder, a partir de la Traducción Kodesh. Se validan las referencias y las citas. ~$0.05 por porción.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm" id="gqStop" onclick="GQ_ADMIN.stop()" style="display:none">Detener</button>
+            <button class="btn-sm" onclick="GQ_ADMIN.run(false)">Preparar faltantes</button>
+            <button class="btn-sm" onclick="GQ_ADMIN.run(true)">Rehacer una…</button>
+          </div>
+        </div>
+        <div class="upload-msg" id="gqMsg" style="margin-top:10px"></div>
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
             <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Insignias de las porciones · <span id="badgeCount">—</span> de 54</div>
             <div style="font-size:0.72rem;color:var(--text-dim)">Toca una porción para subir o cambiar su insignia, o arrastra aquí varias imágenes nombradas por número (<b>5.png</b>, <b>6.png</b>…). Se achican a 512 px y llegan a la app en unos minutos, sin actualizarla.</div>
           </div>
@@ -1146,8 +1159,42 @@ const PREGEN = {
 };
 async function loadPregenStatus() {
   const w = document.getElementById('tpregenWrap'); if (w) w.style.display = ''; // solo superadmin llega aquí
-  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load()]);
+  await Promise.all([PREGEN.strongs.load(), PREGEN.textual.load(), PREGEN.headings.load(), PREGEN.links.load(), AUDIO_ADMIN.load(), BADGE_ADMIN.load(), VDD_ADMIN.load(), GQ_ADMIN.load()]);
 }
+
+// ── Preguntas para el grupo (api/groups-pregen.js) ──
+const GQ_ADMIN = (() => {
+  let ready = [], running = false, stopFlag = false;
+  const msg = t => { const m = document.getElementById('gqMsg'); if (m) m.textContent = t || ''; };
+  async function api(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const res = await fetch('/api/groups-pregen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+    return d;
+  }
+  async function load() { try { ready = (await api({ action: 'status' })).ready || []; document.getElementById('gqCount').textContent = ready.length; } catch (e) { msg('No se pudo cargar: ' + e.message); } }
+  async function run(one) {
+    if (running) return;
+    let nums;
+    if (one) { const n = parseInt(prompt('¿Qué porción rehacer? (1–54)'), 10); if (!(n >= 1 && n <= 54)) return; nums = [n]; }
+    else nums = Array.from({ length: 54 }, (_, i) => i + 1).filter(n => !ready.includes(n));
+    if (!nums.length) return msg('Las 54 porciones ya están listas.');
+    running = true; stopFlag = false; document.getElementById('gqStop').style.display = '';
+    const fails = [];
+    for (const n of nums) {
+      if (stopFlag) break;
+      msg(`Preparando porción ${n}… (${nums.indexOf(n) + 1} de ${nums.length})`);
+      try { const r = await api({ action: 'generate', num: n }); if (!r.ok) fails.push(n); }
+      catch (e) { fails.push(n); if (/sesión|401|403/.test(e.message)) { msg(e.message); break; } }
+    }
+    running = false; document.getElementById('gqStop').style.display = 'none';
+    await load();
+    msg(fails.length ? `Listo. No pasaron la validación: ${fails.join(', ')} — vuelve a tocar «Preparar faltantes».` : 'Listo ✓');
+  }
+  return { load, run, stop: () => { stopFlag = true; } };
+})();
 
 // ── Versículo del día (api/verse-day.js) ──
 const VDD_ADMIN = (() => {
