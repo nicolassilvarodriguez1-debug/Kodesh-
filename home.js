@@ -78,7 +78,7 @@ body.home-on { overflow: hidden; }
 .hm-logo i { width: 1px; height: 22px; background: var(--border2, #2a2836); }
 .hm-ic { display: flex; gap: 6px; }
 .hm-ic button { width: 40px; height: 40px; border: none; background: none; color: var(--gold, #c9a84c); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
-.hm-hero { position: relative; margin-top: calc(-1 * (var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 56px)); padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 86px) 22px 26px; min-height: 250px; box-sizing: border-box; background-size: cover; background-position: center; }
+.hm-hero { transition: background-image .5s ease; position: relative; margin-top: calc(-1 * (var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 56px)); padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 86px) 22px 26px; min-height: 250px; box-sizing: border-box; background-size: cover; background-position: center; }
 .hm-hero.noimg { background: linear-gradient(180deg, #f1d9a8 0%, #e7c68c 55%, var(--bg) 100%); }
 html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%, #20170e 60%, var(--bg) 100%); }
 .hm-hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 45%; background: linear-gradient(180deg, transparent, var(--bg)); pointer-events: none; }
@@ -145,7 +145,8 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     } catch (e) {}
     return '';
   }
-  const night = () => { const h = new Date().getHours(); return h >= 19 || h < 6; };
+  // Portada según el tema: claro → Jerusalén de día; oscuro → Jerusalén de noche
+  const night = () => !document.documentElement.classList.contains('light');
   const ICON = {
     search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>',
     theme: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
@@ -189,7 +190,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     el.innerHTML = `<div class="hm-in">
       <div class="hm-top"><a class="hm-logo" href="#" data-act="noop"><span class="he">קדש</span><i></i><span>KODESH</span></a>
         <div class="hm-ic"><button data-act="search" aria-label="Buscar">${ICON.search}</button><button data-act="theme" aria-label="Cambiar tema">${ICON.theme}</button><button data-act="profile" aria-label="Perfil">${ICON.user}</button></div></div>
-      <section class="hm-hero${IMG[heroKey] ? '' : ' noimg'}"${bg(heroKey)}>
+      <section class="hm-hero${IMG[heroKey] ? '' : ' noimg'}" data-hero${bg(heroKey)}>
         <div class="hm-k">${greet()}</div><div class="hm-h1">Hoy</div><div class="hm-sub">${name ? `Bendiciones, ${esc(name)}` : 'Bienvenido a Kodesh'}</div>
       </section>
       <div class="hm-wrap">
@@ -288,6 +289,13 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
   }
   // Botón «Biblia» de la barra: desde el inicio vuelve a la lectura; si ya se está leyendo, abre libros
   window.onBibliaNav = function () { if (isOpen()) hide(); else if (typeof openNav === 'function') openNav(); };
+  // Al cambiar de tema, cambia la portada (con un fundido suave)
+  new MutationObserver(() => {
+    const h = el && el.querySelector('[data-hero]'); if (!h) return;
+    const key = night() ? (IMG.hero_night ? 'hero_night' : 'hero_day') : 'hero_day';
+    if (!IMG[key]) return;
+    h.style.backgroundImage = `url('${IMG[key]}')`;
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   window.KodeshHome = { show, hide, isOpen, render };
 
   // Al abrir la app sin un enlace a un capítulo concreto
