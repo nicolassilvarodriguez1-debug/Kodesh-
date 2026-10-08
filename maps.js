@@ -4,8 +4,11 @@
    - E · Tocar un lugar en el texto: los nombres de lugar se subrayan; al tocar
      la palabra se abre el lexicón (como siempre) con un aviso «📍 Ver en el
      mapa» que abre la ficha del lugar con su ubicación.
-   Datos: costas, lagos y ríos de Natural Earth (dominio público) en
-   data/mapa-base.json; ubicaciones de OpenBible.info (CC BY 4.0) en
+   Mapa real con MapLibre (vendor/maplibre): satélite Sentinel-2 cloudless 2016
+   (EOX, CC BY 4.0) o mapa OpenFreeMap (OpenStreetMap), relieve de Terrain
+   Tiles (AWS), globo al alejar y gestos de pellizcar/girar. Sin conexión:
+   data/mapa-mundo.json y el dibujo SVG de respaldo (data/mapa-base.json,
+   Natural Earth); ubicaciones de OpenBible.info (CC BY 4.0) en
    data/lugares.json; rutas en data/viajes.json. Expone window.KodeshMaps. */
 (function () {
   'use strict';
@@ -75,7 +78,21 @@ html.mp-off .mp-chips { display: none !important; }
 .mp-trip { text-align: left; border: 1px solid var(--border2, #2a2836); border-radius: 14px; padding: 12px 14px; background: none; color: var(--text, #e9e3d3); font: inherit; cursor: pointer; display: grid; grid-template-columns: 12px 1fr; gap: 12px; align-items: center; }
 .mp-trip i { width: 12px; height: 12px; border-radius: 6px; }
 .mp-trip b { font-family: var(--font-display, serif); font-size: 1.1rem; display: block; }
-.mp-trip span { color: var(--text-dim, #6e6656); font-size: .85rem; }`;
+.mp-trip span { color: var(--text-dim, #6e6656); font-size: .85rem; }
+.mp-map.gl { height: 58vh; min-height: 300px; background: #0b0b12; }
+.mp-map.gl .maplibregl-canvas { outline: none; }
+.gl-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-dim, #6e6656); font-size: .9rem; }
+.gl-ctrl { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; z-index: 2; }
+.gl-ctrl button { height: 34px; min-width: 34px; padding: 0 10px; border-radius: 17px; border: none; background: rgba(12,12,18,.85); color: #f3ecdc; box-shadow: 0 1px 4px rgba(0,0,0,.35); font: 500 .85rem -apple-system, system-ui, sans-serif; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.gl-stop { position: relative; cursor: pointer; }
+.gl-stop b { display: flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box; border-radius: 13px; color: #15120a; font: 700 13px -apple-system, Helvetica, Arial, sans-serif; border: 2px solid #15120a; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+.gl-stop span, .gl-pin span { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 14px 'EB Garamond', Georgia, serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 6px #000, 0 1px 2px #000; pointer-events: none; }
+.gl-pin { position: relative; }
+.gl-pin i { display: block; width: 10px; height: 10px; border-radius: 5px; background: #f3ecdc; border: 2px solid #15120a; }
+.gl-pin.gl-main i { width: 20px; height: 20px; border-radius: 10px; background: #c9a84c; box-shadow: 0 0 0 4px rgba(201,168,76,.35); }
+.gl-pin.gl-main span { font-size: 17px; }
+.mp-map.gl.far .gl-stop span, .mp-map.gl.mid .gl-pin:not(.gl-main) span { display: none; }
+.mp-map.gl .maplibregl-ctrl-attrib { font-size: 10px; }`;
   document.head.appendChild(css);
 
   /* ── Ajustes ── */
@@ -153,8 +170,8 @@ html.mp-off .mp-chips { display: none !important; }
     });
     return svg + '</svg>';
   }
-  // Zoom con botones y pellizco sencillo (cambia el recuadro y redibuja)
-  function mountMap(el, state, opts) {
+  // Respaldo sin conexión: dibujo SVG (zoom con botones y arrastrar)
+  function mountSVG(el, state, opts) {
     const paint = () => { el.querySelector('[data-svg]').innerHTML = drawMap(state.box, opts()); wireStops(); };
     const wireStops = () => el.querySelectorAll('[data-stop]').forEach(g => g.onclick = () => opts().onStop && opts().onStop(+g.dataset.stop));
     el.innerHTML = `<div data-svg></div><div class="mp-zoom"><button data-z="0.7" aria-label="Acercar">+</button><button data-z="1.4" aria-label="Alejar">−</button></div>`;
@@ -175,6 +192,110 @@ html.mp-off .mp-chips { display: none !important; }
     paint();
   }
 
+  /* ── Mapa real (MapLibre): satélite o mapa, relieve, globo al alejar y gestos ── */
+  let mlP = null, glMap = null;
+  function loadML() {
+    if (window.maplibregl) return Promise.resolve(true);
+    if (!mlP) mlP = new Promise(res => {
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = './vendor/maplibre/maplibre-gl.css'; document.head.appendChild(l);
+      const s = document.createElement('script'); s.src = './vendor/maplibre/maplibre-gl.js';
+      s.onload = () => res(!!window.maplibregl); s.onerror = () => { mlP = null; res(false); };
+      document.head.appendChild(s);
+    });
+    return mlP;
+  }
+  const getMode = () => { try { return localStorage.getItem('kodesh_map_mode') || 'sat'; } catch (e) { return 'sat'; } };
+  const nameEs = ['coalesce', ['get', 'name:es'], ['get', 'name']];
+  function glStyle(mode) {
+    const sat = mode === 'sat';
+    return {
+      version: 8,
+      glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+      projection: { type: 'globe' },
+      sky: { 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 1, 7, 0] },
+      sources: {
+        mundo: { type: 'geojson', data: './data/mapa-mundo.json' },
+        sat: { type: 'raster', tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'], tileSize: 256, maxzoom: 14, attribution: '<a href="https://s2maps.eu" target="_blank">Sentinel-2 cloudless 2016</a> · EOX (CC BY 4.0)' },
+        omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' },
+        dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 12, attribution: 'Relieve: Terrain Tiles (AWS)' },
+      },
+      layers: [
+        { id: 'bg', type: 'background', paint: { 'background-color': sat ? '#0e2a47' : '#a8c7df' } },
+        { id: 'tierra', type: 'fill', source: 'mundo', paint: { 'fill-color': sat ? '#6b6448' : '#efe6cf' } },
+        ...(sat ? [{ id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-fade-duration': 150 } }] : [
+          { id: 'cover', type: 'fill', source: 'omt', 'source-layer': 'landcover', paint: { 'fill-color': ['match', ['get', 'class'], 'sand', '#f1e3bb', 'grass', '#dfe6c4', 'wood', '#cddbb0', 'farmland', '#e8e6c6', '#e9e0c8'], 'fill-opacity': 0.7 } },
+          { id: 'agua', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': '#a8c7df' } },
+          { id: 'rios', type: 'line', source: 'omt', 'source-layer': 'waterway', minzoom: 5, paint: { 'line-color': '#7fa9cf', 'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.6, 10, 2.2] } },
+        ]),
+        { id: 'relieve', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': sat ? 0.2 : 0.5, 'hillshade-shadow-color': '#3d2f1c', 'hillshade-highlight-color': '#fffaf0' } },
+        { id: 'mares', type: 'symbol', source: 'omt', 'source-layer': 'water_name', layout: { 'text-field': nameEs, 'text-font': ['Noto Sans Italic'], 'text-size': 12, 'text-letter-spacing': 0.1 }, paint: { 'text-color': sat ? '#dbe8f5' : '#4d7aa3', 'text-halo-color': sat ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.7)', 'text-halo-width': 1 } },
+        { id: 'continentes', type: 'symbol', source: 'omt', 'source-layer': 'place', maxzoom: 3.5, filter: ['==', ['get', 'class'], 'continent'], layout: { 'text-field': nameEs, 'text-font': ['Noto Sans Bold'], 'text-size': 13, 'text-transform': 'uppercase', 'text-letter-spacing': 0.2 }, paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,.6)', 'text-halo-width': 1.2 } },
+      ],
+    };
+  }
+  function addOverlay(map, o) {
+    const lines = { type: 'FeatureCollection', features: (o.routes || []).map(r => ({ type: 'Feature', properties: { c: r.color, d: r.dim ? 0.3 : 1 }, geometry: { type: 'LineString', coordinates: r.stops.map(s => s.ll) } })) };
+    if (map.getSource('rutas')) map.getSource('rutas').setData(lines);
+    else {
+      map.addSource('rutas', { type: 'geojson', data: lines });
+      map.addLayer({ id: 'rutas-halo', type: 'line', source: 'rutas', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,10,15,.55)', 'line-width': 6, 'line-opacity': ['get', 'd'] } });
+      map.addLayer({ id: 'rutas', type: 'line', source: 'rutas', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'c'], 'line-width': 3.2, 'line-dasharray': [2, 1.4], 'line-opacity': ['get', 'd'] } });
+    }
+  }
+  function glMarkers(map, o) {
+    const out = [];
+    const seen = new Map();
+    (o.stops || []).forEach((st, i) => { const k = st.ll.join(','); if (seen.has(k)) seen.get(k).nums.push(i + 1); else seen.set(k, { st, i, nums: [i + 1] }); });
+    for (const { st, i, nums } of seen.values()) {
+      const el = document.createElement('div'); el.className = 'gl-stop';
+      el.innerHTML = `<b style="background:${st.color || '#c9a84c'}">${nums.join(', ')}</b><span>${esc(st.n)}</span>`;
+      el.onclick = e => { e.stopPropagation(); o.onStop && o.onStop(i); };
+      out.push(new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(st.ll).addTo(map));
+    }
+    for (const m of o.markers || []) {
+      const el = document.createElement('div'); el.className = 'gl-pin' + (m.main ? ' gl-main' : '');
+      el.innerHTML = `<i></i><span>${esc(m.n)}</span>`;
+      out.push(new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(m.ll).addTo(map));
+    }
+    return out;
+  }
+  async function mountMap(el, state, opts) {
+    if (glMap) { try { glMap.remove(); } catch (e) {} glMap = null; }
+    el.classList.add('gl');
+    el.innerHTML = '<div class="gl-wait">Cargando mapa…</div>';
+    const ok = await loadML();
+    if (!el.isConnected) return;
+    if (!ok) { el.classList.remove('gl'); return mountSVG(el, state, opts); }
+    const o = opts(), b = state.box;
+    const bounds = [[b.cx - b.w / 2, b.cy - b.h / 2], [b.cx + b.w / 2, b.cy + b.h / 2]];
+    let map;
+    try {
+      el.innerHTML = '';
+      map = new maplibregl.Map({ container: el, style: glStyle(getMode()), bounds, fitBoundsOptions: { padding: 40, maxZoom: 9 }, minZoom: 0, maxZoom: 14, attributionControl: { compact: true }, dragRotate: true, pitchWithRotate: false, renderWorldCopies: false });
+    } catch (e) { el.classList.remove('gl'); el.innerHTML = ''; return mountSVG(el, state, opts); }
+    glMap = map;
+    map.touchZoomRotate.enable(); map.doubleClickZoom.enable();
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-right');
+    let markers = [];
+    const paint = () => { addOverlay(map, o); markers.forEach(m => m.remove()); markers = glMarkers(map, o); };
+    map.on('style.load', paint);
+    map.once('load', () => { const a = el.querySelector('.maplibregl-compact-show'); if (a) a.classList.remove('maplibregl-compact-show'); });
+    const far = () => { const z = map.getZoom(); el.classList.toggle('far', z < 3); el.classList.toggle('mid', z < 5.2); };
+    map.on('zoom', far); far();
+    map.on('error', e => { /* sin conexión: queda el continente de Natural Earth */ });
+    const ctr = document.createElement('div'); ctr.className = 'gl-ctrl';
+    ctr.innerHTML = `<button data-globe aria-label="Ver el planeta">🌍</button><button data-fit aria-label="Volver a la ruta">◎</button><button data-mode>${getMode() === 'sat' ? 'Mapa' : 'Satélite'}</button>`;
+    el.appendChild(ctr);
+    ctr.querySelector('[data-globe]').onclick = () => map.flyTo({ zoom: 1.3, center: map.getCenter(), duration: 1600 });
+    ctr.querySelector('[data-fit]').onclick = () => map.fitBounds(bounds, { padding: 40, maxZoom: 9, duration: 1200 });
+    ctr.querySelector('[data-mode]').onclick = e => {
+      const m = getMode() === 'sat' ? 'mapa' : 'sat';
+      try { localStorage.setItem('kodesh_map_mode', m); } catch (x) {}
+      e.target.textContent = m === 'sat' ? 'Mapa' : 'Satélite';
+      map.setStyle(glStyle(m));
+    };
+  }
+
   /* ── Hoja ── */
   let ov = null;
   function sheet() {
@@ -186,7 +307,7 @@ html.mp-off .mp-chips { display: none !important; }
     }
     return ov.querySelector('.mp-sheet');
   }
-  function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; }
+  function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; if (glMap) { try { glMap.remove(); } catch (e) {} glMap = null; } }
   function show() { requestAnimationFrame(() => ov.classList.add('open')); document.body.style.overflow = 'hidden'; }
   function head(kick, title, sub, back) {
     return `<div class="mp-head"><div>${back ? '<button class="mp-chip" data-back style="margin:0 0 8px">‹ Mapas</button>' : ''}<div class="mp-kick">${esc(kick)}</div><div class="mp-h">${esc(title)}</div>${sub ? `<div class="mp-sub">${sub}</div>` : ''}</div><button class="mp-x" data-close aria-label="Cerrar">✕</button></div>`;
@@ -212,7 +333,7 @@ html.mp-off .mp-chips { display: none !important; }
       const one = list.length === 1 ? list[0] : null;
       s.innerHTML = head(isPablo ? 'Los viajes de Pablo' : 'La ruta del viaje', one ? one.t : 'Los cuatro viajes', one ? `${esc(one.ref)} · unos ${routeKm(one.stops).toLocaleString('es')} km entre paradas` : 'Hechos 13 – 28', true)
         + (isPablo ? `<div class="mp-tabs">${pablo.map(j => `<button class="mp-tab${sel === j.id ? ' on' : ''}" data-trip="${j.id}"><i style="background:${j.color}"></i>${j.pablo === 4 ? 'A Roma' : j.pablo + '.º viaje'}</button>`).join('')}<button class="mp-tab${sel === 'all' ? ' on' : ''}" data-trip="all">Todos</button></div>` : '')
-        + `<div class="mp-body"><div class="mp-map" data-map></div><div class="mp-src">${one && one.note ? esc(one.note) + ' ' : ''}Costas: Natural Earth · Ubicaciones: OpenBible.info (CC BY 4.0) · Ríos y lagos aproximados.</div>
+        + `<div class="mp-body"><div class="mp-map" data-map></div><div class="mp-src">${one && one.note ? esc(one.note) + ' ' : ''}Pellizca para acercar · 🌍 para ver el planeta. Imagen: Sentinel-2 cloudless (EOX) · Mapa: OpenStreetMap · Ubicaciones: OpenBible.info (CC BY 4.0).</div>
           <ol class="mp-list">${(one ? one.stops : []).map((st, i) => `<li data-go="${i}"><span class="mp-n" style="background:${one.color}">${i + 1}</span><div><b>${esc(st.n)}</b><small>${esc(nice(st.r))}</small><p>${esc(st.note)}${st.c < 300 ? ' <i>(ubicación incierta)</i>' : ''}</p></div></li>`).join('')}</ol>
           ${!one ? `<div class="mp-trips">${pablo.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)} · ${j.stops.length} paradas</span></div></button>`).join('')}</div>` : ''}</div>`;
       wireHead(s);
@@ -254,9 +375,10 @@ html.mp-off .mp-chips { display: none !important; }
         ${trips.length ? `<div class="mp-sec">En los viajes</div><div class="mp-trips">${trips.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)}</span></div></button>`).join('')}</div>` : ''}
         <div class="mp-sec">Lo que pasó aquí · ${refs.length} ${refs.length === 1 ? 'mención' : 'menciones'}</div>
         <ol class="mp-list">${refs.slice(0, 40).map((r, i) => `<li data-r="${esc(r)}"><span class="mp-n" style="background:var(--gold,#c9a84c)">${i + 1}</span><div><b style="font-size:1rem">${esc(nice(r))}</b><p>${esc(snip(r))}</p></div></li>`).join('')}</ol>
-        <div class="mp-src" style="padding-bottom:20px">Ubicación: OpenBible.info (CC BY 4.0) · Costas: Natural Earth.</div></div>`;
+        <div class="mp-src" style="padding-bottom:20px">Ubicación: OpenBible.info (CC BY 4.0) · Imagen: Sentinel-2 cloudless (EOX) · Mapa: OpenStreetMap.</div></div>`;
     wireHead(s);
-    const near = Object.entries(P).filter(([pid, x]) => pid !== id && x[4] >= 500 && Math.abs(x[1] - lon) < 0.9 && Math.abs(x[2] - lat) < 0.7).sort((a, b) => b[1][4] - a[1][4]).slice(0, 6);
+    const near = Object.entries(P).filter(([pid, x]) => pid !== id && x[4] >= 500 && Math.abs(x[1] - lon) < 0.9 && Math.abs(x[2] - lat) < 0.7).sort((a, b) => b[1][4] - a[1][4])
+      .reduce((acc, e) => { const q = [e[1][1], e[1][2]]; if (km(q, ll) > 4 && km(q, JERUSALEM) > 4 && acc.every(a => km([a[1][1], a[1][2]], q) > 5)) acc.push(e); return acc; }, []).slice(0, 6);
     const hasJer = d > 8 && d < 120;
     const state = { box: fit([ll, ...(hasJer ? [JERUSALEM] : [])], 0.9) };
     mountMap(s.querySelector('[data-map]'), state, () => ({ markers: [...near.map(([, x]) => ({ ll: [x[1], x[2]], n: x[0] })), ...(hasJer ? [{ ll: JERUSALEM, n: 'Jerusalén' }] : []), { ll, n, main: true }] }));
