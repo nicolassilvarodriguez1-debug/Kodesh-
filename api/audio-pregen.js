@@ -346,7 +346,7 @@ async function libBuild(key) {
     credits = Number(r.headers.get('character-cost')) || null;
     seconds = mp3Duration(audio).seconds || (loop ? 30 : item.seconds);
   }
-  const p = `library/${key}.mp3`;
+  const p = `library/${key.replace(/[^a-z0-9_-]/gi, "_v")}.mp3`;   // «~» no es válido en Storage
   await upload(p, audio);
   await sbJson('bible_audio_library?on_conflict=key', {
     method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -412,7 +412,7 @@ async function mix(book, chapter) {
     });
     const files = {};
     for (const key of [...new Set(layers.map(l => l.key))]) {
-      files[key] = path.join(dir, key + '.mp3');
+      files[key] = path.join(dir, key.replace(/[^a-z0-9_-]/gi, '_v') + '.mp3');
       await download(publicUrl(lib[key].path), files[key]);
     }
     const out = path.join(dir, 'out.mp3');
