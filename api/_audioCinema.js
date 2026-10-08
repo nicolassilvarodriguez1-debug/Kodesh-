@@ -136,6 +136,57 @@ export const LIBRARY = [
   { key: 'golpe_tristeza', kind: 'sting', seconds: 4, label: 'Golpe: tristeza', prompt: 'Sad musical stinger, single low cello note with soft piano chord, short and somber' },
   { key: 'golpe_gloria', kind: 'sting', seconds: 4, label: 'Golpe: gloria', prompt: 'Glorious triumphant stinger, bright brass fanfare chord with cymbal swell, short' },
 ];
+
+// ── Variantes: el mismo tipo de sonido grabado de otras maneras, para que un
+// llanto, un grito o unas espadas no suenen siempre igual. En la mezcla se
+// elige una distinta según el capítulo y cada vez que se repite.
+const VARIANTS = {
+  llanto: ['A mother wailing in grief and sobbing, ancient mourning, raw emotion', 'Mourners lamenting together at a funeral, women ululating and weeping, Middle Eastern'],
+  llanto_hombre: ['An old man weeping bitterly, broken voice, slow sobs', 'A young man crying in despair, then catching his breath'],
+  grito_multitud: ['A furious mob yelling and demanding, rising chaos, indistinct words', 'Crowd shouting in alarm and confusion, many voices overlapping, indistinct'],
+  asombro: ['A small group of people gasping in shock, then whispering in awe', 'A large crowd going suddenly silent, then a wave of amazed murmurs'],
+  risa: ['A group of people laughing joyfully at a celebration', 'A man laughing scornfully, mocking'],
+  pasos: ['Many people walking together on a dirt road, sandals, quiet talk indistinct', 'A single person walking slowly on stone, sandals, echo'],
+  puerta: ['Small wooden house door creaking open slowly', 'Heavy city gate of wood and bronze opening, chains and hinges groaning'],
+  trueno: ['Sharp close thunder crack followed by long rumble', 'Deep rolling thunder across a valley with rain beginning'],
+  choque_espadas: ['Two warriors dueling, swords striking shields and each other, fast', 'Large melee, many swords and spears clashing, metal and wood, chaotic'],
+  gritos_batalla: ['An army roaring a battle cry before charging, deep male voices, indistinct', 'Wounded soldiers and fighters yelling in combat, chaotic, indistinct'],
+  galope: ['A single horse galloping fast and fading into the distance', 'Cavalry charge, dozens of horses thundering closer'],
+  carruaje: ['A single royal chariot passing at speed, wheels and horses, whip crack', 'Many war chariots rumbling across a plain, heavy and menacing'],
+  huida: ['Family running in fear through a village at night, hurried footsteps, children crying', 'Soldiers retreating in disorder, running, armor rattling, shouts'],
+  ejercito_marcha: ['Huge army marching in the distance, steady rhythmic stomping, horns', 'Small troop of soldiers marching closely, armor and spears clinking'],
+  ganado: ['Oxen lowing and moving slowly, heavy hooves, bells', 'Goats and sheep bleating in a pen, restless'],
+  rebano: ['Shepherd leading sheep at dusk, soft bleats, a reed flute in distance', 'Large herd of cattle and flocks crossing a river, splashing and calls'],
+  aves_vuelo: ['Doves cooing and fluttering, then flying off', 'A great flock of birds sweeping overhead, wings like wind'],
+  rugido_leon: ['A lion roaring close and fierce', 'Several lions growling and roaring in the night'],
+  golpe_muerte: ['A sudden violent struck blow and a groan, a body collapsing', 'A spear thrust and a man crying out and falling'],
+  latido: ['Fast anxious heartbeat with breathing, tension', 'Slow heavy heartbeat fading, ominous'],
+  viento_recio: ['Violent gust of wind sweeping across the desert, sand hissing', 'Howling wind storm rising and falling'],
+  oleaje: ['Waves pounding against rocks, spray', 'Gentle waves rolling on a sandy shore'],
+  shofar: ['Several shofars blowing together, long and triumphant', 'A short series of shofar blasts, teruah, staccato'],
+  cuerno_guerra: ['Distant war horn answered by another horn across the valley', 'Three short urgent war horn blasts, alarm'],
+  fuego_altar: ['Large bonfire roaring and crackling', 'Fire falling from heaven onto an altar, whoosh and roaring flames'],
+  agua_vasija: ['Water drawn from a deep well with a rope and bucket', 'Washing feet with water poured into a basin'],
+  pan: ['Bread dough kneaded and slapped, then baked loaves broken', 'Grain being ground with a stone hand mill'],
+  banquete: ['Royal banquet with music of lyres and laughter, cups clinking', 'Simple family meal, bowls and bread, quiet talk indistinct'],
+  lucha_cuerpo: ['A desperate struggle in the dark until dawn, grunts and heavy breathing', 'Two men fighting with fists and falling into dust'],
+  cadenas: ['Prison door of iron slammed and locked, chains', 'Captives walking in chains, metal dragging on stone'],
+  multitud: ['Crowd gathered in a city square, many indistinct voices, animals and footsteps, no music'],
+  batalla: ['Distant battle on a plain seen from a hill, echoes of clashing and cries, wind, no music'],
+  viento_desierto: ['Strong hot desert wind, sand blowing over dunes, no music'],
+};
+for (const [key, prompts] of Object.entries(VARIANTS)) {
+  const base = LIBRARY.find(x => x.key === key);
+  if (!base) continue;
+  prompts.forEach((prompt, i) => LIBRARY.push({ ...base, key: `${key}~${i + 2}`, label: `${base.label} · ${i + 2}`, prompt: base.kind === 'amb' ? prompt : prompt, variantOf: key }));
+}
+// Elige variante: distinta por capítulo y cada vez que se repite en el mismo capítulo.
+export function pickVariant(key, available, seed, occurrence = 0) {
+  const opts = [key, ...LIBRARY.filter(x => x.variantOf === key).map(x => x.key)].filter(k => available.has(k));
+  if (opts.length <= 1) return opts[0] || key;
+  let h = 0; for (const c of `${seed}|${key}`) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return opts[(h + occurrence) % opts.length];
+}
 export const LIB = Object.fromEntries(LIBRARY.map(x => [x.key, x]));
 // Se generan con la API de música de ElevenLabs (lo demás con la de efectos)
 export const MUSIC_KINDS = ['music', 'theme', 'bridge', 'motif'];
@@ -147,7 +198,7 @@ export function soundtrackPrompt(bookName, chapter, segments) {
   const byV = {};
   for (const s of segments) (byV[s.v] = byV[s.v] || []).push(`${s.character === 'narrador' ? '' : s.character + ': '}${s.text}`);
   const lines = Object.keys(byV).map(Number).sort((a, b) => a - b).map(v => `${v}| ${byV[v].join(' ')}`).join('\n');
-  const list = kind => LIBRARY.filter(x => x.kind === kind).map(x => `${x.key} (${x.label})`).join(', ');
+  const list = kind => LIBRARY.filter(x => x.kind === kind && !x.variantOf).map(x => `${x.key} (${x.label})`).join(', ');
   return {
     system: `Eres el director de sonido de una RADIONOVELA bíblica de gran producción, al estilo de las radionovelas clásicas pero con calidad de cine. El oyente no ve nada: todo lo que imagina sale del sonido. Recibes un capítulo con sus versículos y eliges sonidos SOLO de esta biblioteca:
 - Ambientes (fondo continuo de un lugar): ${list('amb')}

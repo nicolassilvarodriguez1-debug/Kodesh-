@@ -203,3 +203,13 @@ test('radionovela: varias capas en una misma escena «hold» (batalla de 6 s)', 
   assert.deepEqual(tl.timings.map(x => x[0]), [1, 2, 3]);
   assert.equal(tl.timings[2][1], 12 + 7 + 6);
 });
+
+import { pickVariant } from '../api/_audioCinema.js';
+test('variantes: cada repetición usa otra grabación y solo las que existen', () => {
+  const av = new Set(['llanto', 'llanto~2', 'llanto~3']);
+  const picks = [0, 1, 2].map(i => pickVariant('llanto', av, 'GEN.23', i));
+  assert.equal(new Set(picks).size, 3);
+  assert.equal(pickVariant('llanto', new Set(['llanto']), 'GEN.23', 1), 'llanto');
+  assert.equal(pickVariant('trueno', new Set(['trueno', 'trueno~3']), 'X', 0) !== undefined, true);
+  assert.ok(LIBRARY.some(x => x.key === 'choque_espadas~3' && x.kind === 'sfx'));
+});

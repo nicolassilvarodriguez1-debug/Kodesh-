@@ -25,7 +25,7 @@ import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions, isValidBookId, isValidChapter } from './_security.js';
 import { speakable, numberToSpanish, mp3Duration, textHash } from './_audioCore.js';
 import { CAST, scriptPrompt, cleanScript, validateScript, planCalls, roleFor } from './_audioScript.js';
-import { LIBRARY, LIB, MUSIC_SECONDS, MUSIC_KINDS, SOUNDTRACK_VERSION, soundtrackPrompt, cleanSoundtrack, ffmpegArgs, radioTimeline, radioPlan, divineSpans, holdPoints, parseSilences } from './_audioCinema.js';
+import { LIBRARY, LIB, MUSIC_SECONDS, MUSIC_KINDS, SOUNDTRACK_VERSION, soundtrackPrompt, cleanSoundtrack, ffmpegArgs, radioTimeline, radioPlan, divineSpans, holdPoints, parseSilences, pickVariant } from './_audioCinema.js';
 import ffmpegPath from 'ffmpeg-static';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
@@ -404,7 +404,12 @@ async function mix(book, chapter) {
     // Las piezas propias de la radionovela no pueden faltar (si no, no suena a radionovela)
     const missingRadio = [...new Set(planned.filter(l => RADIO_KINDS.includes(l.kind) && !lib[l.key]).map(l => l.key))];
     if (missingRadio.length) return { ok: false, reason: 'faltan_sonidos', missing: missingRadio };
-    const layers = planned.filter(l => lib[l.key]);
+    // Variantes: cada repetición de un sonido usa una grabación distinta
+    const have = new Set(Object.keys(lib)); const seen = {};
+    const layers = planned.filter(l => lib[l.key]).map(l => {
+      const n = seen[l.key] = (seen[l.key] ?? -1) + 1;
+      return { ...l, key: pickVariant(l.key, have, `${book}.${chapter}`, n) };
+    });
     const files = {};
     for (const key of [...new Set(layers.map(l => l.key))]) {
       files[key] = path.join(dir, key + '.mp3');
