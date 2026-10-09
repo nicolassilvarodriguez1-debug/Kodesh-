@@ -34,7 +34,7 @@
     const phi = Math.acos(Math.sin(s.dec) * Math.sin(m.dec) + Math.cos(s.dec) * Math.cos(m.dec) * Math.cos(s.ra - m.ra));
     const inc = Math.atan2(sd * Math.sin(phi), m.dist - sd * Math.cos(phi));
     const ang = Math.atan2(Math.cos(s.dec) * Math.sin(s.ra - m.ra), Math.sin(s.dec) * Math.cos(m.dec) - Math.cos(s.dec) * Math.sin(m.dec) * Math.cos(s.ra - m.ra));
-    return { fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + 0.5 * inc * (ang < 0 ? -1 : 1) / Math.PI };
+    return { fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + 0.5 * inc * (ang < 0 ? -1 : 1) / Math.PI, chi: ang };
   }
   // Altura de la luna sobre el horizonte (grados) en un lugar (SunCalc)
   function moonAlt(date, lat, lng) {
@@ -44,6 +44,14 @@
     h += rad * 0.017 / Math.tan(h + rad * 10.26 / (h + rad * 5.10));   // refracción
     return h / rad;
   }
+  // Ángulo paraláctico: cuánto está girado el norte de la luna respecto al cenit del lugar
+  function parallactic(date, lat, lng) {
+    const d = toDays(date), c = moonC(d), phi = rad * lat;
+    const H = rad * (280.16 + 360.9856235 * d) - rad * -lng - c.ra;
+    return Math.atan2(Math.sin(H), Math.tan(phi) * Math.cos(c.dec) - Math.sin(c.dec) * Math.cos(H));
+  }
+  // Giro de la luna tal como se ve ahora en el cielo del lugar
+  function orient(date, P) { const il = illum(date); return { il, chi: il.chi, q: P ? parallactic(date, P.lat, P.lon) : 0 }; }
   // Elongación continua 0..1 (0 = nueva, .5 = llena) para buscar el instante exacto
   function findPhase(from, target, dir = 1) {
     const f = t => { const p = illum(new Date(t)).phase; let x = p - target; x -= Math.round(x); return x; };
@@ -120,13 +128,16 @@
     ctx.ellipse(0, 0, Math.max(k, 0.01), r, 0, Math.PI / 2, -Math.PI / 2, wax ? !gib : gib);   // terminador
     ctx.closePath();
   }
-  // Pinta la luna en un canvas (tamaño CSS size): textura, sombra suave y luz cenicienta
-  function drawMoon(cv, p, size, south) {
+  // Pinta la luna en un canvas (tamaño CSS size): textura, sombra suave y luz cenicienta.
+  // o = { chi: ángulo del limbo iluminado (desde el norte, hacia el este), q: ángulo paraláctico }
+  // Sin o: vista de manual (norte arriba, iluminada a la derecha al crecer).
+  function drawMoon(cv, p, size, o) {
     const dpr = Math.min(window.devicePixelRatio || 1, 3), W = Math.round(size * dpr);
     if (cv.width !== W) { cv.width = cv.height = W; cv.style.width = cv.style.height = size + 'px'; }
     const ctx = cv.getContext('2d'), r = W / 2 - 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, W);
-    ctx.translate(W / 2, W / 2); if (south) ctx.scale(-1, 1);
+    ctx.translate(W / 2, W / 2);
+    if (o) ctx.rotate(o.q || 0);                       // del norte celeste al cenit del lugar
     ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
     if (TEX) { const b = TEX.box; ctx.drawImage(TEX.img, b.x, b.y, b.w, b.h, -r, -r, 2 * r, 2 * r); }
     else {
@@ -136,14 +147,19 @@
       for (const [x, y, s] of [[-.35, -.3, .28], [.2, -.35, .2], [.35, .05, .22], [-.5, .15, .3], [.05, .1, .14], [.55, -.2, .1]]) { ctx.beginPath(); ctx.ellipse(x * r, y * r, s * r, s * r * .8, .4, 0, Math.PI * 2); ctx.fill(); }
     }
     // oscurecimiento del borde
-    const lg = ctx.createRadialGradient(0, 0, r * .55, 0, 0, r); lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(1, 'rgba(0,0,0,.28)');
+    const lg = ctx.createRadialGradient(0, 0, r * .55, 0, 0, r); lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(1, 'rgba(0,0,0,.22)');
     ctx.fillStyle = lg; ctx.fillRect(-r, -r, 2 * r, 2 * r);
-    // sombra en capas (terminador suave); deja ~6% de luz cenicienta
-    const L = 7, a = 1 - Math.pow(1 - 0.94, 1 / L), spread = 0.012;
+    // sombra: geometría «creciente» (iluminada a la derecha) girada hacia el limbo iluminado
+    const pw = p < 0.5 ? p : 1 - p;                    // 0..0.5
+    const turn = o ? (-Math.PI / 2 - o.chi) : (p < 0.5 ? 0 : Math.PI);
+    ctx.rotate(turn);
+    const L = 8, a = 1 - Math.pow(1 - 0.80, 1 / L), spread = 0.022;   // ~20% de luz cenicienta, terminador suave
+    ctx.fillStyle = `rgba(8,10,18,${a})`;
     for (let i = 0; i < L; i++) {
-      const pp = p + (i - (L - 1) / 2) * spread / (L - 1) * (p < 0.5 ? 1 : -1);
-      if (pp <= 0.003 || pp >= 0.997) { ctx.fillStyle = `rgba(6,7,12,${a})`; ctx.fillRect(-r, -r, 2 * r, 2 * r); continue; }
-      ctx.fillStyle = `rgba(6,7,12,${a})`; darkPath(ctx, ((pp % 1) + 1) % 1, r * 1.002); ctx.fill();
+      const pp = pw + (i - (L - 1) / 2) * spread / (L - 1);
+      if (pp <= 0.003) { ctx.fillRect(-r, -r, 2 * r, 2 * r); continue; }
+      if (pp >= 0.5) continue;
+      darkPath(ctx, pp, r * 1.002); ctx.fill();
     }
     ctx.restore();
   }
@@ -312,7 +328,7 @@
 
   // Pinta las lunitas de las tarjetas (textura si ya está, si no se repinta al llegar)
   function paint(root = document) {
-    const go = () => root.querySelectorAll('canvas[data-lmoon]').forEach(c => drawMoon(c, +c.dataset.lmoon, 46, south()));
+    const go = () => root.querySelectorAll('canvas[data-lmoon]').forEach(c => drawMoon(c, +c.dataset.lmoon, 46, (() => { try { const P = M().place(); return orient(new Date(), P); } catch (e) { return null; } })()));
     go(); if (!TEX) texture().then(x => { if (x) go(); });
   }
 
@@ -427,7 +443,7 @@
     let pend = false; const schedule = () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; update(); }); };
     function update() {
       const t = new Date(T), P = pl(), il = illum(t), sz = size();
-      drawMoon(cv, il.phase, sz, P.lat < 0);
+      drawMoon(cv, il.phase, sz, orient(t, P));
       stage.style.height = sz + 'px';
       o.querySelector('[data-place]').textContent = `📍 ${P.n}${P.guess ? ' · elegir' : ''} ✎`;
       o.querySelector('[data-ph]').textContent = phaseName(il.phase);
@@ -515,5 +531,5 @@
   }
   function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; clearInterval(clock); cancelAnimationFrame(raf); follow = true; }
 
-  window.KodeshLuna = { open, close, illum, phaseName, moonSvg, drawMoon, paint, cardHtml, nextMoon, findPhase, moonAlt, load };
+  window.KodeshLuna = { orient, parallactic, open, close, illum, phaseName, moonSvg, drawMoon, paint, cardHtml, nextMoon, findPhase, moonAlt, load };
 })();
