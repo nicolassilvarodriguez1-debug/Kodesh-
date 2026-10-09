@@ -77,7 +77,11 @@ body.home-on { overflow: hidden; }
 .hm-logo .he { font-family: 'Frank Ruhl Libre', serif; font-size: 1.45rem; letter-spacing: 0; color: var(--gold, #c9a84c); }
 .hm-logo i { width: 1px; height: 22px; background: var(--border2, #2a2836); }
 .hm-ic { display: flex; gap: 6px; }
-.hm-ic button { width: 40px; height: 40px; border: none; background: none; color: var(--gold, #c9a84c); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
+.hm-ic { gap: 8px; }
+.hm-ic button { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,10,16,.42); color: #f0d48a; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 20px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+html.light .hm-ic button { background: rgba(255,252,244,.82); color: #74540f; border-color: rgba(116,84,15,.22); box-shadow: 0 2px 10px rgba(70,50,15,.16); }
+.hm-logo { text-shadow: 0 1px 10px rgba(0,0,0,.55); }
+html.light .hm-logo { text-shadow: 0 1px 10px rgba(255,250,238,.9), 0 0 2px rgba(255,250,238,.9); }
 .hm-hero { transition: background-image .5s ease; position: relative; margin-top: calc(-1 * (var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 56px)); padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 86px) 22px 26px; min-height: 250px; box-sizing: border-box; background-size: cover; background-position: center; }
 .hm-hero.noimg { background: linear-gradient(180deg, #f1d9a8 0%, #e7c68c 55%, var(--bg) 100%); }
 html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%, #20170e 60%, var(--bg) 100%); }
@@ -292,6 +296,16 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
   }
   // Botón «Biblia» de la barra: desde el inicio vuelve a la lectura; si ya se está leyendo, abre libros
   window.onBibliaNav = function () { if (isOpen()) hide(); else if (typeof openNav === 'function') openNav(); };
+  // Marcadores y Estudiar desde la barra: primero se cierra el inicio, para que lo que abren se vea
+  function wrapNav() {
+    for (const name of ['mobileNavTo', 'openAssistant']) {
+      const f = window[name];
+      if (typeof f !== 'function' || f.__home) continue;
+      const w = function () { if (isOpen()) hide(); return f.apply(this, arguments); };
+      w.__home = true; window[name] = w;
+    }
+  }
+  wrapNav(); document.addEventListener('DOMContentLoaded', wrapNav); window.addEventListener('load', wrapNav);
   // Al cambiar de tema, cambia la portada (con un fundido suave)
   new MutationObserver(() => {
     const h = el && el.querySelector('[data-hero]'); if (!h) return;
