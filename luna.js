@@ -325,7 +325,7 @@
   // Tema de avisos según el idioma de la app (luna-nueva / luna-nueva-en); other = el del otro idioma
   const TOPIC = other => ((window.KodeshI18n && KodeshI18n.isEn) !== !!other ? 'luna-nueva-en' : 'luna-nueva');
   // Al abrir la app: si el aviso está activo y cambió el idioma, se pasa al tema correcto
-  setTimeout(() => { try { const Ms = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.FirebaseMessaging; if (Ms && pushOn()) { Ms.subscribeToTopic({ topic: TOPIC() }).catch(() => {}); Ms.unsubscribeFromTopic({ topic: TOPIC(true) }).catch(() => {}); } } catch (e) {} }, 4000);
+  if (typeof setTimeout === 'function') setTimeout(() => { try { const Ms = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.FirebaseMessaging; if (Ms && pushOn()) { Ms.subscribeToTopic({ topic: TOPIC() }).catch(() => {}); Ms.unsubscribeFromTopic({ topic: TOPIC(true) }).catch(() => {}); } } catch (e) {} }, 4000);
   async function setPush(on) {
     const Ms = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.FirebaseMessaging;
     if (!Ms) throw new Error('Disponible en la app de Kodesh');
