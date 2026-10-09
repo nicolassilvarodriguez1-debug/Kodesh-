@@ -141,7 +141,8 @@
 .md-ov .md-wm { position: absolute; top: 16%; left: 0; right: 0; text-align: center; font-family: 'Frank Ruhl Libre', serif; font-size: 9rem; color: rgba(225,163,90,.16); }
 .md-ov .md-fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,.35) 0%, rgba(10,8,5,0) 16%, rgba(10,8,5,0) 100%); }
 @media (orientation: landscape) { .md-ov .md-fade { background: linear-gradient(180deg, rgba(10,8,5,.3) 0%, rgba(10,8,5,0) 25%, rgba(12,9,6,.7) 60%, #0d0a07 95%); } }
-.md-top { position: absolute; left: 0; right: 0; top: 0; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 10px) 14px 0; display: flex; justify-content: space-between; z-index: 2; }
+.md-top { position: absolute; left: 0; right: 0; top: 0; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 10px) 14px 0; display: flex; justify-content: space-between; z-index: 4; pointer-events: none; }
+.md-top > * { pointer-events: auto; }
 .md-top button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(225,163,90,.35); background: rgba(13,10,7,.55); color: #e1a35a; font-size: 17px; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .md-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 18px calc(env(safe-area-inset-bottom, 0px) + 18px); text-align: center; z-index: 2; max-height: 72%; overflow-y: auto; }
 .md-body .md-name { font-size: 2.7rem; }
@@ -168,19 +169,35 @@
 .md-up { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 14px auto 0; border: none; background: none; color: #d9b98a; font: inherit; font-size: .9rem; cursor: pointer; }
 .md-up span { font-size: 1.3rem; line-height: .8; color: #e1a35a; animation: mdUp 1.8s ease-in-out infinite; }
 @keyframes mdUp { 0%, 100% { transform: translateY(0); opacity: .6; } 50% { transform: translateY(-6px); opacity: 1; } }
-.md-info { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
-.md-info.open { opacity: 1; pointer-events: auto; }
-.md-info > section { width: min(720px, 100%); max-height: 88vh; overflow: auto; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; border: 1px solid var(--border2, #2a2836); border-bottom: none; padding: 0 18px calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateY(40px); transition: transform .3s cubic-bezier(.2,.8,.2,1); font-family: var(--font-body, serif); }
-.md-info.open > section { transform: none; }
-.md-info .grab { width: 42px; height: 5px; border-radius: 3px; background: var(--border2, #2a2836); margin: 8px auto 10px; }
-.md-info h3 { margin: 0; font-family: var(--font-display, serif); font-size: 1.6rem; }
-.md-info h3 span { font-family: 'Frank Ruhl Libre', serif; color: var(--gold, #c9a84c); margin-left: 8px; font-weight: 400; }
-.md-info .sec { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 6px; }
-.md-info ul { margin: 0; padding-left: 18px; line-height: 1.55; }
-.md-info li { margin: 5px 0; }
-.md-info .refs { display: flex; flex-wrap: wrap; gap: 6px; }
-.md-info .refs a { border: 1px solid var(--border2, #2a2836); border-radius: 12px; padding: 3px 9px; font-size: .85rem; color: var(--text-mid, #b8af9c); text-decoration: none; }
-.md-info .go { display: block; width: 100%; margin-top: 18px; padding: 12px; border-radius: 12px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.1); color: var(--text, #e9e3d3); font: inherit; font-size: 1rem; cursor: pointer; }
+.md-ov .md-bg, .md-ov .md-wm { transition: transform .7s cubic-bezier(.2,.8,.2,1), filter .7s; }
+.md-ov.info .md-bg, .md-ov.info .md-wm { transform: scale(1.08); filter: blur(3px) brightness(.55); }
+.md-ov .md-body, .md-ov .md-dots { transition: opacity .35s, transform .45s cubic-bezier(.2,.8,.2,1); }
+.md-ov.info .md-body { opacity: 0; transform: translateY(-40px); pointer-events: none; }
+.md-more { position: absolute; inset: 0; z-index: 3; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 66px) 22px calc(env(safe-area-inset-bottom, 0px) + 30px); background: linear-gradient(180deg, rgba(13,10,7,.25) 0%, rgba(13,10,7,.6) 30%, rgba(13,10,7,.82) 100%); opacity: 0; pointer-events: none; transition: opacity .4s; color: #f6efdf; -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 54px), #000 calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 96px)); mask-image: linear-gradient(180deg, transparent 0, transparent calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 54px), #000 calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 96px)); }
+.md-ov.info .md-more { opacity: 1; pointer-events: auto; }
+.md-more .rv { opacity: 0; transform: translateY(22px); transition: opacity .6s, transform .6s cubic-bezier(.2,.8,.2,1); }
+.md-ov.info .md-more .rv { opacity: 1; transform: none; }
+.md-more .md-name { font-size: 2.4rem; text-align: center; }
+.md-more .md-he { font-family: 'Frank Ruhl Libre', serif; font-size: 1.5rem; color: #e1a35a; text-align: center; }
+.md-more .md-sub { text-align: center; color: #d9cdb4; font-style: italic; margin-top: 2px; }
+.md-more h4 { margin: 22px 0 8px; font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2.4px; text-transform: uppercase; color: #e1a35a; font-weight: 500; }
+.md-more ul { margin: 0; padding-left: 18px; line-height: 1.6; font-size: 1.06rem; }
+.md-more li { margin: 6px 0; }
+.md-more li::marker { color: #e1a35a; }
+.md-more a.r { color: #e8b36c; font-size: .86rem; text-underline-offset: 3px; }
+.md-more h4 a.r { font-family: 'EB Garamond', serif; text-transform: none; letter-spacing: 0; font-size: .95rem; margin-left: 6px; }
+.md-more .refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.md-more .refs a { border: 1px solid rgba(225,163,90,.4); border-radius: 12px; padding: 4px 10px; font-size: .88rem; color: #f0dcb8; text-decoration: none; background: rgba(13,10,7,.35); }
+.md-more .hilo { position: relative; padding-left: 22px; }
+.md-more .hilo:before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: rgba(225,163,90,.45); }
+.md-more .hilo a { position: relative; display: block; padding: 6px 0 10px; color: inherit; text-decoration: none; }
+.md-more .hilo a:before { content: ''; position: absolute; left: -21px; top: 12px; width: 10px; height: 10px; border-radius: 5px; background: #e1a35a; }
+.md-more .hilo b { display: block; font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: #e1a35a; font-weight: 500; }
+.md-more .hilo small { color: #bfb29a; font-size: .82rem; }
+.md-more .when { border: 1px solid rgba(225,163,90,.35); border-radius: 8px; padding: 10px 12px; background: rgba(13,10,7,.45); }
+.md-more .btns { display: grid; gap: 8px; margin-top: 22px; }
+.md-more .btns button { padding: 12px; border-radius: 10px; border: 1px solid rgba(225,163,90,.5); background: rgba(90,40,18,.45); color: #f6efdf; font: inherit; font-size: 1rem; cursor: pointer; }
+.md-down { display: block; margin: 0 auto 6px; border: none; background: none; color: #e1a35a; font-size: 1.4rem; cursor: pointer; }
 .md-pick { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; }
 .md-pick > div { width: min(520px, 100%); max-height: 80vh; overflow: auto; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px); }
 .md-pick h3 { margin: 0 0 10px; font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; }
@@ -231,17 +248,19 @@
     ov = document.createElement('div'); ov.className = 'md-ov'; ov.setAttribute('role', 'dialog');
     ov.innerHTML = `<div class="md-bg"></div><div class="md-wm" lang="he"></div><div class="md-fade"></div>
       <div class="md-top"><button data-x aria-label="Cerrar">✕</button><span style="display:flex;gap:8px"><button data-cal aria-label="Calendario del mes">☾</button><button data-share aria-label="Compartir">⇪</button></span></div>
-      <div class="md-body"></div>`;
+      <div class="md-body"></div><div class="md-more"></div>`;
     document.body.appendChild(ov);
     ov.querySelector('[data-x]').onclick = close;
-    document.addEventListener('keydown', e => { if (!ov.classList.contains('open')) return; if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); else if (e.key === 'ArrowUp') info(); else if (e.key === 'Escape') close(); });
+    document.addEventListener('keydown', e => { if (!ov.classList.contains('open')) return; if (ov.classList.contains('info')) { if (e.key === 'ArrowDown' || e.key === 'Escape') infoOff(); return; } if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); else if (e.key === 'ArrowUp') info(); else if (e.key === 'Escape') close(); });
     ov.querySelector('[data-share]').onclick = share;
     ov.querySelector('[data-cal]').onclick = () => { if (window.KodeshLuna) KodeshLuna.open(); };
     let x0 = null, y0 = null;
-    ov.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    let st0 = 0;
+    ov.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; st0 = ov.querySelector('.md-more').scrollTop; }, { passive: true });
     ov.addEventListener('touchend', e => {
       if (x0 == null) return;
       const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+      if (ov.classList.contains('info')) { if (dy > 70 && Math.abs(dy) > Math.abs(dx) * 1.4 && st0 <= 0) infoOff(); return; }
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) step(dx < 0 ? 1 : -1);
       else if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.4) {
         const b = ov.querySelector('.md-body');      // si el texto aún tiene para dónde subir, es scroll
@@ -253,6 +272,7 @@
   }
   function step(k) { const list = all(), i = list.findIndex(f => f.id === cur); show(list[(i + k + list.length) % list.length].id); }
   function show(id) {
+    if (ov) ov.classList.remove('info');
     cur = id;
     const f = byId(id), t = times(id), o = shell();
     const bg = o.querySelector('.md-bg'), art = artOf(id);
@@ -284,29 +304,39 @@
       ['Sanó en Shabat: «es lícito hacer el bien en los días de reposo».', 'MAT 12:12', 'Mateo 12:12']],
     leer: [['GEN 2:1-3', 'Génesis 2:1–3'], ['EXO 20:8-11', 'Éxodo 20:8–11'], ['DEU 5:12-15', 'Deuteronomio 5:12–15'], ['ISA 58:13-14', 'Isaías 58:13–14'], ['MRK 2:23-28', 'Marcos 2:23–28'], ['HEB 4:9-11', 'Hebreos 4:9–11']],
   };
-  let infoEl = null;
+  // Modo información: la misma pintura se oscurece y los textos aparecen encima
   function info() {
-    if (cur !== 'shabat') { if (window.KodeshFeasts) KodeshFeasts.open({ fest: cur, tab: 'fiesta', over: true }); return; }
-    const t = times('shabat'), I = SHABAT_INFO;
-    if (!infoEl) {
-      infoEl = document.createElement('div'); infoEl.className = 'md-info';
-      infoEl.addEventListener('click', e => { if (e.target === infoEl) infoEl.classList.remove('open'); });
-      document.body.appendChild(infoEl);
+    const f = byId(cur), t = times(cur), m = ov.querySelector('.md-more'), I = SHABAT_INFO;
+    const ref = (r, n) => `<a class="r" href="${readUrl(r)}">${esc(n || niceRef(r))}</a>`;
+    let html = `<button class="md-down rv" data-down aria-label="Volver">﹀</button>
+      <div class="rv"><div class="md-name">${esc(f.n)}</div><div class="md-he" lang="he">${esc(f.he)}</div><div class="md-sub">${esc(cur === 'shabat' ? f.lema : `${f.alt} · ${f.sig}`)}</div></div>`;
+    if (t) html += `<h4 class="rv">${cur === 'shabat' ? 'Esta semana' : 'Próxima fecha'} · ${esc(t.pl.n)}</h4><div class="when rv">Comienza ${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))}<br>Termina ${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}${f.fecha ? `<div style="color:#bfb29a;font-size:.88rem;margin-top:4px">${esc(f.fecha)}</div>` : ''}</div>`;
+    if (cur === 'shabat') {
+      html += `<h4 class="rv">Qué mandó YHWH</h4><ul class="rv">${I.mando.map(([x, r, n]) => `<li>${esc(x)} ${ref(r, n)}</li>`).join('')}</ul>
+        <h4 class="rv">En tiempos de Yeshúa</h4><ul class="rv">${I.yeshua.map(([x, r, n]) => `<li>${esc(x)} ${ref(r, n)}</li>`).join('')}</ul>
+        <h4 class="rv">Para leer</h4><div class="refs rv">${I.leer.map(([r, n]) => `<a href="${readUrl(r)}">${esc(n)}</a>`).join('')}</div>
+        <div class="btns rv"><button data-parasha>📖 Porción de la semana</button><button data-luna>☾ Luna y calendario</button></div>`;
+    } else {
+      html += `<h4 class="rv">Qué mandó YHWH ${ref(f.mand)}</h4><ul class="rv">${(f.que || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        <h4 class="rv">En tiempos de Yeshúa</h4><ul class="rv">${(f.siglo || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        ${f.hilo ? `<h4 class="rv">De punta a punta</h4><div class="hilo rv">${f.hilo.map(([k, r, x]) => `<a href="${readUrl(r)}"><b>${esc(k)}</b>${esc(x)}<br><small>${esc(niceRef(r))}</small></a>`).join('')}</div>` : ''}
+        <h4 class="rv">Para leer</h4><div class="refs rv">${[f.mand, ...(f.lee || [])].filter((x, i, a) => a.indexOf(x) === i).map(r => `<a href="${readUrl(r)}">${esc(niceRef(r))}</a>`).join('')}</div>
+        <div class="btns rv"><button data-luna>☾ Luna y calendario del mes</button></div>`;
     }
-    const li = ([t2, r, n]) => `<li>${esc(t2)} <a href="${readUrl(r)}" style="color:var(--gold,#c9a84c);font-size:.85rem">${esc(n)}</a></li>`;
-    infoEl.innerHTML = `<section role="dialog" aria-label="Shabat"><div class="grab"></div>
-      <h3>Shabat<span lang="he">שַׁבָּת</span></h3><div style="color:var(--text-mid,#b8af9c);font-style:italic;margin-top:2px">${esc(SHABAT.lema)}</div>
-      ${t ? `<div class="sec">Esta semana · ${esc(t.pl.n)}</div><div>Comienza ${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))} &nbsp;·&nbsp; termina ${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}</div>` : ''}
-      <div class="sec">Qué mandó YHWH</div><ul>${I.mando.map(li).join('')}</ul>
-      <div class="sec">En tiempos de Yeshúa</div><ul>${I.yeshua.map(li).join('')}</ul>
-      <div class="sec">Para leer</div><div class="refs">${I.leer.map(([r, n]) => `<a href="${readUrl(r)}">${esc(n)}</a>`).join('')}</div>
-      <button class="go" data-parasha>📖 Porción de la semana →</button></section>`;
-    infoEl.querySelector('[data-parasha]').onclick = () => { location.href = 'parashot.html'; };
-    let y0 = null; const g = infoEl.querySelector('section');
-    g.addEventListener('touchstart', e => { y0 = g.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
-    g.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) infoEl.classList.remove('open'); y0 = null; }, { passive: true });
-    requestAnimationFrame(() => infoEl.classList.add('open'));
+    m.innerHTML = html; m.scrollTop = 0;
+    m.querySelectorAll('.rv').forEach((el, i) => { el.style.transitionDelay = `${120 + i * 70}ms`; });
+    m.querySelector('[data-down]').onclick = infoOff;
+    const pa = m.querySelector('[data-parasha]'); if (pa) pa.onclick = () => { location.href = 'parashot.html'; };
+    const lu = m.querySelector('[data-luna]'); if (lu) lu.onclick = () => { if (window.KodeshLuna) KodeshLuna.open(); };
+    requestAnimationFrame(() => ov.classList.add('info'));
   }
+  function infoOff() {
+    if (!ov) return;
+    ov.querySelectorAll('.md-more .rv').forEach(el => { el.style.transitionDelay = '0ms'; });
+    ov.classList.remove('info');
+  }
+  const bookName = id => ((window.KodeshRef && KodeshRef.BOOKS) || []).find(b => b[0] === id)?.[1] || id;
+  const niceRef = r => { const m = /^([1-3]?[A-Z]{2,3})[ :](.+)$/.exec(r); return m ? `${bookName(m[1])} ${m[2].replace('-', '–')}` : r; };
   function tick() {
     clearInterval(timer);
     const run = () => {
@@ -326,7 +356,7 @@
     requestAnimationFrame(() => ov.classList.add('open'));
     document.body.style.overflow = 'hidden';
   }
-  function close() { if (ov) ov.classList.remove('open'); if (infoEl) infoEl.classList.remove('open'); clearInterval(timer); timer = null; document.body.style.overflow = ''; }
+  function close() { if (ov) ov.classList.remove('open', 'info'); clearInterval(timer); timer = null; document.body.style.overflow = ''; }
   async function share() {
     const f = byId(cur), t = times(cur);
     const text = `${f.n} (${f.he}) · ${f.lema}${t ? `\nComienza al atardecer del ${fmtD(t.start, t.tz, true)}` : ''}\n— Kodesh Bible`;
