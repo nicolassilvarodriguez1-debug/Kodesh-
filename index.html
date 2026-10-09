@@ -2835,7 +2835,7 @@ html.light .mobile-nav { box-shadow: 0 -6px 24px rgba(70,50,15,0.15); }
   .btn-search-open { padding: 6px 8px; min-width: auto; flex-shrink: 0; }
   .topbar-ciclo { display: none; }
   .sidebar-toggle { flex-shrink: 0; }
-  .streak-badge { display: flex !important; font-size: 0.6rem; padding: 3px 6px; flex-shrink: 0; }
+  .streak-badge { font-size: 0.6rem; padding: 3px 6px; flex-shrink: 0; }
   .usage-indicator { display: none !important; }
   .btn-premium {
     display: flex !important; align-items: center; font-size: 0.48rem;
@@ -4394,7 +4394,7 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
         <option value="NVI">NVI</option>
         <option value="KJV">KJV</option>
       </select>
-      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema" style="color:var(--gold);display:inline-flex;align-items:center;justify-content:center"></button>
       <div class="streak-badge" id="streakBadge" style="display:none" role="button" tabindex="0" aria-label="Ver racha, maná y protectores" onclick="openManaSection()" onkeydown="if(event.key==='Enter')openManaSection()"></div>
       <div class="usage-indicator" id="planBadge" style="display:none"></div>
       <button class="user-btn" id="userBtn" onclick="window.location.href='login.html'">
@@ -9533,18 +9533,25 @@ document.addEventListener('keydown', e => {
 /* ════════════════════════════════════
    THEME TOGGLE
 ════════════════════════════════════ */
+// Ícono de línea (como en el inicio): en modo día se ofrece la noche y viceversa
+const THEME_ICON = { sun: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>', moon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>' };
+function paintThemeIcon() {
+  const isLight = document.documentElement.classList.contains('light');
+  const b = document.getElementById('themeToggle'); if (b) { b.innerHTML = isLight ? THEME_ICON.moon : THEME_ICON.sun; b.setAttribute('aria-label', isLight ? 'Modo noche' : 'Modo día'); }
+  document.querySelectorAll('#homeView [data-act="theme"]').forEach(x => { x.innerHTML = isLight ? THEME_ICON.moon : THEME_ICON.sun; });
+}
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('kodesh_theme', isLight ? 'light' : 'dark');
-  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+  paintThemeIcon();
 }
 
 function initTheme() {
   const saved = localStorage.getItem('kodesh_theme');
   if (saved === 'light') {
     document.documentElement.classList.add('light');
-    document.getElementById('themeToggle').textContent = '☀️';
   }
+  paintThemeIcon();
 }
 
 /* ════════════════════════════════════

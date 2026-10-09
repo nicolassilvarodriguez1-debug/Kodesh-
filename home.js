@@ -193,7 +193,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     }
     el.innerHTML = `<div class="hm-in">
       <div class="hm-top"><a class="hm-logo" href="#" data-act="noop"><span class="he">קדש</span><i></i><span>KODESH</span></a>
-        <div class="hm-ic"><button data-act="search" aria-label="Buscar">${ICON.search}</button><button data-act="theme" aria-label="Cambiar tema">${ICON.theme}</button><button data-act="profile" aria-label="Perfil">${ICON.user}</button></div></div>
+        <div class="hm-ic"><button data-act="search" aria-label="Buscar">${ICON.search}</button><button data-act="theme" aria-label="Cambiar tema">${night() ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>' : ICON.theme}</button><button data-act="profile" aria-label="Perfil">${ICON.user}</button></div></div>
       <section class="hm-hero${IMG[heroKey] ? '' : ' noimg'}" data-hero${bg(heroKey)}>
         <div class="hm-k">${greet()}</div><div class="hm-h1">Hoy</div><div class="hm-sub">${name ? `Bendiciones, ${esc(name)}` : 'Bienvenido a Kodesh'}</div>
       </section>
@@ -215,7 +215,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
           <h3>${esc(w.ps.map(x => x.nombre).join(' – '))}<span lang="he">${esc(p.heb)}</span></h3>
           <div class="hm-k" style="color:var(--text-mid);margin-top:6px">${esc(p.torah)}</div>
           <div class="tm">${esc(p.tema)}</div>
-          ${al ? `<div class="hm-today"><button class="ck${aliyaDone(w, al.n) ? ' on' : ''}" data-act="aliya" aria-label="Marcar la lectura de hoy">${aliyaDone(w, al.n) ? '✓' : ''}</button><button data-act="readaliya" style="flex:1;border:none;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0"><b>Lectura de hoy</b> · ${esc(BOOK_NAME(al.book))} ${esc(al.a)}–${esc(al.b.split(':')[0] === al.a.split(':')[0] ? al.b.split(':')[1] : al.b)}</button><span style="color:var(--text-mid);font-size:.85rem">${al.n} de 7</span></div>` : '<div style="height:12px"></div>'}
+          ${al ? `<div class="hm-today"><button class="ck${aliyaDone(w, al.n) ? ' on' : ''}" data-act="aliya" aria-label="Marcar la lectura de hoy">${aliyaDone(w, al.n) ? '✓' : ''}</button><button data-act="readaliya" style="flex:1;border:none;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0"><b>Lectura de hoy</b> · <span style="white-space:nowrap">${esc(BOOK_NAME(al.book))} ${esc(al.a)}–${esc(al.b.split(':')[0] === al.a.split(':')[0] ? al.b.split(':')[1] : al.b)}</span></button><span style="color:var(--text-mid);font-size:.85rem">${al.n} de 7</span></div>` : '<div style="height:12px"></div>'}
           <div class="hm-reads">${[['Torá', p.torah], ['Haftará', p.haftarah], ['Brit Jadashá', p.mesianica]].map(([l, r]) => `<a href="#" data-ref="${esc(r)}"><b>${l}</b><small>${esc(r)}</small></a>`).join('')}</div>
         </div></div>` : ''}
         ${calOn() ? '<div data-moedim-home hidden></div>' : ''}

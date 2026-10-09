@@ -235,7 +235,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
     if (sh) {
       const now = new Date(), on = sh.start <= now;
       const left = on ? sh.end - now : sh.start - now, h = Math.floor(left / 36e5), d = Math.floor(h / 24);
-      html += `<button type="button" class="md-sh" data-moed="shabat"><span class="md-sh-he" lang="he">ש</span><span style="flex:1"><b>${on ? 'Shabat shalom' : 'Shabat'}</b><small>${on ? `Termina en ${h} h ${Math.floor(left / 6e4) % 60} min` : `Comienza en ${d ? d + ' d ' : ''}${h % 24} h · ${esc(fmtShort(sh.start, sh.tz))} ${esc(fmtT(sh.start, sh.tz))}`}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
+      html += `<button type="button" class="md-sh" data-moed="shabat"><span class="md-sh-he" lang="he">ש</span><span style="flex:1"><b>${on ? 'Shabat shalom' : 'Shabat'}</b><small>${on ? `Termina en ${h} h ${Math.floor(left / 6e4) % 60} min` : `Comienza en ${d ? d + ' d ' : ''}${h % 24} h · <span style="white-space:nowrap">${esc(fmtShort(sh.start, sh.tz))} ${esc(fmtT(sh.start, sh.tz))}</span>`}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
     }
     if (window.KodeshLuna) html += KodeshLuna.cardHtml();
     el.innerHTML = html; el.hidden = false;
