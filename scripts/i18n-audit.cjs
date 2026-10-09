@@ -71,6 +71,10 @@ const STEPS = [
   ['personajes · dos genealogías', 'index.html', "KodeshHome.hide(); KodeshPeople.open('x_yeshua').then(() => { const t = document.querySelector('[data-tab=dos]'); if (t) t.click(); })"],
   ['lugares en el texto', 'index.html', "KodeshHome.hide(); selectBook('GEN'); loadChapter('GEN', 12).then(() => setTimeout(() => { const w = document.querySelector('.mp-place'); if (w) w.click(); }, 1800))"],
   ['ruta en el capítulo', 'index.html', "KodeshHome.hide(); selectBook('ACT'); loadChapter('ACT', 13)"],
+  ['armonía', 'index.html', "KodeshHome.hide(); KodeshParallels.harmony()"],
+  ['armonía · lado a lado', 'index.html', "KodeshHome.hide(); KodeshParallels.open(20)"],
+  ['paralelos en el lector', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 3)"],
+  ['paralelos · solo en', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 2).then(() => setTimeout(() => { const w = document.querySelector('.pl-chip.solo'); if (w) w.click(); }, 1800))"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];

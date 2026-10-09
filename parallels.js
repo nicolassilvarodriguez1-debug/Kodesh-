@@ -12,8 +12,10 @@
   'use strict';
   const REMOTE = 'https://fvknbqdsgqdmwirrgcvb.supabase.co/storage/v1/object/public/bible-audio/paralelos/index.json';
   const G = ['MAT', 'MRK', 'LUK', 'JHN'];
-  const NAME = { MAT: 'Mateo', MRK: 'Marcos', LUK: 'Lucas', JHN: 'Juan' };
-  const SHORT = { MAT: 'Mt', MRK: 'Mr', LUK: 'Lc', JHN: 'Jn' };
+  const EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+  const TX = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
+  const NAME = EN ? { MAT: 'Matthew', MRK: 'Mark', LUK: 'Luke', JHN: 'John' } : { MAT: 'Mateo', MRK: 'Marcos', LUK: 'Lucas', JHN: 'Juan' };
+  const SHORT = EN ? { MAT: 'Mt', MRK: 'Mk', LUK: 'Lk', JHN: 'Jn' } : { MAT: 'Mt', MRK: 'Mr', LUK: 'Lc', JHN: 'Jn' };
   const rj = (k, f) => { try { return JSON.parse(localStorage.getItem(k) || '') || f; } catch (e) { return f; } };
   const wj = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -27,7 +29,7 @@
       .then(j => { if (j && j.items) { DET = j; wj('kodesh_pl_det', j); } return DET; }).catch(() => DET);
     return detP;
   }
-  const det = id => (DET && DET.items && DET.items[id]) || null;
+  const det = id => (!EN && DET && DET.items && DET.items[id]) || null;
   const ev = id => DATA && DATA.events.find(e => e.id === id);
   async function bibleText() {
     if (typeof loadBibleData === 'function') return loadBibleData();
@@ -103,7 +105,7 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
   window.toggleParallels = function () {
     try { localStorage.setItem('kodesh_pl_on', isOn() ? '0' : '1'); } catch (e) {}
     paintToggle();
-    if (typeof showToast === 'function') showToast(isOn() ? 'Paralelos activados' : 'Paralelos desactivados');
+    if (typeof showToast === 'function') showToast(TX(isOn() ? 'Paralelos activados' : 'Paralelos desactivados'));
   };
   paintToggle();
   document.addEventListener('DOMContentLoaded', paintToggle);
@@ -126,7 +128,6 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
     return false;
   }
   async function decorate(container, book, chapter) {
-    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !NAME[book] || !chapter || container.dataset.pl === `${book}:${chapter}`) return;
     container.dataset.pl = `${book}:${chapter}`;
     await Promise.all([loadData(), loadDet()]);
@@ -146,12 +147,12 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
       row.className = 'pl-row';
       const others = [], seen = new Set();
       for (const e of list) for (const g of G) if (g !== book && e.r[g] && !seen.has(g + refTxt(e.r[g][0]))) { seen.add(g + refTxt(e.r[g][0])); others.push([g, e]); }
-      row.innerHTML = `<div class="pl-t">${esc(list[0].t)}</div>` + (others.length
+      row.innerHTML = `<div class="pl-t">${esc(TX(list[0].t))}</div>` + (others.length
         ? others.slice(0, 4).map(([g, e]) => `<button type="button" class="pl-chip" data-e="${e.id}" data-g="${g}">${NAME[g]} ${refTxt(e.r[g][0])}</button>`).join('')
-        : `<button type="button" class="pl-chip solo" data-solo="${list[0].id}">Solo en ${NAME[book]}</button>`);
+        : `<button type="button" class="pl-chip solo" data-solo="${list[0].id}">${esc(TX('Solo en {g}', { g: NAME[book] }))}</button>`);
       vEl.before(row);
       row.querySelectorAll('[data-e]').forEach(b => b.onclick = () => open(Number(b.dataset.e), { a: book, b: b.dataset.g }));
-      row.querySelectorAll('[data-solo]').forEach(b => b.onclick = () => pop(`Solo en ${NAME[book]}`, `Ningún otro Evangelio cuenta «${list[0].t}».`, { harmony: true }));
+      row.querySelectorAll('[data-solo]').forEach(b => b.onclick = () => pop(TX('Solo en {g}', { g: NAME[book] }), TX('Ningún otro Evangelio cuenta «{t}».', { t: TX(list[0].t) }), { harmony: true }));
     }
     // E · lo que solo trae este Evangelio, marcado en el texto
     for (const e of here) {
@@ -181,8 +182,8 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
     popEl = document.createElement('div'); popEl.className = 'pl-pop'; popEl.setAttribute('role', 'dialog');
     popEl.innerHTML = `<div class="pl-kick">${esc(title)}</div><div style="margin-top:6px">${html ? body : esc(body)}</div>
       <div style="display:flex;gap:8px;margin-top:12px">
-        ${id ? '<button class="pl-chip" data-cmp>Comparar</button>' : ''}${harmony ? '<button class="pl-chip" data-har>Ver la armonía</button>' : ''}
-        <button class="pl-chip" data-x style="margin-left:auto">Cerrar</button></div>`;
+        ${id ? `<button class="pl-chip" data-cmp>${TX('Comparar')}</button>` : ''}${harmony ? `<button class="pl-chip" data-har>${TX('Ver la armonía')}</button>` : ''}
+        <button class="pl-chip" data-x style="margin-left:auto">${TX('Cerrar')}</button></div>`;
     document.body.appendChild(popEl);
     popEl.querySelector('[data-x]').onclick = () => { popEl.remove(); popEl = null; };
     const c = popEl.querySelector('[data-cmp]'); if (c) c.onclick = () => { popEl.remove(); popEl = null; open(id, { a }); };
@@ -195,7 +196,7 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
   function sheet() {
     if (!ov) {
       ov = document.createElement('div'); ov.className = 'pl-ov';
-      ov.innerHTML = '<section class="pl-sheet" role="dialog" aria-label="Paralelos de los Evangelios"></section>';
+      ov.innerHTML = `<section class="pl-sheet" role="dialog" aria-label="${esc(TX('Paralelos de los Evangelios'))}"></section>`;
       ov.addEventListener('click', e => { if (e.target === ov) close(); });
       document.body.appendChild(ov);
     }
@@ -231,14 +232,15 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
     const e = cur.id ? ev(cur.id) : null;
     const d = e ? det(e.id) : null;
     const gs = e ? G.filter(g => e.r[g]) : [];
-    const tabs = e ? [['lado', 'Lado a lado'], ['aporta', 'Qué aporta cada uno'], ['armonia', 'Armonía']] : [['armonia', 'Armonía']];
+    const tabs = (e ? (EN ? [['lado', 'Lado a lado'], ['armonia', 'Armonía']] : [['lado', 'Lado a lado'], ['aporta', 'Qué aporta cada uno'], ['armonia', 'Armonía']]) : [['armonia', 'Armonía']]).map(([k, l]) => [k, TX(l)]);
+    if (EN && cur.tab === 'aporta') cur.tab = 'lado';
     let body = '';
     if (cur.tab === 'lado' && e) {
       if (!gs.includes(cur.a)) cur.a = gs[0];
       if (!gs.includes(cur.b) || cur.b === cur.a) cur.b = gs.find(g => g !== cur.a);
       body = `<div class="pl-pick">${gs.map(g => `<button class="pl-g${g === cur.a || g === cur.b ? ' on' : ''}" data-pg="${g}">${NAME[g]}</button>`).join('')}</div>
         <div class="pl-cols">${await colHtml(e, cur.a, d)}${await colHtml(e, cur.b, d)}</div>
-        ${d ? `<div class="pl-notes">${[cur.a, cur.b].flatMap(g => ((d.u && d.u[g]) || []).map(x => `<div class="pl-note"><b>Solo en ${NAME[g]}</b> (${x.c}:${x.v}) · «${esc(x.f)}» — ${esc(x.n)}</div>`)).join('')}</div>` : `<div class="pl-note" style="margin-top:14px">Lo resaltado en azul (lo que solo trae cada uno) aparecerá cuando se prepare esta comparación.</div>`}`;
+        ${d ? `<div class="pl-notes">${[cur.a, cur.b].flatMap(g => ((d.u && d.u[g]) || []).map(x => `<div class="pl-note"><b>Solo en ${NAME[g]}</b> (${x.c}:${x.v}) · «${esc(x.f)}» — ${esc(x.n)}</div>`)).join('')}</div>` : EN ? '' : `<div class="pl-note" style="margin-top:14px">Lo resaltado en azul (lo que solo trae cada uno) aparecerá cuando se prepare esta comparación.</div>`}`;
     } else if (cur.tab === 'aporta' && e) {
       body = `<div class="pl-tbl">${gs.map(g => {
         const u = (d && d.u && d.u[g]) || [];
@@ -253,15 +255,15 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
       let si = -1, html = '';
       for (const x of rows) {
         let k = -1; secs.forEach((sc, i) => { if (x.id >= sc.from) k = i; });
-        if (k !== si) { si = k; html += `<div class="pl-hsec">${esc(secs[k].t)}</div>`; }
-        html += `<div class="pl-hrow" data-h="${x.id}"><span>${esc(x.t)}</span>${G.map(g => `<i class="${x.r[g] ? 'on' : ''}">${x.r[g] ? '●' : '·'}</i>`).join('')}</div>`;
+        if (k !== si) { si = k; html += `<div class="pl-hsec">${esc(TX(secs[k].t))}</div>`; }
+        html += `<div class="pl-hrow" data-h="${x.id}"><span>${esc(TX(x.t))}</span>${G.map(g => `<i class="${x.r[g] ? 'on' : ''}">${x.r[g] ? '●' : '·'}</i>`).join('')}</div>`;
       }
-      body = `<label class="pl-tog"><input type="checkbox" data-multi ${onlyMulti ? 'checked' : ''}> Solo los hechos que cuentan dos o más</label>
-        <div class="pl-hhead"><span>Hecho</span>${G.map(g => `<b>${SHORT[g]}</b>`).join('')}</div>${html}
-        <div style="margin-top:16px;font-size:.78rem;color:var(--text-dim,#6e6656)">Orden basado en la sinopsis de los Evangelios de Kurt Aland.</div>`;
+      body = `<label class="pl-tog"><input type="checkbox" data-multi ${onlyMulti ? 'checked' : ''}> ${TX('Solo los hechos que cuentan dos o más')}</label>
+        <div class="pl-hhead"><span>${TX('Hecho')}</span>${G.map(g => `<b>${SHORT[g]}</b>`).join('')}</div>${html}
+        <div style="margin-top:16px;font-size:.78rem;color:var(--text-dim,#6e6656)">${TX('Orden basado en la sinopsis de los Evangelios de Kurt Aland.')}</div>`;
     }
-    s.innerHTML = `<div class="pl-head"><div><div class="pl-kick">Paralelos de los Evangelios</div><div class="pl-h">${e && cur.tab !== 'armonia' ? esc(e.t) : 'La vida de Yeshúa'}</div></div>
-      <button class="pl-x" data-close aria-label="Cerrar">✕</button></div>
+    s.innerHTML = `<div class="pl-head"><div><div class="pl-kick">${TX('Paralelos de los Evangelios')}</div><div class="pl-h">${esc(e && cur.tab !== 'armonia' ? TX(e.t) : TX('La vida de Yeshúa'))}</div></div>
+      <button class="pl-x" data-close aria-label="${esc(TX('Cerrar'))}">✕</button></div>
       <div class="pl-tabs">${tabs.map(([k, l]) => `<button class="pl-tab${cur.tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="pl-body">${body}</div>`;
     s.querySelector('[data-close]').onclick = close;

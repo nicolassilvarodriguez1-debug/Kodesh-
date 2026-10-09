@@ -467,5 +467,9 @@
 "version-chip xl-net-btn": "__skip__",
 "visible": "__skip__",
 "«Mi paz les doy»": "“My peace I give to you”",
-"✦ dorado": "✦ gold"
+"✦ dorado": "✦ gold",
+"Solo en {g}": "Only in {g}",
+"Ningún otro Evangelio cuenta «{t}».": "No other Gospel tells “{t}.”",
+"` : EN ?": "__skip__",
+"` : EN ? '' : `": "__skip__"
 }
