@@ -590,5 +590,9 @@
 "www.kodeshbible.com/calendar-en.ics": "__skip__",
 "al": "to",
 ") : d.maybeEarlier ?": "__skip__",
-"Comienza al atardecer del {d}.": "Begins at sunset on {d}."
+"Comienza al atardecer del {d}.": "Begins at sunset on {d}.",
+"color:#bfb29a;font-size:.82rem;margin-top:4px": "__skip__",
+"ln-c empty": "__skip__",
+"ln-chip ok": "__skip__",
+"transform:scaleX(-1)": "__skip__"
 }

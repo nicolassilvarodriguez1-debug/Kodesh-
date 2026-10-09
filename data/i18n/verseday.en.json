@@ -168,5 +168,13 @@
 "webm": "__skip__",
 "width:100%": "__skip__",
 "width:40px": "__skip__",
-"word": "__skip__"
+"word": "__skip__",
+"Sin texto original": "No original text",
+"Texto en griego": "Text in Greek",
+"Texto en hebreo": "Text in Hebrew",
+"Buscando el original…": "Looking for the original…",
+"Helvetica Neue": "__skip__",
+"M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 5v16": "__skip__",
+"SBL Hebrew": "__skip__",
+"Times New Roman": "__skip__"
 }

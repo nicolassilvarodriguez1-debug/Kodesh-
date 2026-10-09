@@ -579,5 +579,8 @@
 "El punto {n} tiene contenido; bórralo primero": "Point {n} has content; delete it first",
 "¿Borrar «{t}»? No se puede deshacer.": "Delete “{t}”? This cannot be undone.",
 "«{w}» no tiene una palabra propia en el original (suele pasar con artículos y conectores).": "“{w}” has no word of its own in the original (this often happens with articles and connectors).",
-"Página": "Page"
+"Página": "Page",
+"grid-column:1/-1": "__skip__",
+"msg-a typing": "__skip__",
+"opacity:0.32;": "__skip__"
 }

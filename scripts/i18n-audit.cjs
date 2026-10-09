@@ -85,6 +85,7 @@ const STEPS = [
   ['fiestas · calendario', 'index.html', "KodeshHome.hide(); selectBook('LEV'); loadChapter('LEV', 23).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); setTimeout(() => { const t = document.querySelector('.fr-tab[data-tab=cal]'); if (t) t.click(); }, 500); }, 1500))"],
   ['fiestas · de punta a punta', 'index.html', "KodeshHome.hide(); selectBook('LEV'); loadChapter('LEV', 23).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); setTimeout(() => { const t = document.querySelector('.fr-tab[data-tab=hilo]'); if (t) t.click(); }, 500); }, 1500))"],
   ['fiestas · templo', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 10).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); }, 1500))"],
+  ['imagen del versículo', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 3).then(() => setTimeout(() => openVerseImage({ book: 'JHN', chapter: 3, verse: 16 }), 600))"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];

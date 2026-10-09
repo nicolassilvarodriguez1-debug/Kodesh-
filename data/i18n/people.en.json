@@ -585,5 +585,6 @@
 "to the throne. No one else could bring both together.": "__skip__",
 "“If a man dies, and has no son, then you shall cause his inheritance to pass to his daughter”": "__skip__",
 "“…no more will a man of his offspring prosper, sitting on David’s throne and ruling in Judah”": "__skip__",
-"“…who took a wife of the daughters of Barzillai the Gileadite, and was called after their name”": "__skip__"
+"“…who took a wife of the daughters of Barzillai the Gileadite, and was called after their name”": "__skip__",
+"filter:drop-shadow(0 0 6px rgba(232,193,90,.6))": "__skip__"
 }

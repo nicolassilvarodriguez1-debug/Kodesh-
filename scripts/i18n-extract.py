@@ -42,9 +42,10 @@ def from_code(path, out):
         t = m.group(1) or m.group(2) or m.group(3) or ''
         for part in re.split(r'\$\{[^}]*\}|<[^>]*>', t): out.add(norm(part.replace("\\'", "'")))
     # 2.ª pasada: comillas simples y dobles también dentro de ${…} (ternarios en plantillas)
-    for m in re.finditer(r"'((?:[^'\\\n`]|\\.){2,})'|\"((?:[^\"\\\n`]|\\.){2,})\"", s):
-        t = m.group(1) or m.group(2) or ''
-        for part in re.split(r'<[^>]*>', t): out.add(norm(part.replace("\\'", "'")))
+    # (cada tipo de comilla por separado: si no, una cadena "…" se traga las '…' que lleva dentro)
+    for rx in (r"'((?:[^'\\\n`]|\\.){2,})'", r'"((?:[^"\\\n`]|\\.){2,})"'):
+        for m in re.finditer(rx, s):
+            for part in re.split(r'<[^>]*>', m.group(1)): out.add(norm(part.replace("\\'", "'")))
 def from_data(path, out):
     def walk(x):
         if isinstance(x, str): out.add(norm(x))

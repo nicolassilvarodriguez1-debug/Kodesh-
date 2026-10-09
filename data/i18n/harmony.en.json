@@ -471,5 +471,6 @@
 "Solo en {g}": "Only in {g}",
 "Ningún otro Evangelio cuenta «{t}».": "No other Gospel tells “{t}.”",
 "` : EN ?": "__skip__",
-"` : EN ? '' : `": "__skip__"
+"` : EN ? '' : `": "__skip__",
+"font-size:10.5px": "__skip__"
 }

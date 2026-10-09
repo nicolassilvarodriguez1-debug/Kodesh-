@@ -117,7 +117,7 @@
     const langName = st.lang === 'griego' ? 'griego' : 'hebreo';
     let opts = '';
     if (st.style !== 'hebreo') {
-      opts += `<button class="vi-toggle" role="switch" aria-checked="${hasOrig && st.original}" ${hasOrig ? '' : 'disabled'} onclick="viSet('original', ${!st.original})"><span class="sw"></span>${st.words === null ? 'Buscando el original…' : hasOrig ? 'Texto en ' + langName : 'Sin texto original'}</button>`;
+      opts += `<button class="vi-toggle" role="switch" aria-checked="${hasOrig && st.original}" ${hasOrig ? '' : 'disabled'} onclick="viSet('original', ${!st.original})"><span class="sw"></span>${(t => window.KodeshI18n ? KodeshI18n.t(t) : t)(st.words === null ? 'Buscando el original…' : hasOrig ? (st.lang === 'griego' ? 'Texto en griego' : 'Texto en hebreo') : 'Sin texto original')}</button>`;
     }
     if (st.style === 'moderno') {
       opts += `<span style="display:flex;gap:8px;margin-left:auto">${MODERN.map((m, i) => `<button class="vi-swatch ${st.modern === i ? 'on' : ''}" style="background:${m.bg}" aria-label="Color ${i + 1}" aria-pressed="${st.modern === i}" onclick="viSet('modern',${i})"></button>`).join('')}</span>`;
@@ -150,7 +150,7 @@
     st.book = book; st.chapter = Number(chapter); st.verses = list;
     st.text = list.map(v => (typeof verseTextFor === 'function' ? verseTextFor(v) : '')).join(' ').trim();
     st.ref = typeof formatVerseRange === 'function' ? formatVerseRange(bookName, chapter, list) : `${bookName} ${chapter}:${list.join(',')}`;
-    st.version = (typeof textualActive !== 'undefined' && textualActive) ? 'Kodesh' : 'RVR60';
+    st.version = (typeof textualActive !== 'undefined' && textualActive) ? 'Kodesh' : (window.KodeshI18n ? KodeshI18n.version : 'RVR60');
     st.words = null; st.lang = null; st.pick = -1; st.blob = null; st.blobFor = '';
     if (!STYLES.some(s => s.id === st.style)) st.style = 'pergamino';
     if (!FORMATS[st.format]) st.format = 'post';
@@ -203,9 +203,19 @@
     renderControls();
     draw();
   }
+  // Inglés: definición original de Strong (data/strongs-en.json); lexicon_cache tiene las explicaciones en español.
+  let strongsEn = null;
   async function loadLex(w) {
     if (!w || !w.strongs || st.lex[w.strongs]) { draw(); return; }
     st.lex[w.strongs] = { pending: true };
+    if (window.KodeshI18n && KodeshI18n.isEn) {
+      try {
+        if (!strongsEn) strongsEn = fetch('/data/strongs-en.json').then(r => r.json()).then(rows => new Map(rows.map(r => [r[0], r])));
+        const r = (await strongsEn).get(w.strongs);
+        st.lex[w.strongs] = r ? { lemma: r[1], transliteration: r[2], definition: r[4] } : {};
+      } catch (e) { st.lex[w.strongs] = {}; }
+      draw(); return;
+    }
     try {
       const { data } = await getSupabase().from('lexicon_cache').select('lemma,transliteration,definition').eq('word', 'strongs_' + w.strongs.toLowerCase()).maybeSingle();
       st.lex[w.strongs] = data || {};
@@ -354,7 +364,7 @@
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     const gold = '#E3C27A';
     ctx.fillStyle = gold; ctx.textBaseline = 'middle';
-    setFont(ctx, 600, 'normal', 26 * u, BODY); spaced(ctx, 'LA PALABRA', W / 2, 110 * u, 8 * u);
+    setFont(ctx, 600, 'normal', 26 * u, BODY); spaced(ctx, window.KodeshI18n ? KodeshI18n.t('LA PALABRA') : 'LA PALABRA', W / 2, 110 * u, 8 * u);
     const w = st.words && st.pick >= 0 ? st.words[st.pick] : null;
     const lex = w ? st.lex[w.strongs] || {} : {};
     let y = 150 * u;

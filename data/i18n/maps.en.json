@@ -556,5 +556,7 @@
 "Lo que pasó aquí": "What happened here",
 "{n} mención": "{n} mention",
 "{n} menciones": "{n} mentions",
-"Mapa: {t}": "Map: {t}"
+"Mapa: {t}": "Map: {t}",
+") : TX(": "__skip__",
+"margin:0 0 8px": "__skip__"
 }
