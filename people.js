@@ -24,7 +24,14 @@
 
   let DATA = null, DET = rj('kodesh_pp_det', null), dataP = null, detP = null;
   const books = {};
-  function loadData() { if (!dataP) dataP = fetch('./data/personas.json').then(r => r.json()).then(j => (DATA = j)).catch(() => { dataP = null; return null; }); return dataP; }
+  let LY = new Set();       // linaje de Yeshua (Mateo 1 y Lucas 3) — se marca en dorado
+  function loadData() {
+    if (!dataP) dataP = Promise.all([
+      fetch('./data/personas.json').then(r => r.json()),
+      fetch('./data/linaje-yeshua.json').then(r => r.json()).catch(() => null),
+    ]).then(([j, ly]) => { if (ly && ly.ids) LY = new Set(ly.ids); return (DATA = j); }).catch(() => { dataP = null; return null; });
+    return dataP;
+  }
   function loadBook(b) { if (!books[b]) books[b] = fetch(`./data/personas/${b}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})); return books[b]; }
   function loadDet() {
     if (!detP) detP = fetch(`${REMOTE}?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null)
@@ -86,11 +93,18 @@ html.pp-off .pp-row { display: none !important; }
 .pp-mom b { color: var(--gold, #c9a84c); font-weight: 500; font-size: .9rem; }
 .pp-refs { display: flex; flex-wrap: wrap; gap: 6px; }
 .pp-ref { border: 1px solid var(--border2, #2a2836); border-radius: 12px; padding: 3px 9px; font-size: .85rem; color: var(--text-mid, #b8af9c); text-decoration: none; }
-.pp-tree { display: grid; gap: 14px; justify-items: center; padding-top: 6px; }
+.pp-tree { display: grid; gap: 14px; justify-items: center; padding: 6px 0 30vh; }
 .pp-gen { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .pp-gen-l { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); text-align: center; margin-bottom: -6px; }
 .pp-node { border: 1px solid var(--border2, #2a2836); background: var(--bg2, #12111a); color: var(--text, #e9e3d3); border-radius: 12px; padding: 7px 12px; font: inherit; font-size: .95rem; cursor: pointer; }
 .pp-node.me { border-color: var(--gold, #c9a84c); background: rgba(201,168,76,.12); font-weight: 600; }
+.pp-node.ly, .pp-chip.ly { border-color: #d4a73a; color: #e8c15a; background: linear-gradient(180deg, rgba(212,167,58,.16), rgba(212,167,58,.06)); box-shadow: 0 0 0 1px rgba(212,167,58,.25), 0 0 12px rgba(212,167,58,.18); }
+.pp-node.ly:before, .pp-chip.ly:before { content: '✦'; font-size: .7em; margin-right: 5px; color: #e8c15a; }
+.pp-node.me.ly { background: rgba(212,167,58,.24); color: #f3d77e; }
+.pp-lyb { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 10px; border-radius: 12px; font-size: .78rem; color: #e8c15a; border: 1px solid rgba(212,167,58,.5); background: rgba(212,167,58,.1); }
+.pp-nav { display: flex; gap: 8px; align-items: center; padding: 0 18px 4px; flex-shrink: 0; flex-wrap: wrap; }
+.pp-back { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.08); color: var(--gold, #c9a84c); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: .88rem; cursor: pointer; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-back.home { border-color: var(--border2, #2a2836); color: var(--text-mid, #b8af9c); background: none; }
 .pp-line { width: 1px; height: 10px; background: var(--border2, #2a2836); }
 .pp-net svg { width: 100%; height: auto; display: block; }
 .pp-life { position: relative; margin-left: 28px; border-left: 2px solid var(--gold-dim, #6e5a2a); padding-left: 0; }
@@ -102,7 +116,7 @@ html.pp-off .pp-row { display: none !important; }
   document.head.appendChild(css);
 
   /* ── Hoja del personaje ── */
-  let ov = null, cur = null, tab = 'ficha';
+  let ov = null, cur = null, tab = 'ficha', hist = [];
   function sheet() {
     if (!ov) {
       ov = document.createElement('div'); ov.className = 'pp-ov';
@@ -114,7 +128,8 @@ html.pp-off .pp-row { display: none !important; }
   }
   function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; }
   const av = id => { const p = P(id); return `<span class="pp-av${p && p[1] === 'F' ? ' f' : ''}">${esc((p ? p[0] : '?')[0])}</span>`; };
-  const chip = (id, label) => `<button type="button" class="pp-chip" data-p="${esc(id)}">${av(id)}${esc(nameOf(id))}${label ? `<small>${esc(label)}</small>` : ''}</button>`;
+  const ly = id => LY.has(id) ? ' ly' : '';
+  const chip = (id, label) => `<button type="button" class="pp-chip${ly(id)}" data-p="${esc(id)}">${av(id)}${esc(nameOf(id))}${label ? `<small>${esc(label)}</small>` : ''}</button>`;
 
   function fichaHtml(id) {
     const p = P(id), r = R(id), d = det(id);
@@ -137,9 +152,17 @@ html.pp-off .pp-row { display: none !important; }
     const sibs = r.he || [];
     const kids = r.hi || [];
     const grand = [...new Set(kids.flatMap(x => R(x).hi || []))];
-    const row = (label, ids, me) => ids.length || me ? `<div class="pp-gen-l">${label}</div><div class="pp-gen">${ids.slice(0, 14).map(x => `<button type="button" class="pp-node" data-p="${esc(x)}">${esc(nameOf(x))}</button>`).join('')}${me || ''}</div>` : '';
-    const meNode = `<button type="button" class="pp-node me">${esc(nameOf(id))}</button>${(r.pr || []).map(x => `<span style="color:var(--text-dim,#6e6656)">♥</span><button type="button" class="pp-node" data-p="${esc(x)}">${esc(nameOf(x))}</button>`).join('')}`;
-    const parts = [row('Abuelos', gp), row('Padres', parents), row(sibs.length ? 'Con sus hermanos' : '', sibs, meNode), row('Hijos', kids), row('Nietos', grand)].filter(Boolean);
+    const node = x => `<button type="button" class="pp-node${ly(x)}" data-p="${esc(x)}">${esc(nameOf(x))}</button>`;
+    const row = (label, html) => html ? `<div class="pp-gen-l">${label}</div><div class="pp-gen">${html}</div>` : '';
+    const meNode = `<button type="button" class="pp-node me${ly(id)}">${esc(nameOf(id))}</button>${(r.pr || []).map(x => `<span style="color:var(--text-dim,#6e6656)">♥</span>${node(x)}`).join('')}`;
+    // La persona queda en el mismo lugar que tenía entre los hijos de sus padres (no salta al final)
+    const order = (parents.map(x => R(x).hi || []).find(h => h.includes(id)) || []);
+    // misma fila (y mismo orden) que «Hijos» en la ficha del padre, para que nada cambie de sitio
+    let famRow = order.length ? [...order, ...sibs.filter(x => !order.includes(x))] : [...sibs, id];
+    if (!famRow.includes(id)) famRow.push(id);
+    famRow = famRow.slice(0, 14).includes(id) ? famRow.slice(0, 14) : [...famRow.slice(0, 13), id];
+    const famHtml = famRow.map(x => x === id ? meNode : node(x)).join('');
+    const parts = [row('Abuelos', gp.slice(0, 14).map(node).join('')), row('Padres', parents.map(node).join('')), row(famRow.length > 1 ? 'Con sus hermanos' : '', famHtml), row('Hijos', kids.slice(0, 14).map(node).join('')), row('Nietos', grand.slice(0, 14).map(node).join(''))].filter(Boolean);
     if (parts.length <= 1) return '<p class="pp-p" style="color:var(--text-mid,#b8af9c)">La Biblia no da datos de su familia.</p>';
     return `<div class="pp-tree">${parts.join('<div class="pp-line"></div>')}</div><p class="pp-src" style="text-align:center">Toca cualquier nombre para abrir su ficha</p>`;
   }
@@ -159,9 +182,9 @@ html.pp-off .pp-row { display: none !important; }
     nodes.forEach(([x, k], i) => {
       const a = (i / nodes.length) * Math.PI * 2 - Math.PI / 2, nx = cx + Math.cos(a) * rad, ny = cy + Math.sin(a) * rad * 0.82;
       const rel = k === 'co' ? 'aparece con' : (r.pa || []).includes(x) ? 'padre' : (r.ma || []).includes(x) ? 'madre' : (r.pr || []).includes(x) ? 'pareja' : (r.hi || []).includes(x) ? 'hijo/a' : 'hermano/a';
-      svg += `<g data-p="${esc(x)}" style="cursor:pointer"><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="30" fill="var(--bg2,#12111a)" stroke="${k === 'fam' ? '#c9a84c' : '#6fa0d8'}" stroke-width="2"/>
+      svg += `<g data-p="${esc(x)}" style="cursor:pointer"><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="30" fill="var(--bg2,#12111a)" stroke="${LY.has(x) ? '#e8c15a' : k === 'fam' ? '#c9a84c' : '#6fa0d8'}" stroke-width="${LY.has(x) ? 3.5 : 2}"${LY.has(x) ? ' style="filter:drop-shadow(0 0 6px rgba(232,193,90,.6))"' : ''}/>
         <text x="${nx.toFixed(1)}" y="${(ny + 8).toFixed(1)}" text-anchor="middle" font-family="Frank Ruhl Libre, serif" font-size="22" fill="${k === 'fam' ? '#c9a84c' : '#8fb6e6'}">${esc(nameOf(x)[0])}</text>
-        <text x="${nx.toFixed(1)}" y="${(ny + 52).toFixed(1)}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="21" fill="var(--text,#e9e3d3)">${esc(nameOf(x))}</text>
+        <text x="${nx.toFixed(1)}" y="${(ny + 52).toFixed(1)}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="21" fill="${LY.has(x) ? '#e8c15a' : 'var(--text,#e9e3d3)'}">${LY.has(x) ? '✦ ' : ''}${esc(nameOf(x))}</text>
         <text x="${nx.toFixed(1)}" y="${(ny + 72).toFixed(1)}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="17" fill="var(--text-dim,#6e6656)">${rel}</text></g>`;
     });
     svg += `<circle cx="${cx}" cy="${cy}" r="48" fill="rgba(201,168,76,.18)" stroke="#c9a84c" stroke-width="2.5"/><text x="${cx}" y="${cy + 7}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="22" font-weight="600" fill="var(--text,#e9e3d3)">${esc(nameOf(id))}</text></svg>`;
@@ -181,19 +204,33 @@ html.pp-off .pp-row { display: none !important; }
     const body = tab === 'familia' ? treeHtml(id) : tab === 'red' ? netHtml(id) : tab === 'vida' ? lifeHtml(id) : fichaHtml(id);
     s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${p[1] === 'F' ? 'Mujer' : 'Hombre'} de la Biblia · ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'}</div>
         <div class="pp-h">${esc(p[0])} ${d && d.heb ? `<span class="pp-heb" lang="${d.heb.strong[0] === 'H' ? 'he' : 'el'}">${esc(d.heb.lemma)}</span>` : ''}</div>
-        ${d && d.heb && d.heb.sig ? `<div class="pp-sig">${esc(d.heb.sig)}</div>` : ''}</div>
+        ${d && d.heb && d.heb.sig ? `<div class="pp-sig">${esc(d.heb.sig)}</div>` : ''}
+        ${LY.has(id) ? '<div class="pp-lyb">✦ Linaje de Yeshua</div>' : ''}</div>
         <button class="pp-x" data-close aria-label="Cerrar">✕</button></div>
+      ${hist.length ? `<div class="pp-nav"><button class="pp-back" data-back>‹ Volver a ${esc(nameOf(hist[hist.length - 1].id))}</button>${hist.length > 1 ? `<button class="pp-back home" data-home>⌂ ${esc(nameOf(hist[0].id))}</button>` : ''}</div>` : ''}
       <div class="pp-tabs">${tabs.map(([k, l]) => `<button class="pp-tab${tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="pp-body">${body}<p class="pp-src">Personajes y parentescos: Theographic Bible Metadata (CC BY-SA 4.0).</p></div>`;
     s.querySelector('[data-close]').onclick = close;
     s.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
-    s.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { if (P(b.dataset.p)) { cur = b.dataset.p; render(); s.querySelector('.pp-body').scrollTop = 0; } });
+    const bodyEl = s.querySelector('.pp-body');
+    s.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
+      if (!P(b.dataset.p) || b.dataset.p === cur) return;
+      hist.push({ id: cur, tab, top: bodyEl.scrollTop }); if (hist.length > 60) hist.shift();
+      const y0 = b.getBoundingClientRect().top;
+      cur = b.dataset.p; render();
+      const nb = s.querySelector('.pp-body'), me = nb.querySelector('.pp-node.me');
+      // en el árbol, la persona tocada queda a la misma altura donde estaba el dedo
+      if (me && tab === 'familia') nb.scrollTop = Math.max(0, me.getBoundingClientRect().top - y0); else nb.scrollTop = 0;
+    });
+    const go = h => { cur = h.id; tab = h.tab; render(); s.querySelector('.pp-body').scrollTop = h.top || 0; };
+    const bk = s.querySelector('[data-back]'); if (bk) bk.onclick = () => go(hist.pop());
+    const hm = s.querySelector('[data-home]'); if (hm) hm.onclick = () => { const h = hist[0]; hist = []; go(h); };
     s.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { close(); location.href = readUrl(b.dataset.go.replace(' ', ':')); });
   }
   async function open(id, startTab) {
     await Promise.all([loadData(), loadDet()]);
     if (!P(id)) return;
-    cur = id; tab = startTab || 'ficha';
+    cur = id; tab = startTab || 'ficha'; hist = [];
     sheet(); render();
     requestAnimationFrame(() => ov.classList.add('open'));
     document.body.style.overflow = 'hidden';
@@ -238,7 +275,7 @@ html.pp-off .pp-row { display: none !important; }
       .filter(pid => { const l = norm(label(pid)); if (seenLabel.has(l)) return false; seenLabel.add(l); return true; }).slice(0, 8);
     if (!top.length || (container.previousElementSibling && container.previousElementSibling.classList.contains('pp-row'))) return;
     const row = document.createElement('div'); row.className = 'pp-row';
-    row.innerHTML = `<span class="pp-lbl">En este capítulo</span>` + top.map(pid => `<button type="button" class="pp-chip" data-p="${esc(pid)}">${av(pid)}${esc(label(pid))}</button>`).join('');
+    row.innerHTML = `<span class="pp-lbl">En este capítulo</span>` + top.map(pid => `<button type="button" class="pp-chip${ly(pid)}" data-p="${esc(pid)}">${av(pid)}${esc(label(pid))}</button>`).join('');
     container.before(row);
     row.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
       row.querySelectorAll('.pp-chip').forEach(c => c.classList.toggle('on', c === b));
