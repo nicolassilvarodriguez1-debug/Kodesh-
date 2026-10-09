@@ -13,6 +13,10 @@
     {
       "source": "/app",
       "destination": "/index.html"
+    },
+    {
+      "source": "/calendario.ics",
+      "destination": "/api/calendario-ics"
     }
   ],
   "functions": {
@@ -51,7 +55,8 @@
     },
     "api/admin.js": {
       "memory": 256,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "{calendario.js,data/calendario-biblico.json}"
     },
     "api/textual.js": {
       "memory": 512,
@@ -67,7 +72,8 @@
     },
     "api/cron-daily-reminder.js": {
       "memory": 256,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "{calendario.js,data/calendario-biblico.json}"
     },
     "api/cron-reconcile-plans.js": {
       "memory": 256,
@@ -127,6 +133,11 @@
       "memory": 1024,
       "maxDuration": 120,
       "includeFiles": "{biblia-rvr.json,data/fiestas.json}"
+    },
+    "api/calendario-ics.js": {
+      "memory": 256,
+      "maxDuration": 15,
+      "includeFiles": "{calendario.js,data/calendario-biblico.json}"
     }
   },
   "crons": [
@@ -145,6 +156,10 @@
     {
       "path": "/api/cron-reconcile-plans",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron-daily-reminder?type=moon",
+      "schedule": "30 12 * * *"
     }
   ],
   "headers": [

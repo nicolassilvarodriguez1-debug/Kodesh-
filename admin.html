@@ -543,7 +543,7 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
           <div><h3>Calendario bíblico</h3><span class="tool-count" id="calCount">—</span></div>
           <div class="tool-actions"><button class="btn-sm" onclick="CAL_ADMIN.load()">Revisar</button><button class="btn-main" onclick="CAL_ADMIN.save()">Guardar cambios</button></div>
         </div>
-        <p class="tool-desc">Las fechas salen de la luna nueva visible desde Jerusalén (calculada). Si la luna se vio otro día, mueve ese mes ±1 día. Si la cebada no estaba aviv, pasa Aviv al mes siguiente. Al guardar, la app se actualiza sola.</p>
+        <p class="tool-desc">Las fechas salen de la luna nueva visible desde Jerusalén (calculada). Cuando se confirme el avistamiento, pulsa «🌙 Se vio · avisar»: queda confirmada en la app y llega un aviso a quien lo activó. Si la luna se vio otro día, primero mueve ese mes ±1 día. Si la cebada no estaba aviv, pasa Aviv al mes siguiente. Al guardar, la app se actualiza sola.</p>
         <div class="upload-msg" id="calMsg"></div>
         <div id="calBox" style="display:grid;gap:8px;margin-top:12px"></div>
       </section>
@@ -1237,6 +1237,18 @@ const CAL_ADMIN = (() => {
   const fmt = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const shift = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return KodeshCal.iso(d); };
   async function call(body) { const res = await adminApi(body); const d = await res.json().catch(() => ({})); if (!res.ok) throw new Error(d.error || `Error ${res.status}`); return d; }
+  // Luna vista: solo para los meses cuya tarde de avistamiento está cerca de hoy
+  function moonBtn(m) {
+    const d = (Date.parse(m.e) - Date.parse(KodeshCal.iso(new Date()))) / 864e5;
+    if (adj.c && adj.c[m.pred]) return '<span style="color:#7fc98f">✓ vista</span>';
+    return d >= -5 && d <= 1 ? `<button class="btn-main" data-moon="${m.pred}">🌙 Se vio · avisar</button>` : '';
+  }
+  async function announce(pred) {
+    const m = KodeshCal.months(adj).find(x => x.pred === pred);
+    if (!confirm(`¿Confirmas que la luna nueva se vio la tarde del ${fmt(m.e)}?\n\nSe guarda la fecha${adj.m[pred] ? ' ajustada' : ''} y se avisa a quienes activaron «Avisarme de la luna nueva».`)) return;
+    try { await call({ action: 'calendar_save', adj }); const r = await call({ action: 'moon_announce', pred }); adj = r.adj; delete adj.updated; render(); msg(r.sent ? `Confirmada ✓ — aviso enviado: «${r.body}»` : 'Confirmada ✓ — no se pudo enviar el aviso (revisa Firebase)'); }
+    catch (e) { msg('Error: ' + e.message); }
+  }
   function render() {
     const box = document.getElementById('calBox'); if (!box || !KodeshCal.data) return;
     const ms = KodeshCal.months(adj), today = KodeshCal.iso(new Date());
@@ -1250,7 +1262,8 @@ const CAL_ADMIN = (() => {
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn-sm" data-n="-1">‹ Un mes antes</button><button class="btn-sm" data-n="1">Un mes después (cebada no aviv) ›</button>${adj.n[yNext] ? '<button class="btn-sm" data-n="0">Volver al estimado</button>' : ''}</div></div>`
       + ms.slice(i0, i0 + 8).map(m => `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border:1px solid var(--border);border-radius:10px">
         <span style="flex:1;min-width:200px">${nisans.has(m.pred) ? '<b>Aviv</b> · ' : ''}Luna vista la tarde del <b>${fmt(m.e)}</b>${m.fixed ? ` <i>(calculada: ${fmt(m.pred)})</i>` : m.p ? ' <i>(podría verse una tarde antes)</i>' : ''}</span>
-        <button class="btn-sm" data-m="${m.pred}" data-d="-1">−1 día</button><button class="btn-sm" data-m="${m.pred}" data-d="1">+1 día</button>${m.fixed ? `<button class="btn-sm" data-m="${m.pred}" data-d="0">Calculada</button>` : ''}</div>`).join('');
+        ${moonBtn(m)}<button class="btn-sm" data-m="${m.pred}" data-d="-1">−1 día</button><button class="btn-sm" data-m="${m.pred}" data-d="1">+1 día</button>${m.fixed ? `<button class="btn-sm" data-m="${m.pred}" data-d="0">Calculada</button>` : ''}</div>`).join('');
+    box.querySelectorAll('[data-moon]').forEach(b => b.onclick = () => announce(b.dataset.moon));
     box.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
       const k = b.dataset.m, d = +b.dataset.d, cur = adj.m[k] || k;
       const v = d === 0 ? k : shift(cur, d);

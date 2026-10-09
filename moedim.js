@@ -201,7 +201,9 @@
       const left = on ? sh.end - now : sh.start - now, h = Math.floor(left / 36e5), d = Math.floor(h / 24);
       html += `<button type="button" class="md-sh" data-moed="shabat"><span class="md-sh-he" lang="he">ש</span><span style="flex:1"><b>${on ? 'Shabat shalom' : 'Shabat'}</b><small>${on ? `Termina en ${h} h ${Math.floor(left / 6e4) % 60} min` : `Comienza en ${d ? d + ' d ' : ''}${h % 24} h · ${esc(fmtShort(sh.start, sh.tz))} ${esc(fmtT(sh.start, sh.tz))}`}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
     }
+    if (window.KodeshLuna) html += KodeshLuna.cardHtml();
     el.innerHTML = html; el.hidden = false;
+    const lb = el.querySelector('[data-luna]'); if (lb) lb.onclick = () => KodeshLuna.open();
     const old = document.getElementById('shabbatLine'); if (old && sh) old.style.display = 'none';
     el.querySelectorAll('[data-moed]').forEach(b => b.onclick = () => open(b.dataset.moed));
   }
@@ -212,11 +214,12 @@
     if (ov) return ov;
     ov = document.createElement('div'); ov.className = 'md-ov'; ov.setAttribute('role', 'dialog');
     ov.innerHTML = `<div class="md-bg"></div><div class="md-wm" lang="he"></div><div class="md-fade"></div>
-      <div class="md-top"><button data-x aria-label="Cerrar">✕</button><button data-share aria-label="Compartir">⇪</button></div>
+      <div class="md-top"><button data-x aria-label="Cerrar">✕</button><span style="display:flex;gap:8px"><button data-cal aria-label="Calendario del mes">☾</button><button data-share aria-label="Compartir">⇪</button></span></div>
       <div class="md-dots"></div><div class="md-body"></div>`;
     document.body.appendChild(ov);
     ov.querySelector('[data-x]').onclick = close;
     ov.querySelector('[data-share]').onclick = share;
+    ov.querySelector('[data-cal]').onclick = () => { if (window.KodeshLuna) KodeshLuna.open(); };
     let x0 = null, y0 = null;
     ov.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
     ov.addEventListener('touchend', e => {

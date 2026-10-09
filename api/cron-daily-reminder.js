@@ -39,6 +39,7 @@ import { applyCors, handleOptions, sendError, ERR } from './_security.js';
 import { getFcm } from './_firebase.js';
 import { getDailyPromiseForUser } from './_promises.js';
 import { VERSES, dayIndex, nyDate } from './_verseDay.js';
+import { loadCalendar } from './_calendar.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -267,6 +268,32 @@ async function sendReminders(jobs) {
   return { sent, failed, staleRemoved: staleIds.length, byCategory, usersNotified: jobs.length };
 }
 
+// type=moon — el día en que se espera ver la luna nueva desde Jerusalén
+// (tabla de calendario.js), aviso por la mañana a quien se suscribió al tema
+// «luna-nueva» desde la app. La confirmación la manda el admin
+// (api/admin.js · moon_announce) cuando la luna se ve de verdad.
+async function moonWatch(req, res, admin) {
+  try {
+    const C = await loadCalendar();
+    const todayIso = nyDate();
+    const ms = C.months(), k = ms.findIndex(m => m.e === todayIso);
+    if (k < 0) return res.status(200).json({ success: true, type: 'moon', skipped: 'hoy no se espera luna nueva' });
+    if (ms[k].fixed) return res.status(200).json({ success: true, type: 'moon', skipped: 'ya confirmada' });
+    const nm = C.monthName(C.monthNum(k)), full = nm.ord.toLowerCase() + (nm.old ? ` (${nm.old})` : '');
+    const title = '🌙 Esta tarde, luna nueva';
+    const body = `Hoy al atardecer se espera ver la luna nueva desde Jerusalén. Si se ve, comienza el ${full}.`;
+    const dryRun = req.method === 'GET' ? getQueryParam(req, 'dry_run') === '1' : req.body?.dryRun === true;
+    if (dryRun) return res.status(200).json({ success: true, dryRun: true, type: 'moon', title, body });
+    let sent = 0, failed = 0;
+    try { await getFcm().send({ topic: 'luna-nueva', notification: { title, body }, data: { kind: 'moon' } }); sent = 1; }
+    catch (e) { failed = 1; console.warn('moonWatch push:', e.message); }
+    await logNotification({ admin, kind: 'moon', title, body, targetLabel: 'Tema: luna-nueva', result: { sent, failed } });
+    return res.status(200).json({ success: true, type: 'moon', sent, failed });
+  } catch (err) {
+    return sendError(res, 500, ERR.internal, err, 'cron-daily-reminder:moon');
+  }
+}
+
 export default async function handler(req, res) {
   applyCors(req, res, { methods: 'GET, POST, OPTIONS' });
   if (handleOptions(req, res)) return;
@@ -286,6 +313,7 @@ export default async function handler(req, res) {
   }
 
   const type = req.method === 'GET' ? getQueryParam(req, 'type') : req.body?.type;
+  if (type === 'moon') return moonWatch(req, res, admin);
   if (type !== 'promise' && type !== 'reading' && type !== 'night') {
     return sendError(res, 400, ERR.badRequest, null, 'cron-daily-reminder');
   }

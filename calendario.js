@@ -25,7 +25,8 @@
   const at = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d; };
   const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   // Meses: tarde del avistamiento (e), la predicha (pred) y si pudo verse una tarde antes (p)
-  function months(adj = ADJ) { return (T ? T.months : []).map(([e, p]) => ({ pred: e, e: (adj && adj.m && adj.m[e]) || e, p, fixed: !!(adj && adj.m && adj.m[e]) })); }
+  // fixed: el admin movió la fecha o confirmó que la luna se vio (adj.c)
+  function months(adj = ADJ) { return (T ? T.months : []).map(([e, p]) => ({ pred: e, e: (adj && adj.m && adj.m[e]) || e, p, fixed: !!(adj && ((adj.m && adj.m[e]) || (adj.c && adj.c[e]))) })); }
   function nisanIndex(y, ms, adj = ADJ) {
     const key = (adj && adj.n && adj.n[y]) || (T && T.nisan[y]);
     return ms.findIndex(m => m.pred === key);
@@ -68,6 +69,29 @@
     const y = d.getFullYear(); let ni = nisanIndex(String(y), ms); if (ni > k) ni = nisanIndex(String(y - 1), ms);
     return { month: k - ni + 1, day: dayN };
   }
-  const api = { load, year, next, today, months, iso, get data() { return T; }, get adj() { return ADJ; } };
+  // Número del mes (1 = Aviv … 12 o 13) para el índice k de months()
+  function monthNum(k, ms = months()) {
+    if (!ms[k]) return null;
+    const y = +ms[k].e.slice(0, 4); let ni = nisanIndex(String(y), ms);
+    if (ni < 0 || ni > k) ni = nisanIndex(String(y - 1), ms);
+    return ni < 0 ? null : k - ni + 1;
+  }
+  // Mes completo: día 1 (de día), duración (29/30) y número
+  function monthAt(k) {
+    const ms = months(); if (k < 0 || k + 1 >= ms.length) return null;
+    const len = Math.round((Date.parse(ms[k + 1].e) - Date.parse(ms[k].e)) / 864e5);
+    return { k, num: monthNum(k, ms), start: at(ms[k].e, 1), len, m: ms[k], next: ms[k + 1] };
+  }
+  // Índice del mes que contiene esa fecha (de día)
+  function indexOf(from = new Date()) {
+    const ms = months(), d = new Date(from); d.setHours(12, 0, 0, 0);
+    let k = -1; for (let i = 0; i < ms.length; i++) if (at(ms[i].e, 1) <= d) k = i; else break;
+    return k;
+  }
+  // Nombres: ordinal y, cuando la Escritura lo da, el nombre antiguo (Éx 13:4; 1 R 6:1, 6:38, 8:2)
+  const ORD = ['', 'Primer', 'Segundo', 'Tercer', 'Cuarto', 'Quinto', 'Sexto', 'Séptimo', 'Octavo', 'Noveno', 'Décimo', 'Undécimo', 'Duodécimo', 'Decimotercer'];
+  const OLD = { 1: 'Aviv', 2: 'Ziv', 7: 'Etanim', 8: 'Bul' };
+  const monthName = n => n ? { ord: `${ORD[n] || n + '.º'} mes`, old: OLD[n] || '' } : { ord: 'Mes', old: '' };
+  const api = { load, year, monthName, next, today, months, monthAt, monthNum, indexOf, iso, get data() { return T; }, get adj() { return ADJ; } };
   window.KodeshCal = api;
 })();

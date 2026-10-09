@@ -3,6 +3,7 @@
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions } from './_security.js';
 import { getFcm } from './_firebase.js';
+import { loadCalendar } from './_calendar.js';
 import { openManualPeriod, closeManualPeriods } from './_premiumHistory.js';
 
 const SB_URL = process.env.SUPABASE_URL;
@@ -167,6 +168,9 @@ export function cleanCalendarAdj(raw) {
     if (Math.abs(d) <= 2 && d !== 0) out.m[k] = v;
   }
   for (const [y, v] of Object.entries(raw?.n || {})) if (/^\d{4}$/.test(y) && ISO.test(v)) out.n[y] = v;
+  // c: lunas confirmadas (vistas) en la fecha que se esperaba
+  const c = {}; for (const [k, v] of Object.entries(raw?.c || {})) if (ISO.test(k) && v === true) c[k] = true;
+  if (Object.keys(c).length) out.c = c;
   return out;
 }
 
@@ -261,6 +265,32 @@ export default async function handler(req, res) {
       adj.updated = new Date().toISOString();
       await badgePut('calendario.json', JSON.stringify(adj), 'application/json', 'max-age=0');
       return res.status(200).json({ adj });
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+
+  // ── ACTION: luna nueva confirmada → guarda y avisa a quien lo pidió (tema FCM) ──
+  if (action === 'moon_announce') {
+    if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
+    const pred = req.body.pred;
+    if (!ISO.test(pred || '')) return res.status(400).json({ error: 'Mes inválido' });
+    try {
+      await badgeEnsureBucket();
+      const adj = cleanCalendarAdj(await publicJson('calendario.json', {}));
+      if (!adj.m[pred]) { adj.c = adj.c || {}; adj.c[pred] = true; }
+      adj.updated = new Date().toISOString();
+      await badgePut('calendario.json', JSON.stringify(adj), 'application/json', 'max-age=0');
+      const C = await loadCalendar(adj), ms = C.months(), k = ms.findIndex(m => m.pred === pred);
+      if (k < 0) return res.status(400).json({ error: 'Mes fuera de la tabla' });
+      const nm = C.monthName(C.monthNum(k)), full = nm.ord.toLowerCase() + (nm.old ? ` (${nm.old})` : '');
+      const title = '🌙 Se vio la luna nueva';
+      const body = `Desde Jerusalén. Al atardecer comienza el ${full}.`;
+      let sent = 0, failed = 0;
+      if (req.body.notify !== false) {
+        try { await getFcm().send({ topic: 'luna-nueva', notification: { title, body }, data: { kind: 'moon' } }); sent = 1; }
+        catch (e) { failed = 1; console.warn('moon_announce push:', e.message); }
+        await logNotification({ admin, kind: 'moon', targetLabel: 'Tema: luna-nueva', title, body, sent, failed });
+      }
+      return res.status(200).json({ adj, sent: !!sent, body });
     } catch (err) { return res.status(500).json({ error: err.message }); }
   }
 
