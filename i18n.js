@@ -43,6 +43,14 @@
   };
   // Nombre en español de cada libro (lo llena bible-ref.js) → para traducir textos que lo nombran
   const ES2EN = new Map();
+  // Abreviaturas en español seguidas de capítulo («Hch 7:4», «Gá 3:17»)
+  const ABBR = { 'Gn': 'Gen', 'Gén': 'Gen', 'Éx': 'Exod', 'Ex': 'Exod', 'Éxo': 'Exod', 'Lv': 'Lev', 'Nm': 'Num', 'Núm': 'Num', 'Dt': 'Deut', 'Jos': 'Josh', 'Jue': 'Judg', 'Rt': 'Ruth',
+    '1 S': '1 Sam', '2 S': '2 Sam', '1 Sa': '1 Sam', '2 Sa': '2 Sam', '1 R': '1 Kgs', '2 R': '2 Kgs', '1 Re': '1 Kgs', '2 Re': '2 Kgs', '1 Cr': '1 Chr', '2 Cr': '2 Chr', 'Esd': 'Ezra',
+    'Sal': 'Ps', 'Pr': 'Prov', 'Prov': 'Prov', 'Ec': 'Eccl', 'Ecl': 'Eccl', 'Cnt': 'Song', 'Cant': 'Song', 'Is': 'Isa', 'Lm': 'Lam', 'Ez': 'Ezek', 'Dn': 'Dan', 'Os': 'Hos', 'Jl': 'Joel',
+    'Am': 'Amos', 'Abd': 'Obad', 'Jon': 'Jonah', 'Mi': 'Mic', 'Miq': 'Mic', 'Sof': 'Zeph', 'Hag': 'Hag', 'Zac': 'Zech', 'Mt': 'Matt', 'Mr': 'Mark', 'Mc': 'Mark', 'Lc': 'Luke', 'Jn': 'John',
+    'Hch': 'Acts', 'Ro': 'Rom', '1 Co': '1 Cor', '2 Co': '2 Cor', 'Gá': 'Gal', 'Gál': 'Gal', 'Ef': 'Eph', 'Fil': 'Phil', 'Flp': 'Phil', '1 Ts': '1 Thess', '2 Ts': '2 Thess', '1 Tes': '1 Thess',
+    '2 Tes': '2 Thess', '1 Ti': '1 Tim', '2 Ti': '2 Tim', 'Tit': 'Titus', 'Flm': 'Phlm', 'He': 'Heb', 'Stg': 'Jas', 'Sant': 'Jas', '1 P': '1 Pet', '2 P': '2 Pet', '1 Pe': '1 Pet', '2 Pe': '2 Pet',
+    '1 Jn': '1 John', '2 Jn': '2 John', '3 Jn': '3 John', 'Jud': 'Jude', 'Ap': 'Rev' };
 
   /* ── Diccionario ── */
   const DICT = new Map();        // texto exacto en español → inglés
@@ -87,8 +95,8 @@
   // Nombres de libros en español seguidos de capítulo («Génesis 1:1», «— Salmos 119:105», «Juan 1»)
   let BRE = null, BRE_N = 0;
   function bookSub(k) {
-    if (!ES2EN.size) return k;
     if (!BRE || BRE_N !== ES2EN.size) {
+      for (const a in ABBR) if (!ES2EN.has(a)) ES2EN.set(a, ABBR[a]);
       const names = [...ES2EN.keys()].filter(n => n !== ES2EN.get(n)).sort((a, b) => b.length - a.length).map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
       BRE = new RegExp(`(^|[\\s(«“—–-])(${names.join('|')})(?=\\s+\\d|\\s+—)`, 'g'); BRE_N = ES2EN.size;
     }
@@ -108,11 +116,22 @@
   // Campos de texto: su contenido es del usuario, pero el placeholder / title sí se traducen
   const FIELD = 'input,textarea,select';
   const attrOk = el => el && el.closest && !el.closest('[data-noi18n],.verse') && (!skipNode(el) || el.matches(FIELD));
+  /* ── Detector de mezcla: en inglés, todo texto que parezca español y no tenga traducción se anota.
+     KodeshI18n.misses() los lista; scripts/i18n-audit.cjs recorre la app y falla si hay alguno. ── */
+  const ES_WORDS = /(^|[^\p{L}])(de|del|la|las|los|el|que|para|con|una|por|sin|más|tu|tus|su|sus|este|esta|aquí|cuando|también|como|pero|desde|hasta|hoy|ahora|toca|leer|ver|cerrar|guardar|buscar|abrir|capítulo|versículo|años|año|días|día)(?=$|[^\p{L}])/iu;
+  const looksEs = s => /[áéíóúñ¿¡]/i.test(s.replace(/Yeshúa|Mashíaj|Shabat|Pésaj|Sucot|Teruá|Bereshit|Jayé|Lejá|Vayerá|Vayetsé|Vayéshev|Mikéts|Vayejí|Vaerá|Yitró|Terumá|Tetsavé|Tisá|Pekudéi|Vayikrá|Sheminí|Tazría|Metsorá|Ajaréi|Bejukotái|Nasó|Behaalotjá|Lejá|Kóraj|Pinjás|Maséi|Vaetjanán|Ékev|Reé|Tetsé|Tavó|Vayélej|Haberajá|Shemá|Jodesh|Torá|Haftará|Jadashá|Mishkán|Teruá/g, '')) || ES_WORDS.test(s);
+  const MISS = new Map();
+  function miss(v, where) {
+    const k = norm(v);
+    if (!k || k.length < 2 || !looksEs(k)) return;
+    if (!MISS.has(k)) { MISS.set(k, where); if (window.KODESH_I18N_DEBUG) console.warn('[i18n] sin traducir:', k, where); }
+  }
+  const where = el => { const e = el && el.closest ? el.closest('[id],[class]') : null; return e ? (e.id ? '#' + e.id : '.' + String(e.className).split(' ')[0]) : ''; };
   function doText(n) {
     const v = n.nodeValue;
     if (done.get(n) === v) return;
     const out = tr(v);
-    if (out != null && out !== v) { n.nodeValue = out; done.set(n, out); } else done.set(n, v);
+    if (out != null && out !== v) { n.nodeValue = out; done.set(n, out); } else { done.set(n, v); if (out == null) miss(v, where(n.parentElement)); }
   }
   function doAttrs(el) {
     for (const a of ATTRS) {
@@ -120,6 +139,7 @@
       if (!v) continue;
       const out = tr(v);
       if (out != null && out !== v) el.setAttribute(a, out);
+      else if (out == null) miss(v, where(el) + ' @' + a);
     }
   }
   function walk(root) {
@@ -177,14 +197,48 @@
   patchRef();
   document.addEventListener('DOMContentLoaded', patchRef);
 
+  /* ── Funciones aún sin traducir: en inglés se esconden sus entradas (data-feature="…") hasta estar listas,
+     así nunca aparece una pantalla a medio traducir. Al terminar una, se agrega a READY. ── */
+  // función → dónde están sus entradas (además de cualquier elemento con data-feature="…")
+  const FEATURES = {
+    tiempo: '.tl-pill, [onclick*="KodeshTiempo"]',
+    moedim: '[onclick*="KodeshMoedim"], [data-moedim-home], .hm-ask',
+    luna: '[onclick*="KodeshLuna"]',
+    maps: '[onclick*="KodeshMaps"]',
+    harmony: '[onclick*="harmony"]',
+    parashot: 'a[href^="parashot.html"], a[href^="/parashot.html"], .parasha-banner-link',
+    estudio: 'a[href^="estudio.html"], a[href^="/estudio.html"]',
+    lexicon: 'a[href^="lexicon.html"], a[href^="/lexicon.html"]',
+    cronicas: 'a[href^="cronicas.html"], a[href^="/cronicas.html"]',
+    actividades: 'a[href^="actividades.html"], a[href^="/actividades.html"]',
+    profile: 'a[href^="profile.html"], a[href^="/profile.html"]',
+    ayuda: 'a[href^="ayuda.html"], a[href^="/ayuda.html"]',
+    interlinear: '#btnInterlinearToggle, .btn-interlinear, [onclick*="verseSheetAction(\'interlinear\')"]',
+    audio: '.audio-chip, .ka-player, .hm-play, [data-act="play"], [data-act="listen"]',
+    verseday: '',
+  };
+  const READY = new Set(['tiempo']);
+  const ok = f => !isEn || READY.has(f);
+  if (isEn) {
+    const st = document.createElement('style');
+    st.textContent = Object.keys(FEATURES).filter(f => !READY.has(f)).map(f => `${[`[data-feature~="${f}"]`, ...FEATURES[f].split(',').filter(x => x.trim())].map(x => 'html.lang-en ' + x.trim()).join(', ')}{display:none!important}`).join('\n');
+    (document.head || document.documentElement).appendChild(st);
+  }
+
   function setLang(l) {
     if (l !== 'es' && l !== 'en') return;
     try { localStorage.setItem(KEY, l); } catch (e) {}
     location.reload();
   }
 
+  // Traducciones de los módulos (data/i18n → i18n-en-data.js): solo en inglés, antes de que corra el resto
+  if (isEn && document.readyState === 'loading') document.write('<script src="/i18n-en-data.js"><\/script>');
+
   window.KodeshI18n = {
-    lang, isEn, t, tr, add, rule, setLang, bookName, patchBooks, patchRef, BOOKS_EN, walk,
+    lang, isEn, t, tr, add, rule, setLang, bookName, patchBooks, patchRef, BOOKS_EN, walk, ok, READY, looksEs,
+    misses: () => [...MISS.entries()].map(([t, w]) => ({ t, w })),
+    // ¿Es una palabra/nombre en español que tiene traducción? (la auditoría la usa para nombres sin tilde: «Lamec», «Sem»)
+    esWord: w => { const v = DICT.get(w); return v != null && v !== w; },
     bible: isEn ? './biblia-wmb.json' : './biblia-rvr.json',
     version: isEn ? 'WMB' : 'RVR60',
   };

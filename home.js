@@ -230,7 +230,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
         ${calOn() ? '<div data-moedim-home hidden></div>' : ''}
         ${!calAsked() ? `<div class="hm-card hm-ask"><p>¿Guardas el Shabat y las fiestas bíblicas? Puedes verlos aquí en tu inicio.</p><div style="display:grid;gap:6px"><button class="hm-chip" data-act="calyes" style="color:var(--gold)">Mostrar</button><button class="hm-chip" data-act="calno">Ahora no</button></div></div>` : ''}
         <div class="hm-k" style="margin-top:4px">Explora Kodesh</div>
-        <div class="hm-grid">${TILES.map(([k, t, s, path], i) => `<button class="hm-tile" data-tile="${i}">${IMG[k] ? `<span class="bgimg"${bg(k)}></span>` : ''}<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg><span><b>${t}</b><small>${s}</small></span></button>`).join('')}</div>
+        <div class="hm-grid">${TILES.map(([k, t, s, path], i) => `<button class="hm-tile" data-tile="${i}"${({ ex_ciclo: ' data-feature="parashot"', ex_mapas: ' data-feature="maps"', ex_estudio: ' data-feature="estudio"', ex_tutorial: ' data-feature="ayuda"' })[k] || ''}>${IMG[k] ? `<span class="bgimg"${bg(k)}></span>` : ''}<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg><span><b>${t}</b><small>${s}</small></span></button>`).join('')}</div>
       </div></div>`;
     wire(prom, w, al);
     const mh = el.querySelector('[data-moedim-home]'); if (mh && window.KodeshMoedim) KodeshMoedim.renderHome(mh);

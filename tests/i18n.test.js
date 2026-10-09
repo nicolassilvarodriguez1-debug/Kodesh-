@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const read = f => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 function load(lang) {
   const store = { kodesh_lang: lang };
-  const ctx = { window: {}, document: { documentElement: { lang: '', classList: { add() {} } }, addEventListener() {}, createTreeWalker() {} },
+  const ctx = { window: {}, document: { documentElement: { lang: '', classList: { add() {} }, appendChild() {} }, head: { appendChild() {} }, readyState: 'complete', createElement: () => ({}), write() {}, addEventListener() {}, createTreeWalker() {} },
     localStorage: { getItem: k => store[k] ?? null, setItem() {}, length: 1, key: () => 'kodesh_lang' }, navigator: { language: 'es-ES' },
     MutationObserver: class { observe() {} }, NodeFilter: {}, location: { reload() {} } };
   vm.createContext(ctx); ctx.window = ctx;
@@ -30,6 +30,7 @@ test('idioma: en inglés traduce textos, reglas y libros', () => {
   assert.equal(I.tr('· c. 5 a.C.–30 d.C.'), '· c. 5 BC–30 AD');
   assert.equal(I.tr('Algo que no está'), null);
   assert.equal(I.bookName('JHN', 'Juan'), 'John');
+  assert.equal(I.tr('130 · Hch 7:4'), '130 · Acts 7:4');
 });
 
 test('WMB: mismo formato y versículos que la RVR, con YHWH', () => {

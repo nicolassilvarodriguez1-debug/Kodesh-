@@ -12,6 +12,11 @@
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const bookName = id => ((window.KodeshRef && KodeshRef.BOOKS) || []).find(b => b[0] === id)?.[1] || id;
   const nice = r => { const m = /^([1-3]?[A-Z]{2,3}) (.+)$/.exec(r); return m ? `${bookName(m[1])} ${m[2].replace('-', '–')}` : r; };
+  // Idioma: T traduce frases con {huecos}; L traduce un nombre o dato suelto (ver i18n.js)
+  const T = (s, v) => { if (window.KodeshI18n) return KodeshI18n.t(s, v); let r = s; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
+  const L = s => (window.KodeshI18n && KodeshI18n.isEn ? (KodeshI18n.tr(s) ?? s) : s);
+  const EN = () => !!(window.KodeshI18n && KodeshI18n.isEn);
+  const low = s => s.charAt(0).toLowerCase() + s.slice(1);
   const isOn = () => { try { return localStorage.getItem('kodesh_tl_on') !== '0'; } catch (e) { return true; } };
 
   let D = null, P = null;
@@ -168,7 +173,7 @@ html.tl-off .tl-pill { display: none !important; }
   function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; }
 
   function historiaHtml(w) {
-    const here = ctx.book ? `<div class="tl-here">Estás en <b>${esc(bookName(ctx.book))} ${ctx.ch}</b>${w && w.era ? ` · <span style="color:var(--gold,#c9a84c)">${esc(w.era[1])}</span>` : ''}${w && w.note ? `<br><small style="color:var(--text-mid,#b8af9c)">${esc(w.note)}</small>` : ''}</div>` : '';
+    const here = ctx.book ? `<div class="tl-here">${T('Estás en {x}', { x: `<b>${esc(bookName(ctx.book))} ${ctx.ch}</b>` })}${w && w.era ? ` · <span style="color:var(--gold,#c9a84c)">${esc(w.era[1])}</span>` : ''}${w && w.note ? `<br><small style="color:var(--text-mid,#b8af9c)">${esc(w.note)}</small>` : ''}</div>` : '';
     return here + `<div class="tl-sec">De Génesis a Apocalipsis</div>` + D.eras.map(([id, n, yr, desc, books, start]) =>
       `<button type="button" class="tl-era${w && w.id === id ? ' on' : ''}${start ? '' : ' quiet'}"${start ? ` data-go="${start}"` : ''}><span class="yr">${esc(yr || '—')}</span><span class="eb"></span><span><b>${esc(n)}</b><small>${esc(desc)}</small>${books ? `<small>${esc(books)}</small>` : ''}</span></button>`).join('')
       + `<p class="tl-src">Fechas aproximadas («c.»): la Biblia no siempre da años, y algunas (como la del Éxodo) se discuten. Toca una época para empezar a leerla.</p>`;
@@ -187,12 +192,12 @@ html.tl-off .tl-pill { display: none !important; }
     if (me) {
       const kings = [...me[3].filter(k => k !== 'Exilio' && k !== 'Persia'), ...me[4]];
       card = `<div class="tl-card on"><div class="tl-kick">${esc(me[1])}</div>
-        <div style="margin-top:4px">${kings.length ? `Habló en días de <b>${esc(kings.join(', '))}</b>.` : ''} ${esc(D.prophetNote[me[0]] || '')}</div>
-        ${co.length ? `<div style="margin-top:6px;color:var(--text-mid,#b8af9c)">Contemporáneos: ${co.map(p => `<button class="tl-link" data-go="${p[0]} 1">${esc(p[1])}</button>`).join(' · ')}. Puedes leer sus mensajes uno al lado del otro.</div>` : ''}
+        <div style="margin-top:4px">${kings.length ? T('Habló en días de {k}.', { k: `<b>${esc(kings.map(L).join(', '))}</b>` }) : ''} ${esc(D.prophetNote[me[0]] || '')}</div>
+        ${co.length ? `<div style="margin-top:6px;color:var(--text-mid,#b8af9c)">${T('Contemporáneos: {list}. Puedes leer sus mensajes uno al lado del otro.', { list: co.map(p => `<button class="tl-link" data-go="${p[0]} 1">${esc(L(p[1]))}</button>`).join(' · ') })}</div>` : ''}
         <div style="margin-top:6px"><button class="tl-link" data-go="${me[2]}">${esc(nice(me[2]))} →</button></div></div>`;
     }
     return card + `<div class="tl-sec">Reyes de Judá y profetas</div><div class="tl-grid"><table><tr>${D.reigns.map(k => `<th>${esc(k)}</th>`).join('')}</tr>${rows}</table></div>
-      <p class="tl-src">Según los reyes que nombra el primer versículo de cada libro (Jonás, por 2 Reyes 14:25). Jeroboam II de Israel reinó al mismo tiempo que Uzías. No nombran rey: ${esc(D.noking.join(', '))}.</p>`;
+      <p class="tl-src">${T('Según los reyes que nombra el primer versículo de cada libro (Jonás, por 2 Reyes 14:25). Jeroboam II de Israel reinó al mismo tiempo que Uzías. No nombran rey: {list}.', { list: esc(D.noking.map(L).join(', ')) })}</p>`;
   }
   function salmosHtml() {
     const cur = ctx.book === 'PSA' ? ctx.ch : null;
@@ -215,8 +220,8 @@ html.tl-off .tl-pill { display: none !important; }
   const histU = () => { const H = D.gen.hist, o = U0() + H.gap - H.anchor; return h => h + o; };
   const maxY = () => histU()(D.gen.hist.end);
   const toH = y => Math.round(y - U0() - D.gen.hist.gap + D.gen.hist.anchor);
-  const hTxt = h => h < 0 ? `${-h} a.C.` : `${h || 1} d.C.`;
-  const yTxt = (y, approx) => y <= U0() + .5 ? `año ${Math.round(y)}` : `${approx ? 'c. ' : ''}${hTxt(toH(y))}`;
+  const hTxt = h => h < 0 ? `${-h} ${EN() ? 'BC' : 'a.C.'}` : `${h || 1} ${EN() ? 'AD' : 'd.C.'}`;
+  const yTxt = (y, approx) => y <= U0() + .5 ? T('año {n}', { n: Math.round(y) }) : `${approx ? 'c. ' : ''}${hTxt(toH(y))}`;
   // Carriles: vidas que no se cruzan comparten fila (con aire para el nombre)
   function lanes(G) {
     const end = [], L = [];
@@ -247,20 +252,20 @@ html.tl-off .tl-pill { display: none !important; }
       <div data-gc></div>
       <p class="tl-src" style="margin-top:8px">Arrastra para moverte en el tiempo, de la creación al Apocalipsis. Toca una barra o un nombre para ver a quién conoció.<br>Años contados desde la creación sumando el texto: las edades de Génesis 5 y 11, Éxodo 7:7, los 480 años de 1 Reyes 6:1 y los reinados de Judá tal como están escritos (algunos reinados se superpusieron, por eso son la suma del texto y no fechas exactas). Las barras punteadas son solo el reinado: el texto no da su edad. Enoc no murió: «le llevó Dios» (Génesis 5:24).<br>Después del exilio la Biblia ya no da una cuenta de años que se pueda sumar: desde la franja rayada, la línea sigue con fechas aproximadas de la historia (a.C. y d.C.). Las barras grises son gobernantes: solo su periodo.</p>`
       + `<div class="tl-sec">Edades que da el texto</div>` + D.lives.map(([g, list]) => `<div class="tl-sec" style="color:var(--text-mid,#b8af9c)">${esc(g)}</div>` + list.map(([n, a, r]) =>
-      `<div class="tl-life"><div class="tl-row"><span>${esc(n)}</span><em>${a} años</em></div><div class="bb" style="width:${Math.max(3, a / 969 * 100).toFixed(1)}%"></div><button class="tl-link" data-go="${r}">${esc(nice(r))}</button></div>`).join('')).join('')
+      `<div class="tl-life"><div class="tl-row"><span>${esc(n)}</span><em>${T('{n} años', { n: a })}</em></div><div class="bb" style="width:${Math.max(3, a / 969 * 100).toFixed(1)}%"></div><button class="tl-link" data-go="${r}">${esc(nice(r))}</button></div>`).join('')).join('')
       + `<div class="tl-sec">Datos</div>` + D.facts.map(([t, r1, r2]) => `<div class="tl-card"><div>${esc(t)}</div><div style="margin-top:4px"><button class="tl-link" data-go="${r1}">${esc(nice(r1))}</button>${r2 ? ` · <button class="tl-link" data-go="${r2}">${esc(nice(r2))}</button>` : ''}</div></div>`).join('');
   }
   function conocioHtml() {
     const G = genPeople().filter(p => !p.reign), me = G.find(p => p.n === who) || G[0], span = me.d - me.b, rel = y => (y - me.b) / span * 100;
     const list = G.filter(p => p !== me && shared(p, me) > 0).sort((a, b) => shared(b, me) - shared(a, me));
     return `<button type="button" class="tl-back" data-who="">‹ ¿Quién vivía?</button>
-      <div class="tl-chips">${G.map(p => `<button type="button" class="tl-chip${p === me ? ' on' : ''}" data-who="${esc(p.n)}">${esc(p.n)}</button>`).join('')}</div>
-      <div class="tl-card"><div class="tl-kick">${esc(me.n)} · ${yTxt(me.b, me.approx)} – ${yTxt(me.d, me.approx)}</div>
-        <div style="margin-top:4px">Compartió años de vida con <b>${list.length}</b> de esta lista. <button class="tl-link" data-go="${me.r}">${esc(nice(me.r))}</button></div>
-        <div class="tl-lifebar"></div><div class="tl-lifeax"><span>nace</span><span>${Math.round(span / 2)} años</span><span>${me.n === 'Enoc' ? 'Dios se lo llevó' : me.kind === 'y' ? 'la cruz' : 'muere'} a los ${me.approx ? 'c. ' : ''}${span}</span></div></div>`
+      <div class="tl-chips">${G.map(p => `<button type="button" class="tl-chip${p === me ? ' on' : ''}" data-who="${esc(p.n)}">${esc(L(p.n))}</button>`).join('')}</div>
+      <div class="tl-card"><div class="tl-kick">${esc(L(me.n))} · ${yTxt(me.b, me.approx)} – ${yTxt(me.d, me.approx)}</div>
+        <div style="margin-top:4px">${T('Compartió años de vida con {n} de esta lista.', { n: `<b>${list.length}</b>` })} <button class="tl-link" data-go="${me.r}">${esc(nice(me.r))}</button></div>
+        <div class="tl-lifebar"></div><div class="tl-lifeax"><span>${T('nace')}</span><span>${T('{n} años', { n: Math.round(span / 2) })}</span><span>${T(me.n === 'Enoc' ? 'Dios se lo llevó a los {n}' : me.kind === 'y' ? 'la cruz a los {n}' : 'muere a los {n}', { n: (me.approx ? 'c. ' : '') + span })}</span></div></div>`
       + list.map(p => { const a = Math.max(rel(p.b), 0), b = Math.min(rel(p.d), 100);
-        return `<div class="tl-kn"><div class="tl-row"><button type="button" data-who="${esc(p.n)}">${esc(p.n)} <small>· de sus ${Math.max(p.b, me.b) - me.b} a sus ${Math.min(p.d, me.d) - me.b}</small></button><em>${shared(p, me)} años juntos</em></div><div class="tr"><i style="left:${a.toFixed(2)}%;width:${Math.max(1, b - a).toFixed(2)}%;background:${GCOL(p)}"></i></div></div>`; }).join('')
-      + `<p class="tl-src">La línea vinotinto es la vida de ${esc(me.n)}, de su nacimiento (izquierda) a su muerte (derecha). Lo coloreado encima es el tramo que vivió junto a cada persona.${tShift ? ' Con Taré de 130 años (Hechos 7:4).' : ''}${eShift ? ' Con 430 años en Egipto (Éxodo 12:40).' : ''}</p>`;
+        return `<div class="tl-kn"><div class="tl-row"><button type="button" data-who="${esc(p.n)}">${esc(L(p.n))} <small>· ${T('de sus {a} a sus {b}', { a: Math.max(p.b, me.b) - me.b, b: Math.min(p.d, me.d) - me.b })}</small></button><em>${T('{n} años juntos', { n: shared(p, me) })}</em></div><div class="tr"><i style="left:${a.toFixed(2)}%;width:${Math.max(1, b - a).toFixed(2)}%;background:${GCOL(p)}"></i></div></div>`; }).join('')
+      + `<p class="tl-src">${T('La línea vinotinto es la vida de {name}, de su nacimiento (izquierda) a su muerte (derecha). Lo coloreado encima es el tramo que vivió junto a cada persona.', { name: esc(L(me.n)) })}${tShift ? ' ' + T('Con Taré de 130 años (Hechos 7:4).') : ''}${eShift ? ' ' + T('Con 430 años en Egipto (Éxodo 12:40).') : ''}</p>`;
   }
   function drawGantt(s) {
     const g = s.querySelector('[data-gantt]'); if (!g) return;
@@ -286,14 +291,14 @@ html.tl-off .tl-pill { display: none !important; }
       if (b > 0 && a < W) {
         for (let k = a - H; k < b; k += 7) el('line', { x1: Math.max(a, k), y1: Math.max(a, k) === k ? 0 : a - k, x2: Math.min(b, k + H), y2: Math.min(b, k + H) - k, stroke: '#7a1f33', opacity: .5 });
         const t = el('text', { x: 0, y: 0, 'font-size': 10, 'text-anchor': 'middle', style: 'fill:var(--text-mid,#b8af9c)', transform: `translate(${(a + b) / 2 + 3},${(H - 18) / 2}) rotate(-90)` });
-        t.textContent = 'fin de la cuenta del texto';
+        t.textContent = T('fin de la cuenta del texto');
       }
     }
     for (const [y] of EV) { const x = X(y); if (x > -10 && x < W + 10) el('line', { x1: x, y1: 0, x2: x, y2: H - 18, stroke: '#6fa0d8', 'stroke-dasharray': '3 3' }); }
     for (const [y1, y2, k, g1, g2] of D.gen.bands) {
       const a = X(y1 + sh(g1)), b = X(y2 + sh(g2)); if (b < 0 || a > W) continue;
       el('rect', { x: a, y: 0, width: b - a, height: H - 18, fill: '#7a1f33', opacity: .16 });
-      if (k === 'esclavitud') el('text', { x: Math.max(a, 4) + 4, y: H - 24, 'font-size': 10, style: 'fill:var(--text-mid,#b8af9c)' }).textContent = `hasta ${y2 + sh(g2) - y1 - sh(g1)} años de esclavitud`;
+      if (k === 'esclavitud') el('text', { x: Math.max(a, 4) + 4, y: H - 24, 'font-size': 10, style: 'fill:var(--text-mid,#b8af9c)' }).textContent = T('hasta {n} años de esclavitud', { n: y2 + sh(g2) - y1 - sh(g1) });
     }
     const LN = lanes(G);
     G.forEach(p => {
@@ -304,20 +309,20 @@ html.tl-off .tl-pill { display: none !important; }
       const vx = Math.max(x1, 0);
       if (Math.min(x2, W) - vx > 30) el('text', { x: vx + 5, y: y0 + ROW - 5, 'font-size': 10, style: `fill:${on && !p.reign ? '#15120a' : 'var(--text,#e9e3d3)'}` }).textContent = p.n;
     });
-    s.querySelector('[data-gy]').innerHTML = gy <= u0 + .5 ? `${Math.round(gy)}<small>desde la creación</small>` : gy < u0 + HG.gap ? `<small style="margin:0">fin de la cuenta del texto</small>` : `c. ${hTxt(toH(gy)).replace(/ (a|d)\.C\./, '<small>$1.C.</small>')}`;
+    s.querySelector('[data-gy]').innerHTML = gy <= u0 + .5 ? `${Math.round(gy)}<small>${T('desde la creación')}</small>` : gy < u0 + HG.gap ? `<small style="margin:0">${T('fin de la cuenta del texto')}</small>` : `c. ${hTxt(toH(gy)).replace(/ (a|d)\.C\./, '<small>$1.C.</small>')}`;
     const ev = EV.find(([y]) => Math.abs(y - gy) <= 6);
     s.querySelector('[data-gev]').textContent = ev ? `${ev[1]} · ${nice(ev[2])}` : '';
     const alive = G.filter(p => gy >= p.b && gy <= p.d && !p.reign), kings = G.filter(p => p.reign && gy >= p.b && gy < p.d);
-    s.querySelector('[data-gk]').textContent = alive.length ? `Vivían ${alive.length}` : 'Vivían';
+    s.querySelector('[data-gk]').textContent = alive.length ? T('Vivían {n}', { n: alive.length }) : T('Vivían');
     const pEl = s.querySelector('[data-gp]');
-    pEl.innerHTML = (alive.length ? alive.map(p => `<button type="button" data-who="${esc(p.n)}">${esc(p.n)}</button> <small>(${p.approx ? 'c. ' : ''}${Math.round(gy - p.b)})</small>`).join(' · ') : (gy > 2493 + sh(2) && gy < 2860 + sh(2) ? 'Josué, los jueces y Samuel: el texto no da sus años de nacimiento.' : gy > u0 ? 'Nadie con fechas conocidas.' : 'Nadie con fechas en el texto.'))
-      + (kings.length ? ` <small>· ${kings.some(k => k.approx) ? 'gobernaban' : 'reinaba'} ${esc(kings.map(k => k.n).join(', '))}</small>` : '');
+    pEl.innerHTML = (alive.length ? alive.map(p => `<button type="button" data-who="${esc(p.n)}">${esc(L(p.n))}</button> <small>(${p.approx ? 'c. ' : ''}${Math.round(gy - p.b)})</small>`).join(' · ') : (gy > 2493 + sh(2) && gy < 2860 + sh(2) ? 'Josué, los jueces y Samuel: el texto no da sus años de nacimiento.' : gy > u0 ? 'Nadie con fechas conocidas.' : 'Nadie con fechas en el texto.'))
+      + (kings.length ? ` <small>· ${T(kings.some(k => k.approx) ? 'gobernaban {list}' : 'reinaba {list}', { list: esc(kings.map(k => L(k.n)).join(', ')) })}</small>` : '');
     pEl.querySelectorAll('[data-who]').forEach(b => b.onclick = () => openWho(b.dataset.who));
     // Dato curioso del momento
     const cEl = s.querySelector('[data-gc]'), c = curioAt(gy);
     if (cEl && cEl.dataset.k !== String(c ? c[5] : '')) {
       cEl.dataset.k = c ? c[5] : '';
-      cEl.innerHTML = c ? `<div class="tl-cur"><div class="tl-cur-img" hidden></div><div class="tl-kick">${esc(c[4])}</div><b>${esc(c[5])}</b><p>${esc(c[6])}</p>${c[7] ? `<button type="button" class="tl-link" data-go="${c[7]}">Leer ${esc(nice(c[7]))} →</button>` : ''}</div>` : '';
+      cEl.innerHTML = c ? `<div class="tl-cur"><div class="tl-cur-img" hidden></div><div class="tl-kick">${esc(c[4])}</div><b>${esc(c[5])}</b><p>${esc(c[6])}</p>${c[7] ? `<button type="button" class="tl-link" data-go="${c[7]}">${T('Leer {ref} →', { ref: esc(nice(c[7])) })}</button>` : ''}</div>` : '';
       const l = cEl.querySelector('[data-go]'); if (l) l.onclick = () => go(l.dataset.go);
       if (c && c[8]) loadArt().then(art => {
         const u = art && art['tl_' + c[8]], box = cEl.querySelector('.tl-cur-img');
@@ -412,11 +417,11 @@ html.tl-off .tl-pill { display: none !important; }
     const born = D.pshist.filter(p => p[2].split(':')[0] === `${book} ${ch}`);
     if (ps) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'tl-pill tl-ps';
-      b.innerHTML = `<span>📜</span><span><b>Escrito</b> <small>${esc(ps[1].charAt(0).toLowerCase() + ps[1].slice(1))}</small></span><span class="go">${esc(nice(ps[2]))} ›</span>`;
+      b.innerHTML = `<span>📜</span><span><b>${T('Escrito')}</b> <small>${esc(low(L(ps[1])))}</small></span><span class="go">${esc(nice(ps[2]))} ›</span>`;
       b.onclick = () => go(ps[2]); add(b);
     } else if (born.length) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'tl-pill tl-ps';
-      b.innerHTML = `<span>📜</span><span><b>Aquí nació ${born.length > 1 ? 'el ' + born.map(p => 'Salmo ' + p[0]).join(' y el ') : 'el Salmo ' + born[0][0]}</b> <small>${esc(born[0][1].charAt(0).toLowerCase() + born[0][1].slice(1))}</small></span><span class="go">›</span>`;
+      b.innerHTML = `<span>📜</span><span><b>${born.length > 1 ? T('Aquí nacieron los Salmos {a} y {b}', { a: born[0][0], b: born[1][0] }) : T('Aquí nació el Salmo {n}', { n: born[0][0] })}</b> <small>${esc(low(L(born[0][1])))}</small></span><span class="go">›</span>`;
       b.onclick = () => go(`PSA ${born[0][0]}`); add(b);
     }
     // A · la época
@@ -424,7 +429,7 @@ html.tl-off .tl-pill { display: none !important; }
     const b = document.createElement('button'); b.type = 'button'; b.className = 'tl-pill';
     const kings = w && w.prophet ? [...w.prophet[3].filter(k => k !== 'Exilio' && k !== 'Persia'), ...w.prophet[4]] : [];
     const label = w && w.era ? `<b>${esc(w.era[1])}</b>${w.era[2] ? ` <small>· ${esc(w.era[2])}</small>` : ''}` : `<b>${esc(bookName(book))}</b> <small>· ${esc((w && w.note) || 'varias épocas')}</small>`;
-    b.innerHTML = `<span class="tl-mini" aria-hidden="true">${D.eras.map((e, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')}</span><span>${label}${kings.length && ch === 1 ? ` <small>· en días de ${esc(kings.slice(0, 2).join(', '))}${kings.length > 2 ? '…' : ''}</small>` : ''}</span><span class="go">›</span>`;
+    b.innerHTML = `<span class="tl-mini" aria-hidden="true">${D.eras.map((e, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')}</span><span>${label}${kings.length && ch === 1 ? ` <small>· ${T('en días de {k}', { k: esc(kings.slice(0, 2).map(L).join(', ')) + (kings.length > 2 ? '…' : '') })}</small>` : ''}</span><span class="go">›</span>`;
     b.setAttribute('aria-label', 'Línea de tiempo');
     b.onclick = () => open({ book, ch, tab: w && w.prophet && ch === 1 ? 'profetas' : ps ? 'salmos' : 'historia' });
     add(b);
