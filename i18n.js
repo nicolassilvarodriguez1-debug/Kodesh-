@@ -240,8 +240,6 @@
     verseday: '',
     calpage: 'a[href^="calendario-biblico.html"], a[href^="/calendario-biblico.html"]',
     people: '[onclick*="KodeshPeople"], .pp-chips',
-    // marcas del lector que buscan frases del texto en español (fiestas y raíces)
-    readermarks: '.settings-row:has(#frToggle)',
   };
   const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile', 'maps', 'people', 'harmony', 'lexicon', 'interlinear']);
   const ok = f => !isEn || READY.has(f);

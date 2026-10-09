@@ -5816,7 +5816,7 @@ function updateTopbarChapter(bookName, chapterNum, parasha) {
   if (!t || !sub) return;
   t.textContent = `${bookName} ${chapterNum}`;
   const isNT = BIBLE_BOOKS.NT.some(b => b.id === state.currentBook);
-  sub.textContent = parasha ? `${parasha.nombre} · ${String(parasha.sig || '').split('/')[0].trim()}` : (isNT ? 'Nuevo Pacto' : 'Antiguo Pacto');
+  sub.textContent = parasha ? `${parasha.nombre} · ${String(TT(parasha.sig || '')).split('/')[0].trim()}` : (isNT ? 'Nuevo Pacto' : 'Antiguo Pacto');
 }
 
 function restoreTextualToggleButton() {

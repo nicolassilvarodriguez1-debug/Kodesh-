@@ -80,6 +80,11 @@ const STEPS = [
   ['paralelos · solo en', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 2).then(() => setTimeout(() => { const w = document.querySelector('.pl-chip.solo'); if (w) w.click(); }, 1800))"],
   ['interlineal · premium', 'index.html', "KodeshHome.hide(); selectBook('PSA'); loadChapter('PSA', 23).then(() => setTimeout(() => toggleInterlinearMode(true), 600))"],
   ['interlineal · glosas', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 3).then(async () => { userUsage = { plan: 'premium' }; interlinearActive = true; const d = { verses: { 16: 'Οὕτως γὰρ ἠγάπησεν ὁ θεὸς τὸν κόσμον'.split(' ').map((t, i) => ({ text: t, strongs: 'G' + (i + 1), translit: 't', gloss: 'español' })) } }; interlinearCache.set('JHN:3', await interlinearEnglish('JHN', 3, d)); renderInterlinearInline('JHN', 3, []); })"],
+  ['fiestas en el lector', 'index.html', "KodeshHome.hide(); selectBook('EXO'); loadChapter('EXO', 12)"],
+  ['fiestas · la fiesta', 'index.html', "KodeshHome.hide(); selectBook('LEV'); loadChapter('LEV', 23).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); setTimeout(() => { const t = document.querySelector('.fr-tab[data-tab=fiesta]'); if (t) t.click(); }, 500); }, 1500))"],
+  ['fiestas · calendario', 'index.html', "KodeshHome.hide(); selectBook('LEV'); loadChapter('LEV', 23).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); setTimeout(() => { const t = document.querySelector('.fr-tab[data-tab=cal]'); if (t) t.click(); }, 500); }, 1500))"],
+  ['fiestas · de punta a punta', 'index.html', "KodeshHome.hide(); selectBook('LEV'); loadChapter('LEV', 23).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); setTimeout(() => { const t = document.querySelector('.fr-tab[data-tab=hilo]'); if (t) t.click(); }, 500); }, 1500))"],
+  ['fiestas · templo', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 10).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); }, 1500))"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];

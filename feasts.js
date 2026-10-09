@@ -19,6 +19,8 @@
   const bookName = id => ((window.KodeshRef && KodeshRef.BOOKS) || []).find(b => b[0] === id)?.[1] || id;
   const nice = r => { const m = /^([1-3]?[A-Z]{2,3})[ :](.+)$/.exec(r); return m ? `${bookName(m[1])} ${m[2].replace('-', '–')}` : r; };
   const readUrl = r => { const m = /^([1-3]?[A-Z]{2,3})[ :](\d+)(?::(\d+))?/.exec(r); return m ? `index.html?book=${m[1]}&chapter=${m[2]}${m[3] ? '&verse=' + m[3] : ''}` : 'index.html'; };
+  const EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+  const TX = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
   const TEMA = { templo: 'El Templo', costumbre: 'Costumbre', 'torá': 'La Torá', idioma: 'Expresión hebrea', shabat: 'Shabat' };
 
   let DATA = null, ROOTS = rj('kodesh_fr_roots', null), dataP = null, rootsP = null;
@@ -29,7 +31,7 @@
     return rootsP;
   }
   const fest = id => DATA && DATA.f.find(f => f.id === id);
-  const notesOf = key => (ROOTS && ROOTS.items && ROOTS.items[key]) || [];
+  const notesOf = key => (!EN && ROOTS && ROOTS.items && ROOTS.items[key]) || [];
   const placesOf = key => (DATA ? DATA.templo.filter(p => p.ch.includes(key)) : []);
   const temaName = t => (fest(t) ? fest(t).n : TEMA[t] || 'Raíz hebrea');
 
@@ -161,7 +163,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
       ${ch ? `<div class="fr-card here"><div class="fr-kick">En este capítulo</div><div class="fr-p" style="margin-top:4px">${esc(ch[1])}</div></div>` : ''}
       <div class="fr-sec">Qué mandó YHWH</div><ul class="fr-ul">${f.que.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       <div class="fr-sec">En tiempos de Yeshúa</div><ul class="fr-ul">${f.siglo.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-      ${d ? `<div class="fr-card" style="border-color:rgba(90,156,240,.5)"><div class="fr-kick">${d.now ? 'Se celebra ahora' : 'Próxima fecha'}</div><div class="fr-p" style="margin-top:2px">${esc(fmtDay(d.start))}${f.dias > 1 ? ` al ${esc(fmtDay(d.end))}` : ''}</div><div class="fr-src">Comienza al atardecer del ${esc(fmtDay(d.eve))}.${d.confirmed ? ' Luna nueva confirmada.' : d.maybeEarlier ? ' Si la luna se ve una tarde antes, se adelanta un día.' : ''}</div><a class="fr-why" href="${WHY}">Calendario bíblico observado · ¿por qué? →</a></div>` : ''}
+      ${d ? `<div class="fr-card" style="border-color:rgba(90,156,240,.5)"><div class="fr-kick">${TX(d.now ? 'Se celebra ahora' : 'Próxima fecha')}</div><div class="fr-p" style="margin-top:2px">${esc(fmtDay(d.start))}${f.dias > 1 ? ` ${TX('al')} ${esc(fmtDay(d.end))}` : ''}</div><div class="fr-src">${esc(TX('Comienza al atardecer del {d}.', { d: fmtDay(d.eve) }))}${d.confirmed ? ' ' + TX('Luna nueva confirmada.') : d.maybeEarlier ? ' ' + TX('Si la luna se ve una tarde antes, se adelanta un día.') : ''}</div><a class="fr-why" href="${WHY}">${TX('Calendario bíblico observado · ¿por qué? →')}</a></div>` : ''}
       <div class="fr-sec">Para leer</div><div class="fr-refs">${[f.mand, ...f.lee].filter((x, i, a) => a.indexOf(x) === i).map(r => `<a class="fr-ref" href="${readUrl(r)}">${esc(nice(r))}</a>`).join('')}</div>`;
   }
   const initial = he => he.normalize('NFD').replace(/[\u0591-\u05C7]/g, '').replace(/^יום\s+/, '').replace(/^ה(?=כ)/, '')[0];
@@ -263,7 +265,6 @@ html.fr-off .word.fr-u { text-decoration: none; }
     });
   }
   async function decorate(container, book, chapter) {
-    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter || container.dataset.fr === `${book}:${chapter}`) return;
     container.dataset.fr = `${book}:${chapter}`;
     await Promise.all([loadData(), loadRoots()]);
@@ -276,11 +277,11 @@ html.fr-off .word.fr-u { text-decoration: none; }
     if (prev && prev.classList.contains('fr-pill')) return;
     const fs = ch ? ch[0].map(fest).filter(Boolean) : [];
     const b = document.createElement('button'); b.type = 'button'; b.className = 'fr-pill';
-    const nr = notes.length ? `${notes.length} ${notes.length === 1 ? 'raíz hebrea' : 'raíces hebreas'}` : '';
+    const nr = notes.length ? `${notes.length} ${notes.length === 1 ? 'raíz hebrea' : 'raíces hebreas'}` : '';   // (solo en español: en inglés no hay notas)
     b.innerHTML = fs.length
-      ? `<span class="fr-he" lang="he" dir="rtl">${esc(key === 'LEV:23' ? 'מוֹעֲדִים' : fs[0].he)}</span><span>${key === 'LEV:23' ? '<b>Las fiestas de YHWH</b>' : `<b>${esc(fs.slice(0, 2).map(f => f.n).join(' · '))}</b>${fs.length > 2 ? ` <small>+${fs.length - 2}</small>` : ''}`}${nr ? ` <small>· ${nr}</small>` : ''}</span><span class="fr-go">›</span>`
+      ? `<span class="fr-he" lang="he" dir="rtl">${esc(key === 'LEV:23' ? 'מוֹעֲדִים' : fs[0].he)}</span><span>${key === 'LEV:23' ? `<b>${TX('Las fiestas de YHWH')}</b>` : `<b>${esc(fs.slice(0, 2).map(f => TX(f.n)).join(' · '))}</b>${fs.length > 2 ? ` <small>+${fs.length - 2}</small>` : ''}`}${nr ? ` <small>· ${nr}</small>` : ''}</span><span class="fr-go">›</span>`
       : notes.length ? `<span>🕎</span><span><b>${nr[0].toUpperCase() + nr.slice(1)}</b> <small>en este capítulo</small></span><span class="fr-go">›</span>`
-      : `<span>🏛</span><span><b>Lugares del Templo</b> <small>en este capítulo</small></span><span class="fr-go">›</span>`;
+      : `<span>🏛</span><span><b>${TX('Lugares del Templo')}</b> <small>${TX('en este capítulo')}</small></span><span class="fr-go">›</span>`;
     b.onclick = () => open({ key, container, tab: fs.length ? 'fiesta' : notes.length ? 'raices' : 'templo' });
     container.before(b);
   }
