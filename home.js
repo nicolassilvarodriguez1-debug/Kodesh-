@@ -72,7 +72,7 @@
 #homeView.on { opacity: 1; pointer-events: auto; }
 body.home-on { overflow: hidden; }
 .hm-in { max-width: 720px; margin: 0 auto; padding-bottom: calc(110px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
-.hm-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 10px) 18px 6px; }
+.hm-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 10px) 18px 6px; }
 .hm-logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 1.1rem; letter-spacing: 4px; color: var(--text); text-decoration: none; }
 .hm-logo .he { font-family: 'Frank Ruhl Libre', serif; font-size: 1.45rem; letter-spacing: 0; color: var(--gold, #c9a84c); }
 .hm-logo i { width: 1px; height: 22px; background: var(--border2, #2a2836); }
@@ -82,7 +82,7 @@ body.home-on { overflow: hidden; }
 html.light .hm-ic button { background: rgba(255,252,244,.82); color: #74540f; border-color: rgba(116,84,15,.22); box-shadow: 0 2px 10px rgba(70,50,15,.16); }
 .hm-logo { text-shadow: 0 1px 10px rgba(0,0,0,.55); }
 html.light .hm-logo { text-shadow: 0 1px 10px rgba(255,250,238,.9), 0 0 2px rgba(255,250,238,.9); }
-.hm-hero { transition: background-image .5s ease; position: relative; margin-top: calc(-1 * (var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 56px)); padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 86px) 22px 26px; min-height: 250px; box-sizing: border-box; background-size: cover; background-position: center; }
+.hm-hero { transition: background-image .5s ease; position: relative; margin-top: calc(-1 * (max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 56px)); padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 86px) 22px 26px; min-height: 250px; box-sizing: border-box; background-size: cover; background-position: center; }
 .hm-hero.noimg { background: linear-gradient(180deg, #f1d9a8 0%, #e7c68c 55%, var(--bg) 100%); }
 html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%, #20170e 60%, var(--bg) 100%); }
 .hm-hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 45%; background: linear-gradient(180deg, transparent, var(--bg)); pointer-events: none; }

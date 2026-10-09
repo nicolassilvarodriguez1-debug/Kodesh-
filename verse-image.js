@@ -50,7 +50,7 @@
     css.textContent = `
 .vi-overlay { position: fixed; inset: 0; z-index: 900; background: #0B0B12; color: #E9E3D3; display: none; flex-direction: column; font-family: ${BODY}; }
 .vi-overlay.open { display: flex; }
-.vi-head { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 6px; }
+.vi-head { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px))) 14px 6px; }
 .vi-x { width: 40px; height: 40px; border-radius: 20px; border: 1px solid #2A2836; background: transparent; color: #B8AF9C; font-size: 17px; cursor: pointer; }
 .vi-title { font-family: ${SERIF}; font-size: 21px; font-weight: 600; }
 .vi-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 6px 16px 12px; background: radial-gradient(60% 50% at 50% 50%, rgba(201,168,76,0.08), transparent 70%); }

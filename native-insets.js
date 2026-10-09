@@ -12,7 +12,9 @@
     if ((cap.getPlatform && cap.getPlatform()) !== 'ios') return;
     var st = document.createElement('style');
     st.id = 'kodesh-ios-insets';
-    st.textContent = 'html{--safe-area-inset-top:0px !important;}';
+    // Las capas fijas a pantalla completa (inicio, fiestas, luna…) sí empiezan debajo de la barra de estado:
+    // usan max(env(), --ios-top-min) para que sus botones nunca queden bajo la hora / Dynamic Island.
+    st.textContent = 'html{--safe-area-inset-top:0px !important;--ios-top-min:50px;}';
     (document.head || document.documentElement).appendChild(st);
   } catch (e) {}
 })();

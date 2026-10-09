@@ -41,7 +41,7 @@
   css.textContent = `
 .vdd { position: fixed; inset: 0; z-index: 560; background: radial-gradient(120% 70% at 50% 0%, rgba(201,168,76,.16), transparent 60%), var(--bg, #0b0b12); color: var(--text, #e9e3d3); display: flex; flex-direction: column; opacity: 0; transform: translateY(24px); transition: opacity .3s, transform .35s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
 .vdd.open { opacity: 1; transform: none; pointer-events: auto; }
-.vdd-top { display: flex; align-items: center; justify-content: space-between; padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 6px; }
+.vdd-top { display: flex; align-items: center; justify-content: space-between; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 14px) 18px 6px; }
 .vdd-kick { font-family: 'Cinzel', var(--font-display, serif); font-size: .68rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .vdd-date { font-size: .8rem; color: var(--text-dim, #6e6656); margin-top: 2px; }
 .vdd-x { width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); font-size: 18px; cursor: pointer; }
