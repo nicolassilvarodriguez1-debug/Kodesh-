@@ -203,7 +203,7 @@
     }
     if (window.KodeshLuna) html += KodeshLuna.cardHtml();
     el.innerHTML = html; el.hidden = false;
-    const lb = el.querySelector('[data-luna]'); if (lb) lb.onclick = () => KodeshLuna.open();
+    const lb = el.querySelector('[data-luna]'); if (lb) { lb.onclick = () => KodeshLuna.open(); KodeshLuna.paint(el); }
     const old = document.getElementById('shabbatLine'); if (old && sh) old.style.display = 'none';
     el.querySelectorAll('[data-moed]').forEach(b => b.onclick = () => open(b.dataset.moed));
   }
@@ -252,7 +252,7 @@
       if (id === 'shabat') { location.href = 'parashot.html'; return; }
       close(); if (window.KodeshFeasts) KodeshFeasts.open({ fest: id, tab: 'fiesta' });
     };
-    const pb = o.querySelector('[data-place]'); if (pb) pb.onclick = pickPlace;
+    const pb = o.querySelector('[data-place]'); if (pb) pb.onclick = () => pickPlace();
     tick();
   }
   function tick() {
@@ -280,19 +280,20 @@
     const text = `${f.n} (${f.he}) · ${f.lema}${t ? `\nComienza al atardecer del ${fmtD(t.start, t.tz, true)}` : ''}\n— Kodesh Bible`;
     try { if (navigator.share) await navigator.share({ title: f.n, text, url: 'https://kodeshbible.com' }); else { await navigator.clipboard.writeText(text); if (typeof showToast === 'function') showToast('Copiado'); } } catch (e) {}
   }
-  function pickPlace() {
+  function pickPlace(done) {
+    const after = () => { if (typeof done === 'function') done(); else show(cur); };
     const box = document.createElement('div'); box.className = 'md-pick';
     const cur0 = rj('kodesh_place', null);
     box.innerHTML = `<div><h3>Ciudad para el atardecer</h3><button data-me class="me">📍 Usar mi ubicación</button>${CITIES.map((c, i) => `<button data-c="${i}"${cur0 && cur0.n === c[0] ? ' style="color:var(--gold,#c9a84c)"' : ''}>${esc(c[0])}</button>`).join('')}</div>`;
     box.addEventListener('click', e => { if (e.target === box) box.remove(); });
     box.querySelector('[data-me]').onclick = async () => {
-      try { await useMyLocation(); box.remove(); show(cur); } catch (e) { if (typeof showToast === 'function') showToast(e.message); else alert(e.message); }
+      try { await useMyLocation(); box.remove(); after(); } catch (e) { if (typeof showToast === 'function') showToast(e.message); else alert(e.message); }
     };
-    box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const c = CITIES[+b.dataset.c]; setPlace({ n: c[0], lat: c[1], lon: c[2], tz: c[3] }); box.remove(); show(cur); document.querySelectorAll('[data-moedim-home]').forEach(renderHome); });
+    box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const c = CITIES[+b.dataset.c]; setPlace({ n: c[0], lat: c[1], lon: c[2], tz: c[3] }); box.remove(); after(); document.querySelectorAll('[data-moedim-home]').forEach(renderHome); });
     document.body.appendChild(box);
   }
 
-  window.KodeshMoedim = { open, close, renderHome, times, sunset, place, setPlace, nextFeast, load };
+  window.KodeshMoedim = { open, close, renderHome, times, sunset, place, setPlace, pickPlace, nextFeast, load };
   document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('[data-moedim-home]').forEach(renderHome));
   if (document.readyState !== 'loading') document.querySelectorAll('[data-moedim-home]').forEach(renderHome);
 })();

@@ -1290,7 +1290,7 @@ const CAL_ADMIN = (() => {
 
 // ── Imágenes del inicio (fotos realistas) ──
 const HI_ADMIN = (() => {
-  const HOME = [['hero_day', 'Portada · día'], ['hero_night', 'Portada · noche'], ['promesa', 'Promesa del día'], ['continua', 'Continúa tu lectura'], ['login_day', 'Inicio de sesión · día'], ['login_night', 'Inicio de sesión · noche'], ['ex_asistente', 'Explora · Asistente'], ['ex_ciclo', 'Explora · Ciclo'], ['ex_mapas', 'Explora · Mapas'], ['ex_buscar', 'Explora · Buscar'], ['ex_estudio', 'Explora · Mi estudio'], ['ex_tutorial', 'Explora · Tutorial']];
+  const HOME = [['hero_day', 'Portada · día'], ['hero_night', 'Portada · noche'], ['promesa', 'Promesa del día'], ['continua', 'Continúa tu lectura'], ['login_day', 'Inicio de sesión · día'], ['login_night', 'Inicio de sesión · noche'], ['ex_asistente', 'Explora · Asistente'], ['ex_ciclo', 'Explora · Ciclo'], ['ex_mapas', 'Explora · Mapas'], ['ex_buscar', 'Explora · Buscar'], ['ex_estudio', 'Explora · Mi estudio'], ['ex_tutorial', 'Explora · Tutorial'], ['luna', 'Luna llena (textura de las fases)']];
   let art = {}, parashot = [], busy = false;
   const msg = t => { const m = document.getElementById('hiMsg'); if (m) m.textContent = t || ''; };
   async function call(body) { const res = await adminApi(body); const d = await res.json().catch(() => ({})); if (!res.ok) throw new Error(d.error || `Error ${res.status}`); return d; }

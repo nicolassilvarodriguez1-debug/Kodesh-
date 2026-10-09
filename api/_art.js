@@ -30,13 +30,15 @@ export const HOME_SCENES = {
   ex_buscar: ['Soft, low-contrast macro photograph of an old magnifying glass over the pages of an ancient book, faded toward cream on the left, minimal and elegant.', '1024x1024'],
   ex_estudio: ['Soft, low-contrast photograph of a wooden desk with an open notebook, a pen and an olive sprig, faded toward cream on the left, minimal and elegant.', '1024x1024'],
   ex_tutorial: ['Soft, low-contrast macro photograph of an old leather-bound guidebook and a small oil lamp, faded toward cream on the left, minimal and elegant.', '1024x1024'],
+  // Textura de la luna para «La luna de esta noche»: la app le pone la sombra de cada fase
+  luna: ['Ultra-detailed astronomical photograph of the FULL Moon taken through a large telescope from Earth\'s northern hemisphere, showing the real lunar near side with correct geography: the dark maria Imbrium (upper left), Serenitatis and Crisium (upper right), Tranquillitatis and Fecunditatis (right of center), the wide Oceanus Procellarum (left), the bright rayed crater Tycho near the bottom center, Copernicus and Kepler with their bright ray systems. Fully illuminated with no shadow and no terminator, neutral silver-grey tones with a very faint warm tint, crisp limb, realistic subtle limb darkening. The Moon is perfectly round and centered, filling about 90% of the frame, on a pure solid black background. No stars, no glow, no halo, no atmosphere, no text, no watermark.', '1024x1024', 'raw'],
 };
 export const HOME_IDS = Object.keys(HOME_SCENES);
 // Porciones: la escena sale del tema de cada porción (parashot-data.json)
 export const parashaPrompt = p => `${PHOTO_STYLE}\n\nScene (historically accurate ancient Israel / Ancient Near East, no faces): ${String(PARASHA_SCENES[p.num] || p.tema).replace(/\.$/, '')}. Wide 3:2 composition, the right side brighter and the left side calmer.`;
 // Si el filtro de OpenAI rechaza la escena, se usa una versión simbólica sin personas
 export const parashaSafePrompt = p => `${PHOTO_STYLE}\n\nScene: a quiet, symbolic landscape or still life of ancient Israel evoking the biblical portion «${p.nombre}» (${p.torah}) — natural scenery, ancient stone, oil lamps, scrolls, olive trees, wheat or sheep. Absolutely no people. Wide 3:2 composition, the right side brighter and the left side calmer.`;
-export const homePrompt = id => `${PHOTO_STYLE}\n\nScene: ${HOME_SCENES[id][0]}`;
+export const homePrompt = id => HOME_SCENES[id][2] === 'raw' ? HOME_SCENES[id][0] : `${PHOTO_STYLE}\n\nScene: ${HOME_SCENES[id][0]}`;
 
 // Escena icónica de cada porción (1–54): lo que todos reconocen de ella
 export const PARASHA_SCENES = [null,
