@@ -162,9 +162,25 @@
 .md-be b { font-weight: 500; font-size: .98rem; }
 .md-place { display: inline-flex; gap: 6px; margin-top: 10px; border: none; background: none; color: #bfb29a; font: inherit; font-size: .88rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .md-go { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 11px 26px; border-radius: 10px; border: 1px solid rgba(224,123,57,.6); background: rgba(90,40,18,.55); color: #f6efdf; font: inherit; font-size: 1.02rem; cursor: pointer; }
-.md-dots { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: grid; gap: 7px; z-index: 2; }
-.md-dots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(225,163,90,.35); }
-.md-dots i.on { background: #e1a35a; height: 14px; }
+.md-dots { display: flex; justify-content: center; align-items: center; gap: 7px; margin: 0 0 12px; }
+.md-dots i { cursor: pointer; width: 7px; height: 7px; border-radius: 4px; background: rgba(225,163,90,.35); transition: width .25s; }
+.md-dots i.on { background: #e1a35a; width: 20px; }
+.md-up { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 14px auto 0; border: none; background: none; color: #d9b98a; font: inherit; font-size: .9rem; cursor: pointer; }
+.md-up span { font-size: 1.3rem; line-height: .8; color: #e1a35a; animation: mdUp 1.8s ease-in-out infinite; }
+@keyframes mdUp { 0%, 100% { transform: translateY(0); opacity: .6; } 50% { transform: translateY(-6px); opacity: 1; } }
+.md-info { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.md-info.open { opacity: 1; pointer-events: auto; }
+.md-info > section { width: min(720px, 100%); max-height: 88vh; overflow: auto; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; border: 1px solid var(--border2, #2a2836); border-bottom: none; padding: 0 18px calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateY(40px); transition: transform .3s cubic-bezier(.2,.8,.2,1); font-family: var(--font-body, serif); }
+.md-info.open > section { transform: none; }
+.md-info .grab { width: 42px; height: 5px; border-radius: 3px; background: var(--border2, #2a2836); margin: 8px auto 10px; }
+.md-info h3 { margin: 0; font-family: var(--font-display, serif); font-size: 1.6rem; }
+.md-info h3 span { font-family: 'Frank Ruhl Libre', serif; color: var(--gold, #c9a84c); margin-left: 8px; font-weight: 400; }
+.md-info .sec { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 6px; }
+.md-info ul { margin: 0; padding-left: 18px; line-height: 1.55; }
+.md-info li { margin: 5px 0; }
+.md-info .refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.md-info .refs a { border: 1px solid var(--border2, #2a2836); border-radius: 12px; padding: 3px 9px; font-size: .85rem; color: var(--text-mid, #b8af9c); text-decoration: none; }
+.md-info .go { display: block; width: 100%; margin-top: 18px; padding: 12px; border-radius: 12px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.1); color: var(--text, #e9e3d3); font: inherit; font-size: 1rem; cursor: pointer; }
 .md-pick { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; }
 .md-pick > div { width: min(520px, 100%); max-height: 80vh; overflow: auto; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px); }
 .md-pick h3 { margin: 0 0 10px; font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; }
@@ -215,9 +231,10 @@
     ov = document.createElement('div'); ov.className = 'md-ov'; ov.setAttribute('role', 'dialog');
     ov.innerHTML = `<div class="md-bg"></div><div class="md-wm" lang="he"></div><div class="md-fade"></div>
       <div class="md-top"><button data-x aria-label="Cerrar">✕</button><span style="display:flex;gap:8px"><button data-cal aria-label="Calendario del mes">☾</button><button data-share aria-label="Compartir">⇪</button></span></div>
-      <div class="md-dots"></div><div class="md-body"></div>`;
+      <div class="md-body"></div>`;
     document.body.appendChild(ov);
     ov.querySelector('[data-x]').onclick = close;
+    document.addEventListener('keydown', e => { if (!ov.classList.contains('open')) return; if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); else if (e.key === 'ArrowUp') info(); else if (e.key === 'Escape') close(); });
     ov.querySelector('[data-share]').onclick = share;
     ov.querySelector('[data-cal]').onclick = () => { if (window.KodeshLuna) KodeshLuna.open(); };
     let x0 = null, y0 = null;
@@ -226,6 +243,11 @@
       if (x0 == null) return;
       const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) step(dx < 0 ? 1 : -1);
+      else if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.4) {
+        const b = ov.querySelector('.md-body');      // si el texto aún tiene para dónde subir, es scroll
+        if (b.contains(e.target) && b.scrollTop + b.clientHeight < b.scrollHeight - 4) return;
+        info();
+      }
     }, { passive: true });
     return ov;
   }
@@ -236,9 +258,9 @@
     const bg = o.querySelector('.md-bg'), art = artOf(id);
     bg.className = 'md-bg' + (art ? '' : ' none'); bg.style.backgroundImage = art ? `url('${art}')` : '';
     o.querySelector('.md-wm').textContent = art ? '' : f.he;
-    o.querySelector('.md-dots').innerHTML = all().map(x => `<i class="${x.id === id ? 'on' : ''}"></i>`).join('');
     const yr = t && t.start.getFullYear() !== new Date().getFullYear();
     o.querySelector('.md-body').innerHTML = `
+      <div class="md-dots">${all().map(x => `<i class="${x.id === id ? 'on' : ''}" data-dot="${x.id}" role="button" aria-label="${esc(x.n)}"></i>`).join('')}</div>
       <div class="md-kick">${esc(kickOf(f))}</div>
       <div class="md-name">${esc(f.n)}</div><div class="md-he" lang="he">${esc(f.he)}</div>
       <div class="md-lema">${esc(f.lema)}</div>${f.eco ? `<div class="md-eco">${esc(f.eco)}</div>` : ''}
@@ -247,13 +269,43 @@
       <div class="md-be"><div><small>☀︎ Comienza</small><b>${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))}</b></div><div><small>☾ Termina</small><b>${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}</b></div></div>
       <button class="md-place" data-place>📍 ${esc(t.pl.n)}${t.pl.guess ? ' · elegir mi ciudad' : ''}</button>
       ${t.maybeEarlier ? '<div style="color:#bfb29a;font-size:.82rem;margin-top:4px">Si la luna nueva se ve una tarde antes, se adelanta un día.</div>' : ''}` : ''}
-      <div><button class="md-go" data-enter>${id === 'shabat' ? 'Porción de la semana' : 'Entrar'} →</button></div>`;
-    o.querySelector('[data-enter]').onclick = () => {
-      if (id === 'shabat') { location.href = 'parashot.html'; return; }
-      close(); if (window.KodeshFeasts) KodeshFeasts.open({ fest: id, tab: 'fiesta' });
-    };
+      <button class="md-up" data-up aria-label="Ver más sobre ${esc(f.n)}"><span>︿</span>Desliza hacia arriba</button>`;
+    o.querySelector('[data-up]').onclick = info;
+    o.querySelectorAll('[data-dot]').forEach(d => d.onclick = () => show(d.dataset.dot));
     const pb = o.querySelector('[data-place]'); if (pb) pb.onclick = () => pickPlace();
     tick();
+  }
+  /* ── Panel deslizante con la información (sustituye al botón «Entrar») ── */
+  const readUrl = r => { const m = /^([1-3]?[A-Z]{2,3})[ :](\d+)(?::(\d+))?/.exec(r); return m ? `index.html?book=${m[1]}&chapter=${m[2]}${m[3] ? '&verse=' + m[3] : ''}` : 'index.html'; };
+  const SHABAT_INFO = {
+    mando: [['Dios reposó el séptimo día, lo bendijo y lo santificó.', 'GEN 2:2-3', 'Génesis 2:2–3'], ['«Acuérdate del día de reposo para santificarlo. Seis días trabajarás…»', 'EXO 20:8-11', 'Éxodo 20:8–11'],
+      ['Es una señal perpetua entre Dios y su pueblo.', 'EXO 31:13-17', 'Éxodo 31:13–17'], ['Abre la lista de las fiestas de YHWH: día de reposo y santa convocación.', 'LEV 23:3', 'Levítico 23:3']],
+    yeshua: [['Iba a la sinagoga en Shabat, «conforme a su costumbre».', 'LUK 4:16', 'Lucas 4:16'], ['«El día de reposo fue hecho por causa del hombre, y no el hombre por causa del día de reposo».', 'MRK 2:27-28', 'Marcos 2:27–28'],
+      ['Sanó en Shabat: «es lícito hacer el bien en los días de reposo».', 'MAT 12:12', 'Mateo 12:12']],
+    leer: [['GEN 2:1-3', 'Génesis 2:1–3'], ['EXO 20:8-11', 'Éxodo 20:8–11'], ['DEU 5:12-15', 'Deuteronomio 5:12–15'], ['ISA 58:13-14', 'Isaías 58:13–14'], ['MRK 2:23-28', 'Marcos 2:23–28'], ['HEB 4:9-11', 'Hebreos 4:9–11']],
+  };
+  let infoEl = null;
+  function info() {
+    if (cur !== 'shabat') { if (window.KodeshFeasts) KodeshFeasts.open({ fest: cur, tab: 'fiesta', over: true }); return; }
+    const t = times('shabat'), I = SHABAT_INFO;
+    if (!infoEl) {
+      infoEl = document.createElement('div'); infoEl.className = 'md-info';
+      infoEl.addEventListener('click', e => { if (e.target === infoEl) infoEl.classList.remove('open'); });
+      document.body.appendChild(infoEl);
+    }
+    const li = ([t2, r, n]) => `<li>${esc(t2)} <a href="${readUrl(r)}" style="color:var(--gold,#c9a84c);font-size:.85rem">${esc(n)}</a></li>`;
+    infoEl.innerHTML = `<section role="dialog" aria-label="Shabat"><div class="grab"></div>
+      <h3>Shabat<span lang="he">שַׁבָּת</span></h3><div style="color:var(--text-mid,#b8af9c);font-style:italic;margin-top:2px">${esc(SHABAT.lema)}</div>
+      ${t ? `<div class="sec">Esta semana · ${esc(t.pl.n)}</div><div>Comienza ${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))} &nbsp;·&nbsp; termina ${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}</div>` : ''}
+      <div class="sec">Qué mandó YHWH</div><ul>${I.mando.map(li).join('')}</ul>
+      <div class="sec">En tiempos de Yeshúa</div><ul>${I.yeshua.map(li).join('')}</ul>
+      <div class="sec">Para leer</div><div class="refs">${I.leer.map(([r, n]) => `<a href="${readUrl(r)}">${esc(n)}</a>`).join('')}</div>
+      <button class="go" data-parasha>📖 Porción de la semana →</button></section>`;
+    infoEl.querySelector('[data-parasha]').onclick = () => { location.href = 'parashot.html'; };
+    let y0 = null; const g = infoEl.querySelector('section');
+    g.addEventListener('touchstart', e => { y0 = g.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
+    g.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) infoEl.classList.remove('open'); y0 = null; }, { passive: true });
+    requestAnimationFrame(() => infoEl.classList.add('open'));
   }
   function tick() {
     clearInterval(timer);
@@ -274,7 +326,7 @@
     requestAnimationFrame(() => ov.classList.add('open'));
     document.body.style.overflow = 'hidden';
   }
-  function close() { if (ov) ov.classList.remove('open'); clearInterval(timer); timer = null; document.body.style.overflow = ''; }
+  function close() { if (ov) ov.classList.remove('open'); if (infoEl) infoEl.classList.remove('open'); clearInterval(timer); timer = null; document.body.style.overflow = ''; }
   async function share() {
     const f = byId(cur), t = times(cur);
     const text = `${f.n} (${f.he}) · ${f.lema}${t ? `\nComienza al atardecer del ${fmtD(t.start, t.tz, true)}` : ''}\n— Kodesh Bible`;

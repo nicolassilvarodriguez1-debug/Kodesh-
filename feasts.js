@@ -70,6 +70,7 @@ html.fr-off .fr-pill { display: none !important; }
 html.fr-off .word.fr-u { text-decoration: none; }
 .fr-ov { position: fixed; inset: 0; z-index: 579; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
 .fr-ov.open { opacity: 1; pointer-events: auto; }
+.fr-grab { width: 42px; height: 5px; border-radius: 3px; background: var(--border2, #2a2836); margin: 8px auto 0; flex-shrink: 0; }
 .fr-sheet { width: min(720px, 100%); height: 92vh; display: flex; flex-direction: column; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; border: 1px solid var(--border2, #2a2836); border-bottom: none; transform: translateY(30px); transition: transform .3s cubic-bezier(.2,.8,.2,1); font-family: var(--font-body, serif); overflow: hidden; }
 .fr-ov.open .fr-sheet { transform: none; }
 .fr-head { padding: 16px 18px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-shrink: 0; }
@@ -134,7 +135,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
     }
     return ov.querySelector('.fr-sheet');
   }
-  function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; }
+  function close() { if (ov) ov.classList.remove('open'); if (!(ov && ov.dataset.over)) document.body.style.overflow = ''; }
 
   function rootsHtml() {
     const notes = notesOf(ctx.key);
@@ -210,7 +211,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
     if (!tabs.some(t => t[0] === ctx.tab)) ctx.tab = tabs[0][0];
     const body = ctx.tab === 'raices' ? rootsHtml() : ctx.tab === 'cal' ? calHtml(f) : ctx.tab === 'hilo' ? threadHtml(f) : ctx.tab === 'templo' ? templeHtml() : feastHtml(f);
     const showFest = ctx.tab !== 'raices' && ctx.tab !== 'templo';
-    s.innerHTML = `<div class="fr-head"><div>
+    s.innerHTML = `<div class="fr-grab" data-grab></div><div class="fr-head"><div>
         <div class="fr-kick">${showFest ? 'Moadim de YHWH' : ctx.tab === 'templo' ? 'El Templo en el siglo I' : 'Raíces hebreas'}${ctx.key ? ' · ' + esc(nice(ctx.key.replace(':', ' '))) : ''}</div>
         ${showFest ? `<div class="fr-h">${esc(f.n)} <span class="fr-heb" lang="he" dir="rtl">${esc(f.he)}</span></div><div class="fr-sub">${esc(f.alt)} · ${esc(f.sig)} · ${esc(f.fecha)}</div>`
           : `<div class="fr-h">${ctx.tab === 'templo' ? 'Dónde ocurrió' : 'Lo que hay detrás del texto'}</div>`}
@@ -218,6 +219,12 @@ html.fr-off .word.fr-u { text-decoration: none; }
       <div class="fr-tabs">${tabs.map(([k, l]) => `<button class="fr-tab${ctx.tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="fr-body">${body}</div>`;
     s.querySelector('[data-close]').onclick = close;
+    // deslizar hacia abajo desde la cabecera cierra el panel
+    let y0 = null;
+    for (const h of [s.querySelector('[data-grab]'), s.querySelector('.fr-head')]) {
+      h.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+      h.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) close(); y0 = null; }, { passive: true });
+    }
     s.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { ctx.tab = b.dataset.tab; render(); });
     s.querySelectorAll('[data-fest]').forEach(b => b.onclick = e => { e.stopPropagation(); ctx.fest = b.dataset.fest; if (ctx.tab === 'raices') ctx.tab = 'fiesta'; render(); s.querySelector('.fr-body').scrollTop = 0; });
     s.querySelectorAll('[data-place]').forEach(b => b.onclick = () => { ctx.place = b.dataset.place; render(); });
@@ -235,6 +242,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
     }
     ctx = { key: opts.key || null, container: opts.container || null, fest: f, tab: opts.tab || (opts.key ? (opts.note != null || notesOf(opts.key).length ? 'raices' : ch ? 'fiesta' : 'templo') : 'cal'), note: opts.note, place: null };
     sheet(); render();
+    ov.style.zIndex = opts.over ? '600' : ''; ov.dataset.over = opts.over ? '1' : '';
     requestAnimationFrame(() => ov.classList.add('open'));
     document.body.style.overflow = 'hidden';
   }
