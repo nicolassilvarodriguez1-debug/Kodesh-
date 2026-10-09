@@ -41,12 +41,20 @@ Para CADA personaje devuelve:
 
 Usa Yeshúa (nunca "Jesús"), Mashíaj (nunca "Cristo"), Elohim/YHWH.
 
+EDICIÓN EN INGLÉS: agrega también "resumen_en" y "sig_en", y en cada momento y cada edad "t_en": el mismo texto en inglés natural (Yeshua, Messiah, YHWH — nunca "Jesus", "Christ" ni "the LORD"; nombres en su forma inglesa, salvo que en español uses la forma hebrea, que se deja igual; citas entre “ ”).
+
 ${items.map(it => `PERSONA ${it.id}: ${it.n} (${it.en}) — ${it.g === 'F' ? 'mujer' : 'hombre'}${it.fam ? ` · familia: ${it.fam}` : ''}\nAparece en: ${it.ch}${it.ez ? `\nNota: ${it.ez}` : ''}`).join('\n\n')}
 
-Responde SOLO con JSON: {"d":[{"id":"abraham_58","strong":"H85","sig":"","resumen":"","momentos":[{"ref":"GEN 12:1","t":""}],"edades":[{"edad":75,"ref":"GEN 12:4","t":""}]}]}`;
+Responde SOLO con JSON: {"d":[{"id":"abraham_58","strong":"H85","sig":"","sig_en":"","resumen":"","resumen_en":"","momentos":[{"ref":"GEN 12:1","t":"","t_en":""}],"edades":[{"edad":75,"ref":"GEN 12:4","t":"","t_en":""}]}]}`;
 }
 
 // items: [{ id, en, alias:[], chapters:Set('GEN:12') }]; strongs: diccionarios
+// Texto en inglés limpio: nombres mesiánicos y sin restos de español (si los tiene, se descarta)
+function enText(v, max) {
+  let t = String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
+  if (/[áéíóúñ¿¡«»]/i.test(t) || /\b(el|los|las|del|que|para|con|por|una)\b/i.test(t)) return '';
+  return t.replace(/\bJesus\b/g, 'Yeshua').replace(/\bChrist\b/g, 'Messiah').replace(/\bthe LORD\b/g, 'YHWH').replace(/\bLORD\b/g, 'YHWH');
+}
 export function cleanPeople(raw, items, bible, strongs) {
   const byId = new Map(items.map(it => [it.id, it]));
   const s = (v, max) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -71,7 +79,7 @@ export function cleanPeople(raw, items, bible, strongs) {
       if (!txt || !it.chapters.has(`${r.book}:${r.c}`)) continue;     // debe aparecer en ese capítulo
       const quotes = [...t.matchAll(/«([^»]{3,})»/g)].map(q => norm(q[1]));
       if (quotes.some(q => !norm(txt).includes(q))) continue;
-      momentos.push({ ref: `${r.book} ${r.c}:${r.v1}${r.v2 > r.v1 ? '-' + r.v2 : ''}`, t });
+      momentos.push({ ref: `${r.book} ${r.c}:${r.v1}${r.v2 > r.v1 ? '-' + r.v2 : ''}`, t, ten: enText(m?.t_en, 110) });
       if (momentos.length >= 6) break;
     }
     if (momentos.length) e.momentos = momentos;
@@ -81,9 +89,13 @@ export function cleanPeople(raw, items, bible, strongs) {
       if (!(n >= 1 && n <= 999) || !r || !t) continue;
       const txt = refText(bible, r);
       if (!txt || !hasNumber(txt, n)) continue;                       // la edad debe estar en el versículo
-      edades.push({ edad: n, ref: `${r.book} ${r.c}:${r.v1}${r.v2 > r.v1 ? '-' + r.v2 : ''}`, t });
+      edades.push({ edad: n, ref: `${r.book} ${r.c}:${r.v1}${r.v2 > r.v1 ? '-' + r.v2 : ''}`, t, ten: enText(a?.t_en, 90) });
     }
     if (edades.length) e.edades = edades.sort((a, b) => a.edad - b.edad).slice(0, 10);
+    // Edición en inglés: solo si TODO trae su texto en inglés (si no, en inglés no se muestra la ficha)
+    const en = { resumen: enText(d.resumen_en, 320), sig: e.heb && e.heb.sig ? enText(d.sig_en, 140) : '', momentos: (e.momentos || []).map(m => m.ten), edades: (e.edades || []).map(a => a.ten) };
+    if (en.resumen && (!e.heb || !e.heb.sig || en.sig) && en.momentos.every(Boolean) && en.edades.every(Boolean)) e.en = en;
+    (e.momentos || []).forEach(m => delete m.ten); (e.edades || []).forEach(a => delete a.ten);
     out[it.id] = e;
   }
   return out;

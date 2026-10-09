@@ -43,3 +43,15 @@ test('personas: la ficha se valida (Strong\'s, capítulos y edades)', () => {
   const bad = cleanPeople({ d: [{ id: 'abraham_58', strong: 'H1', resumen: 'x' }] }, items, BIBLE, STRONGS);
   assert.equal(bad.abraham_58.heb, undefined, 'Strong\'s de otra palabra no se acepta');
 });
+
+test('personas: edición en inglés alineada con lo que pasó la validación', () => {
+  const items = [{ id: 'abraham_58', en: 'Abraham', alias: ['Abraham'], chapters: new Set(DATA.p.abraham_58[4]) }];
+  const raw = { d: [{ id: 'abraham_58', strong: 'H85', sig: 'padre de una multitud', sig_en: 'father of a multitude', resumen: 'Patriarca.', resumen_en: 'Patriarch of Jesus\' people.',
+    momentos: [{ ref: 'GEN 12:1', t: 'El llamado', t_en: 'The call' }, { ref: 'EXO 20:1', t: 'No estuvo ahí', t_en: 'Not there' }],
+    edades: [{ edad: 75, ref: 'GEN 12:4', t: 'Sale de Harán', t_en: 'Leaves Haran' }] }] };
+  const a = cleanPeople(raw, items, BIBLE, STRONGS).abraham_58;
+  assert.deepEqual(a.en, { resumen: 'Patriarch of Yeshua\' people.', sig: 'father of a multitude', momentos: ['The call'], edades: ['Leaves Haran'] });
+  assert.equal(a.momentos[0].ten, undefined);
+  raw.d[0].momentos[0].t_en = 'El llamado';                                   // un texto en español → sin edición en inglés
+  assert.equal(cleanPeople(raw, items, BIBLE, STRONGS).abraham_58.en, undefined);
+});

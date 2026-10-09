@@ -154,7 +154,7 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
         const voc = I.esVocab(t).filter(x => !['amen', 'shalom', 'torah', 'yeshua', 'yhwh', 'kodesh', 'abba', 'messiah', 'mar', 'sun', 'sat'].includes(x));
         if (voc.length) { vis.add(t + '   ⟵ ' + voc.join(', ')); continue; }
         const w = t.match(/\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\b/g) || [];
-        const bad = w.filter(x => I.esWord(x) && !['Asa', 'Dan', 'Gad', 'Job', 'Is', 'He', 'Am', 'Mi', 'Ex', 'Mar', 'Sal', 'Ziv', 'Bul'].includes(x));
+        const bad = w.filter(x => I.esWord(x) && !['Asa', 'Dan', 'Gad', 'Job', 'Is', 'He', 'Am', 'Mi', 'Ex', 'Mar', 'Sal', 'Ziv', 'Bul', 'Red'].includes(x));
         if (bad.length) vis.add(t + '   ⟵ ' + bad.join(', '));
       }
       // valores escritos por la app en campos de texto (títulos, etc.)

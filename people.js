@@ -47,12 +47,17 @@
     return dataP;
   }
   function loadBook(b) { if (!books[b]) books[b] = fetch(`./data/personas/${b}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})); return books[b]; }
+  // Inglés: los textos de las fichas en inglés (data/personas-en.json, o «en» dentro de la ficha si el admin ya la
+  // generó en los dos idiomas) se ponen sobre la ficha; lo que no tenga inglés no se muestra.
+  let DET_EN = null, detEnP = null;
+  function loadDetEn() {
+    if (!detEnP) detEnP = fetch('./data/personas-en.json').then(r => r.ok ? r.json() : {}).then(j => (DET_EN = j)).catch(() => (DET_EN = {}));
+    return detEnP;
+  }
   function loadDet() {
-    // Las fichas detalladas están redactadas en español: en inglés no se muestran hasta tener su versión en inglés
-    if (window.KodeshI18n && KodeshI18n.isEn) return Promise.resolve(null);
     if (!detP) detP = fetch(`${REMOTE}?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null)
       .then(j => { if (j && j.items) { DET = j; wj('kodesh_pp_det', j); } return DET; }).catch(() => DET);
-    return detP;
+    return (window.KodeshI18n && KodeshI18n.isEn) ? Promise.all([detP, loadDetEn()]).then(() => DET) : detP;
   }
   const P = id => DATA && DATA.p[id];
   // En inglés, el nombre en inglés de Theographic (p[3])
@@ -60,7 +65,19 @@
   const TP = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
   const nameOf = id => { const x = P(id) || [id]; return EN && x[3] ? x[3] : x[0]; };
   const R = id => (DATA && DATA.r[id]) || {};
-  const det = id => (!(window.KodeshI18n && KodeshI18n.isEn) && DET && DET.items && DET.items[id]) || null;   // fichas en español (también las guardadas en el teléfono): nunca en inglés
+  const detEs = id => (DET && DET.items && DET.items[id]) || null;
+  function detEn(id) {
+    const d = detEs(id); if (!d) return null;
+    const e = d.en || (DET_EN && DET_EN[id]); if (!e || !e.resumen) return null;   // sin inglés: no hay ficha
+    const same = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && b.every(Boolean);
+    const out = { resumen: e.resumen };
+    if (d.heb) out.heb = { ...d.heb, sig: e.sig || '' };
+    if (d.momentos && same(d.momentos, e.momentos)) out.momentos = d.momentos.map((m, i) => ({ ...m, t: e.momentos[i] }));
+    if (d.edades && d.edades.length && same(d.edades, e.edades)) out.edades = d.edades.map((a, i) => ({ ...a, t: e.edades[i] }));
+    return out;
+  }
+  // Fichas en español (también las guardadas en el teléfono): en inglés solo con su texto en inglés
+  const det = id => (window.KodeshI18n && KodeshI18n.isEn) ? detEn(id) : detEs(id);
 
   /* ── Ajustes ── */
   const isOn = () => { try { return localStorage.getItem('kodesh_pp_on') !== '0'; } catch (e) { return true; } };
