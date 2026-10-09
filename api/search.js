@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   const userId = user.id;
 
   const { query } = req.body || {};
+  const en = (req.body || {}).ui === 'en';
   if (!isNonEmptyString(query, 500)) return sendError(res, 400, ERR.badRequest, null, 'search');
 
   // Reserve quota atomically BEFORE calling Anthropic.
@@ -49,7 +50,9 @@ IDs de libros EXACTOS que debes usar:
 AT: GEN,EXO,LEV,NUM,DEU,JOS,JDG,RUT,1SA,2SA,1KI,2KI,1CH,2CH,EZR,NEH,EST,JOB,PSA,PRO,ECC,SNG,ISA,JER,LAM,EZK,DAN,HOS,JOL,AMO,OBA,JON,MIC,NAM,HAB,ZEP,HAG,ZEC,MAL
 NT: MAT,MRK,LUK,JHN,ACT,ROM,1CO,2CO,GAL,EPH,PHP,COL,1TH,2TH,1TI,2TI,TIT,PHM,HEB,JAS,1PE,2PE,1JN,2JN,3JN,JUD,REV
 
-Responde SOLO en JSON: {"resultados":[{"referencia":"Juan 21:1","libro_id":"JHN","capitulo":21,"versiculo":1,"texto":"texto...","razon":"razón"}]}`,
+Responde SOLO en JSON: {"resultados":[{"referencia":"Juan 21:1","libro_id":"JHN","capitulo":21,"versiculo":1,"texto":"texto...","razon":"razón"}]}${en ? `
+
+IMPORTANT: the user reads the app in English. Write "referencia" with English book names (e.g. "John 21:1"), "texto" from the World Messianic Bible in English (YHWH, Yeshua, Messiah) and "razon" in English. Keep the JSON keys exactly as shown.` : ''}`,
         messages: [{ role: 'user', content: query }]
       })
     });

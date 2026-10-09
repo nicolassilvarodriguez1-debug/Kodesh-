@@ -126,6 +126,7 @@ html.pl-off .word.pl-solo { text-decoration: none; }`;
     return false;
   }
   async function decorate(container, book, chapter) {
+    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !NAME[book] || !chapter || container.dataset.pl === `${book}:${chapter}`) return;
     container.dataset.pl = `${book}:${chapter}`;
     await Promise.all([loadData(), loadDet()]);

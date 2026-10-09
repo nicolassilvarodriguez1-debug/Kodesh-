@@ -263,6 +263,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
     });
   }
   async function decorate(container, book, chapter) {
+    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter || container.dataset.fr === `${book}:${chapter}`) return;
     container.dataset.fr = `${book}:${chapter}`;
     await Promise.all([loadData(), loadRoots()]);

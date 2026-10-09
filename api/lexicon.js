@@ -83,19 +83,20 @@ export default async function handler(req, res) {
   const chapter = bookId && isValidChapter(body.chapter) ? Number(body.chapter) : null;
   const verse = chapter && isValidVerse(body.verse) ? Number(body.verse) : null;
   const verseContext = typeof body.verseContext === 'string' ? clampString(body.verseContext, 500) : null;
+  const en = body.ui === 'en';   // app en inglés: palabra de la WMB y explicación en inglés
 
   // Direct Strong's lookup (used by the Interlinear panel when clicking a Strong's number)
   if (strongsCode && !word) {
     if (!/^[HG]\d{1,5}$/i.test(strongsCode)) return sendError(res, 400, ERR.badRequest, null, 'lexicon');
-    return handleStrongsLookup(strongsCode, userId, res);
+    return handleStrongsLookup(strongsCode, userId, res, en);
   }
 
   if (!word) return sendError(res, 400, ERR.badRequest, null, 'lexicon');
 
   const isNT = bookId ? NT_BOOKS.has(bookId) : false;
   const testament = isNT ? 'NT' : 'AT';
-  const wordClean = word.toLowerCase().trim();
-  const isContextSensitive = CONTEXT_SENSITIVE.has(wordClean);
+  const wordClean = (en ? 'en:' : '') + word.toLowerCase().trim();
+  const isContextSensitive = CONTEXT_SENSITIVE.has(wordClean) || en;
 
   // 1 — Check cache (free — doesn't touch quota). Cada entrada se verifica
   // contra el diccionario Strong's: si el número no corresponde al lema, se
@@ -153,7 +154,34 @@ export default async function handler(req, res) {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({
+      body: JSON.stringify(en ? {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: `You are an expert in biblical Hebrew and Greek lexicography for KODESH (a Hebrew-Messianic platform).
+
+MISSION: Identify the EXACT original-language word (Hebrew/Greek) used in THAT specific verse of the World Messianic Bible.
+
+RULES:
+- Old Testament → always Hebrew (H####), New Testament → always Greek (G####)
+- Read the verse context to find the exact word (e.g. John 21:15-17: Yeshua asks with ἀγαπάω G25, Peter answers with φιλέω G5368)
+- Use Messianic names: YHWH, Yeshua, Messiah
+- "lemma" must be the DICTIONARY form, not the inflected form
+- The Strong's number must match that lemma exactly; if unsure of the number, still give the right lemma (the system verifies it)
+- "definition" in clear modern English: 2-3 sentences with the meaning and its nuance in this verse
+
+Reply ONLY with JSON:
+{"found":true,"strongs":"G5368","lemma":"φιλέω","transliteration":"phileo","pronunciation":"fil-eh-o","definition":"...","language":"Greek"}
+
+If the word has no Strong's entry (e.g. an English helper word): {"found":false}`,
+        messages: [{
+          role: 'user',
+          content: `English word: "${word}"
+Book: ${bookId || '—'} | ${isNT ? 'New Testament' : 'Old Testament'}${verseRef ? ` | Exact reference: ${verseRef}` : ''}
+${verseContext ? `Verse text: "${verseContext.slice(0, 300)}"` : ''}
+
+Identify the exact ${isNT ? 'Greek' : 'Hebrew'} word used in this specific verse.`
+        }]
+      } : {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 400,
         system: `Eres un experto en léxico bíblico hebreo y griego para KODESH (plataforma Hebreo-Mesiánica).
@@ -226,13 +254,13 @@ Identifica la palabra ${lang} EXACTA usada en este versículo específico. Si ha
 // se le pedía a la IA "genera la entrada para G458" y devolvía una palabra
 // vecina (ἀνόητος en vez de ἀνομία). Ahora la IA solo redacta en español la
 // explicación del lema correcto, partiendo de la definición de Strong.
-async function handleStrongsLookup(strongsCode, userId, res) {
+async function handleStrongsLookup(strongsCode, userId, res, en) {
   const code = normalizeCode(strongsCode);
   const entry = code ? getEntry(code) : null;
   if (!entry) return res.status(200).json({ found: false });
 
   const testament = code.startsWith('G') ? 'NT' : 'AT';
-  const cacheKey = strongsCacheKey(code);
+  const cacheKey = strongsCacheKey(code, en);
   const respond = (row, extra = {}) => res.status(200).json({
     found: true, strongs: code, lemma: entry.lemma,
     transliteration: row.transliteration, pronunciation: row.pronunciation,
@@ -247,7 +275,7 @@ async function handleStrongsLookup(strongsCode, userId, res) {
     const row = (await cacheRes.json())?.[0];
     if (row?.definition) {
       if (normalizeCode(row.strongs) === code && lemmaMatches(code, row.lemma)) {
-        return respond(strongsCacheRow(entry, row), { fromCache: true });
+        return respond(strongsCacheRow(entry, row, en), { fromCache: true });
       }
       healing = true; // entrada equivocada guardada antes del arreglo: regenerar sin cobrar
     }
@@ -282,14 +310,14 @@ async function handleStrongsLookup(strongsCode, userId, res) {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(strongsPromptParams(entry)),
+      body: JSON.stringify(strongsPromptParams(entry, en)),
     });
     if (!response.ok) throw new Error(`API error ${response.status}`);
     const data = await response.json();
     const reply = parseStrongsReply(data.content?.[0]?.text);
     if (!reply) throw new Error('respuesta sin definición');
 
-    const row = strongsCacheRow(entry, reply);
+    const row = strongsCacheRow(entry, reply, en);
     try {
       await sbFetch('lexicon_cache?on_conflict=word,testament', {
         method: 'POST',

@@ -105,6 +105,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     return false;
   }
   async function decorate(container, book, chapter) {
+    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter) return;
     const rows = (await rowsFor(book)).filter(r => NT.has(book) ? r.nt_chapter === chapter : r.ot_chapter === chapter);
     if (!rows.length) return;

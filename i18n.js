@@ -1,0 +1,191 @@
+/* KODESH — Idioma de la app (Español / English).
+   - El idioma se guarda en localStorage «kodesh_lang». Sin elección: quien ya usaba la app sigue en español;
+     una instalación nueva toma el idioma del teléfono.
+   - En inglés: la Biblia es la World Messianic Bible (biblia-wmb.json, dominio público), los libros llevan
+     su nombre en inglés y la interfaz se traduce con el diccionario de i18n-en.js.
+   - Traducción por contenido: la app está escrita en español; un observador cambia cada texto de la
+     interfaz que esté en el diccionario (y los atributos placeholder / title / aria-label). Nunca toca
+     el texto bíblico (.verse), lo que escribe el usuario (inputs, textarea, contenteditable) ni lo marcado
+     con data-noi18n. Para textos armados en código: KodeshI18n.t('texto en español', { n: 3 }).
+   Expone window.KodeshI18n. */
+(function () {
+  'use strict';
+  const KEY = 'kodesh_lang';
+  function pick() {
+    try {
+      const v = localStorage.getItem(KEY);
+      if (v === 'es' || v === 'en') return v;
+      // Usuarios de antes: tienen datos de la app guardados → siguen en español
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k !== KEY && /^(kodesh|sb-|welcome)/.test(k)) return 'es'; }
+    } catch (e) {}
+    const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'es';
+    return /^es\b/i.test(nav) ? 'es' : 'en';
+  }
+  const lang = pick();
+  const isEn = lang === 'en';
+  document.documentElement.lang = lang;
+  if (isEn) document.documentElement.classList.add('lang-en');
+
+  const BOOKS_EN = {
+    GEN: ['Genesis', 'Gen'], EXO: ['Exodus', 'Exo'], LEV: ['Leviticus', 'Lev'], NUM: ['Numbers', 'Num'], DEU: ['Deuteronomy', 'Deu'],
+    JOS: ['Joshua', 'Josh'], JDG: ['Judges', 'Judg'], RUT: ['Ruth', 'Ruth'], '1SA': ['1 Samuel', '1Sa'], '2SA': ['2 Samuel', '2Sa'],
+    '1KI': ['1 Kings', '1Ki'], '2KI': ['2 Kings', '2Ki'], '1CH': ['1 Chronicles', '1Ch'], '2CH': ['2 Chronicles', '2Ch'], EZR: ['Ezra', 'Ezra'],
+    NEH: ['Nehemiah', 'Neh'], EST: ['Esther', 'Est'], JOB: ['Job', 'Job'], PSA: ['Psalms', 'Psa'], PRO: ['Proverbs', 'Pro'],
+    ECC: ['Ecclesiastes', 'Ecc'], SNG: ['Song of Songs', 'Song'], ISA: ['Isaiah', 'Isa'], JER: ['Jeremiah', 'Jer'], LAM: ['Lamentations', 'Lam'],
+    EZK: ['Ezekiel', 'Ezek'], DAN: ['Daniel', 'Dan'], HOS: ['Hosea', 'Hos'], JOL: ['Joel', 'Joel'], AMO: ['Amos', 'Amos'], OBA: ['Obadiah', 'Obad'],
+    JON: ['Jonah', 'Jon'], MIC: ['Micah', 'Mic'], NAM: ['Nahum', 'Nah'], HAB: ['Habakkuk', 'Hab'], ZEP: ['Zephaniah', 'Zeph'], HAG: ['Haggai', 'Hag'],
+    ZEC: ['Zechariah', 'Zech'], MAL: ['Malachi', 'Mal'], MAT: ['Matthew', 'Mat'], MRK: ['Mark', 'Mark'], LUK: ['Luke', 'Luke'], JHN: ['John', 'John'],
+    ACT: ['Acts', 'Acts'], ROM: ['Romans', 'Rom'], '1CO': ['1 Corinthians', '1Co'], '2CO': ['2 Corinthians', '2Co'], GAL: ['Galatians', 'Gal'],
+    EPH: ['Ephesians', 'Eph'], PHP: ['Philippians', 'Phil'], COL: ['Colossians', 'Col'], '1TH': ['1 Thessalonians', '1Th'], '2TH': ['2 Thessalonians', '2Th'],
+    '1TI': ['1 Timothy', '1Ti'], '2TI': ['2 Timothy', '2Ti'], TIT: ['Titus', 'Tit'], PHM: ['Philemon', 'Phm'], HEB: ['Hebrews', 'Heb'], JAS: ['James', 'Jas'],
+    '1PE': ['1 Peter', '1Pe'], '2PE': ['2 Peter', '2Pe'], '1JN': ['1 John', '1Jn'], '2JN': ['2 John', '2Jn'], '3JN': ['3 John', '3Jn'], JUD: ['Jude', 'Jude'],
+    REV: ['Revelation', 'Rev'],
+  };
+  // Nombre en español de cada libro (lo llena bible-ref.js) → para traducir textos que lo nombran
+  const ES2EN = new Map();
+
+  /* ── Diccionario ── */
+  const DICT = new Map();        // texto exacto en español → inglés
+  const RULES = [];              // [RegExp, reemplazo | función]
+  function add(obj) { for (const k in obj) DICT.set(norm(k), obj[k]); }
+  function rule(re, to) { RULES.push([re, to]); }
+  const norm = s => String(s).replace(/\s+/g, ' ').trim();
+  function tr(text) {
+    const k = norm(text);
+    if (!k || !/[A-Za-zÁÉÍÓÚÑáéíóúñ¿¡]/.test(k)) return null;
+    let v = look(k);
+    if (v == null) {
+      const k2 = bookSub(k);
+      if (k2 !== k) v = look(k2) ?? k2;
+      else if (ES2EN.has(k)) v = ES2EN.get(k);
+    }
+    if (v == null) {
+      // «Bereshit · En el principio», «Lej Lejá — Ve tú»: se traduce cada parte por separado
+      const parts = k.split(/( · | — | \| )/);
+      if (parts.length > 1) {
+        let hit = false;
+        const out = parts.map((x, i) => { if (i % 2) return x; const y = look(x) ?? (ES2EN.get(x) || null) ?? (bookSub(x) !== x ? bookSub(x) : null); if (y != null) { hit = true; return y; } return x; });
+        if (hit) v = out.join('');
+      }
+    }
+    if (v == null) {
+      // «· c. 5 a.C.», «— Salmos 119:105»: prefijo de puntuación
+      const pm = /^([·—–•›‹←→✦✓·]+\s*)(.+)$/.exec(k);
+      if (pm) { const y = tr(pm[2]); if (y != null) v = pm[1] + y.trim(); }
+    }
+    if (v == null) return null;
+    v = bookSub(v);
+    // conserva los espacios de los lados
+    const m = /^(\s*)[\s\S]*?(\s*)$/.exec(text);
+    return m[1] + v + m[2];
+  }
+  function look(k) {
+    let v = DICT.get(k);
+    if (v == null) for (const [re, to] of RULES) { if (re.test(k)) { v = k.replace(re, to); break; } }
+    return v;
+  }
+  // Nombres de libros en español seguidos de capítulo («Génesis 1:1», «— Salmos 119:105», «Juan 1»)
+  let BRE = null, BRE_N = 0;
+  function bookSub(k) {
+    if (!ES2EN.size) return k;
+    if (!BRE || BRE_N !== ES2EN.size) {
+      const names = [...ES2EN.keys()].filter(n => n !== ES2EN.get(n)).sort((a, b) => b.length - a.length).map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      BRE = new RegExp(`(^|[\\s(«“—–-])(${names.join('|')})(?=\\s+\\d|\\s+—)`, 'g'); BRE_N = ES2EN.size;
+    }
+    return k.replace(BRE, (m, a, n) => a + ES2EN.get(n));
+  }
+  function t(es, vars) {
+    let s = isEn ? (tr(es) ?? es) : es;
+    if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+    return s;
+  }
+
+  /* ── Traductor del DOM ── */
+  const SKIP = 'script,style,textarea,input,select option[data-noi18n],[contenteditable=""],[contenteditable="true"],.verse,.verse-sheet-text,[data-noi18n],code,pre';
+  const ATTRS = ['placeholder', 'title', 'aria-label', 'alt', 'data-tooltip'];
+  const done = new WeakMap();
+  function skipNode(el) { return !el || (el.closest && el.closest(SKIP)); }
+  // Campos de texto: su contenido es del usuario, pero el placeholder / title sí se traducen
+  const FIELD = 'input,textarea,select';
+  const attrOk = el => el && el.closest && !el.closest('[data-noi18n],.verse') && (!skipNode(el) || el.matches(FIELD));
+  function doText(n) {
+    const v = n.nodeValue;
+    if (done.get(n) === v) return;
+    const out = tr(v);
+    if (out != null && out !== v) { n.nodeValue = out; done.set(n, out); } else done.set(n, v);
+  }
+  function doAttrs(el) {
+    for (const a of ATTRS) {
+      const v = el.getAttribute && el.getAttribute(a);
+      if (!v) continue;
+      const out = tr(v);
+      if (out != null && out !== v) el.setAttribute(a, out);
+    }
+  }
+  function walk(root) {
+    if (!root) return;
+    if (root.nodeType === 3) { if (!skipNode(root.parentElement)) doText(root); return; }
+    if (root.nodeType !== 1) return;
+    if (skipNode(root)) { if (attrOk(root)) doAttrs(root); return; }
+    doAttrs(root);
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: n => {
+        if (n.nodeType !== 1) return NodeFilter.FILTER_ACCEPT;
+        if (n.matches(SKIP)) { if (attrOk(n)) doAttrs(n); return NodeFilter.FILTER_REJECT; }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    let n;
+    while ((n = tw.nextNode())) { if (n.nodeType === 3) doText(n); else doAttrs(n); }
+  }
+  if (isEn) {
+    const mo = new MutationObserver(list => {
+      for (const m of list) {
+        if (m.type === 'characterData') { if (!skipNode(m.target.parentElement)) doText(m.target); }
+        else if (m.type === 'attributes') { if (attrOk(m.target)) doAttrs(m.target); }
+        else m.addedNodes.forEach(walk);
+      }
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    document.addEventListener('DOMContentLoaded', () => walk(document.body));
+    // document.title
+    const tt = () => { const o = tr(document.title); if (o) document.title = o; };
+    document.addEventListener('DOMContentLoaded', tt);
+  }
+
+  /* ── Libros ── */
+  function bookName(id, fallback) { return isEn && BOOKS_EN[id] ? BOOKS_EN[id][0] : fallback; }
+  // BIBLE_BOOKS de index.html: { AT: [{id, name, abbr}], NT: [...] }
+  function patchBooks(groups) {
+    for (const g in groups) for (const b of groups[g]) {
+      if (!b.esName) b.esName = b.name;
+      ES2EN.set(b.esName, (BOOKS_EN[b.id] || [b.name])[0]);
+      if (isEn && BOOKS_EN[b.id]) { b.name = BOOKS_EN[b.id][0]; b.abbr = BOOKS_EN[b.id][1]; }
+    }
+  }
+  // KodeshRef.BOOKS: [id, nombre, capítulos, alias…] → en inglés también entiende los nombres en inglés
+  function patchRef() {
+    const R = window.KodeshRef; if (!R || !R.BOOKS || R.__i18n) return; R.__i18n = true;
+    for (const b of R.BOOKS) {
+      const en = BOOKS_EN[b[0]]; if (!en) continue;
+      ES2EN.set(b[1], en[0]);
+      const al = en[0].toLowerCase().replace(/\s+/g, '');
+      if (!b.includes(al)) b.push(al);
+      if (isEn) b[1] = en[0];
+    }
+  }
+  patchRef();
+  document.addEventListener('DOMContentLoaded', patchRef);
+
+  function setLang(l) {
+    if (l !== 'es' && l !== 'en') return;
+    try { localStorage.setItem(KEY, l); } catch (e) {}
+    location.reload();
+  }
+
+  window.KodeshI18n = {
+    lang, isEn, t, tr, add, rule, setLang, bookName, patchBooks, patchRef, BOOKS_EN, walk,
+    bible: isEn ? './biblia-wmb.json' : './biblia-rvr.json',
+    version: isEn ? 'WMB' : 'RVR60',
+  };
+})();

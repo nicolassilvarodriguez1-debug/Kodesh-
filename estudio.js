@@ -19,6 +19,10 @@ const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform 
 // Mismo patrón que la Biblia: en la app nativa se usa HTTP nativo y el token
 // viaja también en el cuerpo (el encabezado Authorization a veces se pierde).
 async function kapiFetch(url, options = {}) {
+  // App en inglés: cada petición JSON a /api lleva ui:'en' (el servidor responde en inglés donde lo soporta)
+  if (window.KodeshI18n && KodeshI18n.isEn && typeof options.body === 'string' && options.body[0] === '{') {
+    try { const b = JSON.parse(options.body); if (b && typeof b === 'object' && !Array.isArray(b) && !b.ui) options = { ...options, body: JSON.stringify({ ...b, ui: 'en' }) }; } catch (e) {}
+  }
   const fullUrl = (url.startsWith('/') && isNative()) ? KAPI_BASE + url : url;
   const hdrs = options.headers || {};
   const auth = hdrs.Authorization || hdrs.authorization || '';

@@ -418,6 +418,7 @@ html.mp-off .mp-chips { display: none !important; }
     return false;
   }
   async function decorate(container, book, chapter) {
+    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter || container.dataset.mp === `${book}:${chapter}`) return;
     container.dataset.mp = `${book}:${chapter}`;
     await loadPlaces(); if (!PLACES) return;

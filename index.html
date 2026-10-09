@@ -4,6 +4,8 @@
 <script src="/recovery-guard.js"></script>
 <script src="/native-insets.js"></script>
 <script src="/bible-ref.js"></script>
+<script src="/i18n.js"></script>
+<script src="/i18n-en.js"></script>
 <script src="/verse-image.js" defer></script>
 <script src="/bible-audio.js" defer></script>
 <script src="/swipe-chapters.js" defer></script>
@@ -3720,6 +3722,11 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
 .pb-heb { font-family: var(--font-hebrew); font-size: 1.35em; line-height: 1.25; color: var(--gold); }
 .pb-name { font-family: var(--font-display); font-size: 0.92em; font-weight: 600; color: var(--text); }
 .pb-sig { font-weight: 400; font-style: italic; color: var(--text-mid); }
+  .lang-seg { display: inline-flex; flex-shrink: 0; padding: 3px; gap: 3px; border-radius: 12px; border: 1px solid var(--border2, #2a2836); }
+  .lang-seg button { border: none; background: none; color: var(--text-mid); font: inherit; font-size: .85rem; padding: 6px 11px; border-radius: 9px; cursor: pointer; }
+  html:not(.lang-en) .lang-seg [data-lang="es"], html.lang-en .lang-seg [data-lang="en"] { background: var(--gold); color: #15120a; }
+  /* Traducción Kodesh: solo existe en español */
+  html.lang-en .btn-textual-toggle { display: none !important; }
 </style>
 </head>
 <body>
@@ -3932,6 +3939,16 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
 
     <!-- Stats -->
     <div class="profile-content active" id="pcontent-stats">
+      <div class="settings-row" data-noi18n>
+        <div>
+          <div class="settings-row-label">Idioma · Language</div>
+          <div class="settings-row-desc">Español: Reina-Valera · English: World Messianic Bible</div>
+        </div>
+        <div class="lang-seg" role="group" aria-label="Idioma · Language">
+          <button type="button" data-lang="es" onclick="KodeshI18n.setLang('es')">Español</button>
+          <button type="button" data-lang="en" onclick="KodeshI18n.setLang('en')">English</button>
+        </div>
+      </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-label">Palabras de Yeshúa en rojo</div>
@@ -4480,6 +4497,10 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
    directo al canónico no hay redirección en ninguna plataforma. */
 const KAPI_BASE = 'https://www.kodeshbible.com';
 async function kapiFetch(url, options = {}) {
+  // App en inglés: cada petición JSON a /api lleva ui:'en' (el servidor responde en inglés donde lo soporta)
+  if (window.KodeshI18n && KodeshI18n.isEn && typeof options.body === 'string' && options.body[0] === '{') {
+    try { const b = JSON.parse(options.body); if (b && typeof b === 'object' && !Array.isArray(b) && !b.ui) options = { ...options, body: JSON.stringify({ ...b, ui: 'en' }) }; } catch (e) {}
+  }
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const fullUrl = (url.startsWith('/') && isNative) ? KAPI_BASE + url : url;
   if (typeof trackApiUsage === 'function') trackApiUsage(url);
@@ -5035,6 +5056,7 @@ const BIBLE_BOOKS = {
     { id:'REV', name:'Apocalipsis',    abbr:'Apo', chapters:22 },
   ]
 };
+if (window.KodeshI18n) KodeshI18n.patchBooks(BIBLE_BOOKS);
 
 // Total chapters in the Bible
 const TOTAL_CHAPTERS = [...BIBLE_BOOKS.AT, ...BIBLE_BOOKS.NT].reduce((s, b) => s + b.chapters, 0);
@@ -5061,11 +5083,12 @@ loadStrongs();
 /* ════════════════════════════════════
    STATE
 ════════════════════════════════════ */
+const BASE_VERSION = window.KodeshI18n ? KodeshI18n.version : 'RVR60';
 let state = {
   testament: 'AT',
   currentBook: 'GEN',
   currentChapter: 1,
-  version: 'RVR60',
+  version: BASE_VERSION,
   readChapters: JSON.parse(localStorage.getItem('kodesh_read') || '{}'),
   bookmarks: JSON.parse(localStorage.getItem('kodesh_bookmarks') || '{}'),
   activeParasha: null,
@@ -5109,7 +5132,7 @@ let BIBLE_DATA = null;
 
 async function loadBibleData() {
   if (BIBLE_DATA) return BIBLE_DATA;
-  const res = await fetch('./biblia-rvr.json');
+  const res = await fetch(window.KodeshI18n ? KodeshI18n.bible : './biblia-rvr.json');
   if (!res.ok) throw new Error('No se pudo cargar la Biblia');
   BIBLE_DATA = await res.json();
   return BIBLE_DATA;
@@ -5185,7 +5208,7 @@ function renderBibleText(verses, bookName, chapterNum, parasha) {
       <div class="chapter-title">Capítulo ${chapterNum}</div>
       <div class="chapter-meta">
         <span class="chapter-badge">${state.version} · ${verses.length} versículos</span>
-        <button class="version-chip ${textualActive || interlinearActive ? '' : 'active'}" onclick="selectRvrVersion()" aria-pressed="${textualActive || interlinearActive ? 'false' : 'true'}">RVR60</button>
+        <button class="version-chip ${textualActive || interlinearActive ? '' : 'active'}" onclick="selectRvrVersion()" aria-pressed="${textualActive || interlinearActive ? 'false' : 'true'}">${BASE_VERSION}</button>
         <button class="btn-interlinear ${interlinearActive ? 'active' : ''}" id="btnInterlinearToggle" onclick="toggleInterlinearMode()" aria-pressed="${interlinearActive}">Interlineal</button>
         <button class="btn-study-chapter" onclick="openAssistant('${bookName}', ${chapterNum})">✦ Estudiar</button>
         <button class="btn-notes-chapter" onclick="openChapterNotes('${state.currentBook}','${bookName}',${chapterNum})" id="notesBtn">
@@ -5335,6 +5358,7 @@ function insertSectionHeadings(list) {
 }
 
 async function applySectionHeadings(bookId, chapterNum) {
+  if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
   const known = headingsByBook[bookId];
   if (known) { insertSectionHeadings(known[chapterNum]); }
   const map = await loadBookHeadings(bookId);
@@ -5590,7 +5614,7 @@ function toggleTextualVersion() {
   interlinearActive = false;
   if (textualActive) {
     textualActive = false;
-    state.version = 'RVR60';
+    state.version = BASE_VERSION;
     loadChapter(state.currentBook, state.currentChapter);
   } else {
     loadTextualVersion();
@@ -5610,7 +5634,7 @@ async function loadTextualVersion() {
   // Verificar premium — mismo patrón que el interlineal
   if (!userUsage || userUsage.plan !== 'premium') {
     textualActive = false;
-    state.version = 'RVR60';
+    state.version = BASE_VERSION;
     _textualLoading = false;
     if (btn) { btn.classList.remove('active'); btn.innerHTML = TEXTUAL_LABEL_OFF; }
     // Mostrar paywall igual que el interlineal
@@ -5691,7 +5715,7 @@ async function loadTextualVersion() {
   } catch(e) {
     console.error('[Textual] Error completo:', e, e.stack);
     textualActive = false;
-    state.version = 'RVR60';
+    state.version = BASE_VERSION;
     alert('No se pudo generar la traducción: ' + (e.message || 'Error desconocido') + '\n\nDetalle: ' + (e.name || 'sin nombre'));
     loadChapter(state.currentBook, state.currentChapter);
   }
@@ -5751,6 +5775,7 @@ function applyWordsOfJesus() {
   if (!root) return;
   root.querySelectorAll('.word.wj').forEach(w => w.classList.remove('wj'));
   if (!wjEnabled() || !WJ_BOOKS.has(state.currentBook)) return;
+
   if (!WJ) { loadWJ(); return; }
   const ch = WJ[state.currentBook] && WJ[state.currentBook][String(state.currentChapter)];
   if (!ch) return;
@@ -5851,7 +5876,7 @@ var _textualObserver = new MutationObserver(function() {
   }
 
   // Navegación normal en RVR60 — solo inyectar el botón en estado inactivo
-  state.version = 'RVR60';
+  state.version = BASE_VERSION;
   restoreTextualToggleButton();
 });
 if (document.getElementById('mainContent')) {
@@ -6494,7 +6519,7 @@ function toggleInterlinearMode(on) {
   if (next && !currentUser && window.askAccount) return askAccount('interlineal');
   if (next === interlinearActive && !textualActive) return;
   interlinearActive = next;
-  if (textualActive) { textualActive = false; state.version = 'RVR60'; }
+  if (textualActive) { textualActive = false; state.version = BASE_VERSION; }
   return loadChapter(state.currentBook, state.currentChapter);
 }
 

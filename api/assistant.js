@@ -84,7 +84,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const SYSTEM = buildAssistantSystem({ bookId: safeBook, chapter: safeChapter, verse: safeVerse, userName, userGoals, studyContext });
+  const SYSTEM = buildAssistantSystem({ bookId: safeBook, chapter: safeChapter, verse: safeVerse, userName, userGoals, studyContext })
+    + (body.ui === 'en' ? '\n\nIMPORTANT: The user reads the app in English. Always answer in clear, natural English, keep the same Hebrew-Messianic approach and names (YHWH, Yeshua, Messiah, Torah, Brit Hadashah), and quote Scripture from the World Messianic Bible (WMB).' : '');
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

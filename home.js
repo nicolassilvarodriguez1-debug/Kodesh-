@@ -175,6 +175,15 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     if (!prom && typeof getDailyPromise === 'function') {
       try { const x = getDailyPromise((typeof currentUser !== 'undefined' && currentUser && currentUser.id) || 'kodesh'); if (x) prom = { text: x.texto, ref: x.ref, book: x.libro, ch: x.cap, v: x.verso }; } catch (e) {}
     }
+    // En inglés: el mismo versículo, con el texto de la WMB (el audio del día está grabado en español)
+    if (prom && window.KodeshI18n && KodeshI18n.isEn) {
+      const rm = /:(\d+)(?:[-–](\d+))?/.exec(prom.ref || '');
+      if (!prom.v && rm) prom.v = +rm[1];
+      const v2 = vd && vd.v2 && vd.v2 > prom.v ? vd.v2 : rm && rm[2] ? +rm[2] : prom.v;
+      let txt = '';
+      try { const B = typeof loadBibleData === 'function' ? await loadBibleData() : null; const ch = B && B[prom.book] && B[prom.book][String(prom.ch)]; if (ch) for (let i = prom.v; i <= v2; i++) txt += (txt ? ' ' : '') + (ch[String(i)] || ''); } catch (e) {}
+      prom = txt ? { ...prom, text: txt.trim(), audio: null, ref: `${KodeshI18n.bookName(prom.book, '')} ${prom.ch}:${prom.v}${v2 > prom.v ? '–' + v2 : ''}` } : null;
+    }
     const last = typeof readLastPosition === 'function' ? readLastPosition() : null;
     const w = week(), p = w && w.ps[0], al = todayAliya(w);
     const name = userName();
@@ -200,7 +209,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
       <div class="hm-wrap">
         ${prom ? `<div class="hm-card">${IMG.promesa ? `<span class="bgimg"${bg('promesa')}></span>` : ''}<div class="hm-pad">
           <div class="hm-sh"><span class="hm-k">❝ Promesa del día</span><button class="hm-chip" data-act="share" aria-label="Compartir" style="height:30px;padding:0 10px">${ICON.share}</button></div>
-          <div class="hm-q">«${esc(prom.text)}»</div>
+          <div class="hm-q">${window.KodeshI18n && KodeshI18n.isEn ? `“${esc(prom.text)}”` : `«${esc(prom.text)}»`}</div>
           <div class="hm-row">${prom.audio ? '<button class="hm-chip" data-act="play">▸ Escuchar</button>' : '<span></span>'}<button class="hm-ref" data-act="promverse" style="border:none;background:none;cursor:pointer">— ${esc(prom.ref)}</button></div>
         </div></div>` : ''}
         <div class="hm-card hm-cont">${IMG.continua ? `<span class="bgimg"${bg('continua')}></span>` : ''}<div class="hm-pad">

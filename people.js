@@ -319,6 +319,7 @@ html.pp-off .pp-row { display: none !important; }
     const first = container.querySelector('.word.pp-hl'); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   async function decorate(container, book, chapter) {
+    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter || container.dataset.pp === `${book}:${chapter}`) return;
     container.dataset.pp = `${book}:${chapter}`;
     const [, byCh] = await Promise.all([loadData(), loadBook(book)]);

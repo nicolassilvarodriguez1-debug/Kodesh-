@@ -177,15 +177,30 @@ export function verifyEntry(entry, testament) {
 // para que ambos produzcan exactamente lo mismo.
 export const LEXICON_MODEL = 'claude-haiku-4-5-20251001';
 
-export function strongsCacheKey(code) { return `strongs_${code.toLowerCase()}`; }
+export function strongsCacheKey(code, en) { return `strongs_${code.toLowerCase()}${en ? '_en' : ''}`; }
 
 export function strongsTranslit(entry) {
   return entry.xlit || (entry.code[0] === 'G' ? transliterateGreek(entry.lemma) : '');
 }
 
-export function strongsPromptParams(entry) {
+export function strongsPromptParams(entry, en) {
   const lang = entry.code[0] === 'G' ? 'griego' : 'hebreo';
   const translit = strongsTranslit(entry);
+  if (en) return {
+    model: LEXICON_MODEL,
+    max_tokens: 400,
+    system: `You are an expert in biblical ${entry.code[0] === 'G' ? 'Greek' : 'Hebrew'} lexicography for KODESH (a Hebrew-Messianic platform). Use Messianic names: YHWH, Yeshua, Messiah.
+
+You receive the ALREADY VERIFIED Strong's entry (number, lemma and original definition). Your only task is to explain it in clear modern English, faithful to that definition: 2-3 sentences, main meaning and nuances of biblical usage. Do not change the word or the number, do not invent another meaning.
+
+Reply ONLY with JSON: {"definition":"...","pronunciation":"..."}`,
+    messages: [{
+      role: 'user',
+      content: `Strong's ${entry.code}
+Lemma: ${entry.lemma}${translit ? `\nTransliteration: ${translit}` : ''}
+Strong's definition: ${entry.definition || '—'}`,
+    }],
+  };
   return {
     model: LEXICON_MODEL,
     max_tokens: 400,
@@ -212,16 +227,16 @@ export function parseStrongsReply(text) {
 }
 
 // Fila de lexicon_cache para un número Strong's.
-export function strongsCacheRow(entry, reply) {
+export function strongsCacheRow(entry, reply, en) {
   return {
-    word: strongsCacheKey(entry.code),
+    word: strongsCacheKey(entry.code, en),
     testament: entry.code[0] === 'G' ? 'NT' : 'AT',
     strongs: entry.code,
     lemma: entry.lemma,
     transliteration: strongsTranslit(entry),
     pronunciation: reply.pronunciation || entry.pron || '',
     definition: reply.definition.trim(),
-    language: entry.code[0] === 'G' ? 'griego' : 'hebreo',
+    language: en ? (entry.code[0] === 'G' ? 'Greek' : 'Hebrew') : (entry.code[0] === 'G' ? 'griego' : 'hebreo'),
   };
 }
 
