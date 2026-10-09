@@ -45,4 +45,6 @@ test('línea de tiempo: ¿quién vivía? — años sumados del texto', () => {
   assert.equal(E['Salomón comienza el Templo'] - E['El Éxodo'], 480); // 1 R 6:1
   assert.equal(G['Moisés'][1], E['El Éxodo'] - 80);        // Éx 7:7
   assert.equal(D.gen.egAlt, 215);
+  assert.equal(D.gen.hist.at[0], E['Cae Jerusalén · el exilio']);  // el corte: aquí termina la cuenta del texto
+  assert.ok(D.gen.hist.people.some(p => p[0] === 'Yeshúa'));
 });

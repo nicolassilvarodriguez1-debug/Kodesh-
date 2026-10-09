@@ -195,12 +195,21 @@ html.tl-off .tl-pill { display: none !important; }
   /* E · ¿Quién vivía? */
   const pref = (k, v) => { try { return localStorage.getItem(k) === v; } catch (e) { return false; } };
   let gy = 1656, who = null, tShift = pref('kodesh_tl_tare', '130') ? 60 : 0, eShift = 0, eShiftSet = false;
-  const GCOL = p => p.kind === 'o' ? '#c98a9e' : p.kind ? '#a58fd0' : p.b >= 1656 ? '#c9a84c' : '#6fa0d8';
+  const GCOL = p => ({ o: '#c98a9e', g: '#8a93a8', h: '#b8af9c', y: '#e8cd7d', r: '#a58fd0', k: '#a58fd0' })[p.kind] || (p.b >= 1656 ? '#c9a84c' : '#6fa0d8');
   const sh = g => (g >= 1 ? tShift : 0) + (g === 2 ? eShift : 0);
   function genPeople() {
     if (!eShiftSet) { eShiftSet = true; eShift = pref('kodesh_tl_eg', '430') ? D.gen.egAlt : 0; }
-    return D.gen.people.map(([n, b, d, r, g, kind]) => ({ n, b: b + sh(g), d: d + sh(g), r, kind, reign: kind === 'k' }));
+    const H = D.gen.hist, u = histU();
+    return D.gen.people.map(([n, b, d, r, g, kind]) => ({ n, b: b + sh(g), d: d + sh(g), r, kind, reign: kind === 'k' }))
+      .concat(H.people.map(([n, b, d, r, kind]) => ({ n, b: u(b), d: u(d), r, kind, reign: kind === 'g', approx: true })));
   }
+  // Después del exilio: corte y fechas aproximadas de la historia. u(h) lleva un año a.C./d.C. al eje.
+  const U0 = () => D.gen.hist.at[0] + sh(D.gen.hist.at[1]);
+  const histU = () => { const H = D.gen.hist, o = U0() + H.gap - H.anchor; return h => h + o; };
+  const maxY = () => histU()(D.gen.hist.end);
+  const toH = y => Math.round(y - U0() - D.gen.hist.gap + D.gen.hist.anchor);
+  const hTxt = h => h < 0 ? `${-h} a.C.` : `${h || 1} d.C.`;
+  const yTxt = (y, approx) => y <= U0() + .5 ? `año ${Math.round(y)}` : `${approx ? 'c. ' : ''}${hTxt(toH(y))}`;
   // Carriles: vidas que no se cruzan comparten fila (con aire para el nombre)
   function lanes(G) {
     const end = [], L = [];
@@ -211,10 +220,11 @@ html.tl-off .tl-pill { display: none !important; }
     return { n: end.length, at: new Map(L) };
   }
   function genEvents(G) {
-    return D.gen.events.map(([y, t, r, g]) => [y + sh(g), t, r]);
+    const u = histU();
+    return D.gen.events.map(([y, t, r, g]) => [y + sh(g), t, r]).concat(D.gen.hist.events.map(([h, t, r]) => [u(h), t, r]));
   }
   const shared = (a, b) => Math.max(0, Math.min(a.d, b.d) - Math.max(a.b, b.b));
-  const MAXY = 3400, ZOOM = [0.42, 1, 2.4], ROW = 13;
+  const ZOOM = [0.42, 1, 2.4], ROW = 13;
   let zi = 0, PX = ZOOM[0];
   function tareHtml() {
     return `<div class="tl-seg"><span>Años en Egipto: Gálatas 3:17 cuenta los 430 desde la promesa a Abram (215 en Egipto); Éxodo 12:40 en el hebreo, 430 en Egipto.</span><span class="sg" role="group" aria-label="Años en Egipto"><button type="button" data-eg="0" class="${eShift ? '' : 'on'}">215 · Gá 3:17</button><button type="button" data-eg="${D.gen.egAlt}" class="${eShift ? 'on' : ''}">430 · Éx 12:40</button></span></div>
@@ -227,7 +237,7 @@ html.tl-off .tl-pill { display: none !important; }
       + `<div class="tl-yr"><b data-gy></b><small data-gev></small></div>
       <div class="tl-gantt" data-gantt><svg></svg><div class="tl-needle"></div><div class="tl-zoom"><button type="button" data-zoom="-1" aria-label="Alejar">−</button><button type="button" data-zoom="1" aria-label="Acercar">+</button></div></div>
       <div class="tl-alive"><div class="tl-kick" data-gk></div><p data-gp></p></div>
-      <p class="tl-src" style="margin-top:8px">Arrastra para moverte en el tiempo, de la creación al exilio. Toca una barra o un nombre para ver a quién conoció.<br>Años contados desde la creación sumando el texto: las edades de Génesis 5 y 11, Éxodo 7:7, los 480 años de 1 Reyes 6:1 y los reinados de Judá tal como están escritos (algunos reinados se superpusieron, por eso son la suma del texto y no fechas exactas). Las barras punteadas son solo el reinado: el texto no da su edad. Enoc no murió: «le llevó Dios» (Génesis 5:24).</p>`
+      <p class="tl-src" style="margin-top:8px">Arrastra para moverte en el tiempo, de la creación al Apocalipsis. Toca una barra o un nombre para ver a quién conoció.<br>Años contados desde la creación sumando el texto: las edades de Génesis 5 y 11, Éxodo 7:7, los 480 años de 1 Reyes 6:1 y los reinados de Judá tal como están escritos (algunos reinados se superpusieron, por eso son la suma del texto y no fechas exactas). Las barras punteadas son solo el reinado: el texto no da su edad. Enoc no murió: «le llevó Dios» (Génesis 5:24).<br>Después del exilio la Biblia ya no da una cuenta de años que se pueda sumar: desde la franja rayada, la línea sigue con fechas aproximadas de la historia (a.C. y d.C.). Las barras grises son gobernantes: solo su periodo.</p>`
       + `<div class="tl-sec">Edades que da el texto</div>` + D.lives.map(([g, list]) => `<div class="tl-sec" style="color:var(--text-mid,#b8af9c)">${esc(g)}</div>` + list.map(([n, a, r]) =>
       `<div class="tl-life"><div class="tl-row"><span>${esc(n)}</span><em>${a} años</em></div><div class="bb" style="width:${Math.max(3, a / 969 * 100).toFixed(1)}%"></div><button class="tl-link" data-go="${r}">${esc(nice(r))}</button></div>`).join('')).join('')
       + `<div class="tl-sec">Datos</div>` + D.facts.map(([t, r1, r2]) => `<div class="tl-card"><div>${esc(t)}</div><div style="margin-top:4px"><button class="tl-link" data-go="${r1}">${esc(nice(r1))}</button>${r2 ? ` · <button class="tl-link" data-go="${r2}">${esc(nice(r2))}</button>` : ''}</div></div>`).join('');
@@ -237,9 +247,9 @@ html.tl-off .tl-pill { display: none !important; }
     const list = G.filter(p => p !== me && shared(p, me) > 0).sort((a, b) => shared(b, me) - shared(a, me));
     return `<button type="button" class="tl-back" data-who="">‹ ¿Quién vivía?</button>
       <div class="tl-chips">${G.map(p => `<button type="button" class="tl-chip${p === me ? ' on' : ''}" data-who="${esc(p.n)}">${esc(p.n)}</button>`).join('')}</div>
-      <div class="tl-card"><div class="tl-kick">${esc(me.n)} · año ${me.b} – ${me.d}</div>
+      <div class="tl-card"><div class="tl-kick">${esc(me.n)} · ${yTxt(me.b, me.approx)} – ${yTxt(me.d, me.approx)}</div>
         <div style="margin-top:4px">Compartió años de vida con <b>${list.length}</b> de esta lista. <button class="tl-link" data-go="${me.r}">${esc(nice(me.r))}</button></div>
-        <div class="tl-lifebar"></div><div class="tl-lifeax"><span>nace</span><span>${Math.round(span / 2)} años</span><span>${me.n === 'Enoc' ? 'Dios se lo llevó' : 'muere'} a los ${span}</span></div></div>`
+        <div class="tl-lifebar"></div><div class="tl-lifeax"><span>nace</span><span>${Math.round(span / 2)} años</span><span>${me.n === 'Enoc' ? 'Dios se lo llevó' : me.kind === 'y' ? 'la cruz' : 'muere'} a los ${me.approx ? 'c. ' : ''}${span}</span></div></div>`
       + list.map(p => { const a = Math.max(rel(p.b), 0), b = Math.min(rel(p.d), 100);
         return `<div class="tl-kn"><div class="tl-row"><button type="button" data-who="${esc(p.n)}">${esc(p.n)} <small>· de sus ${Math.max(p.b, me.b) - me.b} a sus ${Math.min(p.d, me.d) - me.b}</small></button><em>${shared(p, me)} años juntos</em></div><div class="tr"><i style="left:${a.toFixed(2)}%;width:${Math.max(1, b - a).toFixed(2)}%;background:${GCOL(p)}"></i></div></div>`; }).join('')
       + `<p class="tl-src">La línea vinotinto es la vida de ${esc(me.n)}, de su nacimiento (izquierda) a su muerte (derecha). Lo coloreado encima es el tramo que vivió junto a cada persona.${tShift ? ' Con Taré de 130 años (Hechos 7:4).' : ''}${eShift ? ' Con 430 años en Egipto (Éxodo 12:40).' : ''}</p>`;
@@ -251,11 +261,25 @@ html.tl-off .tl-pill { display: none !important; }
     const NS = 'http://www.w3.org/2000/svg', X = y => W / 2 + (y - gy) * PX;
     const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
     svg.setAttribute('width', W); svg.setAttribute('height', H); svg.textContent = '';
-    const lab = PX > 2 ? 100 : PX > .8 ? 250 : 500;
-    for (let y = 0; y <= MAXY; y += 50) {
+    const lab = PX > 2 ? 100 : PX > .8 ? 250 : 500, u0 = U0(), HG = D.gen.hist, u = histU();
+    for (let y = 0; y <= u0; y += 50) {
       const x = X(y); if (x < -40 || x > W + 40 || (y % 100 && PX < 2)) continue;
       el('line', { x1: x, y1: 0, x2: x, y2: H, style: `stroke:var(--border2,#2a2836);opacity:${y % lab ? .45 : 1}` });
       if (y % lab === 0) el('text', { x: x + 3, y: H - 6, 'font-size': 10, style: 'fill:var(--text-dim,#6e6656)' }).textContent = y;
+    }
+    const hl = PX > 2 ? 50 : PX > .8 ? 100 : 200;
+    for (let h = HG.anchor + 6 - ((HG.anchor + 6) % 50 + 50) % 50 + 50; h <= HG.end; h += 50) {
+      const x = X(u(h)); if (x < -40 || x > W + 40 || (h % 100 && PX < 2)) continue;
+      el('line', { x1: x, y1: 0, x2: x, y2: H, style: `stroke:var(--border2,#2a2836);opacity:${h % hl ? .45 : 1}` });
+      if (h % hl === 0) el('text', { x: x + 3, y: H - 6, 'font-size': 10, style: 'fill:var(--text-dim,#6e6656)' }).textContent = hTxt(h);
+    }
+    { // el corte: aquí termina la cuenta del texto
+      const a = X(u0), b = X(u0 + HG.gap);
+      if (b > 0 && a < W) {
+        for (let k = a - H; k < b; k += 7) el('line', { x1: Math.max(a, k), y1: Math.max(a, k) === k ? 0 : a - k, x2: Math.min(b, k + H), y2: Math.min(b, k + H) - k, stroke: '#7a1f33', opacity: .5 });
+        const t = el('text', { x: 0, y: 0, 'font-size': 10, 'text-anchor': 'middle', style: 'fill:var(--text-mid,#b8af9c)', transform: `translate(${(a + b) / 2 + 3},${(H - 18) / 2}) rotate(-90)` });
+        t.textContent = 'fin de la cuenta del texto';
+      }
     }
     for (const [y] of EV) { const x = X(y); if (x > -10 && x < W + 10) el('line', { x1: x, y1: 0, x2: x, y2: H - 18, stroke: '#6fa0d8', 'stroke-dasharray': '3 3' }); }
     for (const [y1, y2, k, g1, g2] of D.gen.bands) {
@@ -272,21 +296,21 @@ html.tl-off .tl-pill { display: none !important; }
       const vx = Math.max(x1, 0);
       if (Math.min(x2, W) - vx > 30) el('text', { x: vx + 5, y: y0 + ROW - 5, 'font-size': 10, style: `fill:${on && !p.reign ? '#15120a' : 'var(--text,#e9e3d3)'}` }).textContent = p.n;
     });
-    s.querySelector('[data-gy]').innerHTML = `${Math.round(gy)}<small>desde la creación</small>`;
+    s.querySelector('[data-gy]').innerHTML = gy <= u0 + .5 ? `${Math.round(gy)}<small>desde la creación</small>` : gy < u0 + HG.gap ? `<small style="margin:0">fin de la cuenta del texto</small>` : `c. ${hTxt(toH(gy)).replace(/ (a|d)\.C\./, '<small>$1.C.</small>')}`;
     const ev = EV.find(([y]) => Math.abs(y - gy) <= 6);
     s.querySelector('[data-gev]').textContent = ev ? `${ev[1]} · ${nice(ev[2])}` : '';
-    const alive = G.filter(p => gy >= p.b && gy <= p.d && !p.reign), king = G.find(p => p.reign && gy >= p.b && gy < p.d);
+    const alive = G.filter(p => gy >= p.b && gy <= p.d && !p.reign), kings = G.filter(p => p.reign && gy >= p.b && gy < p.d);
     s.querySelector('[data-gk]').textContent = alive.length ? `Vivían ${alive.length}` : 'Vivían';
     const pEl = s.querySelector('[data-gp]');
-    pEl.innerHTML = (alive.length ? alive.map(p => `<button type="button" data-who="${esc(p.n)}">${esc(p.n)}</button> <small>(${Math.round(gy - p.b)})</small>`).join(' · ') : (gy > 2493 + sh(2) && gy < 2860 + sh(2) ? 'Josué, los jueces y Samuel: el texto no da sus años de nacimiento.' : 'Nadie con fechas en el texto.'))
-      + (king ? ` <small>· reinaba ${esc(king.n)}</small>` : '');
+    pEl.innerHTML = (alive.length ? alive.map(p => `<button type="button" data-who="${esc(p.n)}">${esc(p.n)}</button> <small>(${p.approx ? 'c. ' : ''}${Math.round(gy - p.b)})</small>`).join(' · ') : (gy > 2493 + sh(2) && gy < 2860 + sh(2) ? 'Josué, los jueces y Samuel: el texto no da sus años de nacimiento.' : gy > u0 ? 'Nadie con fechas conocidas.' : 'Nadie con fechas en el texto.'))
+      + (kings.length ? ` <small>· ${kings.some(k => k.approx) ? 'gobernaban' : 'reinaba'} ${esc(kings.map(k => k.n).join(', '))}</small>` : '');
     pEl.querySelectorAll('[data-who]').forEach(b => b.onclick = () => openWho(b.dataset.who));
   }
   function openWho(n) { who = n || null; render(); const b = sheet().querySelector('.tl-body'); if (b) b.scrollTop = 0; }
   function bindGantt(s) {
     const g = s.querySelector('[data-gantt]'); if (!g) return;
     let x0 = null, t0 = null, v = 0, lt = 0, raf = 0;
-    const clamp = y => Math.max(0, Math.min(MAXY, y));
+    const clamp = y => Math.max(0, Math.min(maxY(), y));
     const zb = [...g.querySelectorAll('[data-zoom]')], zpaint = () => { zb[0].disabled = zi === 0; zb[1].disabled = zi === ZOOM.length - 1; };
     zb.forEach(b => { b.addEventListener('pointerdown', e => e.stopPropagation()); b.onclick = () => { zi = Math.max(0, Math.min(ZOOM.length - 1, zi + +b.dataset.zoom)); PX = ZOOM[zi]; zpaint(); drawGantt(s); }; });
     zpaint();

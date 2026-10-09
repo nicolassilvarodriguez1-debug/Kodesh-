@@ -181,7 +181,32 @@ GEN_EVENTS = [[0, 'La creación', 'GEN 1:1', 0], [1656, 'El diluvio', 'GEN 7:6',
               [TEMPLO, 'Salomón comienza el Templo', '1KI 6:1', 2], [SALOMON + 40, 'El reino se divide', '1KI 12:20', 2],
               [CAIDA, 'Cae Jerusalén · el exilio', '2KI 25:8', 2]]
 for e in GEN_EVENTS: chk(e[2])
-GEN_BANDS = [[JOSE_D, EXODO, 'esclavitud', 1, 2]]     # de la muerte de José al Éxodo: «hasta» N años
+GEN_BANDS = [[JOSE_D, EXODO, 'esclavitud', 1, 2]]
+# ── Después del exilio: la cuenta del texto termina. Desde aquí, fechas aproximadas de la historia (a.C. negativo,
+# d.C. positivo), las mismas que usa la lista de épocas. La app las dibuja después de un corte visible.
+# [nombre, desde, hasta, cita, clase]  clase 'h' = vida aproximada · 'g' = gobierno (solo el periodo)
+HIST_PEOPLE = [
+    ['Ciro', -539, -530, 'EZR 1:1', 'g'], ['Darío I', -522, -486, 'EZR 6:15', 'g'], ['Artajerjes I', -465, -424, 'NEH 2:1', 'g'],
+    ['Antíoco IV', -175, -164, '', 'g'], ['Herodes el Grande', -73, -4, 'MAT 2:19', 'h'], ['Augusto', -27, 14, 'LUK 2:1', 'g'],
+    ['Herodes Antipas', -4, 39, 'LUK 3:1', 'g'], ['Tiberio', 14, 37, 'LUK 3:1', 'g'], ['Caifás', 18, 36, 'JHN 18:13', 'g'],
+    ['Poncio Pilato', 26, 36, 'LUK 23:1', 'g'],
+    ['Juan el Bautista', -5, 29, 'MAT 14:10', 'h'],      # seis meses mayor que Yeshúa (Lc 1:36)
+    ['Yeshúa', -5, 30, 'LUK 3:23', 'y'],                  # c. 6–4 a.C.; la cruz c. 30 (o 33)
+]
+HIST_EVENTS = [
+    [-561, 'Liberan a Joaquín en Babilonia', '2KI 25:27'], [-538, 'Decreto de Ciro: vuelven a Jerusalén', 'EZR 1:1'],
+    [-520, 'Hageo y Zacarías: ¡a reconstruir!', 'HAG 1:1'], [-515, 'Terminan el Templo', 'EZR 6:15'],
+    [-458, 'Llega Esdras', 'EZR 7:8'], [-445, 'Nehemías reconstruye los muros', 'NEH 2:1'],
+    [-332, 'Alejandro Magno toma la región', ''], [-167, 'Antíoco profana el Templo', ''],
+    [-164, 'Purifican el Templo: la fiesta de la Dedicación', 'JHN 10:22'], [-63, 'Roma toma Jerusalén', ''],
+    [-19, 'Herodes empieza a reconstruir el Templo', 'JHN 2:20'], [-5, 'Nace Yeshúa', 'MAT 2:1'],
+    [28, 'Juan bautiza; Yeshúa tiene unos 30', 'LUK 3:1'], [30, 'La cruz y la resurrección (c. 30 o 33)', 'MAT 28:6'],
+    [30, 'Shavuot: el Espíritu', 'ACT 2:1'], [34, 'Saulo encuentra a Yeshúa', 'ACT 9:3'], [49, 'Reunión en Jerusalén', 'ACT 15:6'],
+    [70, 'Roma destruye el Templo', 'LUK 21:6'], [95, 'Juan en Patmos: Apocalipsis', 'REV 1:9'],
+]
+for x in HIST_PEOPLE + HIST_EVENTS:
+    if x[3 if len(x) == 5 else 2]: chk(x[3 if len(x) == 5 else 2])
+     # de la muerte de José al Éxodo: «hasta» N años
 chk('GEN 11:26'); chk('ACT 7:4'); chk('GEN 12:4'); chk('GEN 5:24')
 
 for e in ERAS:
@@ -202,6 +227,7 @@ assert len(BOOKS) == 66, len(BOOKS)
 out = {'src': 'Épocas y fechas aproximadas (c.); edades y reyes según el texto bíblico; títulos de los salmos.',
        'eras': ERAS, 'books': BOOKS, 'notes': NOTES, 'psalms': PSALMS, 'pshist': PSHIST,
        'prophets': PROPHETS, 'prophetNote': PROPHET_NOTE, 'noking': NOKING, 'reigns': REIGNS, 'lives': LIVES, 'facts': FACTS,
-       'gen': {'people': GEN, 'events': GEN_EVENTS, 'bands': GEN_BANDS, 'egAlt': EG_ALT}}
+       'gen': {'people': GEN, 'events': GEN_EVENTS, 'bands': GEN_BANDS, 'egAlt': EG_ALT,
+               'hist': {'at': [CAIDA, 2], 'anchor': -586, 'gap': 45, 'end': 110, 'people': HIST_PEOPLE, 'events': HIST_EVENTS}}}
 json.dump(out, open(os.path.join(ROOT, 'data/linea-tiempo.json'), 'w'), ensure_ascii=False)
 print('ok', len(BOOKS), 'libros')
