@@ -666,7 +666,35 @@ body.email-mode .btn-primary { height: 54px; margin-top: 14px; border: none; bor
 body.email-mode .forgot-link a { color: rgba(246,239,223,.7); }
 body.email-mode .auth-form .divider, body.email-mode .auth-form .btn-google, body.email-mode .auth-form .btn-apple { display: none; }
 body.email-mode .auth-footer { color: rgba(246,239,223,.7); }
+/* Elegir idioma: primera vez que se abre la app (antes de la bienvenida) */
+#langPick { display: none; position: fixed; inset: 0; z-index: 80; background: radial-gradient(ellipse at 50% 30%, #2a1c0e 0%, #0d0a07 70%); color: #f6efdf; font-family: 'Crimson Pro', Georgia, serif; }
+#langPick.on { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(env(safe-area-inset-top, 0px) + 24px) 28px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+#langPick .heb { font-family: 'Frank Ruhl Libre', serif; color: #e8c27a; font-size: 2.4rem; line-height: 1; }
+#langPick .name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.5rem; letter-spacing: 9px; margin: 8px 0 34px; }
+#langPick h2 { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.05rem; letter-spacing: 1px; margin: 0; text-align: center; }
+#langPick .sub { color: #cbbfa6; font-size: 1.05rem; margin: 4px 0 24px; text-align: center; }
+#langPick .opts { width: 100%; max-width: 360px; display: grid; gap: 12px; }
+#langPick .opt { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; border-radius: 18px; border: 1px solid rgba(232,194,122,.35); background: rgba(255,255,255,.04); color: #f6efdf; font: inherit; text-align: left; cursor: pointer; }
+#langPick .opt b { display: block; font-size: 1.35rem; font-weight: 600; }
+#langPick .opt small { color: #cbbfa6; font-size: .95rem; }
+#langPick .opt i { margin-left: auto; width: 22px; height: 22px; border-radius: 11px; border: 2px solid rgba(232,194,122,.6); flex-shrink: 0; }
+#langPick .opt.on { border-color: #e8c27a; background: rgba(232,194,122,.12); }
+#langPick .opt.on i { background: #e8c27a; box-shadow: inset 0 0 0 4px #1a130a; }
+#langPick .go { margin-top: 28px; width: 100%; max-width: 360px; height: 54px; border: none; border-radius: 27px; background: #e8c27a; color: #15120a; font: 600 1.08rem -apple-system, system-ui, sans-serif; cursor: pointer; }
+#langPick .note { margin-top: 14px; color: rgba(246,239,223,.55); font-size: .9rem; text-align: center; }
 </style>
+<div id="langPick" data-noi18n role="dialog" aria-label="Elige tu idioma · Choose your language">
+  <div class="heb" lang="he">קֹדֶשׁ</div>
+  <div class="name">KODESH</div>
+  <h2>Elige tu idioma · Choose your language</h2>
+  <div class="sub" data-lp-sub></div>
+  <div class="opts">
+    <button type="button" class="opt" data-lang="es" lang="es"><span><b>Español</b><small>Biblia Reina-Valera 1960</small></span><i></i></button>
+    <button type="button" class="opt" data-lang="en" lang="en"><span><b>English</b><small>World Messianic Bible</small></span><i></i></button>
+  </div>
+  <button type="button" class="go" data-lp-go></button>
+  <div class="note" data-lp-note></div>
+</div>
 <div id="welcome" aria-label="Bienvenida">
   <button class="skip" data-w="skip">Saltar</button>
   <div class="track">
@@ -754,6 +782,27 @@ body.email-mode .auth-footer { color: rgba(246,239,223,.7); }
   document.body.classList.add('entry-mode');
   if (mode === 'signup' || mode === 'login') { try { localStorage.setItem('kodesh_welcome_seen', '1'); } catch (e) {} return; }
   let seen = false; try { seen = localStorage.getItem('kodesh_welcome_seen') === '1'; } catch (e) {}
+  // Primera vez: antes de la bienvenida, elegir idioma (viene marcado el del teléfono)
+  const I = window.KodeshI18n;
+  if (I && I.needsChoice && I.needsChoice()) {
+    const P = document.getElementById('langPick');
+    const TXT = { es: { sub: 'Podrás cambiarlo cuando quieras en Ajustes.', go: 'Continuar', note: '' }, en: { sub: 'You can change it anytime in Settings.', go: 'Continue', note: '' } };
+    let sel = I.lang;
+    const paint = () => {
+      P.querySelectorAll('[data-lang]').forEach(b => { b.classList.toggle('on', b.dataset.lang === sel); b.setAttribute('aria-pressed', String(b.dataset.lang === sel)); });
+      P.querySelector('[data-lp-sub]').textContent = TXT[sel].sub;
+      P.querySelector('[data-lp-go]').textContent = TXT[sel].go;
+    };
+    P.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => { sel = b.dataset.lang; paint(); });
+    P.querySelector('[data-lp-go]').onclick = () => {
+      if (I.choose(sel)) return;                         // otro idioma: la página se vuelve a abrir ya en ese idioma
+      P.classList.remove('on');
+      if (!seen) W.classList.add('on');
+    };
+    paint();
+    P.classList.add('on');
+    return;
+  }
   if (!seen) W.classList.add('on');
 })();
 </script>

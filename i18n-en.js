@@ -231,7 +231,7 @@
     'Elige una contraseña segura para tu cuenta': 'Choose a strong password for your account', 'Confirmar contraseña': 'Confirm password',
     'Código de verificación (2 pasos)': 'Verification code (2-step)', 'Guardar nueva contraseña': 'Save new password',
     'Al entrar aceptas estudiar las Escrituras con corazón íntegro 📖': 'By signing in you agree to study the Scriptures with a whole heart 📖',
-    'Lee y escucha la Palabra': 'Read and listen to the Word', 'La Biblia completa para leer, libros con audio dramatizado (y cada vez más) y la promesa de cada día.': 'The whole Bible to read, books with dramatized audio (and more coming) and a promise for every day.',
+    'Lee y escucha la Palabra': 'Read the Word', 'La Biblia completa para leer, libros con audio dramatizado (y cada vez más) y la promesa de cada día.': 'The whole Bible in the World Messianic Bible, with the words of Yeshua in red and a promise for every day.',
     'Estudia sus raíces': 'Study its roots', 'Entiende el texto en su mundo': 'Understand the text in its world',
     'Palabras en hebreo y griego, mapas reales, personajes y el trasfondo de cada pasaje.': 'Hebrew and Greek words, real maps, people and the background of every passage.',
     'Tu camino diario': 'Your daily path', 'Un poco cada día': 'A little every day', 'Tu lectura de hoy, la porción de la semana y tu avance, siempre donde lo dejaste.': "Today's reading, the weekly portion and your progress, always where you left off.",

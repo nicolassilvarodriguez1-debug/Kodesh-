@@ -1,6 +1,7 @@
 /* KODESH — Idioma de la app (Español / English).
    - El idioma se guarda en localStorage «kodesh_lang». Sin elección: quien ya usaba la app sigue en español;
-     una instalación nueva toma el idioma del teléfono.
+     una instalación nueva toma el idioma del teléfono («kodesh_lang_auto») y, al llegar a login.html, la
+     persona elige Español / English antes de la bienvenida (viene marcado el del teléfono).
    - En inglés: la Biblia es la World Messianic Bible (biblia-wmb.json, dominio público), los libros llevan
      su nombre en inglés y la interfaz se traduce con el diccionario de i18n-en.js.
    - Traducción por contenido: la app está escrita en español; un observador cambia cada texto de la
@@ -11,15 +12,23 @@
 (function () {
   'use strict';
   const KEY = 'kodesh_lang';
+  let fromDevice = false;   // true = nadie eligió todavía y no es usuario de antes (primera vez que abre la app)
   function pick() {
     try {
       const v = localStorage.getItem(KEY);
       if (v === 'es' || v === 'en') return v;
+      // Primera vez, aún sin elegir: ya se decidió por el idioma del teléfono en otra página (index → login)
+      const auto = localStorage.getItem(KEY + '_auto');
+      if (auto === 'es' || auto === 'en') { fromDevice = true; return auto; }
       // Usuarios de antes: tienen datos de la app guardados → siguen en español
       for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k !== KEY && /^(kodesh|sb-|welcome)/.test(k)) return 'es'; }
     } catch (e) {}
+    fromDevice = true;
     const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'es';
-    return /^es\b/i.test(nav) ? 'es' : 'en';
+    const l = /^es\b/i.test(nav) ? 'es' : 'en';
+    // Se anota enseguida: si no, lo que la app guarde en esta primera visita haría creer que es un usuario de antes
+    try { localStorage.setItem(KEY + '_auto', l); } catch (e) {}
+    return l;
   }
   const lang = pick();
   const isEn = lang === 'en';
@@ -271,7 +280,9 @@
   }, true);
 
   window.KodeshI18n = {
-    lang, isEn, t, tr, add, rule, setLang, bookName, patchBooks, patchRef, BOOKS_EN, walk, ok, READY, looksEs,
+    lang, isEn, needsChoice: () => { if (!fromDevice) return false; try { return !localStorage.getItem(KEY); } catch (e) { return false; } },
+    choose: l => { if (l !== 'es' && l !== 'en') return false; try { localStorage.setItem(KEY, l); } catch (e) {} if (l !== lang) { location.reload(); return true; } return false; },
+    t, tr, add, rule, setLang, bookName, patchBooks, patchRef, BOOKS_EN, walk, ok, READY, looksEs,
     misses: () => [...MISS.entries()].map(([t, w]) => ({ t, w })),
     // Palabras que solo aparecen en los textos en español del diccionario (nunca en las traducciones):
     // la auditoría las usa para encontrar español sin tildes ni palabras típicas («Padres», «Hijos»)
