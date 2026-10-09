@@ -704,7 +704,7 @@ body.email-mode .email-back { display: block; }
   setTimeout(fallback, 2500);
   // Botones
   document.querySelector('[data-guest]').onclick = () => { try { localStorage.setItem('kodesh_guest', '1'); } catch (e) {} location.href = 'index.html'; };
-  document.querySelector('[data-email]').onclick = () => { document.body.classList.remove('entry-mode'); document.body.classList.add('email-mode'); switchTab('register'); };
+  document.querySelector('[data-email]').onclick = () => { document.body.classList.remove('entry-mode'); document.body.classList.add('email-mode'); switchTab(mode === 'login' ? 'login' : 'register'); };
   const wrap = document.querySelector('.auth-wrap');
   if (wrap) { const b = document.createElement('button'); b.className = 'email-back'; b.textContent = '‹ Volver'; b.onclick = () => { document.body.classList.add('entry-mode'); document.body.classList.remove('email-mode'); }; wrap.insertBefore(b, wrap.firstChild); }
   // Bienvenida en 3 tarjetas (solo la primera vez)
@@ -724,8 +724,9 @@ body.email-mode .email-back { display: block; }
   W.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (dx < -50 && i < 2) go(i + 1); else if (dx > 50 && i > 0) go(i - 1); }, { passive: true });
   // Qué mostrar
   if (special) return;                                   // recuperar contraseña: formularios de siempre
-  if (mode === 'signup' || mode === 'login') { document.body.classList.add('email-mode'); switchTab(mode === 'signup' ? 'register' : 'login'); return; }
+  // Desde el aviso de cuenta (modo invitado): pantalla nueva, sin las tarjetas de bienvenida
   document.body.classList.add('entry-mode');
+  if (mode === 'signup' || mode === 'login') { try { localStorage.setItem('kodesh_welcome_seen', '1'); } catch (e) {} return; }
   let seen = false; try { seen = localStorage.getItem('kodesh_welcome_seen') === '1'; } catch (e) {}
   if (!seen) W.classList.add('on');
 })();
