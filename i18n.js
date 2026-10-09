@@ -243,7 +243,7 @@
     // marcas del lector que buscan frases del texto en español (fiestas y raíces)
     readermarks: '.settings-row:has(#frToggle)',
   };
-  const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile', 'maps', 'people', 'harmony', 'lexicon']);
+  const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile', 'maps', 'people', 'harmony', 'lexicon', 'interlinear']);
   const ok = f => !isEn || READY.has(f);
   if (isEn) {
     const st = document.createElement('style');

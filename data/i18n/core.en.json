@@ -1480,5 +1480,10 @@
 "+ TT(": "__skip__",
 ": vText) :": "__skip__",
 "WMB": "WMB",
-"]) return; delete state.bookmarks[": "__skip__"
+"]) return; delete state.bookmarks[": "__skip__",
+"); return": "__skip__",
+"/data/interlinear-en/": "__skip__",
+": (data.message || data.error ||": "__skip__",
+"; if (window.KodeshI18n && KodeshI18n.isEn && verseNums.length) box.insertAdjacentHTML('beforeend', '": "__skip__",
+"`; if (window.KodeshI18n && KodeshI18n.isEn && verseNums.length) box.insertAdjacentHTML('beforeend', '": "__skip__"
 }

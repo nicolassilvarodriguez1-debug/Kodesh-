@@ -78,6 +78,8 @@ const STEPS = [
   ['armonía · lado a lado', 'index.html', "KodeshHome.hide(); KodeshParallels.open(20)"],
   ['paralelos en el lector', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 3)"],
   ['paralelos · solo en', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 2).then(() => setTimeout(() => { const w = document.querySelector('.pl-chip.solo'); if (w) w.click(); }, 1800))"],
+  ['interlineal · premium', 'index.html', "KodeshHome.hide(); selectBook('PSA'); loadChapter('PSA', 23).then(() => setTimeout(() => toggleInterlinearMode(true), 600))"],
+  ['interlineal · glosas', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 3).then(async () => { userUsage = { plan: 'premium' }; interlinearActive = true; const d = { verses: { 16: 'Οὕτως γὰρ ἠγάπησεν ὁ θεὸς τὸν κόσμον'.split(' ').map((t, i) => ({ text: t, strongs: 'G' + (i + 1), translit: 't', gloss: 'español' })) } }; interlinearCache.set('JHN:3', await interlinearEnglish('JHN', 3, d)); renderInterlinearInline('JHN', 3, []); })"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];

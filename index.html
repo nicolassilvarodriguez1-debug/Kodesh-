@@ -6536,23 +6536,52 @@ async function openInterlinear(bookId, chapterNum) {
 }
 function closeInterlinear() { if (interlinearActive) toggleInterlinearMode(false); }
 
+// Inglés: las glosas del interlineal vienen de STEPBible (TAHOT/TAGNT, CC BY 4.0), en data/interlinear-en/<LIBRO>.json
+// (scripts/interlinear-en/build.py). Se emparejan por la forma de la palabra original; nunca se muestra la glosa en español.
+const IL_EN = new Map();
+const ilNorm = s => String(s || '').normalize('NFD').replace(/[^\p{L}]/gu, '').toLowerCase().replace(/ς/g, 'σ').replace(/[ךםןףץ]/g, c => ({ 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' }[c]));
+function ilMatch(words, line) {
+  const E = String(line || '').split('\t').filter(Boolean).map(s => { const i = s.indexOf('|'); return [s.slice(0, i), s.slice(i + 1)]; });
+  const used = new Set(); let p = 0;
+  const find = test => { for (let j = p; j < E.length; j++) if (!used.has(j) && test(E[j][0])) return j; for (let j = 0; j < p; j++) if (!used.has(j) && test(E[j][0])) return j; return -1; };
+  return words.map((w, i) => {
+    const f = ilNorm(w);
+    let k = f ? find(x => x === f) : -1;
+    if (k < 0 && f.length >= 3) k = find(x => x.length >= 3 && (x.startsWith(f) || f.startsWith(x)));
+    if (k < 0 && E.length === words.length && !used.has(i)) k = i;
+    if (k < 0) return '';
+    used.add(k); p = k + 1; return E[k][1];
+  });
+}
+async function interlinearEnglish(bookId, chapterNum, data) {
+  if (!IL_EN.has(bookId)) IL_EN.set(bookId, fetch(`/data/interlinear-en/${bookId}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})));
+  const ch = (await IL_EN.get(bookId))[String(chapterNum)] || {};
+  const verses = {};
+  for (const [v, ws] of Object.entries(data.verses || {})) {
+    const g = ilMatch((ws || []).map(w => w.text), ch[String(v)]);
+    verses[v] = (ws || []).map((w, i) => ({ ...w, gloss: g[i] }));
+  }
+  return { ...data, verses };
+}
+
 async function fetchInterlinear(bookId, chapterNum) {
   const key = `${bookId}:${chapterNum}`;
   if (interlinearCache.has(key)) return interlinearCache.get(key);
   const authH = await authHeaders();
-  if (!authH) throw new Error('Inicia sesión para ver el interlineal.');
+  if (!authH) throw new Error(TT('Inicia sesión para ver el interlineal.'));
   const res = await kapiFetch('/api/interlinear', {
     method: 'POST', headers: authH,
     body: JSON.stringify({ book: bookId, chapter: chapterNum }),
   });
   const data = await res.json();
   if (!res.ok) {
-    const err = new Error(data.message || data.error || 'Error al cargar interlineal');
+    const err = new Error(window.KodeshI18n && KodeshI18n.isEn ? '' : (data.message || data.error || 'Error al cargar interlineal'));
     err.code = data.error;
     throw err;
   }
-  interlinearCache.set(key, data);
-  return data;
+  const out = window.KodeshI18n && KodeshI18n.isEn ? await interlinearEnglish(bookId, chapterNum, data) : data;
+  interlinearCache.set(key, out);
+  return out;
 }
 
 async function renderInterlinearInline(bookId, chapterNum, rvVerses) {
@@ -6582,7 +6611,7 @@ async function renderInterlinearInline(bookId, chapterNum, rvVerses) {
   } catch (e) {
     if (!stillHere()) return;
     box.innerHTML = e.code === 'not_available'
-      ? `<div class="interlinear-locked"><div class="lock-big">📜</div><div class="il-locked-text">${escHtml(e.message || 'El interlineal aún no está disponible para este capítulo.')}</div></div>`
+      ? `<div class="interlinear-locked"><div class="lock-big">📜</div><div class="il-locked-text">${escHtml(e.message || TT('El interlineal aún no está disponible para este capítulo.'))}</div></div>`
       : `<div class="interlinear-locked"><div class="il-locked-text">${TT('No se pudo cargar el interlineal.')} ${escHtml(e.message || '')}</div>
           <button class="btn-go-premium" onclick="toggleInterlinearMode(true)">Reintentar</button></div>`;
     return;
@@ -6610,7 +6639,8 @@ async function renderInterlinearInline(bookId, chapterNum, rvVerses) {
       <div class="il-words ${isNT ? 'il-greek' : 'il-hebrew'}" dir="${isNT ? 'ltr' : 'rtl'}" lang="${isNT ? 'grc' : 'he'}">${words}</div>
       ${rv[String(vnum)] ? `<div class="il-rv">${escHtml(rv[String(vnum)])}</div>` : ''}
     </div>`;
-  }).join('') || '<div class="interlinear-locked">Sin datos para mostrar.</div>';
+  }).join('') || `<div class="interlinear-locked">${TT('Sin datos para mostrar.')}</div>`;
+  if (window.KodeshI18n && KodeshI18n.isEn && verseNums.length) box.insertAdjacentHTML('beforeend', '<div class="il-credit" style="text-align:center;font-size:.75rem;color:var(--text-dim);margin:18px 0 6px">English glosses: STEPBible.org (TAHOT/TAGNT), CC BY 4.0</div>');
 
   // Títulos de sección y cambio de parashá también en este modo
   insertParashaBreak();
