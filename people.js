@@ -119,6 +119,19 @@ html.pp-off .pp-row { display: none !important; }
 .pp-nav { display: flex; gap: 8px; align-items: center; padding: 0 18px 4px; flex-shrink: 0; flex-wrap: wrap; }
 .pp-back { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.08); color: var(--gold, #c9a84c); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: .88rem; cursor: pointer; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pp-back.home { border-color: var(--border2, #2a2836); color: var(--text-mid, #b8af9c); background: none; }
+.pp-gcard { display: block; width: 100%; text-align: left; margin: 14px 0 4px; padding: 12px 14px; border-radius: 14px; border: 1.5px solid #c9a03a; background: rgba(201,160,58,.08); color: var(--text, #e9e3d3); font: inherit; cursor: pointer; }
+.pp-gcard b { display: block; font-size: 1rem; }
+.pp-gcard small { color: var(--text-mid, #b8af9c); font-size: .86rem; }
+.pp-gcols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.pp-gc { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 14px; border: 1px solid var(--border2, #2a2836); }
+.pp-gc > b { font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.pp-gc > small { color: var(--text-mid, #b8af9c); font-size: .8rem; text-align: center; margin-bottom: 4px; }
+.pp-gc .pp-node { font-size: .86rem; padding: 5px 10px; }
+.pp-dots { color: var(--text-dim, #6e6656); line-height: .8; }
+.pp-warn { color: #e0805a; }
+.pp-gend { display: flex; justify-content: center; margin: 10px 0 4px; position: relative; }
+.pp-gend:before { content: '↘ ↙'; position: absolute; top: -18px; color: var(--text-dim, #6e6656); letter-spacing: 60px; }
+.pp-p a.pp-ref { display: inline-block; margin-left: 2px; font-size: .8rem; vertical-align: 1px; }
 .pp-line { width: 1px; height: 10px; background: var(--border2, #2a2836); }
 .pp-net svg { width: 100%; height: auto; display: block; }
 .pp-life { position: relative; margin-left: 28px; border-left: 2px solid var(--gold-dim, #6e5a2a); padding-left: 0; }
@@ -155,6 +168,7 @@ html.pp-off .pp-row { display: none !important; }
     const intro = id === 'x_yeshua' ? '«Hijo de David, hijo de Abraham» (Mateo 1:1). Mateo 1 y Lucas 3 recorren su genealogía; aquí puedes subir por ella hasta Adán.'
       : p[2] ? `Aparece en ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'} de la Biblia.` : 'Nombrado en la genealogía de Yeshua.';
     return `${d && d.resumen ? `<p class="pp-p">${esc(d.resumen)}</p>` : `<p class="pp-p" style="color:var(--text-mid,#b8af9c)">${esc(intro)}</p>`}
+      ${GEN_IDS.has(id) ? '<button type="button" class="pp-gcard" data-tab="dos"><b>✦ ¿Por qué Mateo y Lucas dan dos genealogías?</b><small>Línea real por José · línea de sangre por María · la sentencia sobre Jeconías</small></button>' : ''}
       ${fam.length ? `<div class="pp-sec">Familia</div><div class="pp-chips">${fam.slice(0, 14).map(([x, l]) => chip(x, l)).join('')}</div>` : ''}
       ${d && d.momentos ? `<div class="pp-sec">Momentos clave</div>${d.momentos.map(m => `<div class="pp-mom" data-go="${esc(m.ref)}"><b>${esc(nice(m.ref))}</b><span>${esc(m.t)}</span></div>`).join('')}` : ''}
       ${nt.length ? `<div class="pp-sec">En el Nuevo Testamento</div><div class="pp-refs">${nt.slice(0, 16).map(k => `<a class="pp-ref" href="${readUrl(k)}">${esc(nice(k))}</a>`).join('')}</div>` : ''}
@@ -206,6 +220,33 @@ html.pp-off .pp-row { display: none !important; }
     svg += `<circle cx="${cx}" cy="${cy}" r="48" fill="rgba(201,168,76,.18)" stroke="#c9a84c" stroke-width="2.5"/><text x="${cx}" y="${cy + 7}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="22" font-weight="600" fill="var(--text,#e9e3d3)">${esc(nameOf(id))}</text></svg>`;
     return `<div class="pp-net">${svg}</div><div style="display:flex;gap:16px;justify-content:center;font-size:.85rem;color:var(--text-dim,#6e6656)"><span><b style="color:#c9a84c">—</b> Familia</span><span><b style="color:#6fa0d8">- -</b> Aparece con (comparten versículos)</span></div>`;
   }
+  /* ── Las dos genealogías (Mateo 1 · Lucas 3) ── */
+  const GEN_IDS = new Set(['x_yeshua', 'joseph_1715', 'mary_1938', 'heli_1484', 'jehoiachin_791', 'jacob_683', 'nathan_2152', 'solomon_2762']);
+  const vref = (r, t) => `<a class="pp-ref" href="${readUrl(r)}">${esc(t)}</a>`;
+  function genHtml() {
+    const col = (title, sub, list) => `<div class="pp-gc"><b>${title}</b><small>${sub}</small>${list.map(([x, n, warn]) => x
+      ? `<button type="button" class="pp-node${ly(x)}" data-p="${x}">${esc(n || nameOf(x))}${warn ? ' <span class="pp-warn">⚠</span>' : ''}</button>`
+      : `<span class="pp-dots">⋮</span>`).join('')}</div>`;
+    return `<p class="pp-p">Mateo y Lucas dan dos genealogías distintas de Yeshua entre David y José. No se contradicen: cada una cumple una parte distinta de la promesa hecha a David.</p>
+      <div class="pp-gcols">
+        ${col('Mateo 1', 'Línea real · por José', [['abraham_58'], ['david_994'], ['solomon_2762'], ['rehoboam_2412'], [null], ['josiah_1730'], ['jehoiachin_791', 'Jeconías', 1], ['shealtiel_2456'], ['zerubbabel_3054'], [null], ['jacob_683'], ['joseph_1715']])}
+        ${col('Lucas 3', 'Línea de sangre · por María', [['adam_78'], ['abraham_58'], ['david_994'], ['nathan_2152'], ['mattatha_1961'], [null], ['matthat_1969'], ['heli_1484'], ['mary_1938']])}
+      </div>
+      <div class="pp-gend"><button type="button" class="pp-node ly me" data-p="x_yeshua">Yeshua</button></div>
+      <div class="pp-sec">Mateo: el heredero del trono</div>
+      <p class="pp-p">Mateo escribe para mostrar a Yeshua como el Rey. Empieza en Abraham y baja por Salomón, la línea de los reyes de Judá, hasta José. Es la línea <b>legal</b>: el derecho al trono pasaba de padre a hijo, y José, como esposo de María, dio a Yeshua su nombre y su lugar en la casa de David.</p>
+      <div class="pp-sec">El problema de Jeconías</div>
+      <p class="pp-p">En esa línea real está Jeconías (también llamado Conías). Sobre él Dios dijo: <i>«…ninguno de su descendencia logrará sentarse sobre el trono de David, ni reinar sobre Judá»</i> ${vref('JER 22:30', 'Jeremías 22:30')}. Si Yeshua fuera hijo de José por sangre, quedaría bajo esa palabra.</p>
+      <p class="pp-p">Por eso Mateo cambia el lenguaje justo al final. De todos dice «engendró», pero de José dice: <i>«José, marido de María, de la cual nació Jesús, llamado el Cristo»</i> ${vref('MAT 1:16', 'Mateo 1:16')}. Yeshua recibe el derecho legal por José, pero no su sangre.</p>
+      <div class="pp-sec">Lucas: la sangre de David</div>
+      <p class="pp-p">Lucas sube desde Yeshua hasta Adán y pasa por <b>Natán</b>, otro hijo de David, no por Salomón. Escribe con cuidado: <i>«hijo, según se creía, de José, hijo de Elí»</i> ${vref('LUK 3:23', 'Lucas 3:23')}. Muchos entienden que Elí era el padre de María y que José aparece como su yerno. Así Yeshua es descendiente de David <b>en la carne</b>, como pedía la promesa: <i>«uno de tu linaje, el cual procederá de tus entrañas»</i> ${vref('2SA 7:12', '2 Samuel 7:12')}; <i>«del linaje de David según la carne»</i> ${vref('ROM 1:3', 'Romanos 1:3')}.</p>
+      <div class="pp-sec">La ley de las hijas herederas</div>
+      <p class="pp-p">¿Cómo puede José ser «hijo de Elí»? La Torá preveía el caso de un padre sin hijos varones: <i>«Cuando alguno muriere sin hijos, traspasaréis su herencia a su hija»</i> ${vref('NUM 27:8', 'Números 27:8')}, con la condición de que ella se casara dentro de su tribu ${vref('NUM 36:6', 'Números 36:6–8')}. Y hay un caso en que el yerno queda registrado con el nombre de la familia de su esposa: <i>«…tomó mujer de las hijas de Barzilai galaadita, y fue llamado por el nombre de ellas»</i> ${vref('EZR 2:61', 'Esdras 2:61')}. Si Elí no tuvo hijos varones (la Biblia no lo dice; es lo que supone esta explicación), José entraba en su registro por medio de María.</p>
+      <div class="pp-sec">Las dos promesas se cumplen</div>
+      <p class="pp-p">Por María, Yeshua es <b>hijo de David por sangre</b>, sin pasar por Jeconías. Por José, es <b>heredero legal</b> del trono. Nadie más podía reunir las dos cosas.</p>
+      <div class="pp-sec">Otras explicaciones</div>
+      <p class="pp-p" style="color:var(--text-mid,#b8af9c)">No todos lo explican igual. Desde Julio Africano (siglo III), algunos ven las dos listas como genealogías de José: una natural y otra legal, unidas por un matrimonio de levirato ${vref('DEU 25:5', 'Deuteronomio 25:5–6')}. Otros señalan que Dios llama a Zorobabel, nieto de Jeconías, «anillo de sellar» ${vref('HAG 2:23', 'Hageo 2:23')}, como si la sentencia se hubiera suavizado. La explicación de arriba es la más común entre quienes leen Lucas 3 como la línea de María.</p>`;
+  }
   function lifeHtml(id) {
     const d = det(id);
     if (!d || !d.edades) return '';
@@ -216,8 +257,9 @@ html.pp-off .pp-row { display: none !important; }
     const s = sheet(), id = cur, p = P(id), d = det(id);
     const tabs = [['ficha', 'Ficha'], ['familia', 'Familia'], ['red', 'Relaciones']];
     if (d && d.edades) tabs.push(['vida', 'Línea de vida']);
+    if (GEN_IDS.has(id)) tabs.push(['dos', 'Dos genealogías']);
     if (!tabs.some(t => t[0] === tab)) tab = 'ficha';
-    const body = tab === 'familia' ? treeHtml(id) : tab === 'red' ? netHtml(id) : tab === 'vida' ? lifeHtml(id) : fichaHtml(id);
+    const body = tab === 'dos' ? genHtml() : tab === 'familia' ? treeHtml(id) : tab === 'red' ? netHtml(id) : tab === 'vida' ? lifeHtml(id) : fichaHtml(id);
     s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${id === 'x_yeshua' ? 'El Mesías' : `${p[1] === 'F' ? 'Mujer' : 'Hombre'} de la Biblia${p[2] ? ` · ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'}` : ''}`}</div>
         <div class="pp-h">${esc(p[0])} ${d && d.heb ? `<span class="pp-heb" lang="${d.heb.strong[0] === 'H' ? 'he' : 'el'}">${esc(d.heb.lemma)}</span>` : ''}</div>
         ${d && d.heb && d.heb.sig ? `<div class="pp-sig">${esc(d.heb.sig)}</div>` : ''}
