@@ -59,6 +59,16 @@ const STEPS = [
   ['cuenta · página perfil', 'profile.html', ''],
   ['cuenta · ciclo', 'parashot.html', ''],
   ['cuenta · estudio', 'estudio.html', ''],
+  ['mapas', 'index.html', "KodeshHome.hide(); KodeshMaps.openIndex()"],
+  ['mapas · abram', 'index.html', "KodeshHome.hide(); KodeshMaps.openTrip('abram')"],
+  ['mapas · éxodo', 'index.html', "KodeshHome.hide(); KodeshMaps.openTrip('exodo')"],
+  ['mapas · pablo', 'index.html', "KodeshHome.hide(); KodeshMaps.openTrip('pablo1')"],
+  ['mapas · lugar', 'index.html', "KodeshHome.hide(); KodeshMaps.openPlace('a6d9af3')"],
+  ['personajes · fila', 'index.html', "KodeshHome.hide(); selectBook('GEN'); loadChapter('GEN', 12).then(() => setTimeout(() => { const c = document.querySelector('.pp-chip'); if (c) c.click(); }, 1500))"],
+  ['personajes · ficha', 'index.html', "KodeshHome.hide(); KodeshPeople.open('abraham_58')"],
+  ['personajes · familia', 'index.html', "KodeshHome.hide(); KodeshPeople.open('abraham_58').then(() => { const t = document.querySelector('[data-tab=familia]'); if (t) t.click(); })"],
+  ['personajes · relaciones', 'index.html', "KodeshHome.hide(); KodeshPeople.open('moses_2108').then(() => { const t = document.querySelector('[data-tab=red]'); if (t) t.click(); })"],
+  ['personajes · dos genealogías', 'index.html', "KodeshHome.hide(); KodeshPeople.open('x_yeshua').then(() => { const t = document.querySelector('[data-tab=dos]'); if (t) t.click(); })"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];
@@ -101,6 +111,8 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
         if (!t || !shown(el)) continue;
         if (I.looksEs(t)) { vis.add(t); continue; }
         // nombres y palabras sueltas en español sin tilde («Lamec», «Hch 7:4»): palabra con mayúscula que el diccionario traduce
+        const voc = I.esVocab(t).filter(x => !['amen', 'shalom', 'torah', 'yeshua', 'yhwh', 'kodesh', 'abba', 'messiah', 'mar', 'sun', 'sat'].includes(x));
+        if (voc.length) { vis.add(t + '   ⟵ ' + voc.join(', ')); continue; }
         const w = t.match(/\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\b/g) || [];
         const bad = w.filter(x => I.esWord(x) && !['Asa', 'Dan', 'Gad', 'Job', 'Is', 'He', 'Am', 'Mi', 'Ex', 'Mar', 'Sal', 'Ziv', 'Bul'].includes(x));
         if (bad.length) vis.add(t + '   ⟵ ' + bad.join(', '));

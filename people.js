@@ -57,6 +57,7 @@
   const P = id => DATA && DATA.p[id];
   // En inglés, el nombre en inglés de Theographic (p[3])
   const EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+  const TP = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
   const nameOf = id => { const x = P(id) || [id]; return EN && x[3] ? x[3] : x[0]; };
   const R = id => (DATA && DATA.r[id]) || {};
   const det = id => (DET && DET.items && DET.items[id]) || null;
@@ -170,14 +171,14 @@ html.pp-off .pp-row { display: none !important; }
     (r.hi || []).forEach(x => fam.push([x, 'hijo/a']));
     const nt = !NT.has((p[4][0] || '').split(':')[0]) ? p[4].filter(k => NT.has(k.split(':')[0])) : [];
     const intro = id === 'x_yeshua' ? '«Hijo de David, hijo de Abraham» (Mateo 1:1). Mateo 1 y Lucas 3 recorren su genealogía; aquí puedes subir por ella hasta Adán.'
-      : p[2] ? `Aparece en ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'} de la Biblia.` : 'Nombrado en la genealogía de Yeshua.';
+      : p[2] ? TP(p[2] === 1 ? 'Aparece en {n} versículo de la Biblia.' : 'Aparece en {n} versículos de la Biblia.', { n: p[2] }) : 'Nombrado en la genealogía de Yeshua.';
     return `${d && d.resumen ? `<p class="pp-p">${esc(d.resumen)}</p>` : `<p class="pp-p" style="color:var(--text-mid,#b8af9c)">${esc(intro)}</p>`}
       ${GEN_IDS.has(id) ? '<button type="button" class="pp-gcard" data-tab="dos"><b>✦ ¿Por qué Mateo y Lucas dan dos genealogías?</b><small>Línea real por José · línea de sangre por María · la sentencia sobre Jeconías</small></button>' : ''}
       ${fam.length ? `<div class="pp-sec">Familia</div><div class="pp-chips">${fam.slice(0, 14).map(([x, l]) => chip(x, l)).join('')}</div>` : ''}
       ${d && d.momentos ? `<div class="pp-sec">Momentos clave</div>${d.momentos.map(m => `<div class="pp-mom" data-go="${esc(m.ref)}"><b>${esc(nice(m.ref))}</b><span>${esc(m.t)}</span></div>`).join('')}` : ''}
       ${nt.length ? `<div class="pp-sec">En el Nuevo Testamento</div><div class="pp-refs">${nt.slice(0, 16).map(k => `<a class="pp-ref" href="${readUrl(k)}">${esc(nice(k))}</a>`).join('')}</div>` : ''}
-      <div class="pp-sec">Dónde aparece · ${p[4].length} ${p[4].length === 1 ? 'capítulo' : 'capítulos'}</div>
-      <div class="pp-refs">${p[4].slice(0, 60).map(k => `<a class="pp-ref" href="${readUrl(k)}">${esc(nice(k))}</a>`).join('')}${p[4].length > 60 ? `<span class="pp-ref">y ${p[4].length - 60} más</span>` : ''}</div>`;
+      <div class="pp-sec">${TP('Dónde aparece')} · ${TP(p[4].length === 1 ? '{n} capítulo' : '{n} capítulos', { n: p[4].length })}</div>
+      <div class="pp-refs">${p[4].slice(0, 60).map(k => `<a class="pp-ref" href="${readUrl(k)}">${esc(nice(k))}</a>`).join('')}${p[4].length > 60 ? `<span class="pp-ref">${TP('y {n} más', { n: p[4].length - 60 })}</span>` : ''}</div>`;
   }
   function treeHtml(id) {
     const r = R(id);
@@ -227,10 +228,33 @@ html.pp-off .pp-row { display: none !important; }
   /* ── Las dos genealogías (Mateo 1 · Lucas 3) ── */
   const GEN_IDS = new Set(['x_yeshua', 'joseph_1715', 'mary_1938', 'heli_1484', 'jehoiachin_791', 'jacob_683', 'nathan_2152', 'solomon_2762']);
   const vref = (r, t) => `<a class="pp-ref" href="${readUrl(r)}">${esc(t)}</a>`;
+  // Versión en inglés de «Dos genealogías» (citas de la WMB)
+  function genHtmlEn(col) {
+    return `<p class="pp-p">Matthew and Luke give two different genealogies of Yeshua between David and Joseph. They do not contradict each other: each fulfills a different part of the promise made to David.</p>
+      <div class="pp-gcols">
+        ${col('Matthew 1', 'Royal line · through Joseph', [['abraham_58'], ['david_994'], ['solomon_2762'], ['rehoboam_2412'], [null], ['josiah_1730'], ['jehoiachin_791', 'Jeconiah', 1], ['shealtiel_2456'], ['zerubbabel_3054'], [null], ['jacob_683'], ['joseph_1715']])}
+        ${col('Luke 3', 'Bloodline · through Mary', [['adam_78'], ['abraham_58'], ['david_994'], ['nathan_2152'], ['mattatha_1961'], [null], ['matthat_1969'], ['heli_1484'], ['mary_1938']])}
+      </div>
+      <div class="pp-gend"><button type="button" class="pp-node ly me" data-p="x_yeshua">Yeshua</button></div>
+      <div class="pp-sec">Matthew: the heir to the throne</div>
+      <p class="pp-p">Matthew writes to show Yeshua as the King. He begins with Abraham and goes down through Solomon, the line of the kings of Judah, to Joseph. It is the <b>legal</b> line: the right to the throne passed from father to son, and Joseph, as Mary's husband, gave Yeshua his name and his place in the house of David.</p>
+      <div class="pp-sec">The problem of Jeconiah</div>
+      <p class="pp-p">In that royal line is Jeconiah (also called Coniah). About him God said: <i>“…no more will a man of his offspring prosper, sitting on David’s throne and ruling in Judah”</i> ${vref('JER 22:30', 'Jeremiah 22:30')}. If Yeshua were Joseph's son by blood, he would fall under that word.</p>
+      <p class="pp-p">That is why Matthew changes his wording at the very end. Of everyone else he says “became the father of,” but of Joseph he says: <i>“Joseph, the husband of Miriam, from whom was born Yeshua, who is called Messiah”</i> ${vref('MAT 1:16', 'Matthew 1:16')}. Yeshua receives the legal right through Joseph, but not his blood.</p>
+      <div class="pp-sec">Luke: the blood of David</div>
+      <p class="pp-p">Luke goes up from Yeshua to Adam and passes through <b>Nathan</b>, another son of David, not through Solomon. He writes carefully: <i>“being the son (as was supposed) of Joseph, the son of Eli”</i> ${vref('LUK 3:23', 'Luke 3:23')}. Many understand that Eli was Mary's father and that Joseph appears as his son-in-law. So Yeshua is a descendant of David <b>according to the flesh</b>, as the promise required: <i>“your offspring after you, who will proceed out of your body”</i> ${vref('2SA 7:12', '2 Samuel 7:12')}; <i>“born of the offspring of David according to the flesh”</i> ${vref('ROM 1:3', 'Romans 1:3')}.</p>
+      <div class="pp-sec">The law of heiress daughters</div>
+      <p class="pp-p">How can Joseph be “the son of Eli”? The Torah provided for a father without sons: <i>“If a man dies, and has no son, then you shall cause his inheritance to pass to his daughter”</i> ${vref('NUM 27:8', 'Numbers 27:8')}, on condition that she married within her tribe ${vref('NUM 36:6', 'Numbers 36:6–8')}. And there is a case where a son-in-law is recorded under the name of his wife's family: <i>“…who took a wife of the daughters of Barzillai the Gileadite, and was called after their name”</i> ${vref('EZR 2:61', 'Ezra 2:61')}. If Eli had no sons (the Bible does not say so; it is what this explanation assumes), Joseph entered his record through Mary.</p>
+      <div class="pp-sec">Both promises are fulfilled</div>
+      <p class="pp-p">Through Mary, Yeshua is <b>the son of David by blood</b>, without passing through Jeconiah. Through Joseph, he is the <b>legal heir</b> to the throne. No one else could bring both together.</p>
+      <div class="pp-sec">Other explanations</div>
+      <p class="pp-p" style="color:var(--text-mid,#b8af9c)">Not everyone explains it the same way. Since Julius Africanus (3rd century), some see both lists as genealogies of Joseph: one natural and one legal, joined by a levirate marriage ${vref('DEU 25:5', 'Deuteronomy 25:5–6')}. Others point out that God calls Zerubbabel, Jeconiah's grandson, a “signet ring” ${vref('HAG 2:23', 'Haggai 2:23')}, as if the sentence had been softened. The explanation above is the most common among those who read Luke 3 as Mary's line.</p>`;
+  }
   function genHtml() {
     const col = (title, sub, list) => `<div class="pp-gc"><b>${title}</b><small>${sub}</small>${list.map(([x, n, warn]) => x
       ? `<button type="button" class="pp-node${ly(x)}" data-p="${x}">${esc(n || nameOf(x))}${warn ? ' <span class="pp-warn">⚠</span>' : ''}</button>`
       : `<span class="pp-dots">⋮</span>`).join('')}</div>`;
+    if (EN) return genHtmlEn(col);
     return `<p class="pp-p">Mateo y Lucas dan dos genealogías distintas de Yeshua entre David y José. No se contradicen: cada una cumple una parte distinta de la promesa hecha a David.</p>
       <div class="pp-gcols">
         ${col('Mateo 1', 'Línea real · por José', [['abraham_58'], ['david_994'], ['solomon_2762'], ['rehoboam_2412'], [null], ['josiah_1730'], ['jehoiachin_791', 'Jeconías', 1], ['shealtiel_2456'], ['zerubbabel_3054'], [null], ['jacob_683'], ['joseph_1715']])}
@@ -264,12 +288,12 @@ html.pp-off .pp-row { display: none !important; }
     if (GEN_IDS.has(id)) tabs.push(['dos', 'Dos genealogías']);
     if (!tabs.some(t => t[0] === tab)) tab = 'ficha';
     const body = tab === 'dos' ? genHtml() : tab === 'familia' ? treeHtml(id) : tab === 'red' ? netHtml(id) : tab === 'vida' ? lifeHtml(id) : fichaHtml(id);
-    s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${id === 'x_yeshua' ? 'El Mesías' : `${p[1] === 'F' ? 'Mujer' : 'Hombre'} de la Biblia${p[2] ? ` · ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'}` : ''}`}</div>
+    s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${id === 'x_yeshua' ? TP('El Mesías') : `${TP(p[1] === 'F' ? 'Mujer de la Biblia' : 'Hombre de la Biblia')}${p[2] ? ` · ${TP(p[2] === 1 ? '{n} versículo' : '{n} versículos', { n: p[2] })}` : ''}`}</div>
         <div class="pp-h">${esc(nameOf(id))} ${d && d.heb ? `<span class="pp-heb" lang="${d.heb.strong[0] === 'H' ? 'he' : 'el'}">${esc(d.heb.lemma)}</span>` : ''}</div>
         ${d && d.heb && d.heb.sig ? `<div class="pp-sig">${esc(d.heb.sig)}</div>` : ''}
         ${LY.has(id) && id !== 'x_yeshua' ? '<div class="pp-lyb">✦ Linaje de Yeshua</div>' : ''}</div>
         <button class="pp-x" data-close aria-label="Cerrar">✕</button></div>
-      ${hist.length ? `<div class="pp-nav"><button class="pp-back" data-back>‹ Volver a ${esc(nameOf(hist[hist.length - 1].id))}</button>${hist.length > 1 ? `<button class="pp-back home" data-home>⌂ ${esc(nameOf(hist[0].id))}</button>` : ''}</div>` : ''}
+      ${hist.length ? `<div class="pp-nav"><button class="pp-back" data-back>‹ ${TP('Volver a {n}', { n: esc(nameOf(hist[hist.length - 1].id)) })}</button>${hist.length > 1 ? `<button class="pp-back home" data-home>⌂ ${esc(nameOf(hist[0].id))}</button>` : ''}</div>` : ''}
       <div class="pp-tabs">${tabs.map(([k, l]) => `<button class="pp-tab${tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="pp-body">${body}<p class="pp-src">Personajes y parentescos: Theographic Bible Metadata (CC BY-SA 4.0).</p></div>`;
     s.querySelector('[data-close]').onclick = close;
@@ -299,14 +323,22 @@ html.pp-off .pp-row { display: none !important; }
   }
 
   /* ── D · Quién aparece en el capítulo ── */
+  // Formas del nombre como aparecen en el texto: en español, la del dato (Abram, Sarai…);
+  // en inglés (WMB), el nombre inglés de Theographic, la forma sin tildes y su traducción (Moisés → Moses)
+  const deacc = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  function formsOf(pid, form) {
+    if (!EN) return [norm(form)];
+    const tr = window.KodeshI18n ? (KodeshI18n.tr(form) || '') : '';
+    return [...new Set([nameOf(pid), deacc(form), tr].filter(Boolean).map(x => norm(x).split(' ')[0]))];
+  }
   function markWords(container, list, id) {
     let n = 0;
     container.querySelectorAll('.word.pp-hl').forEach(w => w.classList.remove('pp-hl'));
     for (const [v, pid, form] of list) {
       if (pid !== id) continue;
       const vEl = container.querySelector(`.verse[data-verse="${v}"]`); if (!vEl) continue;
-      const target = norm(form);
-      vEl.querySelectorAll('.word').forEach(w => { if (norm(w.textContent) === target) { w.classList.add('pp-hl'); n++; } });
+      const targets = formsOf(pid, form);
+      vEl.querySelectorAll('.word').forEach(w => { const t = norm(w.textContent).replace(/[’']s$/, ''); if (targets.includes(t)) { w.classList.add('pp-hl'); n++; } });
     }
     return n;
   }
@@ -315,15 +347,15 @@ html.pp-off .pp-row { display: none !important; }
     const n = markWords(container, list, id);
     if (bar) bar.remove();
     bar = document.createElement('div'); bar.className = 'pp-bar';
-    const lbl = (list.find(x => x[1] === id) || [])[2] || nameOf(id);
-    bar.innerHTML = `<span><b>${esc(lbl)}</b> aparece ${n} ${n === 1 ? 'vez' : 'veces'}</span><button type="button" data-f>Ficha →</button><button type="button" class="x" data-x aria-label="Quitar">✕</button>`;
+    const lbl = EN ? nameOf(id) : (list.find(x => x[1] === id) || [])[2] || nameOf(id);
+    const TXp = (t, v) => window.KodeshI18n ? KodeshI18n.t(t, v) : t.replace('{n}', v.n).replace('{p}', v.p);
+    bar.innerHTML = `<span>${TXp(n === 1 ? '{p} aparece {n} vez' : '{p} aparece {n} veces', { p: `<b>${esc(lbl)}</b>`, n })}</span><button type="button" data-f>Ficha →</button><button type="button" class="x" data-x aria-label="Quitar">✕</button>`;
     document.body.appendChild(bar);
     bar.querySelector('[data-f]').onclick = () => open(id);
     bar.querySelector('[data-x]').onclick = () => { bar.remove(); bar = null; markWords(container, [], null); container.parentElement && container.parentElement.querySelectorAll('.pp-chip.on').forEach(c => c.classList.remove('on')); };
     const first = container.querySelector('.word.pp-hl'); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   async function decorate(container, book, chapter) {
-    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter || container.dataset.pp === `${book}:${chapter}`) return;
     container.dataset.pp = `${book}:${chapter}`;
     const [, byCh] = await Promise.all([loadData(), loadBook(book)]);
@@ -332,7 +364,7 @@ html.pp-off .pp-row { display: none !important; }
     // Cuántas veces aparece cada uno y con qué nombre (Abram, Sarai… como dice el texto)
     const cnt = {}, forms = {};
     for (const [, pid, form] of list) { cnt[pid] = (cnt[pid] || 0) + 1; (forms[pid] = forms[pid] || {})[form] = (forms[pid][form] || 0) + 1; }
-    const label = pid => Object.entries(forms[pid]).sort((a, b) => b[1] - a[1])[0][0];
+    const label = pid => EN ? nameOf(pid) : Object.entries(forms[pid]).sort((a, b) => b[1] - a[1])[0][0];
     const seenLabel = new Set();
     const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([pid]) => pid).filter(P)
       .filter(pid => { const l = norm(label(pid)); if (seenLabel.has(l)) return false; seenLabel.add(l); return true; }).slice(0, 8);
@@ -366,7 +398,8 @@ html.pp-off .pp-row { display: none !important; }
     const word = norm(w.textContent);
     (async () => {
       const byCh = await loadBook(book); await loadData();
-      const hit = ((byCh && byCh[String(ch)]) || []).find(([vv, , form]) => vv === v && norm(form) === word);
+      const wd = word.replace(/[’']s$/, '');
+      const hit = ((byCh && byCh[String(ch)]) || []).find(([vv, pid, form]) => vv === v && formsOf(pid, form).includes(wd));
       if (!hit || !P(hit[1])) return;
       const id = hit[1];
       for (let i = 0; i < 20; i++) { const pop = document.getElementById('lexiconPopup'); if (pop && pop.classList.contains('visible')) break; await new Promise(r => setTimeout(r, 60)); }
@@ -374,7 +407,7 @@ html.pp-off .pp-row { display: none !important; }
       const b = document.createElement('button');
       b.id = 'ppLexBanner'; b.type = 'button';
       b.style.cssText = 'display:flex;align-items:center;gap:8px;width:calc(100% - 24px);margin:10px 12px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--gold-dim,#3a3220);background:var(--gold-soft,rgba(201,168,76,.06));color:var(--text);font:inherit;font-size:.9rem;text-align:left;cursor:pointer';
-      b.innerHTML = `<span>👤</span><span style="flex:1"><b style="color:var(--gold)">${esc(nameOf(id))}</b> · ${P(id)[2]} versículos</span><span style="color:var(--gold);white-space:nowrap">Ver ficha →</span>`;
+      b.innerHTML = `<span>👤</span><span style="flex:1"><b style="color:var(--gold)">${esc(nameOf(id))}</b> · ${window.KodeshI18n ? KodeshI18n.t('{n} versículos', { n: P(id)[2] }) : P(id)[2] + ' versículos'}</span><span style="color:var(--gold);white-space:nowrap">${window.KodeshI18n ? KodeshI18n.t('Ver ficha →') : 'Ver ficha →'}</span>`;
       b.onclick = e => { e.stopPropagation(); if (typeof closeLexicon === 'function') closeLexicon(); open(id); };
       if (pop && pop.classList.contains('visible')) pop.insertBefore(b, pop.firstChild);
     })();

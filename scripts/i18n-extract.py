@@ -21,8 +21,10 @@ MODULES = {
 ES = re.compile(r'[áéíóúñ¿¡]|\b(de|la|el|los|las|que|para|con|una|por|tu|tus|sin|más|del|al|es|en|un|se|no|ya|lo|su|sus|este|esta|aquí|toca|ver|leer|cerrar|guardar|buscar|abrir|y|o|a|años|año|día|días|hoy|cuando|desde|hasta)\b', re.I)
 TECH = re.compile(r'^(https?:|data:|mailto:|#[0-9a-f]{3,8}$|[.#\[]|--|@|\d+(px|em|rem|vh|vw|ms|s|%)\b)|^[a-z]+(-[a-z0-9]+)+$|^[a-z]+[A-Z]\w*$|^\w+_\w+$|^[\w./-]+\.(js|json|html|png|svg|css|webp|mp3|jpg)$|^(GET|POST|PUT|DELETE|PATCH)$|^[A-Z][A-Z0-9_]{1,}_[A-Z0-9_]+$')
 CODEY = re.compile(r'[{}<>=]|=>|\(\)|\$\{|;\s*\w+\s*:|^\w+\(|\)\s*\.')
+EN = re.compile(r'\b(the|and|of|to|is|was|with|through|from|that|he|his|she|her|it|you|your|this|for|by|as|be|not|are|were|which|who|than|their|they|will|would|could|other|line|son|blood|heir|throne|month|day|days|week|years|Terrain|Relieve)\b|^[A-Z][a-z]+( \d+([:.]\d+)?([–-]\d+)?)?$', re.I)
 def ok(t, data=False):
     t = t.strip()
+    if EN.search(t) and not ES.search(t) and not re.search(r'[áéíóúñ¿¡]', t): return False   # ya en inglés
     if len(t) < 2 or not re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]{2}', t): return False
     if TECH.search(t) or CODEY.search(t): return False
     if re.fullmatch(r'[1-3]?[A-Z]{2,3}[ :]\d+([:.,\-–]\d+)*', t): return False          # GEN 5:3

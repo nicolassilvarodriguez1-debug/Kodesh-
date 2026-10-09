@@ -548,5 +548,12 @@
 "waterway": "__skip__",
 "wood": "__skip__",
 "zoom": "__skip__",
-"· EOX (CC BY 4.0)": "· EOX (CC BY 4.0)"
+"· EOX (CC BY 4.0)": "· EOX (CC BY 4.0)",
+"unos {n} km entre paradas": "about {n} km between stops",
+"{n}.º viaje": "Journey {n}",
+"{n} paradas": "{n} stops",
+"Unos {n} km {dir} de Jerusalén": "About {n} km {dir} of Jerusalem",
+"Lo que pasó aquí": "What happened here",
+"{n} mención": "{n} mention",
+"{n} menciones": "{n} mentions"
 }

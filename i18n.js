@@ -142,6 +142,7 @@
   const ES_WORDS = /(^|[^\p{L}])(de|del|la|las|los|el|que|para|con|una|unos|unas|por|sin|más|tu|tus|su|sus|este|esta|estos|estas|aquí|allí|cuando|también|como|pero|desde|hasta|hoy|ahora|ayer|mañana|toca|leer|ver|cerrar|guardar|buscar|abrir|capítulo|capítulos|versículo|versículos|años|año|días|día|semana|semanas|mes|meses|todos|todas|nuevo|nueva|siguiente|anterior|volver|inicio|ajustes|perfil|cuenta|entrar|salir|entradas|palabras|palabra|libro|libros|cada|nada|algo|muy|mucho|poco|gratis|consulta|consultas|búsqueda|resultados|ninguno|ninguna|intenta|cargando|listo|desliza|elige|escribe|estudia|estudio|estudios|notas|nota|marcadores|racha|horas|minutos|fecha|hora|lugar|lugares|personajes|mapa|mapas|viaje|viajes|fiesta|fiestas|luna|tierra|cielo|señor|ningún|tienes|tiene|puedes|puede|quieres|está|están|ser|hay|fue|otro|otra|otros|todo|sobre|entre|antes|después|porque|sí|bien|aún|ya|sólo|también|hacia|según|durante|mediante|contra|ante|bajo|tras|dónde|donde|qué|quién|cuál|cómo|cuándo|cuánto|y|ni|les|se|nos|mis|ese|esa|aquel|aquella|esto|eso|del|ellos|ellas|usted|ustedes|nosotros)(?=$|[^\p{L}])|\p{L}+(ción|ciones|mente|idad|idades|iendo|ados|adas|idos|idas|ería|aría)(?=$|[^\p{L}])/iu;
   const looksEs = s => /[áéíóúñ¿¡]/i.test(s.replace(/Yeshúa|Mashíaj|Shabat|Pésaj|Sucot|Teruá|Bereshit|Jayé|Lejá|Vayerá|Vayetsé|Vayéshev|Mikéts|Vayejí|Vaerá|Yitró|Terumá|Tetsavé|Tisá|Pekudéi|Vayikrá|Sheminí|Tazría|Metsorá|Ajaréi|Bejukotái|Nasó|Behaalotjá|Lejá|Kóraj|Pinjás|Maséi|Vaetjanán|Ékev|Reé|Tetsé|Tavó|Vayélej|Haberajá|Shemá|Jodesh|Torá|Haftará|Jadashá|Mishkán|Teruá/g, '')) || ES_WORDS.test(s);
   const MISS = new Map();
+  let VOC = null;
   function miss(v, where) {
     const k = norm(v);
     if (!k || k.length < 2 || !looksEs(k)) return;
@@ -242,7 +243,7 @@
     // marcas del lector que buscan frases del texto en español (lugares, personajes, fiestas, paralelos)
     readermarks: '.settings-row:has(#mpToggle), .settings-row:has(#ppToggle), .settings-row:has(#frToggle), .settings-row:has(#plToggle)',
   };
-  const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile']);
+  const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile', 'maps', 'people']);
   const ok = f => !isEn || READY.has(f);
   if (isEn) {
     const st = document.createElement('style');
@@ -273,6 +274,14 @@
   window.KodeshI18n = {
     lang, isEn, t, tr, add, rule, setLang, bookName, patchBooks, patchRef, BOOKS_EN, walk, ok, READY, looksEs,
     misses: () => [...MISS.entries()].map(([t, w]) => ({ t, w })),
+    // Palabras que solo aparecen en los textos en español del diccionario (nunca en las traducciones):
+    // la auditoría las usa para encontrar español sin tildes ni palabras típicas («Padres», «Hijos»)
+    esVocab: text => {
+      if (!VOC) { const es = new Set(), en = new Set(); const tok = t => String(t).toLowerCase().match(/\p{L}{3,}/gu) || [];
+        for (const [k, v] of DICT) { tok(k).forEach(w => es.add(w)); tok(v).forEach(w => en.add(w)); }
+        VOC = new Set([...es].filter(w => !en.has(w))); }
+      return (String(text).toLowerCase().match(/\p{L}{3,}/gu) || []).filter(w => VOC.has(w));
+    },
     // ¿Es una palabra/nombre en español que tiene traducción? (la auditoría la usa para nombres sin tilde: «Lamec», «Sem»)
     esWord: w => { const v = DICT.get(w); return v != null && v !== w; },
     bible: isEn ? './biblia-wmb.json' : './biblia-rvr.json',

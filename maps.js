@@ -14,6 +14,7 @@
   'use strict';
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const norm = s => String(s || '').toLowerCase().normalize('NFC').replace(/[«»“”"'.,;:¿?¡!()—–]/g, ' ').replace(/\s+/g, ' ').trim();
+  const TX = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
   const JERUSALEM = [35.2345, 31.7767];
   let BASE = null, PLACES = null, TRIPS = null, P = {};
   const cache = {};
@@ -230,7 +231,7 @@ html.mp-off .mp-chips { display: none !important; }
         mundo: { type: 'geojson', data: './data/mapa-mundo.json' },
         sat: { type: 'raster', tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'], tileSize: 256, maxzoom: 14, attribution: '<a href="https://s2maps.eu" target="_blank">Sentinel-2 cloudless 2016</a> · EOX (CC BY 4.0)' },
         omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' },
-        dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 12, attribution: 'Relieve: Terrain Tiles (AWS)' },
+        dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 12, attribution: (window.KodeshI18n && KodeshI18n.isEn ? 'Terrain' : 'Relieve') + ': Terrain Tiles (AWS)' },
       },
       layers: [
         { id: 'bg', type: 'background', paint: { 'background-color': sat ? '#0e2a47' : '#a8c7df' } },
@@ -344,11 +345,11 @@ html.mp-off .mp-chips { display: none !important; }
       const stops = list.flatMap(j => j.stops.map(st => ({ ...st, color: j.color })));
       const box = fit(stops.map(st => st.ll));
       const one = list.length === 1 ? list[0] : null;
-      s.innerHTML = head(isPablo ? 'Los viajes de Pablo' : 'La ruta del viaje', one ? one.t : 'Los cuatro viajes', one ? `${esc(one.ref)} · unos ${routeKm(one.stops).toLocaleString('es')} km entre paradas` : 'Hechos 13 – 28', true)
-        + (isPablo ? `<div class="mp-tabs">${pablo.map(j => `<button class="mp-tab${sel === j.id ? ' on' : ''}" data-trip="${j.id}"><i style="background:${j.color}"></i>${j.pablo === 4 ? 'A Roma' : j.pablo + '.º viaje'}</button>`).join('')}<button class="mp-tab${sel === 'all' ? ' on' : ''}" data-trip="all">Todos</button></div>` : '')
-        + `<div class="mp-body"><div class="mp-map" data-map></div><div class="mp-src">${one && one.note ? esc(one.note) + ' ' : ''}Pellizca para acercar · 🌍 para ver el planeta. Imagen: Sentinel-2 cloudless (EOX) · Mapa: OpenStreetMap · Ubicaciones: OpenBible.info (CC BY 4.0).</div>
+      s.innerHTML = head(isPablo ? 'Los viajes de Pablo' : 'La ruta del viaje', one ? one.t : 'Los cuatro viajes', one ? `${esc(one.ref)} · ${TX('unos {n} km entre paradas', { n: routeKm(one.stops).toLocaleString('es') })}` : 'Hechos 13 – 28', true)
+        + (isPablo ? `<div class="mp-tabs">${pablo.map(j => `<button class="mp-tab${sel === j.id ? ' on' : ''}" data-trip="${j.id}"><i style="background:${j.color}"></i>${j.pablo === 4 ? TX('A Roma') : TX('{n}.º viaje', { n: j.pablo })}</button>`).join('')}<button class="mp-tab${sel === 'all' ? ' on' : ''}" data-trip="all">Todos</button></div>` : '')
+        + `<div class="mp-body"><div class="mp-map" data-map></div><div class="mp-src">${one && one.note ? esc(TX(one.note)) + ' ' : ''}${TX('Pellizca para acercar · 🌍 para ver el planeta. Imagen: Sentinel-2 cloudless (EOX) · Mapa: OpenStreetMap · Ubicaciones: OpenBible.info (CC BY 4.0).')}</div>
           <ol class="mp-list">${(one ? one.stops : []).map((st, i) => `<li data-go="${i}"><span class="mp-n" style="background:${one.color}">${i + 1}</span><div><b>${esc(st.n)}</b><small>${esc(nice(st.r))}</small><p>${esc(st.note)}${st.c < 300 ? ' <i>(ubicación incierta)</i>' : ''}</p></div></li>`).join('')}</ol>
-          ${!one ? `<div class="mp-trips">${pablo.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)} · ${j.stops.length} paradas</span></div></button>`).join('')}</div>` : ''}</div>`;
+          ${!one ? `<div class="mp-trips">${pablo.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)} · ${TX('{n} paradas', { n: j.stops.length })}</span></div></button>`).join('')}</div>` : ''}</div>`;
       wireHead(s);
       const state = { box };
       mountMap(s.querySelector('[data-map]'), state, () => ({ stops: one ? stops : [], routes: list.map(j => ({ stops: j.stops, color: j.color })), markers: one ? [] : pablo.flatMap(j => j.stops).filter((st, i, a) => a.findIndex(x => x.id === st.id) === i).map(st => ({ ll: st.ll, n: st.n.replace(' de Siria', '') })), onStop: i => { if (one) goVerse(one.stops[i].r); } }));
@@ -383,10 +384,10 @@ html.mp-off .mp-chips { display: none !important; }
     const s = sheet();
     s.innerHTML = head('Lugar', n, `${esc(type)} · ${confLabel(conf)}`, true)
       + `<div class="mp-body"><div class="mp-map" data-map></div>
-        <div class="mp-facts">${d < 8 ? '<div>En Jerusalén o junto a ella</div>' : `<div>Unos ${d.toLocaleString('es')} km ${dirFrom(JERUSALEM, ll)} de Jerusalén</div>`}
+        <div class="mp-facts">${d < 8 ? '<div>En Jerusalén o junto a ella</div>' : `<div>${TX('Unos {n} km {dir} de Jerusalén', { n: d.toLocaleString('es'), dir: TX(dirFrom(JERUSALEM, ll)) })}</div>`}
         ${conf < 300 ? '<div><i>Los estudiosos no coinciden en dónde estaba; el punto es la propuesta más aceptada.</i></div>' : ''}</div>
         ${trips.length ? `<div class="mp-sec">En los viajes</div><div class="mp-trips">${trips.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)}</span></div></button>`).join('')}</div>` : ''}
-        <div class="mp-sec">Lo que pasó aquí · ${refs.length} ${refs.length === 1 ? 'mención' : 'menciones'}</div>
+        <div class="mp-sec">${TX('Lo que pasó aquí')} · ${TX(refs.length === 1 ? '{n} mención' : '{n} menciones', { n: refs.length })}</div>
         <ol class="mp-list">${refs.slice(0, 40).map((r, i) => `<li data-r="${esc(r)}"><span class="mp-n" style="background:var(--gold,#c9a84c)">${i + 1}</span><div><b style="font-size:1rem">${esc(nice(r))}</b><p>${esc(snip(r))}</p></div></li>`).join('')}</ol>
         <div class="mp-src" style="padding-bottom:20px">Ubicación: OpenBible.info (CC BY 4.0) · Imagen: Sentinel-2 cloudless (EOX) · Mapa: OpenStreetMap.</div></div>`;
     wireHead(s);
@@ -406,7 +407,7 @@ html.mp-off .mp-chips { display: none !important; }
     const s = sheet();
     const other = TRIPS.j.filter(j => !j.pablo);
     s.innerHTML = head('Mapas bíblicos', 'Viajes de la Biblia', 'Toca un viaje para ver su ruta', false)
-      + `<div class="mp-body"><div class="mp-trips">${other.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)} · ${j.stops.length} paradas</span></div></button>`).join('')}
+      + `<div class="mp-body"><div class="mp-trips">${other.map(j => `<button class="mp-trip" data-trip="${j.id}"><i style="background:${j.color}"></i><div><b>${esc(j.t)}</b><span>${esc(j.ref)} · ${TX('{n} paradas', { n: j.stops.length })}</span></div></button>`).join('')}
         <button class="mp-trip" data-trip="pablo"><i style="background:linear-gradient(90deg,#c9a84c,#d08a5a,#6fa8c9,#a98fd1)"></i><div><b>Los viajes de Pablo</b><span>Hechos 13 – 28 · los tres viajes misioneros y el viaje a Roma</span></div></button></div>
         <div class="mp-src" style="padding:0 16px 20px">Además, en el texto los nombres de lugar llevan un subrayado dorado: al tocarlos, el lexicón muestra «Ver en el mapa».</div></div>`;
     s.querySelector('[data-close]').onclick = close;

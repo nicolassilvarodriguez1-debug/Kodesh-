@@ -216,6 +216,8 @@
   // Fechas históricas: «c. 5 a.C.–30 d.C.», «586 a.C.»
   I.rule(/^(c\. )?(\d+) a\.C\.(?:[–-](c\. )?(\d+) (a|d)\.C\.)?$/, (m, c1, a, c2, b, e) => `${c1 || ''}${a} BC${b ? '–' + (c2 || '') + b + (e === 'a' ? ' BC' : ' AD') : ''}`);
   I.rule(/^(c\. )?(\d+) d\.C\.$/, '$1$2 AD');
+  // «c. 2000–1800 a.C.», «c. 1400/1200–1050 a.C.», «s. XV o XIII a.C.», «c. 30–95 d.C.»
+  I.rule(/^([cs]\. )?[\dIVXLC\/–\- o]+ (a|d)\.C\.$/, m => m.replace(/^s\. /, 'c. ').replace(/ o /g, ' or ').replace(/ a\.C\.$/, ' BC').replace(/ d\.C\.$/, ' AD').replace(/\bXV\b/, '15th c.').replace(/\bXIII\b/, '13th c.'));
   I.rule(/^de (\d+)$/, 'of $1');
   I.rule(/^(\d+) versículos guardados$/, '$1 verses saved');
   I.rule(/^Ver más \((\d+)\)$/, 'See more ($1)');
