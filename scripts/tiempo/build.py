@@ -122,7 +122,7 @@ CHAIN = [
     ['José', 91, 110, 'GEN 47:9', 'GEN 50:26', 'Jacob'],
 ]
 born = {}
-GEN = []
+GEN = []   # [nombre, nace, muere, cita, grupo, clase]  grupo 0 fijo · 1 desde Abraham (Taré) · 2 además después de Egipto
 ABR = {'Abraham', 'Sara', 'Ismael', 'Isaac', 'Jacob', 'José'}
 for n, a, life, r1, r2, par in CHAIN:
     b = 0 if par is None else born[par] + a
@@ -130,13 +130,58 @@ for n, a, life, r1, r2, par in CHAIN:
     r1 and chk(r1); chk(r2)
     GEN.append([n, b, b + life, r2, 1 if n in ABR else 0, 'o' if n in ('Sara', 'Ismael') else ''])
 assert born['Noé'] + 600 == 1656 and born['Abraham'] == 1948 and born['José'] == 2199, born
+
+# Egipto · lectura principal: 430 años desde la promesa a Abram (75 años, Gn 12:4) hasta la Ley (Gá 3:17;
+# Éx 12:40 en la Septuaginta: «en Egipto y en Canaán») → 215 años en Egipto. La otra lectura (Éx 12:40 hebreo:
+# 430 en Egipto) suma 215 años a todo lo que viene después; la app la ofrece como opción.
+JACOB_EG = born['Jacob'] + 130
+JOSE_D = born['José'] + 110
+EXODO = born['Abraham'] + 75 + 430
+assert EXODO - JACOB_EG == 215 and EXODO - JOSE_D == 144, (EXODO, JACOB_EG, JOSE_D)
+EG_ALT = 430 - 215
+def life(n, b, d, r, kind=''):
+    GEN.append([n, b, d, r, 2, kind])
+life('Aarón', EXODO - 83, EXODO - 83 + 123, 'NUM 33:39')                 # Éx 7:7 · Nm 33:39
+life('Moisés', EXODO - 80, EXODO - 80 + 120, 'DEU 34:7')                 # Éx 7:7 · Dt 34:7
+TEMPLO = EXODO + 480                                                     # 1 R 6:1
+SALOMON = TEMPLO - 3                                                     # su cuarto año
+DAVID = SALOMON - 40                                                     # 1 R 2:11
+life('David', DAVID - 30, SALOMON, '2SA 5:4', 'r')                        # 30 al reinar, reinó 40
+life('Salomón', SALOMON, SALOMON + 40, '1KI 11:42', 'k')                  # solo su reinado (no da su edad)
+# Reyes de Judá: [nombre, edad al reinar (None = no la da), años de reinado, cita]
+KINGS = [['Roboam', 41, 17, '1KI 14:21'], ['Abiam', None, 3, '1KI 15:2'], ['Asa', None, 41, '1KI 15:10'],
+         ['Josafat', 35, 25, '1KI 22:42'], ['Joram', 32, 8, '2KI 8:17'], ['Ocozías', 22, 1, '2KI 8:26'],
+         ['Atalía', None, 6, '2KI 11:3'], ['Joás', 7, 40, '2KI 12:1'], ['Amasías', 25, 29, '2KI 14:2'],
+         ['Uzías', 16, 52, '2KI 15:2'], ['Jotam', 25, 16, '2KI 15:33'], ['Acaz', 20, 16, '2KI 16:2'],
+         ['Ezequías', 25, 29, '2KI 18:2'], ['Manasés', 12, 55, '2KI 21:1'], ['Amón', 22, 2, '2KI 21:19'],
+         ['Josías', 8, 31, '2KI 22:1'], ['Joacaz', 23, 0, '2KI 23:31'], ['Joacim', 25, 11, '2KI 23:36'],
+         ['Joaquín', 18, 0, '2KI 24:8'], ['Sedequías', 21, 11, '2KI 24:18']]
+y = SALOMON + 40
+for n, age, yrs, r in KINGS:
+    chk(r)
+    # Joacaz, Joaquín y Sedequías no murieron al terminar su reinado (Egipto, Babilonia): solo su reinado
+    if age is None or n in ('Joacaz', 'Joaquín', 'Sedequías'):
+        if yrs: life(n, y, y + yrs, r, 'k')
+    else:
+        life(n, y - age, y + yrs, r, 'r')
+    y += yrs
+CAIDA = y
+assert TEMPLO == 2933 and SALOMON + 40 == 2970 and CAIDA == 3363, (TEMPLO, CAIDA)
+for x in ('EXO 7:7', '1KI 2:11', '2KI 11:21', '2KI 25:2', 'EXO 12:40', 'GAL 3:17', 'EXO 1:8'): chk(x)
 for g in LIVES:
     for n, a, r in g[1]:
         x = next((q for q in GEN if q[0] == n), None)
         if x: assert x[2] - x[1] == a, n
-GEN_EVENTS = [[0, 'La creación', 'GEN 1:1'], [1656, 'El diluvio', 'GEN 7:6'],
-              ['Abraham+75', 'Abram sale de Harán', 'GEN 12:4'], ['Jacob+130', 'Jacob baja a Egipto', 'GEN 47:9']]
+# [año, suceso, cita, grupo]
+GEN_EVENTS = [[0, 'La creación', 'GEN 1:1', 0], [1656, 'El diluvio', 'GEN 7:6', 0],
+              [born['Abraham'] + 75, 'Abram sale de Harán · la promesa', 'GEN 12:4', 1],
+              [JACOB_EG, 'Jacob baja a Egipto', 'GEN 47:9', 1],
+              [JOSE_D, 'Muere José · después viene la esclavitud', 'EXO 1:8', 1],
+              [EXODO, 'El Éxodo', 'EXO 12:41', 2], [EXODO + 40, 'Cruzan el Jordán', 'JOS 4:19', 2],
+              [TEMPLO, 'Salomón comienza el Templo', '1KI 6:1', 2], [SALOMON + 40, 'El reino se divide', '1KI 12:20', 2],
+              [CAIDA, 'Cae Jerusalén · el exilio', '2KI 25:8', 2]]
 for e in GEN_EVENTS: chk(e[2])
+GEN_BANDS = [[JOSE_D, EXODO, 'esclavitud', 1, 2]]     # de la muerte de José al Éxodo: «hasta» N años
 chk('GEN 11:26'); chk('ACT 7:4'); chk('GEN 12:4'); chk('GEN 5:24')
 
 for e in ERAS:
@@ -157,6 +202,6 @@ assert len(BOOKS) == 66, len(BOOKS)
 out = {'src': 'Épocas y fechas aproximadas (c.); edades y reyes según el texto bíblico; títulos de los salmos.',
        'eras': ERAS, 'books': BOOKS, 'notes': NOTES, 'psalms': PSALMS, 'pshist': PSHIST,
        'prophets': PROPHETS, 'prophetNote': PROPHET_NOTE, 'noking': NOKING, 'reigns': REIGNS, 'lives': LIVES, 'facts': FACTS,
-       'gen': {'people': GEN, 'events': GEN_EVENTS}}
+       'gen': {'people': GEN, 'events': GEN_EVENTS, 'bands': GEN_BANDS, 'egAlt': EG_ALT}}
 json.dump(out, open(os.path.join(ROOT, 'data/linea-tiempo.json'), 'w'), ensure_ascii=False)
 print('ok', len(BOOKS), 'libros')

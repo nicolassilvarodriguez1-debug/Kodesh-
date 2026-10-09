@@ -39,4 +39,10 @@ test('línea de tiempo: ¿quién vivía? — años sumados del texto', () => {
   assert.equal(G['Abraham'][1], 1948);
   assert.equal(G['Lamec'][1] < G['Adán'][2], true); // Lamec conoció a Adán
   for (const [n, b, d] of D.gen.people) assert.ok(d > b, n);
+  const E = Object.fromEntries(D.gen.events.map(e => [e[1], e[0]]));
+  assert.equal(E['El Éxodo'] - G['José'][2], 144);         // hasta 144 años de esclavitud (Gá 3:17)
+  assert.equal(E['El Éxodo'] - (G['Jacob'][1] + 130), 215);
+  assert.equal(E['Salomón comienza el Templo'] - E['El Éxodo'], 480); // 1 R 6:1
+  assert.equal(G['Moisés'][1], E['El Éxodo'] - 80);        // Éx 7:7
+  assert.equal(D.gen.egAlt, 215);
 });
