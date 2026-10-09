@@ -50,19 +50,17 @@
     const H = rad * (280.16 + 360.9856235 * d) - rad * -lng - c.ra;
     return Math.atan2(Math.sin(H), Math.tan(phi) * Math.cos(c.dec) - Math.sin(c.dec) * Math.cos(H));
   }
-  // Giro de la luna según su fase (no según la hora, para que no baile al arrastrar):
-  // creciente fina con la luz abajo a la derecha, que se endereza hasta el cuarto (luz a la derecha);
-  // menguante en espejo. La inclinación máxima depende de la latitud (más «barquita» cerca del ecuador).
-  // Hemisferio sur: la luna se ve girada 180° (creciente iluminada a la izquierda).
+  // Giro de toda la luna según su fase (no según la hora, para que no baile al arrastrar):
+  // va girando unos 2–3° por día a lo largo del ciclo — creciente fina con la luz abajo a la
+  // derecha, enderezándose hacia la llena, y menguante final con la luz abajo a la izquierda.
+  // La inclinación máxima depende de la latitud (más «barquita» cerca del ecuador).
+  // Hemisferio sur: girada 180° (creciente iluminada a la izquierda).
   function orient(date, P) {
     const il = illum(date), lat = P && typeof P.lat === 'number' ? P.lat : 31.8;
-    const pw = il.phase < 0.5 ? il.phase : 1 - il.phase;               // 0 nueva … .5 llena
-    const tiltMax = (90 - Math.min(Math.abs(lat), 60)) * 0.6 * rad;
-    const tilt = pw < 0.25 ? tiltMax * (1 - pw / 0.25) : 0;
-    let lit = il.phase < 0.5 ? tilt : Math.PI - tilt;                   // ángulo en pantalla (0 derecha, +abajo)
-    let tex = 0;
-    if (lat < 0) { lit = Math.PI - lit; tex = Math.PI; }
-    return { il, lit, tex };
+    const max = (90 - Math.min(Math.abs(lat), 60)) * 0.6 * rad;
+    let rot = max * Math.cos(Math.PI * il.phase);                      // +max (nueva, creciendo) → −max (nueva, menguando)
+    if (lat < 0) rot = Math.PI - rot;
+    return { il, rot, waning: il.phase >= 0.5 };
   }
   // Elongación continua 0..1 (0 = nueva, .5 = llena) para buscar el instante exacto
   function findPhase(from, target, dir = 1) {
@@ -141,7 +139,7 @@
     ctx.closePath();
   }
   // Pinta la luna en un canvas (tamaño CSS size): textura, sombra suave y luz cenicienta.
-  // o = { lit: hacia dónde mira la parte iluminada (rad, 0 = derecha), tex: giro de la foto }
+  // o = { rot: giro de toda la luna en radianes (positivo = horario) }
   // Sin o: vista de manual (norte arriba, iluminada a la derecha al crecer).
   function drawMoon(cv, p, size, o) {
     const dpr = Math.min(window.devicePixelRatio || 1, 3), W = Math.round(size * dpr);
@@ -149,7 +147,7 @@
     const ctx = cv.getContext('2d'), r = W / 2 - 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, W);
     ctx.translate(W / 2, W / 2);
-    if (o && o.tex) ctx.rotate(o.tex);
+    if (o) ctx.rotate(o.rot);                          // giro de toda la luna (foto y sombra)
     ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
     if (TEX) { const b = TEX.box; ctx.drawImage(TEX.img, b.x, b.y, b.w, b.h, -r, -r, 2 * r, 2 * r); }
     else {
@@ -163,7 +161,7 @@
     ctx.fillStyle = lg; ctx.fillRect(-r, -r, 2 * r, 2 * r);
     // sombra: geometría «creciente» (iluminada a la derecha) girada hacia el limbo iluminado
     const pw = p < 0.5 ? p : 1 - p;                    // 0..0.5
-    const turn = o ? o.lit - (o.tex || 0) : (p < 0.5 ? 0 : Math.PI);
+    const turn = p < 0.5 ? 0 : Math.PI;
     ctx.rotate(turn);
     const L = 8, a = 1 - Math.pow(1 - 0.80, 1 / L), spread = 0.022;   // ~20% de luz cenicienta, terminador suave
     ctx.fillStyle = `rgba(8,10,18,${a})`;
