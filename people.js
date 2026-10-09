@@ -98,10 +98,10 @@ html.pp-off .pp-row { display: none !important; }
 .pp-gen-l { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); text-align: center; margin-bottom: -6px; }
 .pp-node { border: 1px solid var(--border2, #2a2836); background: var(--bg2, #12111a); color: var(--text, #e9e3d3); border-radius: 12px; padding: 7px 12px; font: inherit; font-size: .95rem; cursor: pointer; }
 .pp-node.me { border-color: var(--gold, #c9a84c); background: rgba(201,168,76,.12); font-weight: 600; }
-.pp-node.ly, .pp-chip.ly { border-color: #d4a73a; color: #e8c15a; background: linear-gradient(180deg, rgba(212,167,58,.16), rgba(212,167,58,.06)); box-shadow: 0 0 0 1px rgba(212,167,58,.25), 0 0 12px rgba(212,167,58,.18); }
-.pp-node.ly:before, .pp-chip.ly:before { content: '✦'; font-size: .7em; margin-right: 5px; color: #e8c15a; }
-.pp-node.me.ly { background: rgba(212,167,58,.24); color: #f3d77e; }
-.pp-lyb { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 10px; border-radius: 12px; font-size: .78rem; color: #e8c15a; border: 1px solid rgba(212,167,58,.5); background: rgba(212,167,58,.1); }
+.pp-node.ly, .pp-chip.ly { border: 1.5px solid #c9a03a; color: var(--text, #e9e3d3); background: rgba(201,160,58,.10); font-weight: 600; }
+.pp-node.ly:before, .pp-chip.ly:before { content: '✦'; font-size: .72em; margin-right: 6px; color: #c9a03a; }
+.pp-node.me.ly { background: rgba(201,160,58,.22); }
+.pp-lyb { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 10px; border-radius: 12px; font-size: .78rem; color: var(--text, #e9e3d3); border: 1px solid rgba(212,167,58,.5); background: rgba(212,167,58,.1); }
 .pp-nav { display: flex; gap: 8px; align-items: center; padding: 0 18px 4px; flex-shrink: 0; flex-wrap: wrap; }
 .pp-back { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.08); color: var(--gold, #c9a84c); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: .88rem; cursor: pointer; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pp-back.home { border-color: var(--border2, #2a2836); color: var(--text-mid, #b8af9c); background: none; }
@@ -184,7 +184,7 @@ html.pp-off .pp-row { display: none !important; }
       const rel = k === 'co' ? 'aparece con' : (r.pa || []).includes(x) ? 'padre' : (r.ma || []).includes(x) ? 'madre' : (r.pr || []).includes(x) ? 'pareja' : (r.hi || []).includes(x) ? 'hijo/a' : 'hermano/a';
       svg += `<g data-p="${esc(x)}" style="cursor:pointer"><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="30" fill="var(--bg2,#12111a)" stroke="${LY.has(x) ? '#e8c15a' : k === 'fam' ? '#c9a84c' : '#6fa0d8'}" stroke-width="${LY.has(x) ? 3.5 : 2}"${LY.has(x) ? ' style="filter:drop-shadow(0 0 6px rgba(232,193,90,.6))"' : ''}/>
         <text x="${nx.toFixed(1)}" y="${(ny + 8).toFixed(1)}" text-anchor="middle" font-family="Frank Ruhl Libre, serif" font-size="22" fill="${k === 'fam' ? '#c9a84c' : '#8fb6e6'}">${esc(nameOf(x)[0])}</text>
-        <text x="${nx.toFixed(1)}" y="${(ny + 52).toFixed(1)}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="21" fill="${LY.has(x) ? '#e8c15a' : 'var(--text,#e9e3d3)'}">${LY.has(x) ? '✦ ' : ''}${esc(nameOf(x))}</text>
+        <text x="${nx.toFixed(1)}" y="${(ny + 52).toFixed(1)}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="21" fill="var(--text,#e9e3d3)">${LY.has(x) ? '✦ ' : ''}${esc(nameOf(x))}</text>
         <text x="${nx.toFixed(1)}" y="${(ny + 72).toFixed(1)}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="17" fill="var(--text-dim,#6e6656)">${rel}</text></g>`;
     });
     svg += `<circle cx="${cx}" cy="${cy}" r="48" fill="rgba(201,168,76,.18)" stroke="#c9a84c" stroke-width="2.5"/><text x="${cx}" y="${cy + 7}" text-anchor="middle" font-family="EB Garamond, Georgia, serif" font-size="22" font-weight="600" fill="var(--text,#e9e3d3)">${esc(nameOf(id))}</text></svg>`;
