@@ -109,6 +109,8 @@ html.tl-off .tl-pill { display: none !important; }
 .tl-alive button { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(201,168,76,.4); text-underline-offset: 3px; }
 .tl-alive small { color: var(--text-dim, #6e6656); }
 .tl-cur { margin-top: 12px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.06); animation: tlCur .35s ease; }
+.tl-cur-img { margin: -14px -16px 12px; border-radius: 16px 16px 0 0; overflow: hidden; aspect-ratio: 3 / 2; background: var(--bg2, #12111a); }
+.tl-cur-img img { width: 100%; height: 100%; object-fit: cover; display: block; animation: tlCur .4s ease; }
 .tl-cur b { display: block; font-family: var(--font-display, serif); font-size: 1.35rem; font-weight: 600; line-height: 1.2; margin-top: 4px; }
 .tl-cur p { margin: 6px 0 8px; line-height: 1.45; color: var(--text-mid, #b8af9c); }
 @keyframes tlCur { from { opacity: 0; transform: translateY(6px); } }
@@ -315,9 +317,23 @@ html.tl-off .tl-pill { display: none !important; }
     const cEl = s.querySelector('[data-gc]'), c = curioAt(gy);
     if (cEl && cEl.dataset.k !== String(c ? c[5] : '')) {
       cEl.dataset.k = c ? c[5] : '';
-      cEl.innerHTML = c ? `<div class="tl-cur"><div class="tl-kick">${esc(c[4])}</div><b>${esc(c[5])}</b><p>${esc(c[6])}</p>${c[7] ? `<button type="button" class="tl-link" data-go="${c[7]}">Leer ${esc(nice(c[7]))} →</button>` : ''}</div>` : '';
+      cEl.innerHTML = c ? `<div class="tl-cur"><div class="tl-cur-img" hidden></div><div class="tl-kick">${esc(c[4])}</div><b>${esc(c[5])}</b><p>${esc(c[6])}</p>${c[7] ? `<button type="button" class="tl-link" data-go="${c[7]}">Leer ${esc(nice(c[7]))} →</button>` : ''}</div>` : '';
       const l = cEl.querySelector('[data-go]'); if (l) l.onclick = () => go(l.dataset.go);
+      if (c && c[8]) loadArt().then(art => {
+        const u = art && art['tl_' + c[8]], box = cEl.querySelector('.tl-cur-img');
+        if (!u || !box || cEl.dataset.k !== c[5]) return;
+        const im = new Image(); im.alt = ''; im.decoding = 'async';
+        im.onload = () => { if (cEl.dataset.k === c[5]) { box.appendChild(im); box.hidden = false; } };
+        im.src = u;
+      });
     }
+  }
+  // Pinturas de los datos (admin → insignias/inicio.json «tl_<clave>»); sin pintura, la tarjeta es solo texto
+  let ART = null;
+  function loadArt() {
+    if (ART) return ART;
+    ART = fetch('https://fvknbqdsgqdmwirrgcvb.supabase.co/storage/v1/object/public/insignias/inicio.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+    return ART;
   }
   function curioAt(y) {
     const u = histU(), at = (v, g) => g === 'h' ? u(v) : v + sh(g);

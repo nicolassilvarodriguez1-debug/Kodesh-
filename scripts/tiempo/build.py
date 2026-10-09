@@ -263,6 +263,26 @@ assert [c for c in CURIOS if c[5] == 'Elías y la sequía'][0][0] == 3027
 for c in CURIOS:
     c[7] and chk(c[7])
     assert len(c) == 8, c
+
+# Pintura de cada dato (clave de TIEMPO_SCENES en api/_art.js; se genera desde el admin). Sin clave: solo texto.
+IMG = {'Comienzan a invocar el Nombre': 'enos', 'Enoc no murió': 'enoc', 'Un año y diez días en el arca': 'arca',
+       'La tierra fue repartida': 'peleg', '25 años esperando': 'promesa', 'Dios me ha hecho reír': 'risa', 'Trece años': 'jose',
+       '«Pocos y malos»': 'jacob', 'Más oprimidos, más numerosos': 'esclavitud', 'Una vida en tres partes de 40': 'moises',
+       'Cuarenta años de maná': 'mana', 'Los muros caen': 'jerico', 'Siete años en Hebrón, 33 en Jerusalén': 'david',
+       'Sin ruido de martillo': 'templo', 'El consejo de los jóvenes': 'roboam', 'Elías y la sequía': 'elias',
+       'Joás, el rey niño': 'joas', 'Isaías ve al Señor': 'isaias', 'Quince años más': 'ezequias', 'Hallan el libro de la Ley': 'josias',
+       'Daniel llevado a Babilonia': 'daniel', 'Junto a los ríos de Babilonia': 'babilonia', 'Isaías ya había nombrado a Ciro': 'ciro',
+       '¿Ustedes en casas y la casa de Dios desierta?': 'hageo', 'Ester, reina': 'ester', 'Un muro en 52 días': 'nehemias',
+       'Yeshúa en la fiesta de la Dedicación': 'janucah', '46 años en obra': 'herodes', 'Los magos y la huida a Egipto': 'egipto',
+       'En la casa de su Padre': 'doce', 'Juan bautiza a Yeshúa': 'jordan', 'Tres mil en un día': 'shavuot', 'Saulo, Saulo': 'damasco',
+       'No quedó piedra sobre piedra': 'ruinas', 'Juan escribe el Apocalipsis': 'patmos'}
+titles = {c[5] for c in CURIOS}
+assert set(IMG) <= titles, set(IMG) - titles
+ART = open(os.path.join(ROOT, 'api/_art.js')).read()
+for c in CURIOS:
+    k = IMG.get(c[5], '')
+    if k: assert re.search(r'\n  ' + k + r': ', ART[ART.index('TIEMPO_SCENES'):]), k
+    c.append(k)
 for x in HIST_PEOPLE + HIST_EVENTS:
     if x[3 if len(x) == 5 else 2]: chk(x[3 if len(x) == 5 else 2])
      # de la muerte de José al Éxodo: «hasta» N años

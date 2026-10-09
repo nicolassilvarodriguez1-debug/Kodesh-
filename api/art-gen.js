@@ -6,7 +6,7 @@
 import { requireAdmin } from './_auth.js';
 import { applyCors, handleOptions } from './_security.js';
 import fs from 'node:fs';
-import { ART_IDS, artPrompt, HOME_IDS, HOME_SCENES, homePrompt, parashaPrompt, parashaSafePrompt } from './_art.js';
+import { ART_IDS, artPrompt, HOME_IDS, HOME_SCENES, homePrompt, parashaPrompt, parashaSafePrompt, TIEMPO_IDS, tiempoPrompt } from './_art.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -20,11 +20,13 @@ async function put(path, body, type, cache = 'max-age=31536000') {
 }
 let PARASHOT = null;
 const parashot = () => PARASHOT || (PARASHOT = JSON.parse(fs.readFileSync(new URL('../parashot-data.json', import.meta.url), 'utf8')));
-// id: fiesta («pesaj») · «home:hero_day» · «parasha:2»
+// id: fiesta («pesaj») · «home:hero_day» · «parasha:2» · «tiempo:arca»
 function job(id) {
   if (ART_IDS.includes(id)) return { set: 'fiestas.json', key: id, prompt: artPrompt(id), size: '1536x1024' };
   const h = /^home:(\w+)$/.exec(id);
   if (h && HOME_IDS.includes(h[1])) return { set: 'inicio.json', key: h[1], prompt: homePrompt(h[1]), size: HOME_SCENES[h[1]][1] };
+  const t = /^tiempo:(\w+)$/.exec(id);
+  if (t && TIEMPO_IDS.includes(t[1])) return { set: 'inicio.json', key: 'tl_' + t[1], prompt: tiempoPrompt(t[1]), size: '1536x1024' };
   const p = /^parasha:(\d{1,2})$/.exec(id);
   if (p) { const x = parashot().find(q => q.num === +p[1]); if (x) return { set: 'inicio.json', key: 'p' + x.num, prompt: parashaPrompt(x), safe: parashaSafePrompt(x), size: '1536x1024' }; }
   return null;

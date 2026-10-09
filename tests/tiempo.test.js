@@ -47,5 +47,5 @@ test('línea de tiempo: ¿quién vivía? — años sumados del texto', () => {
   assert.equal(D.gen.egAlt, 215);
   assert.equal(D.gen.hist.at[0], E['Cae Jerusalén · el exilio']);  // el corte: aquí termina la cuenta del texto
   assert.ok(D.gen.hist.people.some(p => p[0] === 'Yeshúa'));
-  for (const c of D.gen.curios) { assert.equal(c.length, 8); assert.ok(c[4] && c[5] && c[6], c[5]); }
+  for (const c of D.gen.curios) { assert.equal(c.length, 9); assert.ok(c[4] && c[5] && c[6], c[5]); }
 });

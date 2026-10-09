@@ -559,6 +559,10 @@ html[data-theme="light"] .btn-main { color: #fffaf0; }
           <div style="margin:10px 0"><button class="btn-main" onclick="HI_ADMIN.genMissing('parasha')">✦ Generar las porciones que faltan</button> <button class="btn-sm" onclick="HI_ADMIN.genAll()">Repintar todas</button> <span style="color:var(--text-dim);font-size:.85rem">~$0.25 cada una</span></div>
           <div id="hiPGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
         </details>
+        <details class="tool-more" style="margin-top:10px"><summary>Línea de tiempo · datos curiosos (<span id="hiTCount">0</span> de <span id="hiTTotal">35</span>)</summary>
+          <div style="margin:10px 0"><button class="btn-main" onclick="HI_ADMIN.genMissing('tiempo')">✦ Pintar las que faltan</button> <span style="color:var(--text-dim);font-size:.85rem">Óleo como las fiestas, ~$0.25 cada una. Sin pintura, la tarjeta se ve solo con texto.</span></div>
+          <div id="hiTGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
+        </details>
         <input type="file" id="hiOne" accept="image/*" hidden>
       </section>
       <section class="tool">
@@ -1291,7 +1295,7 @@ const CAL_ADMIN = (() => {
 // ── Imágenes del inicio (fotos realistas) ──
 const HI_ADMIN = (() => {
   const HOME = [['hero_day', 'Portada · día'], ['hero_night', 'Portada · noche'], ['promesa', 'Promesa del día'], ['continua', 'Continúa tu lectura'], ['login_day', 'Inicio de sesión · día'], ['login_night', 'Inicio de sesión · noche'], ['ex_asistente', 'Explora · Asistente'], ['ex_ciclo', 'Explora · Ciclo'], ['ex_mapas', 'Explora · Mapas'], ['ex_buscar', 'Explora · Buscar'], ['ex_estudio', 'Explora · Mi estudio'], ['ex_tutorial', 'Explora · Tutorial'], ['luna', 'Luna llena (textura de las fases)']];
-  let art = {}, parashot = [], busy = false;
+  let art = {}, parashot = [], tiempo = [], busy = false;
   const msg = t => { const m = document.getElementById('hiMsg'); if (m) m.textContent = t || ''; };
   async function call(body) { const res = await adminApi(body); const d = await res.json().catch(() => ({})); if (!res.ok) throw new Error(d.error || `Error ${res.status}`); return d; }
   const tile = (key, label, gen) => `<div style="border:1px solid var(--border);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px">
@@ -1301,19 +1305,22 @@ const HI_ADMIN = (() => {
     const g = document.getElementById('hiGrid'), pg = document.getElementById('hiPGrid'); if (!g) return;
     g.innerHTML = HOME.map(([k, l]) => tile(k, l, 'home:' + k)).join('');
     pg.innerHTML = parashot.map(p => tile('p' + p.num, `${p.num}. ${p.nombre}`, 'parasha:' + p.num)).join('');
+    const tg = document.getElementById('hiTGrid');
+    if (tg) { tg.innerHTML = tiempo.map(([k, t]) => tile('tl_' + k, t, 'tiempo:' + k)).join(''); document.getElementById('hiTCount').textContent = tiempo.filter(([k]) => art['tl_' + k]).length; document.getElementById('hiTTotal').textContent = tiempo.length; }
     document.getElementById('hiCount').textContent = `${HOME.filter(([k]) => art[k]).length} de ${HOME.length}`;
     document.getElementById('hiPCount').textContent = parashot.filter(p => art['p' + p.num]).length;
-    document.querySelectorAll('#hiGrid [data-gen], #hiPGrid [data-gen]').forEach(b => b.onclick = () => {
-      const key = b.dataset.gen.replace('home:', '').replace('parasha:', 'p');
+    document.querySelectorAll('#hiGrid [data-gen], #hiPGrid [data-gen], #hiTGrid [data-gen]').forEach(b => b.onclick = () => {
+      const key = b.dataset.gen.replace('home:', '').replace('parasha:', 'p').replace('tiempo:', 'tl_');
       let extra = '';
       if (art[key]) { const x = prompt('¿Algo que quieras cambiar en esta imagen? (opcional)', ''); if (x === null) return; extra = x; }
       gen([b.dataset.gen], extra);
     });
-    document.querySelectorAll('#hiGrid [data-up], #hiPGrid [data-up]').forEach(b => b.onclick = () => pick(b.dataset.up));
+    document.querySelectorAll('#hiGrid [data-up], #hiPGrid [data-up], #hiTGrid [data-up]').forEach(b => b.onclick = () => pick(b.dataset.up));
   }
   async function load() {
     try {
       if (!parashot.length) parashot = await fetch('/parashot-data.json').then(r => r.json());
+      if (!tiempo.length) tiempo = ((await fetch('/data/linea-tiempo.json').then(r => r.json())).gen.curios || []).filter(c => c[8]).map(c => [c[8], c[5]]);
       art = (await call({ action: 'feast_art_list', set: 'inicio' })).art || {}; render(); msg('');
     } catch (e) { msg('No se pudo cargar: ' + e.message); }
   }
@@ -1329,7 +1336,7 @@ const HI_ADMIN = (() => {
         if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
         art = d.art || art; render();
       } catch (e) {
-        failed.push(id.replace('parasha:', 'porción ').replace('home:', ''));
+        failed.push(id.replace('parasha:', 'porción ').replace('home:', '').replace('tiempo:', ''));
         if (/OPENAI_API_KEY|sesión|401|403/.test(e.message)) { msg('Error: ' + e.message); busy = false; return; }
       }
     }
@@ -1337,7 +1344,7 @@ const HI_ADMIN = (() => {
     busy = false;
   }
   function genMissing(kind) {
-    const ids = kind === 'home' ? HOME.filter(([k]) => !art[k]).map(([k]) => 'home:' + k) : parashot.filter(p => !art['p' + p.num]).map(p => 'parasha:' + p.num);
+    const ids = kind === 'tiempo' ? tiempo.filter(([k]) => !art['tl_' + k]).map(([k]) => 'tiempo:' + k) : kind === 'home' ? HOME.filter(([k]) => !art[k]).map(([k]) => 'home:' + k) : parashot.filter(p => !art['p' + p.num]).map(p => 'parasha:' + p.num);
     if (!ids.length) return msg('Ya están todas ✓');
     gen(ids);
   }

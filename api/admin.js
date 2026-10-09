@@ -152,7 +152,7 @@ async function badgeSaveManifest(m) {
 
 
 // ── Arte de las fiestas y ajustes del calendario bíblico (mismo bucket público) ──
-import { HOME_IDS } from './_art.js';
+import { HOME_IDS, TIEMPO_IDS } from './_art.js';
 const FEAST_IDS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'shabat'];
 async function publicJson(path, fallback) {
   const r = await fetch(`${badgePublic(path)}?t=${Date.now()}`, { cache: 'no-store' });
@@ -234,7 +234,7 @@ export default async function handler(req, res) {
     if (admin.role !== 'superadmin') return res.status(403).json({ error: 'forbidden_role' });
     const id = String(req.body.id || '');
     const home = req.body.set === 'inicio', file = home ? 'inicio.json' : 'fiestas.json';
-    if (home ? !(HOME_IDS.includes(id) || /^p([1-9]|[1-4]\d|5[0-4])$/.test(id)) : !FEAST_IDS.includes(id)) return res.status(400).json({ error: 'Imagen inválida' });
+    if (home ? !(HOME_IDS.includes(id) || /^p([1-9]|[1-4]\d|5[0-4])$/.test(id) || (id.startsWith('tl_') && TIEMPO_IDS.includes(id.slice(3)))) : !FEAST_IDS.includes(id)) return res.status(400).json({ error: 'Imagen inválida' });
     try {
       await badgeEnsureBucket();
       const m = await publicJson(file, {});
