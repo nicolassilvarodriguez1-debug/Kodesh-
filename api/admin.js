@@ -153,6 +153,7 @@ async function badgeSaveManifest(m) {
 
 // ── Arte de las fiestas y ajustes del calendario bíblico (mismo bucket público) ──
 import { HOME_IDS, TIEMPO_IDS } from './_art.js';
+import { monthNameEn } from './_en.js';
 const FEAST_IDS = ['pesaj', 'matzot', 'bikurim', 'shavuot', 'terua', 'kipur', 'sukot', 'shabat'];
 async function publicJson(path, fallback) {
   const r = await fetch(`${badgePublic(path)}?t=${Date.now()}`, { cache: 'no-store' });
@@ -288,6 +289,8 @@ export default async function handler(req, res) {
       if (req.body.notify !== false) {
         try { await getFcm().send({ topic: 'luna-nueva', notification: { title, body }, data: { kind: 'moon' } }); sent = 1; }
         catch (e) { failed = 1; console.warn('moon_announce push:', e.message); }
+        try { await getFcm().send({ topic: 'luna-nueva-en', notification: { title: '🌙 The new moon was seen', body: `From Jerusalem. At sunset ${monthNameEn(C.monthNum(k), nm.old)} begins.` }, data: { kind: 'moon' } }); }
+        catch (e) { console.warn('moon_announce push en:', e.message); }
         await logNotification({ admin, kind: 'moon', targetLabel: 'Tema: luna-nueva', title, body, sent, failed });
       }
       return res.status(200).json({ adj, sent: !!sent, body });

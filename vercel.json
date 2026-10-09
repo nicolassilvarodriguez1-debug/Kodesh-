@@ -17,6 +17,10 @@
     {
       "source": "/calendario.ics",
       "destination": "/api/calendario-ics"
+    },
+    {
+      "source": "/calendar-en.ics",
+      "destination": "/api/calendario-ics?lang=en"
     }
   ],
   "functions": {
@@ -73,7 +77,7 @@
     "api/cron-daily-reminder.js": {
       "memory": 256,
       "maxDuration": 30,
-      "includeFiles": "{calendario.js,data/calendario-biblico.json}"
+      "includeFiles": "{calendario.js,data/calendario-biblico.json,biblia-wmb.json}"
     },
     "api/cron-reconcile-plans.js": {
       "memory": 256,

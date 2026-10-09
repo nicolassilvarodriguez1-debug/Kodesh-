@@ -11,7 +11,7 @@
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
-  const ICS = 'www.kodeshbible.com/calendario.ics';
+  const ICS = window.KodeshI18n && KodeshI18n.isEn ? 'www.kodeshbible.com/calendar-en.ics' : 'www.kodeshbible.com/calendario.ics';
 
   /* ── Fase de la luna ── */
   const rad = Math.PI / 180, E = rad * 23.4397;
@@ -322,14 +322,19 @@
   /* ── Aviso de luna nueva (tema push) ── */
   const native = () => !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
   const pushOn = () => lsGet('kodesh_moon_push') === '1';
+  // Tema de avisos según el idioma de la app (luna-nueva / luna-nueva-en); other = el del otro idioma
+  const TOPIC = other => ((window.KodeshI18n && KodeshI18n.isEn) !== !!other ? 'luna-nueva-en' : 'luna-nueva');
+  // Al abrir la app: si el aviso está activo y cambió el idioma, se pasa al tema correcto
+  setTimeout(() => { try { const Ms = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.FirebaseMessaging; if (Ms && pushOn()) { Ms.subscribeToTopic({ topic: TOPIC() }).catch(() => {}); Ms.unsubscribeFromTopic({ topic: TOPIC(true) }).catch(() => {}); } } catch (e) {} }, 4000);
   async function setPush(on) {
     const Ms = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.FirebaseMessaging;
     if (!Ms) throw new Error('Disponible en la app de Kodesh');
     if (on) {
       const p = await Ms.requestPermissions();
       if (p && p.receive !== 'granted') throw new Error('Activa las notificaciones de Kodesh en Ajustes del teléfono');
-      await Ms.subscribeToTopic({ topic: 'luna-nueva' });
-    } else await Ms.unsubscribeFromTopic({ topic: 'luna-nueva' });
+      await Ms.subscribeToTopic({ topic: TOPIC() });
+      await Ms.unsubscribeFromTopic({ topic: TOPIC(true) }).catch(() => {});
+    } else { await Ms.unsubscribeFromTopic({ topic: 'luna-nueva' }).catch(() => {}); await Ms.unsubscribeFromTopic({ topic: 'luna-nueva-en' }).catch(() => {}); }
     lsSet('kodesh_moon_push', on ? '1' : '0');
   }
 

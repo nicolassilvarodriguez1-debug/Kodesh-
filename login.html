@@ -416,7 +416,7 @@ async function register() {
   btn.textContent = 'Creando cuenta...';
   const { error } = await sbClient.auth.signUp({
     email, password,
-    options: { data: { full_name: name } }
+    options: { data: { full_name: name, lang: window.KodeshI18n ? KodeshI18n.lang : 'es' } }
   });
   btn.disabled = false;
   btn.textContent = 'Crear mi cuenta';

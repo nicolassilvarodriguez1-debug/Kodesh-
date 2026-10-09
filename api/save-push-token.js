@@ -40,6 +40,7 @@ export default async function handler(req, res) {
         user_id: user.id,
         token,
         platform,
+        lang: (req.body || {}).ui === 'en' ? 'en' : 'es',   // idioma de la app (kapiFetch agrega ui:'en')
         updated_at: new Date().toISOString(),
       }),
     });

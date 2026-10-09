@@ -76,6 +76,11 @@ async function loadUserProfile(userId) {
 
 /* ── USER LOGGED IN ── */
 async function onUserLoggedIn(user) {
+  // Idioma de la app en la cuenta (los correos de Supabase usan {{ .Data.lang }} para escribir en inglés)
+  try {
+    const lang = window.KodeshI18n ? KodeshI18n.lang : 'es';
+    if (user && (user.user_metadata || {}).lang !== lang) sb.auth.updateUser({ data: { lang } }).catch(() => {});
+  } catch (e) {}
   // Gate: must accept current Terms version before anything else loads.
   const accepted = await checkTermsAccepted(user.id);
   if (!accepted) {

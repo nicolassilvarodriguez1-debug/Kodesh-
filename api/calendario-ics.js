@@ -18,6 +18,17 @@ const FEASTS = [
   ['sukot', 'Sukot', 'Fiesta de los Tabernáculos', 'Levítico 23:33-43'],
 ];
 
+// Inglés (/calendar-en.ics → ?lang=en): mismos eventos, textos en inglés
+const FEASTS_EN = {
+  pesaj: ['Pesach', "YHWH's Passover", 'Leviticus 23:5'], matzot: ['Unleavened Bread', 'Chag HaMatzot', 'Leviticus 23:6-8'],
+  bikurim: ['Firstfruits', 'Yom HaBikkurim', 'Leviticus 23:9-14'], shavuot: ['Shavuot', 'Feast of Weeks · Pentecost', 'Leviticus 23:15-21'],
+  terua: ['Yom Teruah', 'Day of Trumpets', 'Leviticus 23:23-25'], kipur: ['Yom Kippur', 'Day of Atonement', 'Leviticus 23:26-32'],
+  sukot: ['Sukkot', 'Feast of Tabernacles', 'Leviticus 23:33-43'],
+};
+const ORD_EN = ['', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth'];
+const OLD_EN = { Aviv: 'Aviv', Ziv: 'Ziv', Etanim: 'Ethanim', Bul: 'Bul' };
+const longDateEn = d => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+
 const pad = n => String(n).padStart(2, '0');
 const ymd = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 const plus = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -34,7 +45,8 @@ function fold(line) {
 }
 const longDate = d => d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
-export function buildIcs(C, { meses = true, from = new Date() } = {}) {
+export function buildIcs(C, { meses = true, from = new Date(), lang = 'es' } = {}) {
+  const en = lang === 'en';
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const ev = [];
   const add = (uid, start, days, summary, desc) => ev.push([
@@ -48,6 +60,12 @@ export function buildIcs(C, { meses = true, from = new Date() } = {}) {
     for (const [id, n, alt, ref] of FEASTS) {
       const f = Y[id]; if (!f) continue;
       const eve = plus(f.start, -1);
+      if (en) {
+        const [ne, ae, re] = FEASTS_EN[id];
+        add(`${id}-${y}`, f.start, f.dias, `${ne} · ${ae}`,
+          `Begins at sunset on ${longDateEn(eve)} (${re}).\nObserved biblical calendar: new moon seen from Jerusalem.${f.m && f.m.p && !f.m.fixed ? '\nIf the moon is seen one evening earlier, it moves one day earlier.' : ''}\nKodesh Bible · kodeshbible.com`);
+        continue;
+      }
       add(`${id}-${y}`, f.start, f.dias, `${n} · ${alt}`,
         `Comienza al atardecer del ${longDate(eve)} (${ref}).\nCalendario bíblico observado: luna nueva vista desde Jerusalén.${f.m && f.m.p && !f.m.fixed ? '\nSi la luna se ve una tarde antes, se adelanta un día.' : ''}\nKodesh Bible · kodeshbible.com`);
     }
@@ -57,12 +75,17 @@ export function buildIcs(C, { meses = true, from = new Date() } = {}) {
     ms.forEach((m, k) => {
       const M = C.monthAt(k); if (!M || M.start < lo || M.start > hi) return;
       const nm = C.monthName(M.num);
+      if (en) {
+        add(`mes-${m.pred}`, M.start, 1, `🌙 ${ORD_EN[M.num] || M.num + 'th'} month${nm.old ? ` · ${OLD_EN[nm.old] || nm.old}` : ''}`,
+          `New moon ${m.fixed ? 'seen' : 'expected'} from Jerusalem on the evening of ${longDateEn(plus(M.start, -1))}. The month begins at sunset.${m.p && !m.fixed ? '\nIt could be seen one evening earlier.' : ''}\nKodesh Bible · kodeshbible.com`);
+        return;
+      }
       add(`mes-${m.pred}`, M.start, 1, `🌙 ${nm.ord}${nm.old ? ` · ${nm.old}` : ''}`,
         `Luna nueva ${m.fixed ? 'vista' : 'esperada'} desde Jerusalén la tarde del ${longDate(plus(M.start, -1))}. El mes comienza al atardecer.${m.p && !m.fixed ? '\nPodría verse una tarde antes.' : ''}\nKodesh Bible · kodeshbible.com`);
     });
   }
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kodesh Bible//Calendario bíblico//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-    fold('X-WR-CALNAME:Kodesh · Fiestas y lunas'), 'X-WR-TIMEZONE:UTC', 'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H',
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', en ? 'PRODID:-//Kodesh Bible//Biblical calendar//EN' : 'PRODID:-//Kodesh Bible//Calendario bíblico//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    fold(en ? 'X-WR-CALNAME:Kodesh · Feasts and new moons' : 'X-WR-CALNAME:Kodesh · Fiestas y lunas'), 'X-WR-TIMEZONE:UTC', 'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H',
     ...ev, 'END:VCALENDAR'].join('\r\n') + '\r\n';
 }
 
@@ -73,7 +96,8 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', 'inline; filename="kodesh-calendario.ics"');
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
-    return res.status(200).send(buildIcs(C, { meses }));
+    const lang = String((req.query && req.query.lang) || '') === 'en' ? 'en' : 'es';
+    return res.status(200).send(buildIcs(C, { meses, lang }));
   } catch (err) {
     console.error('calendario-ics', err);
     return res.status(500).send('Error');

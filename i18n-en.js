@@ -262,6 +262,14 @@
   I.rule(/^Ya tienes el máximo de (\d+) de maná\. ¡Sigue leyendo! 📖$/, 'You already have the maximum of $1 manna. Keep reading! 📖');
   I.rule(/^🛡️ ¡Protector comprado! Tienes (\d+)\.?$/, '🛡️ Shield bought! You have $1.');
   I.rule(/^✨ \+1 consulta de (.+)$/, '✨ +1 $1 question');
+  // Mensajes del servidor (límites del plan)
+  I.rule(/^Alcanzaste tu límite de (\d+) consultas al asistente este mes\. Actualiza a Premium para continuar estudiando sin límites\.$/, 'You reached your limit of $1 assistant questions this month. Upgrade to Premium to keep studying without limits.');
+  I.rule(/^Alcanzaste tu límite de (\d+) consultas al lexicón este mes\. Actualiza a Premium para continuar\.$/, 'You reached your limit of $1 lexicon lookups this month. Upgrade to Premium to continue.');
+  I.rule(/^Alcanzaste tu límite de (\d+) búsquedas este mes\. Actualiza a Premium para continuar\.$/, 'You reached your limit of $1 searches this month. Upgrade to Premium to continue.');
+  I.rule(/^Alcanzaste tu límite de (\d+) (consultas|búsquedas) este mes\.$/, (m, n, k) => `You reached your limit of ${n} ${k === 'búsquedas' ? 'searches' : 'questions'} this month.`);
+  I.add({ 'Alcanzaste tu límite de consultas este mes.': 'You reached your question limit this month.', 'Alcanzaste tu límite. Intenta más tarde.': 'You reached your limit. Try again later.',
+    'El Modo Interlineal aún no está disponible para este libro.': 'Interlinear mode is not available for this book yet.', 'Error desconocido': 'Unknown error' });
+  I.rule(/^Hubo un problema: (.+)$/, 'There was a problem: $1');
   // ── Textos con números ──
   I.rule(/^Capítulo (\d+)$/, 'Chapter $1');
   I.rule(/^← Capítulo (\d+)$/, '← Chapter $1');

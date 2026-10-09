@@ -40,6 +40,7 @@ import { getFcm } from './_firebase.js';
 import { getDailyPromiseForUser } from './_promises.js';
 import { VERSES, dayIndex, nyDate } from './_verseDay.js';
 import { loadCalendar } from './_calendar.js';
+import { wmbPassage, monthNameEn } from './_en.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -112,6 +113,12 @@ const TYPE_TITLES = {
   night: 'Antes de dormir',
 };
 
+// Tokens de un usuario separados por idioma del dispositivo (user_push_tokens.lang)
+function byLang(userTokens) {
+  const m = new Map();
+  for (const t of userTokens) { const l = t.lang === 'en' ? 'en' : 'es'; if (!m.has(l)) m.set(l, []); m.get(l).push(t); }
+  return m;
+}
 function groupTokensByUser(tokens) {
   const map = new Map();
   for (const t of tokens) {
@@ -135,19 +142,28 @@ async function todayVerse() {
 }
 
 async function buildPromiseReminders() {
-  const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
+  const tokens = await sbGet('user_push_tokens?select=id,user_id,token,lang');
   const tokensByUser = groupTokensByUser(tokens);
   // Versículo del día (el mismo que muestra la tarjeta de la app); si no hay, la promesa de siempre.
   const verse = await todayVerse();
 
+  const short = t => t.length > 170 ? t.slice(0, 167).replace(/\s+\S*$/, '') + '…' : t;
   const jobs = [];
-  for (const [userId, userTokens] of tokensByUser) {
+  for (const [userId, all] of tokensByUser) for (const [lang, userTokens] of byLang(all)) {
+    if (lang === 'en') {
+      // En inglés: el mismo pasaje con el texto de la WMB (el audio está grabado en español)
+      const pv = verse && verse.book ? wmbPassage(verse.book, verse.chapter, verse.v1, verse.v2 || verse.v1) : null;
+      if (pv) { jobs.push({ userId, tokens: userTokens, category: 'verse_day', title: '☀️ Verse of the day', body: `“${short(pv.text)}” — ${pv.ref}` }); continue; }
+      const pr = getDailyPromiseForUser(userId), m = /:(\d+)/.exec(pr.ref || '');
+      const pp = m ? wmbPassage(pr.libro, pr.cap, +m[1]) : null;
+      if (pp) jobs.push({ userId, tokens: userTokens, category: 'daily_promise', title: "✨ Today's promise", body: `“${short(pp.text)}” — ${pp.ref}` });
+      continue;
+    }
     if (verse) {
-      const text = verse.text.length > 170 ? verse.text.slice(0, 167).replace(/\s+\S*$/, '') + '…' : verse.text;
       jobs.push({
         userId, tokens: userTokens, category: 'verse_day',
         title: '☀️ Versículo del día',
-        body: `«${text}» — ${verse.refText}${verse.audio ? '\nÁbrelo en Kodesh para escucharlo ▸' : ''}`,
+        body: `«${short(verse.text)}» — ${verse.refText}${verse.audio ? '\nÁbrelo en Kodesh para escucharlo ▸' : ''}`,
       });
       continue;
     }
@@ -174,7 +190,7 @@ export function isShabbatNY(now = new Date()) {
 async function buildReadingReminders() {
   if (isShabbatNY()) return [];
   const [tokens, streaks] = await Promise.all([
-    sbGet('user_push_tokens?select=id,user_id,token'),
+    sbGet('user_push_tokens?select=id,user_id,token,lang'),
     sbGet('reading_streaks?select=user_id,current_streak,last_read_date,shields'),
   ]);
 
@@ -183,7 +199,8 @@ async function buildReadingReminders() {
   const tokensByUser = groupTokensByUser(tokens);
 
   const jobs = [];
-  for (const [userId, userTokens] of tokensByUser) {
+  for (const [userId, all] of tokensByUser) for (const [lang, userTokens] of byLang(all)) {
+    const en = lang === 'en';
     const streak = streakByUser.get(userId);
 
     if (streak && streak.last_read_date === today) continue; // ya leyó hoy
@@ -193,8 +210,8 @@ async function buildReadingReminders() {
     if (inactiveDays !== null && WINBACK_DAYS.includes(inactiveDays)) {
       jobs.push({
         userId, tokens: userTokens, category: 'winback',
-        title: '💛 Te extrañamos',
-        body: `Hace ${inactiveDays} días que no abres KODESH. Tu Biblia te está esperando.`,
+        title: en ? '💛 We miss you' : '💛 Te extrañamos',
+        body: en ? `It has been ${inactiveDays} days since you opened KODESH. Your Bible is waiting for you.` : `Hace ${inactiveDays} días que no abres KODESH. Tu Biblia te está esperando.`,
       });
     } else if (streak && streak.current_streak > 0) {
       // current_streak ya es verdadero: lo mantiene el servidor (trigger +
@@ -204,16 +221,18 @@ async function buildReadingReminders() {
       const dias = `${n} día${n === 1 ? '' : 's'}`;
       jobs.push({
         userId, tokens: userTokens, category: 'streak_risk',
-        title: streak.shields > 0 ? '🔥 Mantén viva tu racha' : '🔥 Tu racha termina a medianoche',
-        body: streak.shields > 0
+        title: en ? (streak.shields > 0 ? '🔥 Keep your streak alive' : '🔥 Your streak ends at midnight') : (streak.shields > 0 ? '🔥 Mantén viva tu racha' : '🔥 Tu racha termina a medianoche'),
+        body: en
+          ? (streak.shields > 0 ? `${n} day${n === 1 ? '' : 's'} in a row. Read a chapter today and save your shield 🛡️ for another day.` : `${n} day${n === 1 ? '' : 's'} in a row and no shield. Read a chapter today so you don't lose it.`)
+          : streak.shields > 0
           ? `Llevas ${dias} seguidos. Lee un capítulo hoy y guarda tu protector 🛡️ para otro día.`
           : `Llevas ${dias} seguidos y no tienes protector. Lee un capítulo hoy para no perderla.`,
       });
     } else {
       jobs.push({
         userId, tokens: userTokens, category: 'reading_reminder',
-        title: '📖 Un momento para leer',
-        body: 'Aparta unos minutos hoy para leer tu Biblia.',
+        title: en ? '📖 A moment to read' : '📖 Un momento para leer',
+        body: en ? 'Set aside a few minutes today to read your Bible.' : 'Aparta unos minutos hoy para leer tu Biblia.',
       });
     }
   }
@@ -226,15 +245,16 @@ async function buildReadingReminders() {
 // nocturno, no un recordatorio de racha/inactividad, así que sale para todos
 // por igual (mismo criterio que type=promise).
 async function buildNightReminders() {
-  const tokens = await sbGet('user_push_tokens?select=id,user_id,token');
+  const tokens = await sbGet('user_push_tokens?select=id,user_id,token,lang');
   const tokensByUser = groupTokensByUser(tokens);
 
   const jobs = [];
-  for (const [userId, userTokens] of tokensByUser) {
+  for (const [userId, all] of tokensByUser) for (const [lang, userTokens] of byLang(all)) {
+    const en = lang === 'en';
     jobs.push({
       userId, tokens: userTokens, category: 'night_reading',
-      title: '🌙 Antes de dormir',
-      body: 'Cierra el día con la Palabra — un capítulo antes de dormir.',
+      title: en ? '🌙 Before you sleep' : '🌙 Antes de dormir',
+      body: en ? 'Close the day with the Word — one chapter before bed.' : 'Cierra el día con la Palabra — un capítulo antes de dormir.',
     });
   }
   return jobs;
@@ -285,8 +305,11 @@ async function moonWatch(req, res, admin) {
     const dryRun = req.method === 'GET' ? getQueryParam(req, 'dry_run') === '1' : req.body?.dryRun === true;
     if (dryRun) return res.status(200).json({ success: true, dryRun: true, type: 'moon', title, body });
     let sent = 0, failed = 0;
-    try { await getFcm().send({ topic: 'luna-nueva', notification: { title, body }, data: { kind: 'moon' } }); sent = 1; }
-    catch (e) { failed = 1; console.warn('moonWatch push:', e.message); }
+    try { await getFcm().send({ topic: 'luna-nueva', notification: { title, body }, data: { kind: 'moon' } }); sent++; }
+    catch (e) { failed++; console.warn('moonWatch push:', e.message); }
+    // Suscriptores con la app en inglés (tema luna-nueva-en)
+    try { await getFcm().send({ topic: 'luna-nueva-en', notification: { title: '🌙 New moon this evening', body: `At sunset today the new moon is expected to be seen from Jerusalem. If it is seen, ${monthNameEn(C.monthNum(k), nm.old)} begins.` }, data: { kind: 'moon' } }); sent++; }
+    catch (e) { failed++; console.warn('moonWatch push en:', e.message); }
     await logNotification({ admin, kind: 'moon', title, body, targetLabel: 'Tema: luna-nueva', result: { sent, failed } });
     return res.status(200).json({ success: true, type: 'moon', sent, failed });
   } catch (err) {
