@@ -295,6 +295,22 @@ const LEX_COLS = 'word, testament, strongs, lemma, transliteration, pronunciatio
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = n => Number(n || 0).toLocaleString('es');
+// Inglés: solo el diccionario original de Strong (en inglés, dominio público) desde data/strongs-en.json;
+// las entradas guardadas en lexicon_cache están en español y no se muestran.
+const EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+const TX = (t, v) => window.KodeshI18n ? KodeshI18n.t(t, v) : t;
+let STRONGS_EN = null;
+async function loadStrongsEn() {
+  if (!STRONGS_EN) {
+    const rows = await fetch('/data/strongs-en.json').then(r => r.json());
+    STRONGS_EN = rows.map(([code, lemma, xlit, pron, def]) => ({
+      word: 'strongs_' + code.toLowerCase(), strongs: code, lemma, transliteration: xlit, pronunciation: pron, definition: def,
+      language: code[0] === 'G' ? 'griego' : 'hebreo', testament: code[0] === 'G' ? 'NT' : 'AT',
+      _s: (code + ' ' + lemma + ' ' + xlit + ' ' + def).toLowerCase(),
+    }));
+  }
+  return STRONGS_EN;
+}
 
 // ── THEME ──
 function initTheme() {
@@ -332,6 +348,21 @@ async function loadCounts() {
 }
 
 async function loadLexicon() {
+  if (EN) {
+    mode = 'strongs';
+    document.querySelector('.mode-tabs').style.display = 'none';
+    document.getElementById('alphaBar').style.display = 'none';
+    document.getElementById('searchInput').placeholder = TX("Buscar en hebreo, griego, transliteración o Strong's...");
+    try {
+      const all = await loadStrongsEn();
+      document.getElementById('countBadge').textContent = TX('{n} entradas', { n: fmt(all.length) });
+      resetStrongs();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('mainContent').innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-title">${TX('No se pudo cargar el lexicón')}</div><div class="empty-sub">${TX('Revisa tu conexión e intenta de nuevo.')}</div></div>`;
+    }
+    return;
+  }
   loadCounts();
   try {
     const rows = [];
@@ -391,6 +422,17 @@ async function loadMoreStrongs() {
   strongsLoading = true;
   const req = ++strongsReq;
   const raw = document.getElementById('searchInput').value.trim();
+  if (EN) {
+    const all = await loadStrongsEn();
+    const code = raw.match(/^([hg])0*(\d+)$/i), term = raw.toLowerCase();
+    const hits = all.filter(w => (activeFilter !== 'heb' || w.language === 'hebreo') && (activeFilter !== 'grk' || w.language === 'griego')
+      && (code ? w.strongs === code[1].toUpperCase() + code[2] : raw.length < 2 || w._s.includes(term)));
+    strongsRows = hits.slice(0, strongsRows.length + PAGE);
+    strongsDone = strongsRows.length >= hits.length;
+    strongsLoading = false;
+    renderStrongs();
+    return;
+  }
   let q = sb.from('lexicon_cache').select(LEX_COLS).like('word', 'strongs\\_%');
   if (activeFilter === 'heb') q = q.eq('testament', 'AT');
   if (activeFilter === 'grk') q = q.eq('testament', 'NT');
@@ -526,16 +568,16 @@ function renderWordCard(w) {
   return `
     <div class="word-card">
       <div class="word-card-top">
-        <div class="word-original ${isGreek ? 'greek' : ''}">${esc(w.lemma || '—')}</div>
+        <div data-noi18n class="word-original ${isGreek ? 'greek' : ''}">${esc(w.lemma || '—')}</div>
         <div class="word-badges">
           <span class="lang-badge ${langClass}">${langLabel}</span>
           <span class="word-testament">${testamentLabel}</span>
         </div>
       </div>
-      <div class="word-spanish">${esc(title)}</div>
-      ${w.transliteration ? `<div class="word-translit">${esc(w.transliteration)}${w.pronunciation ? ` · ${esc(w.pronunciation)}` : ''}</div>` : ''}
-      ${isStrongsEntry ? '' : `<div class="word-strongs">${esc(w.strongs || '')}</div>`}
-      <div class="word-definition">${esc(w.definition || '—')}</div>
+      <div data-noi18n class="word-spanish">${esc(title)}</div>
+      ${w.transliteration ? `<div data-noi18n class="word-translit">${esc(w.transliteration)}${w.pronunciation ? ` · ${esc(w.pronunciation)}` : ''}</div>` : ''}
+      ${isStrongsEntry ? '' : `<div data-noi18n class="word-strongs">${esc(w.strongs || '')}</div>`}
+      <div data-noi18n class="word-definition">${esc(w.definition || '—')}</div>
     </div>
   `;
 }

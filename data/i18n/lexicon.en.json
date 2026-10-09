@@ -62,5 +62,8 @@
 "word, testament, strongs, lemma, transliteration, pronunciation, definition, language": "__skip__",
 "words": "__skip__",
 "— palabras": "— words",
-"{n} entradas": "{n} entries"
+"{n} entradas": "{n} entries",
+"+ lemma +": "__skip__",
+"+ xlit +": "__skip__",
+"Buscar en hebreo, griego, transliteración o Strong's...": "Search Hebrew, Greek, transliteration or Strong's…"
 }

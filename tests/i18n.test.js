@@ -48,7 +48,7 @@ import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 test('idioma: los módulos activos en inglés no tienen textos sin traducir', () => {
-  for (const mod of ['core', 'tiempo', 'moedim', 'parashot', 'profile', 'ayuda', 'estudio', 'maps', 'people', 'harmony']) {
+  for (const mod of ['core', 'tiempo', 'moedim', 'parashot', 'profile', 'ayuda', 'estudio', 'maps', 'people', 'harmony', 'lexicon']) {
     const out = path.join(os.tmpdir(), `i18n-${mod}-${process.pid}.json`);
     const r = spawnSync('python3', ['scripts/i18n-extract.py', mod, out], { cwd: new URL('..', import.meta.url).pathname, encoding: 'utf8' });
     assert.equal(r.status, 0, r.stderr);
