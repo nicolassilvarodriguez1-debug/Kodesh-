@@ -99,7 +99,7 @@ html.tl-off .tl-pill { display: none !important; }
 .tl-yr > small { color: var(--text-mid, #b8af9c); text-align: right; }
 .tl-gantt { position: relative; height: 300px; margin: 0 -18px; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; border-top: 1px solid var(--border2, #2a2836); border-bottom: 1px solid var(--border2, #2a2836); }
 .tl-gantt svg { position: absolute; inset: 0; }
-.tl-zoom { position: absolute; right: 10px; bottom: 26px; display: flex; gap: 6px; }
+.tl-zoom { display: flex; gap: 6px; flex-shrink: 0; }
 .tl-zoom button { width: 34px; height: 34px; border-radius: 17px; border: 1px solid var(--border2, #2a2836); background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); font-size: 1.2rem; line-height: 1; cursor: pointer; opacity: .92; }
 .tl-zoom button:disabled { opacity: .35; cursor: default; }
 .tl-needle { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: #e0603c; pointer-events: none; }
@@ -108,6 +108,11 @@ html.tl-off .tl-pill { display: none !important; }
 .tl-alive p { margin: 4px 0 0; line-height: 1.5; }
 .tl-alive button { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(201,168,76,.4); text-underline-offset: 3px; }
 .tl-alive small { color: var(--text-dim, #6e6656); }
+.tl-cur { margin-top: 12px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.06); animation: tlCur .35s ease; }
+.tl-cur b { display: block; font-family: var(--font-display, serif); font-size: 1.35rem; font-weight: 600; line-height: 1.2; margin-top: 4px; }
+.tl-cur p { margin: 6px 0 8px; line-height: 1.45; color: var(--text-mid, #b8af9c); }
+@keyframes tlCur { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .tl-cur { animation: none; } }
 .tl-back { border: none; background: none; color: var(--gold, #c9a84c); font: inherit; font-size: .95rem; padding: 6px 0; cursor: pointer; }
 .tl-chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
 .tl-chip { flex-shrink: 0; border: 1px solid var(--border2, #2a2836); background: none; color: var(--text, #e9e3d3); border-radius: 15px; padding: 5px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
@@ -235,8 +240,9 @@ html.tl-off .tl-pill { display: none !important; }
     if (who) return conocioHtml();
     return tareHtml()
       + `<div class="tl-yr"><b data-gy></b><small data-gev></small></div>
-      <div class="tl-gantt" data-gantt><svg></svg><div class="tl-needle"></div><div class="tl-zoom"><button type="button" data-zoom="-1" aria-label="Alejar">−</button><button type="button" data-zoom="1" aria-label="Acercar">+</button></div></div>
-      <div class="tl-alive"><div class="tl-kick" data-gk></div><p data-gp></p></div>
+      <div class="tl-gantt" data-gantt><svg></svg><div class="tl-needle"></div></div>
+      <div class="tl-alive"><div class="tl-row"><div class="tl-kick" data-gk></div><div class="tl-zoom"><button type="button" data-zoom="-1" aria-label="Alejar">−</button><button type="button" data-zoom="1" aria-label="Acercar">+</button></div></div><p data-gp></p></div>
+      <div data-gc></div>
       <p class="tl-src" style="margin-top:8px">Arrastra para moverte en el tiempo, de la creación al Apocalipsis. Toca una barra o un nombre para ver a quién conoció.<br>Años contados desde la creación sumando el texto: las edades de Génesis 5 y 11, Éxodo 7:7, los 480 años de 1 Reyes 6:1 y los reinados de Judá tal como están escritos (algunos reinados se superpusieron, por eso son la suma del texto y no fechas exactas). Las barras punteadas son solo el reinado: el texto no da su edad. Enoc no murió: «le llevó Dios» (Génesis 5:24).<br>Después del exilio la Biblia ya no da una cuenta de años que se pueda sumar: desde la franja rayada, la línea sigue con fechas aproximadas de la historia (a.C. y d.C.). Las barras grises son gobernantes: solo su periodo.</p>`
       + `<div class="tl-sec">Edades que da el texto</div>` + D.lives.map(([g, list]) => `<div class="tl-sec" style="color:var(--text-mid,#b8af9c)">${esc(g)}</div>` + list.map(([n, a, r]) =>
       `<div class="tl-life"><div class="tl-row"><span>${esc(n)}</span><em>${a} años</em></div><div class="bb" style="width:${Math.max(3, a / 969 * 100).toFixed(1)}%"></div><button class="tl-link" data-go="${r}">${esc(nice(r))}</button></div>`).join('')).join('')
@@ -305,13 +311,29 @@ html.tl-off .tl-pill { display: none !important; }
     pEl.innerHTML = (alive.length ? alive.map(p => `<button type="button" data-who="${esc(p.n)}">${esc(p.n)}</button> <small>(${p.approx ? 'c. ' : ''}${Math.round(gy - p.b)})</small>`).join(' · ') : (gy > 2493 + sh(2) && gy < 2860 + sh(2) ? 'Josué, los jueces y Samuel: el texto no da sus años de nacimiento.' : gy > u0 ? 'Nadie con fechas conocidas.' : 'Nadie con fechas en el texto.'))
       + (kings.length ? ` <small>· ${kings.some(k => k.approx) ? 'gobernaban' : 'reinaba'} ${esc(kings.map(k => k.n).join(', '))}</small>` : '');
     pEl.querySelectorAll('[data-who]').forEach(b => b.onclick = () => openWho(b.dataset.who));
+    // Dato curioso del momento
+    const cEl = s.querySelector('[data-gc]'), c = curioAt(gy);
+    if (cEl && cEl.dataset.k !== String(c ? c[5] : '')) {
+      cEl.dataset.k = c ? c[5] : '';
+      cEl.innerHTML = c ? `<div class="tl-cur"><div class="tl-kick">${esc(c[4])}</div><b>${esc(c[5])}</b><p>${esc(c[6])}</p>${c[7] ? `<button type="button" class="tl-link" data-go="${c[7]}">Leer ${esc(nice(c[7]))} →</button>` : ''}</div>` : '';
+      const l = cEl.querySelector('[data-go]'); if (l) l.onclick = () => go(l.dataset.go);
+    }
+  }
+  function curioAt(y) {
+    const u = histU(), at = (v, g) => g === 'h' ? u(v) : v + sh(g);
+    let best = null, bs = Infinity;
+    for (const c of D.gen.curios) {
+      const a = at(c[0], c[1]), b = at(c[2], c[3]) + 1;
+      if (y >= a && y < b && b - a < bs) { best = c; bs = b - a; }
+    }
+    return best;
   }
   function openWho(n) { who = n || null; render(); const b = sheet().querySelector('.tl-body'); if (b) b.scrollTop = 0; }
   function bindGantt(s) {
     const g = s.querySelector('[data-gantt]'); if (!g) return;
     let x0 = null, t0 = null, v = 0, lt = 0, raf = 0;
     const clamp = y => Math.max(0, Math.min(maxY(), y));
-    const zb = [...g.querySelectorAll('[data-zoom]')], zpaint = () => { zb[0].disabled = zi === 0; zb[1].disabled = zi === ZOOM.length - 1; };
+    const zb = [...s.querySelectorAll('[data-zoom]')], zpaint = () => { zb[0].disabled = zi === 0; zb[1].disabled = zi === ZOOM.length - 1; };
     zb.forEach(b => { b.addEventListener('pointerdown', e => e.stopPropagation()); b.onclick = () => { zi = Math.max(0, Math.min(ZOOM.length - 1, zi + +b.dataset.zoom)); PX = ZOOM[zi]; zpaint(); drawGantt(s); }; });
     zpaint();
     g.addEventListener('pointerdown', e => { x0 = e.clientX; t0 = [e.clientX, e.clientY]; lt = performance.now(); v = 0; cancelAnimationFrame(raf); try { g.setPointerCapture(e.pointerId); } catch (_) {} });

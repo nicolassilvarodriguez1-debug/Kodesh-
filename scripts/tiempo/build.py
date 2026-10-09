@@ -204,6 +204,65 @@ HIST_EVENTS = [
     [30, 'Shavuot: el Espíritu', 'ACT 2:1'], [34, 'Saulo encuentra a Yeshúa', 'ACT 9:3'], [49, 'Reunión en Jerusalén', 'ACT 15:6'],
     [70, 'Roma destruye el Templo', 'LUK 21:6'], [95, 'Juan en Patmos: Apocalipsis', 'REV 1:9'],
 ]
+
+# ── Datos curiosos por momento: [desde, grupo, hasta, grupo, antetítulo, título, texto, cita]
+# grupo 0/1/2 = años desde la creación (como las vidas) · 'h' = año a.C. (negativo) / d.C. (aproximado)
+A, AB = born['Abraham'], born['Abraham'] + 75
+MO = EXODO - 80
+CURIOS = [
+    [0, 0, 129, 0, 'En el principio', 'Los primeros hijos', 'Adán tenía 130 años cuando nació Set; antes ya habían nacido Caín y Abel.', 'GEN 5:3'],
+    [235, 0, 330, 0, 'En días de Enós', 'Comienzan a invocar el Nombre', 'Cuando nació Enós, «los hombres comenzaron a llamarse del nombre de YHWH».', 'GEN 4:26'],
+    [622, 0, 930, 0, 'Dos vidas que se cruzan', 'Enoc conoció a Adán', 'Enoc vivió 308 años al mismo tiempo que Adán. Siglos después, Judas cita su profecía.', 'JUD 1:14'],
+    [930, 0, 987, 0, 'Caminó con Dios', 'Enoc no murió', '«Caminó, pues, Enoc con Dios, y desapareció, porque le llevó Dios.» Tenía 365 años.', 'GEN 5:24'],
+    [1056, 0, 1100, 0, 'Un nombre con esperanza', 'Nace Noé: «descanso»', 'Lamec lo llamó Noé diciendo: «Este nos aliviará de nuestras obras».', 'GEN 5:29'],
+    [1600, 0, 1655, 0, 'Antes de las aguas', 'Mueren Lamec y Matusalén', 'Lamec muere cinco años antes del diluvio; Matusalén, el hombre que más vivió (969 años), muere el mismo año del diluvio.', 'GEN 5:27'],
+    [1656, 0, 1657, 0, 'El diluvio', 'Un año y diez días en el arca', 'Noé tenía 600 años. Las aguas prevalecieron 150 días, y la tierra se secó un año y diez días después de empezar la lluvia (Génesis 7:11 y 8:14).', 'GEN 8:14'],
+    [1757, 0, 1800, 0, 'Peleg: «división»', 'La tierra fue repartida', 'Heber lo llamó Peleg «porque en sus días fue repartida la tierra».', 'GEN 10:25'],
+    [1948, 1, 2006, 0, 'Noé y Abram', '¿Se conocieron?', 'Con Taré de 70 años, Noé todavía vivía cuando nació Abram; con la lectura de Hechos 7:4 (130), ya había muerto. Noé vivió 350 años después del diluvio.', 'GEN 9:28'],
+    [AB, 1, A + 99, 1, 'La promesa', '25 años esperando', 'Abram tenía 75 años cuando salió de Harán y 100 cuando nació Isaac.', 'GEN 21:5'],
+    [A + 100, 1, A + 110, 1, 'Isaac: «risa»', 'Dios me ha hecho reír', 'Sara dijo: «Dios me ha hecho reír, y cualquiera que lo oyere, se reirá conmigo».', 'GEN 21:6'],
+    [born['José'] + 17, 1, born['José'] + 30, 1, 'De la cisterna al palacio', 'Trece años', 'José tenía 17 años cuando sus hermanos lo vendieron y 30 cuando se presentó ante Faraón.', 'GEN 41:46'],
+    [JACOB_EG, 1, born['Jacob'] + 147, 1, 'Jacob ante Faraón', '«Pocos y malos»', 'A sus 130 años Jacob le dijo a Faraón: «pocos y malos han sido los días de los años de mi vida».', 'GEN 47:9'],
+    [JOSE_D, 1, MO - 1, 2, 'Un rey que no conocía a José', 'Más oprimidos, más numerosos', '«Cuanto más los oprimían, tanto más se multiplicaban y crecían.»', 'EXO 1:12'],
+    [MO, 2, EXODO - 1, 2, 'Moisés', 'Una vida en tres partes de 40', 'Escondido tres meses al nacer; a los 40 huyó a Madián (Hechos 7:23), a los 80 habló con Faraón y murió a los 120.', 'ACT 7:23'],
+    [EXODO, 2, EXODO + 39, 2, 'En el desierto', 'Cuarenta años de maná', '«Así comieron los hijos de Israel maná cuarenta años, hasta que entraron en la tierra habitada.»', 'EXO 16:35'],
+    [EXODO + 40, 2, EXODO + 60, 2, 'Jericó', 'Los muros caen', 'Los sacerdotes tocaron las bocinas, el pueblo gritó y el muro cayó.', 'JOS 6:20'],
+    [EXODO + 61, 2, DAVID - 31, 2, 'Los jueces', 'No había rey en Israel', '«Cada uno hacía lo recto delante de sus ojos.» Jefté dice que Israel llevaba unos 300 años en la tierra (Jueces 11:26).', 'JDG 21:25'],
+    [DAVID - 30, 2, SALOMON - 1, 2, 'David', 'Siete años en Hebrón, 33 en Jerusalén', 'Samuel lo ungió siendo el menor de sus hermanos. Reinó 40 años: 7 en Hebrón y 33 en Jerusalén.', '1KI 2:11'],
+    [TEMPLO, 2, TEMPLO + 7, 2, 'El Templo de Salomón', 'Sin ruido de martillo', 'Las piedras llegaban ya labradas: no se oyó martillo ni hacha mientras se edificaba. Tardaron siete años.', '1KI 6:7'],
+    [SALOMON + 40, 2, SALOMON + 56, 2, 'El reino se divide', 'El consejo de los jóvenes', 'Roboam no escuchó a los ancianos: «Mi padre agravó vuestro yugo, pero yo añadiré a vuestro yugo».', '1KI 12:14'],
+    [SALOMON + 40 + 17 + 3 + 37, 2, SALOMON + 40 + 17 + 3 + 41 + 25, 2, 'En días de Acab y de Josafat', 'Elías y la sequía', 'Acab reinó en Israel desde el año 38 de Asa. Elías oró y no llovió tres años y seis meses (Santiago 5:17).', 'JAS 5:17'],
+    [CAIDA - 298, 2, CAIDA - 292, 2, 'Escondido en el Templo', 'Joás, el rey niño', 'Durante los seis años de Atalía, Joás estuvo escondido en la casa de YHWH. Reinó desde los siete años.', '2KI 11:3'],
+    [CAIDA - 175, 2, CAIDA - 170, 2, 'El año que murió Uzías', 'Isaías ve al Señor', '«En el año que murió el rey Uzías vi yo al Señor sentado sobre un trono alto y sublime.»', 'ISA 6:1'],
+    [CAIDA - 134, 2, CAIDA - 127, 2, 'El sexto año de Ezequías', 'Cae Samaria', 'Asiria tomó Samaria: terminó el reino del norte, Israel.', '2KI 18:10'],
+    [CAIDA - 126, 2, CAIDA - 111, 2, 'Ezequías', 'Quince años más', 'Ezequías enfermó de muerte, oró, y Dios le añadió quince años de vida.', '2KI 20:6'],
+    [CAIDA - 110, 2, CAIDA - 56, 2, 'Manasés', '55 años: el reinado más largo', 'El peor rey de Judá reinó más que ninguno, y en la angustia se humilló y oró a Dios.', '2CH 33:12'],
+    [CAIDA - 41, 2, CAIDA - 37, 2, 'Josías, año 13', 'Dios llama a Jeremías', 'La palabra de YHWH vino a Jeremías en el año trece de Josías.', 'JER 1:2'],
+    [CAIDA - 36, 2, CAIDA - 23, 2, 'Josías, año 18', 'Hallan el libro de la Ley', 'Reparando el Templo, el sumo sacerdote Hilcías halló el libro de la Ley.', '2KI 22:8'],
+    [CAIDA - 20, 2, CAIDA - 1, 2, 'El tercer año de Joacim', 'Daniel llevado a Babilonia', 'Nabucodonosor sitió Jerusalén y llevó a jóvenes de familias nobles: entre ellos Daniel, Ananías, Misael y Azarías.', 'DAN 1:1'],
+    [-586, 'h', -545, 'h', 'El exilio', 'Junto a los ríos de Babilonia', '«Allí nos sentábamos, y aun llorábamos, acordándonos de Sión.»', 'PSA 137:1'],
+    [-544, 'h', -530, 'h', 'Nombrado antes de nacer', 'Isaías ya había nombrado a Ciro', 'Isaías escribió de Ciro: «Es mi pastor… diciendo a Jerusalén: serás edificada».', 'ISA 44:28'],
+    [-525, 'h', -516, 'h', 'Hageo', '¿Ustedes en casas y la casa de Dios desierta?', 'Hageo despertó al pueblo a terminar el Templo; los ancianos que habían visto el primero lloraban (Esdras 3:12).', 'HAG 1:4'],
+    [-483, 'h', -470, 'h', 'Persia', 'Ester, reina', 'Ester llegó a ser reina del rey Asuero (Jerjes); de su historia nace la fiesta de Purim.', 'EST 9:26'],
+    [-445, 'h', -440, 'h', 'Nehemías', 'Un muro en 52 días', '«Acabóse pues el muro el veinticinco del mes de Elul, en cincuenta y dos días.»', 'NEH 6:15'],
+    [-435, 'h', -335, 'h', 'Malaquías', 'La última palabra antes del silencio', 'El último profeta promete: «yo os envío a Elías el profeta». Después vienen unos 400 años sin profetas escritos.', 'MAL 4:5'],
+    [-332, 'h', -200, 'h', 'Grecia', 'El mundo habla griego', 'Tras Alejandro, el griego se vuelve la lengua común. Por eso, siglos después, el Nuevo Testamento se escribió en griego.', ''],
+    [-167, 'h', -100, 'h', 'Janucá', 'Yeshúa en la fiesta de la Dedicación', 'La purificación del Templo en tiempos de los macabeos se recordaba cada invierno; Yeshúa andaba en el Templo en esa fiesta.', 'JHN 10:22'],
+    [-19, 'h', -6, 'h', 'El Templo de Herodes', '46 años en obra', 'Herodes empezó a ampliar el Templo; en días de Yeshúa decían: «En cuarenta y seis años fue este templo edificado».', 'JHN 2:20'],
+    [-5, 'h', -1, 'h', 'Belén', 'Los magos y la huida a Egipto', 'Yeshúa nació en días del rey Herodes; José llevó al niño y a su madre a Egipto hasta que Herodes murió.', 'MAT 2:14'],
+    [6, 'h', 9, 'h', 'A los doce años', 'En la casa de su Padre', 'Subieron a Jerusalén para la fiesta y Yeshúa se quedó en el Templo, escuchando y preguntando a los maestros.', 'LUK 2:42'],
+    [27, 'h', 29, 'h', 'Un encuentro en el Jordán', 'Juan bautiza a Yeshúa', 'Juan anunciaba un bautismo de arrepentimiento; Yeshúa, de unos treinta años, fue bautizado y el cielo se abrió.', 'LUK 3:21'],
+    [30, 'h', 33, 'h', 'Shavuot', 'Tres mil en un día', 'Cincuenta días después de la resurrección, el Espíritu vino en la fiesta de Shavuot y unas tres mil personas se unieron.', 'ACT 2:41'],
+    [34, 'h', 45, 'h', 'Camino a Damasco', 'Saulo, Saulo', 'El perseguidor oyó: «Saulo, Saulo, ¿por qué me persigues?». Llegó a ser Pablo, el apóstol de las naciones.', 'ACT 9:4'],
+    [46, 'h', 52, 'h', 'Jerusalén', 'Las naciones sin circuncidarse', 'Apóstoles y ancianos se reunieron para decidir qué pedir a los creyentes de las naciones.', 'ACT 15:2'],
+    [60, 'h', 69, 'h', 'Roma', 'Mi partida está cercana', 'Desde la cárcel Pablo escribe: «el tiempo de mi partida está cercano». Según la tradición, Pedro y Pablo mueren en Roma en estos años.', '2TI 4:6'],
+    [70, 'h', 85, 'h', 'El año 70', 'No quedó piedra sobre piedra', 'Unos cuarenta años antes, Yeshúa lo había anunciado: «no quedará piedra sobre piedra».', 'LUK 21:6'],
+    [86, 'h', 110, 'h', 'Patmos', 'Juan escribe el Apocalipsis', 'Desterrado en la isla de Patmos «por la palabra de Dios», Juan recibe la revelación.', 'REV 1:9'],
+]
+assert [c for c in CURIOS if c[5] == 'Elías y la sequía'][0][0] == 3027
+for c in CURIOS:
+    c[7] and chk(c[7])
+    assert len(c) == 8, c
 for x in HIST_PEOPLE + HIST_EVENTS:
     if x[3 if len(x) == 5 else 2]: chk(x[3 if len(x) == 5 else 2])
      # de la muerte de José al Éxodo: «hasta» N años
@@ -228,6 +287,6 @@ out = {'src': 'Épocas y fechas aproximadas (c.); edades y reyes según el texto
        'eras': ERAS, 'books': BOOKS, 'notes': NOTES, 'psalms': PSALMS, 'pshist': PSHIST,
        'prophets': PROPHETS, 'prophetNote': PROPHET_NOTE, 'noking': NOKING, 'reigns': REIGNS, 'lives': LIVES, 'facts': FACTS,
        'gen': {'people': GEN, 'events': GEN_EVENTS, 'bands': GEN_BANDS, 'egAlt': EG_ALT,
-               'hist': {'at': [CAIDA, 2], 'anchor': -586, 'gap': 45, 'end': 110, 'people': HIST_PEOPLE, 'events': HIST_EVENTS}}}
+               'hist': {'at': [CAIDA, 2], 'anchor': -586, 'gap': 45, 'end': 110, 'people': HIST_PEOPLE, 'events': HIST_EVENTS}, 'curios': CURIOS}}
 json.dump(out, open(os.path.join(ROOT, 'data/linea-tiempo.json'), 'w'), ensure_ascii=False)
 print('ok', len(BOOKS), 'libros')
