@@ -135,6 +135,9 @@
 .md-sh small { color: var(--text-mid, #b8af9c); font-size: .92rem; }
 .md-ov { position: fixed; inset: 0; z-index: 590; background: #0d0a07; color: #f6efdf; opacity: 0; pointer-events: none; transition: opacity .3s; overflow: hidden; }
 .md-ov.open { opacity: 1; pointer-events: auto; }
+.md-ov { overscroll-behavior: contain; touch-action: none; }
+.md-ov .md-body, .md-ov .md-more { touch-action: pan-y; overscroll-behavior: contain; }
+html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !important; overscroll-behavior: none; }
 .md-ov .md-bg { position: absolute; left: 0; right: 0; top: 0; height: 100%; background-size: cover; background-position: center; transition: background-image .3s; }
 @media (orientation: portrait) { .md-ov .md-bg:not(.none) { height: min(56vh, 92vw); } .md-ov .md-bg:not(.none)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 45%; background: linear-gradient(180deg, rgba(13,10,7,0), #0d0a07); } }
 .md-ov .md-bg.none { background: radial-gradient(ellipse at 50% 25%, #5a3a1a 0%, #24170c 45%, #0d0a07 80%); }
@@ -255,6 +258,12 @@
     ov.querySelector('[data-share]').onclick = share;
     ov.querySelector('[data-cal]').onclick = () => { if (window.KodeshLuna) KodeshLuna.open(); };
     let x0 = null, y0 = null;
+    // Que el dedo nunca arrastre la página de atrás (inicio): solo se desplaza el texto que tiene para dónde
+    ov.addEventListener('touchmove', e => {
+      const sc = e.target.closest && e.target.closest(ov.classList.contains('info') ? '.md-more' : '.md-body');
+      if (sc && sc.scrollHeight > sc.clientHeight + 1) return;
+      e.preventDefault();
+    }, { passive: false });
     let st0 = 0;
     ov.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; st0 = ov.querySelector('.md-more').scrollTop; }, { passive: true });
     ov.addEventListener('touchend', e => {
@@ -354,9 +363,9 @@
     if (!id || !byId(id)) { const nx = nextFeast(); id = nx ? nx[0].id : 'shabat'; }
     show(id);
     requestAnimationFrame(() => ov.classList.add('open'));
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'; document.documentElement.classList.add('md-lock');
   }
-  function close() { if (ov) ov.classList.remove('open', 'info'); clearInterval(timer); timer = null; document.body.style.overflow = ''; }
+  function close() { if (ov) ov.classList.remove('open', 'info'); if (!(document.querySelector('.ln-ov.open'))) document.documentElement.classList.remove('md-lock'); clearInterval(timer); timer = null; document.body.style.overflow = ''; }
   async function share() {
     const f = byId(cur), t = times(cur);
     const text = `${f.n} (${f.he}) · ${f.lema}${t ? `\nComienza al atardecer del ${fmtD(t.start, t.tz, true)}` : ''}\n— Kodesh Bible`;

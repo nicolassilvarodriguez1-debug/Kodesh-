@@ -243,6 +243,7 @@
   css.textContent = `
 .ln-ov { position: fixed; inset: 0; z-index: 595; background: radial-gradient(ellipse at 50% 0%, #1d1a26 0%, #0d0b10 55%, #09080b 100%); color: #f1ead8; opacity: 0; pointer-events: none; transition: opacity .3s; overflow-y: auto; -webkit-overflow-scrolling: touch; font-family: 'EB Garamond', serif; }
 .ln-ov.open { opacity: 1; pointer-events: auto; }
+.ln-ov { overscroll-behavior: contain; }
 .ln-wrap { max-width: 560px; margin: 0 auto; padding: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 10px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
 .ln-top { display: flex; justify-content: space-between; align-items: center; }
 .ln-top button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(225,190,120,.3); background: rgba(20,18,26,.6); color: #e6c27a; font-size: 17px; cursor: pointer; }
@@ -537,9 +538,9 @@
     if (!C() || !C().data) { toast('No se pudo cargar el calendario'); return; }
     view = -1; render();
     requestAnimationFrame(() => ov.classList.add('open'));
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'; document.documentElement.classList.add('md-lock');
   }
-  function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; clearInterval(clock); cancelAnimationFrame(raf); follow = true; }
+  function close() { if (ov) ov.classList.remove('open'); if (!document.querySelector('.md-ov.open')) { document.body.style.overflow = ''; document.documentElement.classList.remove('md-lock'); } clearInterval(clock); cancelAnimationFrame(raf); follow = true; }
 
   window.KodeshLuna = { orient, parallactic, open, close, illum, phaseName, moonSvg, drawMoon, paint, cardHtml, nextMoon, findPhase, moonAlt, load };
 })();
