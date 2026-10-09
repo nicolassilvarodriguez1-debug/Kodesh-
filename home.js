@@ -193,7 +193,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     }
     el.innerHTML = `<div class="hm-in">
       <div class="hm-top"><a class="hm-logo" href="#" data-act="noop"><span class="he">קדש</span><i></i><span>KODESH</span></a>
-        <div class="hm-ic"><button data-act="search" aria-label="Buscar">${ICON.search}</button><button data-act="theme" aria-label="Cambiar tema">${night() ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>' : ICON.theme}</button><button data-act="profile" aria-label="Perfil">${ICON.user}</button></div></div>
+        <div class="hm-ic"><button data-act="saved" aria-label="Guardados"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg></button><button data-act="theme" aria-label="Cambiar tema">${night() ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>' : ICON.theme}</button><button data-act="profile" aria-label="Perfil">${ICON.user}</button></div></div>
       <section class="hm-hero${IMG[heroKey] ? '' : ' noimg'}" data-hero${bg(heroKey)}>
         <div class="hm-k">${greet()}</div><div class="hm-h1">Hoy</div><div class="hm-sub">${name ? `Bendiciones, ${esc(name)}` : 'Bienvenido a Kodesh'}</div>
       </section>
@@ -243,6 +243,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
     const on = (act, fn) => { const b = el.querySelector(`[data-act="${act}"]`); if (b) b.onclick = e => { e.preventDefault(); fn(e); }; };
     on('noop', () => {});
     on('search', () => { hide(); if (typeof openSearch === 'function') openSearch(); });
+    on('saved', () => { if (typeof mobileNavTo === 'function') mobileNavTo('marcadores'); });
     on('theme', () => { if (typeof toggleTheme === 'function') toggleTheme(); });
     on('profile', () => { if (typeof openProfile === 'function') openProfile(); });
     on('continue', () => hide());
@@ -298,7 +299,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
   window.onBibliaNav = function () { if (isOpen()) hide(); else if (typeof openNav === 'function') openNav(); };
   // Marcadores y Estudiar desde la barra: primero se cierra el inicio, para que lo que abren se vea
   function wrapNav() {
-    for (const name of ['mobileNavTo', 'openAssistant']) {
+    for (const name of ['mobileNavTo', 'openAssistant', 'openSearch']) {
       const f = window[name];
       if (typeof f !== 'function' || f.__home) continue;
       const w = function () { if (isOpen()) hide(); return f.apply(this, arguments); };
