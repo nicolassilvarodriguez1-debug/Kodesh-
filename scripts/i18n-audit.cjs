@@ -24,6 +24,15 @@ const STEPS = [
   ['tiempo · a quién conoció', 'index.html', "KodeshHome.hide(); KodeshTiempo.open({ tab: 'vidas', who: 'Moisés' })"],
   ['tiempo · Yeshúa', 'index.html', "KodeshHome.hide(); KodeshTiempo.open({ tab: 'vidas', who: 'Yeshúa' })"],
   ['tiempo · pill salmo', 'index.html', "KodeshHome.hide(); selectBook('PSA'); loadChapter('PSA', 3)"],
+  ['fiestas', 'index.html', "KodeshHome.hide(); KodeshMoedim.open()"],
+  ['fiestas · pésaj info', 'index.html', "KodeshHome.hide(); KodeshMoedim.open('pesaj').then(() => document.querySelector('.md-ov [data-up]').click())"],
+  ['fiestas · sucot info', 'index.html', "KodeshHome.hide(); KodeshMoedim.open('sukot').then(() => document.querySelector('.md-ov [data-up]').click())"],
+  ['fiestas · kipur', 'index.html', "KodeshHome.hide(); KodeshMoedim.open('kipur')"],
+  ['shabat', 'index.html', "KodeshHome.hide(); KodeshMoedim.open('shabat')"],
+  ['shabat · info', 'index.html', "KodeshHome.hide(); KodeshMoedim.open('shabat').then(() => document.querySelector('.md-ov [data-up]').click())"],
+  ['ciudad', 'index.html', "KodeshHome.hide(); KodeshMoedim.pickPlace(() => {})"],
+  ['luna', 'index.html', "KodeshHome.hide(); KodeshLuna.open()"],
+  ['luna · abajo', 'index.html', "KodeshHome.hide(); KodeshLuna.open().then(() => { const b = document.querySelector('.ln-ov .ln-body, .ln-ov [class*=scroll], .ln-ov'); if (b) b.scrollTop = 99999; })"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];
@@ -32,9 +41,10 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });
   const report = [];
-  for (const [name, page, js] of [...STEPS, ...EXTRA]) {
+  const ONLY = process.env.AUDIT_ONLY ? new RegExp(process.env.AUDIT_ONLY, 'i') : null;
+  for (const [name, page, js] of [...STEPS, ...EXTRA].filter(x => !ONLY || ONLY.test(x[0]))) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
-    await ctx.addInitScript((LANG) => { try { localStorage.setItem('kodesh_lang', LANG); localStorage.setItem('welcome_seen', '1'); } catch (e) {} }, process.env.AUDIT_LANG || 'en');
+    await ctx.addInitScript((LANG) => { try { localStorage.setItem('kodesh_lang', LANG); localStorage.setItem('welcome_seen', '1'); localStorage.setItem('kodesh_home_cal', '1'); } catch (e) {} }, process.env.AUDIT_LANG || 'en');
     const p = await ctx.newPage();
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + page, { waitUntil: 'domcontentloaded' }).catch(() => {});
@@ -53,7 +63,7 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
         if (I.looksEs(t)) { vis.add(t); continue; }
         // nombres y palabras sueltas en español sin tilde («Lamec», «Hch 7:4»): palabra con mayúscula que el diccionario traduce
         const w = t.match(/\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\b/g) || [];
-        const bad = w.filter(x => I.esWord(x) && !['Asa', 'Dan', 'Gad', 'Job', 'Is', 'He', 'Am', 'Mi', 'Ex'].includes(x));
+        const bad = w.filter(x => I.esWord(x) && !['Asa', 'Dan', 'Gad', 'Job', 'Is', 'He', 'Am', 'Mi', 'Ex', 'Mar', 'Sal', 'Ziv', 'Bul'].includes(x));
         if (bad.length) vis.add(t + '   ⟵ ' + bad.join(', '));
       }
       document.querySelectorAll('input[placeholder],textarea[placeholder],[aria-label],[title]').forEach(e => { if (e.closest('[data-noi18n]') || !shown(e)) return; for (const a of ['placeholder', 'aria-label', 'title']) { const v = e.getAttribute(a); if (v && I.looksEs(v)) vis.add(`@${a}: ${v}`); } });

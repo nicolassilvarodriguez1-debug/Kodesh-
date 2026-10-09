@@ -48,12 +48,16 @@
   }
   function loadBook(b) { if (!books[b]) books[b] = fetch(`./data/personas/${b}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})); return books[b]; }
   function loadDet() {
+    // Las fichas detalladas están redactadas en español: en inglés no se muestran hasta tener su versión en inglés
+    if (window.KodeshI18n && KodeshI18n.isEn) return Promise.resolve(null);
     if (!detP) detP = fetch(`${REMOTE}?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null)
       .then(j => { if (j && j.items) { DET = j; wj('kodesh_pp_det', j); } return DET; }).catch(() => DET);
     return detP;
   }
   const P = id => DATA && DATA.p[id];
-  const nameOf = id => (P(id) || [id])[0];
+  // En inglés, el nombre en inglés de Theographic (p[3])
+  const EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+  const nameOf = id => { const x = P(id) || [id]; return EN && x[3] ? x[3] : x[0]; };
   const R = id => (DATA && DATA.r[id]) || {};
   const det = id => (DET && DET.items && DET.items[id]) || null;
 
@@ -154,7 +158,7 @@ html.pp-off .pp-row { display: none !important; }
     return ov.querySelector('.pp-sheet');
   }
   function close() { if (ov) ov.classList.remove('open'); document.body.style.overflow = ''; }
-  const av = id => { const p = P(id); return `<span class="pp-av${p && p[1] === 'F' ? ' f' : ''}">${esc((p ? p[0] : '?')[0])}</span>`; };
+  const av = id => { const p = P(id); return `<span class="pp-av${p && p[1] === 'F' ? ' f' : ''}">${esc((p ? nameOf(id) : '?')[0])}</span>`; };
   const ly = id => LY.has(id) ? ' ly' : '';
   const chip = (id, label) => `<button type="button" class="pp-chip${ly(id)}" data-p="${esc(id)}">${av(id)}${esc(nameOf(id))}${label ? `<small>${esc(label)}</small>` : ''}</button>`;
 
@@ -261,7 +265,7 @@ html.pp-off .pp-row { display: none !important; }
     if (!tabs.some(t => t[0] === tab)) tab = 'ficha';
     const body = tab === 'dos' ? genHtml() : tab === 'familia' ? treeHtml(id) : tab === 'red' ? netHtml(id) : tab === 'vida' ? lifeHtml(id) : fichaHtml(id);
     s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${id === 'x_yeshua' ? 'El Mesías' : `${p[1] === 'F' ? 'Mujer' : 'Hombre'} de la Biblia${p[2] ? ` · ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'}` : ''}`}</div>
-        <div class="pp-h">${esc(p[0])} ${d && d.heb ? `<span class="pp-heb" lang="${d.heb.strong[0] === 'H' ? 'he' : 'el'}">${esc(d.heb.lemma)}</span>` : ''}</div>
+        <div class="pp-h">${esc(nameOf(id))} ${d && d.heb ? `<span class="pp-heb" lang="${d.heb.strong[0] === 'H' ? 'he' : 'el'}">${esc(d.heb.lemma)}</span>` : ''}</div>
         ${d && d.heb && d.heb.sig ? `<div class="pp-sig">${esc(d.heb.sig)}</div>` : ''}
         ${LY.has(id) && id !== 'x_yeshua' ? '<div class="pp-lyb">✦ Linaje de Yeshua</div>' : ''}</div>
         <button class="pp-x" data-close aria-label="Cerrar">✕</button></div>

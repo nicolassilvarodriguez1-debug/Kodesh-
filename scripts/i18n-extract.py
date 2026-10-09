@@ -4,11 +4,12 @@ Los módulos y sus archivos están en MODULES. Ya traducidos: data/i18n/<módulo
 import json, os, re, sys, html
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 MODULES = {
+  'core': (['index.html', 'home.js', 'account-gate.js', 'auth.js', 'login.html', 'last-position.js', 'book-mode.js', 'swipe-chapters.js', 'native-insets.js', 'oauth-deeplink.js'], []),
   'tiempo': (['tiempo.js'], ['data/linea-tiempo.json']),
   'moedim': (['moedim.js', 'feasts.js', 'calendario.js', 'luna.js'], ['data/fiestas.json', 'data/calendario-biblico.json']),
   'parashot': (['parashot.html', 'parasha-banner.js', 'parasha-badges.js'], ['parashot-data.json']),
-  'people': (['people.js'], ['data/personas.json', 'data/linaje-yeshua.json']),
-  'maps': (['maps.js'], ['data/lugares.json', 'data/viajes.json']),
+  'people': (['people.js'], ['data/linaje-yeshua.json']),          # nombres: inglés de personas.json (p[3])
+  'maps': (['maps.js'], ['data/viajes.json']),                    # nombres de lugar: data/i18n/places.en.json (OpenBible)
   'harmony': (['parallels.js', 'bible-links.js'], ['data/paralelos.json']),
   'profile': (['profile.html'], []),
   'ayuda': (['ayuda.html', 'onboarding.html'], []),
@@ -18,12 +19,16 @@ MODULES = {
   'verseday': (['verse-day.js', 'verse-image.js'], []),
 }
 ES = re.compile(r'[áéíóúñ¿¡]|\b(de|la|el|los|las|que|para|con|una|por|tu|tus|sin|más|del|al|es|en|un|se|no|ya|lo|su|sus|este|esta|aquí|toca|ver|leer|cerrar|guardar|buscar|abrir|y|o|a|años|año|día|días|hoy|cuando|desde|hasta)\b', re.I)
-def ok(t):
+TECH = re.compile(r'^(https?:|data:|mailto:|#[0-9a-f]{3,8}$|[.#\[]|--|@|\d+(px|em|rem|vh|vw|ms|s|%)\b)|^[a-z]+(-[a-z0-9]+)+$|^[a-z]+[A-Z]\w*$|^\w+_\w+$|^[\w./-]+\.(js|json|html|png|svg|css|webp|mp3|jpg)$|^(GET|POST|PUT|DELETE|PATCH)$|^[A-Z][A-Z0-9_]{1,}_[A-Z0-9_]+$')
+CODEY = re.compile(r'[{}<>=]|=>|\(\)|\$\{|;\s*\w+\s*:|^\w+\(|\)\s*\.')
+def ok(t, data=False):
     t = t.strip()
     if len(t) < 2 or not re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]{2}', t): return False
-    if re.search(r'^[\w./-]+\.(js|json|html|png|svg|css|webp|mp3)$', t) or re.search(r'[{}<>=]|=>|\(\)|\$\{', t): return False
-    if re.fullmatch(r'[A-Z0-9_ :.-]+', t) and not ES.search(t): return False
-    return bool(ES.search(t))
+    if TECH.search(t) or CODEY.search(t): return False
+    if re.fullmatch(r'[1-3]?[A-Z]{2,3}[ :]\d+([:.,\-–]\d+)*', t): return False          # GEN 5:3
+    if data and re.fullmatch(r'[a-z0-9_-]+', t): return False                          # ids en datos
+    if re.fullmatch(r'[a-z]+', t) and not ES.search(t) and not re.search(r'[áéíóúñ]', t) and len(t) <= 3: return False
+    return True
 def norm(t): return html.unescape(re.sub(r'\s+', ' ', t)).strip()
 def from_code(path, out):
     s = open(os.path.join(ROOT, path)).read()
@@ -34,6 +39,10 @@ def from_code(path, out):
     for m in re.finditer(r"'((?:[^'\\\n]|\\.){2,})'|\"((?:[^\"\\\n]|\\.){2,})\"|`([^`]{2,})`", s):
         t = m.group(1) or m.group(2) or m.group(3) or ''
         for part in re.split(r'\$\{[^}]*\}|<[^>]*>', t): out.add(norm(part.replace("\\'", "'")))
+    # 2.ª pasada: comillas simples y dobles también dentro de ${…} (ternarios en plantillas)
+    for m in re.finditer(r"'((?:[^'\\\n`]|\\.){2,})'|\"((?:[^\"\\\n`]|\\.){2,})\"", s):
+        t = m.group(1) or m.group(2) or ''
+        for part in re.split(r'<[^>]*>', t): out.add(norm(part.replace("\\'", "'")))
 def from_data(path, out):
     def walk(x):
         if isinstance(x, str): out.add(norm(x))
@@ -49,6 +58,12 @@ if __name__ == '__main__':
     done = {}
     p = os.path.join(ROOT, f'data/i18n/{mod}.en.json')
     if os.path.exists(p): done = json.load(open(p))
+    # lo que ya traduce i18n-en.js (o cualquier otro módulo) cuenta como hecho
+    import subprocess, glob
+    for f in glob.glob(os.path.join(ROOT, 'data/i18n/*.en.json')): done.update({k: 1 for k in json.load(open(f))})
+    js = "global.window={};global.document={documentElement:{lang:'',classList:{add(){}},appendChild(){}},head:{appendChild(){}},readyState:'complete',createElement:()=>({}),write(){},addEventListener(){},createTreeWalker(){}};global.localStorage={getItem:()=>'en',length:0,key(){}};global.navigator={language:'en'};global.MutationObserver=class{observe(){}};global.NodeFilter={};const fs=require('fs');eval(fs.readFileSync('i18n.js','utf8'));eval(fs.readFileSync('i18n-en.js','utf8'));const I=window.KodeshI18n;const t=JSON.parse(fs.readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(t.filter(x=>I.tr(x)!=null)))"
+    hit = json.loads(subprocess.run(['node', '-e', js], input=json.dumps(out), capture_output=True, text=True, cwd=ROOT).stdout or '[]')
+    done.update({k: 1 for k in hit})
     todo = [t for t in out if t not in done]
     os.makedirs(os.path.join(ROOT, 'data/i18n'), exist_ok=True)
     dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(ROOT, f'data/i18n/{mod}.todo.json')

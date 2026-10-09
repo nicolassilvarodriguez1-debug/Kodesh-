@@ -174,7 +174,11 @@
     ctx.restore();
   }
 
-  function phaseName(p) {
+  // Idioma (i18n.js): TX traduce frases con {huecos}; en inglés las fechas ya salen en inglés
+  const TX = (s, v) => { if (window.KodeshI18n) return KodeshI18n.t(s, v); let r = s; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
+  const EN = () => !!(window.KodeshI18n && KodeshI18n.isEn);
+  function phaseName(p) { return TX(phaseNameEs(p)); }
+  function phaseNameEs(p) {
     if (p < 0.03 || p > 0.97) return 'Luna nueva';
     if (p < 0.22) return 'Creciente';
     if (p < 0.28) return 'Cuarto creciente';
@@ -206,8 +210,8 @@
   const plus = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const fmtL = d => d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
   const fmtS = d => d.toLocaleDateString('es', { day: 'numeric', month: 'short' }).replace('.', '');
-  const nameOf = num => { const n = C().monthName(num); return n.ord + (n.old ? ` · ${n.old}` : ''); };
-  const nameIn = num => { const n = C().monthName(num); return n.ord.toLowerCase() + (n.old ? ` (${n.old})` : ''); };
+  const nameOf = num => { const n = C().monthName(num); return TX(n.ord) + (n.old ? ` · ${TX(n.old)}` : ''); };
+  const nameIn = num => { const n = C().monthName(num); return (EN() ? 'the ' : '') + TX(n.ord).toLowerCase() + (n.old ? ` (${TX(n.old)})` : ''); };
   async function load() { await Promise.all([C() && C().load(), M() && M().load()]); }
   // ¿Ya se puso el sol hoy en la ciudad elegida? (el día bíblico empieza al atardecer)
   function afterSunset(now = new Date()) {
@@ -333,8 +337,8 @@
   function cardHtml(now = new Date()) {
     if (!C() || !C().data) return '';
     const il = illum(now), t = C().today(now), nx = nextMoon(now);
-    const line = nx ? (nx.days === 0 ? 'Luna nueva esperada esta tarde' : nx.days === 1 ? 'Luna nueva esperada mañana al atardecer' : `Luna nueva en ${nx.days} días`) : '';
-    return `<button type="button" class="md-sh" data-luna><span class="md-sh-he" style="background:none"><canvas data-lmoon="${il.phase.toFixed(4)}" width="46" height="46"></canvas></span><span style="flex:1"><b>${esc(phaseName(il.phase))}${t ? ` · día ${t.day}` : ''}</b><small>${esc(line)}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
+    const line = nx ? (nx.days === 0 ? TX('Luna nueva esperada esta tarde') : nx.days === 1 ? TX('Luna nueva esperada mañana al atardecer') : TX('Luna nueva en {n} días', { n: nx.days })) : '';
+    return `<button type="button" class="md-sh" data-luna><span class="md-sh-he" style="background:none"><canvas data-lmoon="${il.phase.toFixed(4)}" width="46" height="46"></canvas></span><span style="flex:1"><b>${esc(phaseName(il.phase))}${t ? ` · ${TX('día {n}', { n: t.day })}` : ''}</b><small>${esc(line)}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
   }
 
   // Pinta las lunitas de las tarjetas (textura si ya está, si no se repinta al llegar)
@@ -361,8 +365,8 @@
     if (nx) {
       const st = nx.m.fixed ? '<span class="ln-chip ok">✓ Vista y confirmada</span>' : nx.m.p ? '<span class="ln-chip">Podría verse una tarde antes</span>' : '<span class="ln-chip">Calculada · se confirma al verse</span>';
       nm = `<div class="ln-box"><h4>Próxima luna nueva</h4>
-        <div class="ln-nm">${moonSvg(0.09, 54, south())}<div><b>${nx.days === 0 ? 'Esta tarde' : nx.days === 1 ? 'Mañana al atardecer' : `En ${nx.days} días`}</b>
-        <small>Se espera ver desde Jerusalén la tarde del ${esc(fmtL(nx.eve))}. Comienza el ${esc(nameIn(nx.num))}.</small><br>${st}</div></div>
+        <div class="ln-nm">${moonSvg(0.09, 54, south())}<div><b>${nx.days === 0 ? TX('Esta tarde') : nx.days === 1 ? TX('Mañana al atardecer') : TX('En {n} días', { n: nx.days })}</b>
+        <small>${TX('Se espera ver desde Jerusalén la tarde del {d}. Comienza el {m}.', { d: esc(fmtL(nx.eve)), m: esc(nameIn(nx.num)) })}</small><br>${st}</div></div>
         <div class="ln-row"><span>Avisarme de la luna nueva<small>${native() ? 'Una notificación cuando se espera y cuando se confirma' : 'Disponible en la app de Kodesh'}</small></span>
         <button class="ln-sw${pushOn() ? ' on' : ''}" data-push role="switch" aria-checked="${pushOn()}" aria-label="Avisarme de la luna nueva"${native() ? '' : ' disabled'}></button></div></div>`;
     }
@@ -377,14 +381,15 @@
       for (let n = 1; n <= Mv.len; n++) {
         const d = plus(Mv.start, n - 1), di = iso(d), fs = fm[di] || [], sh = d.getDay() === 6;
         const f = fs[0];
-        const lab = f ? (f.first ? f.n : f.id === 'sukot' && f.i === 7 ? 'Último gran día' : `${f.n.split(' ')[0]} · ${f.i + 1}`) : '';
+        const fn = TX(f ? f.n : '');
+        const lab = f ? (f.first ? fn : f.id === 'sukot' && f.i === 7 ? TX('Último gran día') : `${fn.split(' ')[0]} · ${f.i + 1}`) : '';
         cells.push(`<${f ? 'button type="button"' : 'div'} class="ln-c${sh ? ' sh' : ''}${f ? ' fe' : ''}${di === todayIso ? ' today' : ''}"${f ? ` data-f="${f.id}"` : ''}>
           ${n === 1 ? `<span class="ln-mo">${moonSvg(0.1, 16, south())}</span>` : ''}<b>${n}</b><small>${esc(fmtS(d))}</small>${lab ? `<span class="ln-f">${esc(lab)}</span>` : ''}</${f ? 'button' : 'div'}>`);
       }
       grid = `<div class="ln-mh"><button data-mv="-1" aria-label="Mes anterior"${C().monthAt(view - 1) ? '' : ' disabled'}>‹</button>
-        <div><b>${esc(nameOf(Mv.num))}</b><small>${esc(range)} · ${Mv.len} días</small></div>
+        <div><b>${esc(nameOf(Mv.num))}</b><small>${esc(range)} · ${TX('{n} días', { n: Mv.len })}</small></div>
         <button data-mv="1" aria-label="Mes siguiente"${C().monthAt(view + 1) ? '' : ' disabled'}>›</button></div>
-        <div class="ln-grid">${['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SHABAT'].map((w, i) => `<div class="ln-wd${i === 6 ? ' sh' : ''}">${w}</div>`).join('')}${cells.join('')}</div>
+        <div class="ln-grid">${(EN() ? ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SHABBAT'] : ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SHABAT']).map((w, i) => `<div class="ln-wd${i === 6 ? ' sh' : ''}">${w}</div>`).join('')}${cells.join('')}</div>
         <div class="ln-leg"><span><i style="background:rgba(201,168,76,.35)"></i>Shabat</span><span><i style="background:rgba(224,123,57,.55)"></i>Fiesta</span><span>${moonSvg(0.1, 12)} Luna nueva</span></div>
         ${view !== k0 ? '<button class="ln-btn min" data-today>Volver a este mes</button>' : ''}`;
     }
@@ -456,31 +461,31 @@
       const t = new Date(T), P = pl(), il = illum(t), sz = size();
       drawMoon(cv, il.phase, sz, orient(t, P));
       stage.style.height = sz + 'px';
-      o.querySelector('[data-place]').textContent = `📍 ${P.n}${P.guess ? ' · elegir' : ''} ✎`;
+      o.querySelector('[data-place]').textContent = `📍 ${TX(P.n)}${P.guess ? ' · ' + TX('elegir') : ''} ✎`;
       o.querySelector('[data-ph]').textContent = phaseName(il.phase);
       o.querySelector('[data-wd]').textContent = t.toLocaleDateString('es', { weekday: 'long', timeZone: P.tz });
       o.querySelector('[data-date]').textContent = t.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: P.tz }).replace('.', '');
       o.querySelector('[data-pct]').textContent = Math.round(il.fraction * 100) + '%';
-      o.querySelector('[data-tl]').textContent = `Hora en ${P.n}`;
+      o.querySelector('[data-tl]').textContent = TX('Hora en {p}', { p: TX(P.n) });
       o.querySelector('[data-time]').textContent = tfmt(t, P.tz);
       o.querySelector('[data-now]').hidden = follow && Math.abs(T - Date.now()) < 6e4;
       // datos
       const rs = riseSet(t, P), full = findPhase(t, 0.5, 1), nwN = findPhase(t, 0, 1), nwP = findPhase(t, 0, -1);
       const tomorrow = d => parts(d, P.tz).d !== parts(t, P.tz).d;
-      const rel = d => d ? `${tomorrow(d) ? 'mañana ' : ''}${tfmt(d, P.tz)} <i>(${d < t ? 'hace ' : 'en '}${dur(d - t)})</i>` : '—';
+      const rel = d => d ? `${tomorrow(d) ? TX('mañana') + ' ' : ''}${tfmt(d, P.tz)} <i>(${TX(d < t ? 'hace {x}' : 'en {x}', { x: dur(d - t) })})</i>` : '—';
       // día bíblico (empieza al atardecer en la ciudad elegida)
       let bib = '';
       try {
         const td = C().today(t), p0 = parts(t, P.tz), s0 = M().sunset(p0.y, p0.mo - 1, p0.d, P.lat, P.lon);
-        if (td) { const after = t > s0, nx = after ? C().today(new Date(t.valueOf() + 864e5)) : null, dd = after && nx ? nx : td; bib = `Día ${dd.day} · ${nameIn(dd.month)}${after ? ' <i>(desde el atardecer)</i>' : ''}`; }
+        if (td) { const after = t > s0, nx = after ? C().today(new Date(t.valueOf() + 864e5)) : null, dd = after && nx ? nx : td; bib = `${TX('Día {n}', { n: dd.day })} · ${nameIn(dd.month).replace(/^the /, '')}${after ? ` <i>(${TX('desde el atardecer')})</i>` : ''}`; }
       } catch (e) {}
       const km = Math.round(moonC(toDays(t)).dist);
       o.querySelector('[data-rows]').innerHTML = [
         bib && ['Día bíblico', bib],
         ['Salida', rel(rs.rise)], ['Puesta', rel(rs.set)],
-        ['Próxima luna llena', full ? `${esc(fmtS(full))} · <i>en ${dur(full - t)}</i>` : '—'],
+        ['Próxima luna llena', full ? `${esc(fmtS(full))} · <i>${TX('en {x}', { x: dur(full - t) })}</i>` : '—'],
         ['Edad lunar', nwP ? dur(t - nwP) : '—'],
-        ['Conjunción (luna nueva)', nwN ? `${esc(fmtS(nwN))} · <i>en ${dur(nwN - t)}</i>` : '—'],
+        ['Conjunción (luna nueva)', nwN ? `${esc(fmtS(nwN))} · <i>${TX('en {x}', { x: dur(nwN - t) })}</i>` : '—'],
         ['Distancia', `${km.toLocaleString('es')} km`],
       ].filter(Boolean).map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
       drawRuler(rc, ruler.clientWidth || 360, t, P);
@@ -509,7 +514,7 @@
       x.textAlign = 'center'; x.fillStyle = '#e8e2d4'; x.font = '500 14px "EB Garamond", Georgia, serif';
       x.fillText(dd.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: P.tz }).replace('.', ''), xm, 52);
       x.fillStyle = isToday ? '#e6c27a' : '#9f97a8'; x.font = '600 12px "EB Garamond", Georgia, serif';
-      x.fillText(isToday ? 'hoy' : dd.toLocaleDateString('es', { weekday: 'long', timeZone: P.tz }), xm, 68);
+      x.fillText(isToday ? TX('hoy') : dd.toLocaleDateString('es', { weekday: 'long', timeZone: P.tz }), xm, 68);
     }
     // luna sobre el horizonte
     x.fillStyle = 'rgba(230,194,122,.55)';
@@ -530,8 +535,8 @@
   const toast = m => { if (typeof showToast === 'function') showToast(m); };
   async function share() {
     const now = new Date(), il = illum(now), t = C().today(now), nx = nextMoon(now);
-    const text = `${phaseName(il.phase)} esta noche${t ? ` · día ${t.day} del ${nameIn(t.month)}` : ''}${nx ? `\nPróxima luna nueva: tarde del ${fmtL(nx.eve)}` : ''}\n— Kodesh Bible`;
-    try { if (navigator.share) await navigator.share({ title: 'La luna de esta noche', text, url: 'https://kodeshbible.com' }); else { await navigator.clipboard.writeText(text); toast('Copiado'); } } catch (e) {}
+    const text = `${TX('{p} esta noche', { p: phaseName(il.phase) })}${t ? ` · ${TX('día {n} del {m}', { n: t.day, m: nameIn(t.month) })}` : ''}${nx ? `\n${TX('Próxima luna nueva: tarde del {d}', { d: fmtL(nx.eve) })}` : ''}\n— Kodesh Bible`;
+    try { if (navigator.share) await navigator.share({ title: TX('La luna de esta noche'), text, url: 'https://kodeshbible.com' }); else { await navigator.clipboard.writeText(text); toast('Copiado'); } } catch (e) {}
   }
   async function open() {
     await load();

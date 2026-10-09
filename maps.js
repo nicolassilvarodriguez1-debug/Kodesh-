@@ -18,7 +18,20 @@
   let BASE = null, PLACES = null, TRIPS = null, P = {};
   const cache = {};
   const get = f => cache[f] || (cache[f] = fetch(f).then(r => r.json()).catch(() => { delete cache[f]; return null; }));
-  async function loadPlaces() { if (!PLACES) { PLACES = await get('./data/lugares.json'); P = (PLACES && PLACES.p) || {}; } return PLACES; }
+  async function loadPlaces() {
+    if (!PLACES) {
+      PLACES = await get('./data/lugares.json'); P = (PLACES && PLACES.p) || {};
+      // En inglés: el nombre de OpenBible (inglés) y el tipo de lugar en inglés, por id
+      if (PLACES && window.KodeshI18n && KodeshI18n.isEn) {
+        const E = await get('./data/places-en.json');
+        if (E) {
+          for (const id in P) { if (E.names[id]) P[id][0] = E.names[id]; if (E.types[P[id][3]]) P[id][3] = E.types[P[id][3]]; }
+          for (const k in PLACES.v || {}) for (const m of PLACES.v[k]) if (E.names[m[1]]) m[2] = E.names[m[1]];
+        }
+      }
+    }
+    return PLACES;
+  }
   async function loadAll() { [BASE, TRIPS] = await Promise.all([get('./data/mapa-base.json'), get('./data/viajes.json')]); await loadPlaces(); }
   const bookName = id => ((window.KodeshRef && KodeshRef.BOOKS) || []).find(b => b[0] === id)?.[1] || id;
   const nice = r => { const m = /^([1-3]?[A-Z]{2,3}) (.+)$/.exec(r); return m ? `${bookName(m[1])} ${m[2]}` : r; };

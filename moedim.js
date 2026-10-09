@@ -208,8 +208,10 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
 .md-pick button.me { color: var(--gold, #c9a84c); font-weight: 600; }`;
   document.head.appendChild(css);
 
+  // Idioma (i18n.js)
+  const TX = (s, v) => { if (window.KodeshI18n) return KodeshI18n.t(s, v); let r = s; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
   const artOf = id => ART && ART[id];
-  const kickOf = f => f.est === 'p' ? 'Moadim de primavera · cumplidas' : f.est === 'o' ? 'Moadim de otoño · su regreso' : 'Tiempo señalado · cada semana';
+  const kickOf = f => TX(f.est === 'p' ? 'Moadim de primavera · cumplidas' : f.est === 'o' ? 'Moadim de otoño · su regreso' : 'Tiempo señalado · cada semana');
 
   /* ── Tarjetas de inicio ── */
   async function renderHome(el) {
@@ -224,7 +226,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
       html += `<button type="button" class="md-card" data-moed="${f.id}">
         <span class="md-img" style="${artOf(f.id) ? `background-image:url('${esc(artOf(f.id))}')` : 'background:radial-gradient(ellipse at 50% 20%,#6a4520 0%,#2a1a0c 55%,#140e08 100%)'}"></span><span class="md-shade"></span>
         <span class="md-in" style="display:block">
-          <span class="md-kick" style="display:block">${t.start <= new Date() ? 'Ahora' : `Próxima · ${dd === 0 ? 'hoy al atardecer' : dd === 1 ? 'mañana' : `en ${dd} días`}`}</span>
+          <span class="md-kick" style="display:block">${t.start <= new Date() ? TX('Ahora') : `${TX('Próxima')} · ${dd === 0 ? TX('hoy al atardecer') : dd === 1 ? TX('mañana') : TX('en {n} días', { n: dd })}`}</span>
           <span class="md-name" style="display:block">${esc(f.n)}<span class="he" lang="he">${esc(f.he)}</span></span>
           <span class="md-lema" style="display:block">${esc(f.lema)}</span>
           <span class="md-line" style="display:flex">${ids.map(id => `<i class="${id === f.id ? 'on' : ''}"></i>`).join('')}</span>
@@ -235,7 +237,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
     if (sh) {
       const now = new Date(), on = sh.start <= now;
       const left = on ? sh.end - now : sh.start - now, h = Math.floor(left / 36e5), d = Math.floor(h / 24);
-      html += `<button type="button" class="md-sh" data-moed="shabat"><span class="md-sh-he" lang="he">ש</span><span style="flex:1"><b>${on ? 'Shabat shalom' : 'Shabat'}</b><small>${on ? `Termina en ${h} h ${Math.floor(left / 6e4) % 60} min` : `Comienza en ${d ? d + ' d ' : ''}${h % 24} h · <span style="white-space:nowrap">${esc(fmtShort(sh.start, sh.tz))} ${esc(fmtT(sh.start, sh.tz))}</span>`}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
+      html += `<button type="button" class="md-sh" data-moed="shabat"><span class="md-sh-he" lang="he">ש</span><span style="flex:1"><b>${on ? 'Shabat shalom' : 'Shabat'}</b><small>${on ? TX('Termina en {t}', { t: `${h} h ${Math.floor(left / 6e4) % 60} min` }) : `${TX('Comienza en {t}', { t: `${d ? d + ' d ' : ''}${h % 24} h` })} · <span style="white-space:nowrap">${esc(fmtShort(sh.start, sh.tz))} ${esc(fmtT(sh.start, sh.tz))}</span>`}</small></span><span style="color:var(--gold,#c9a84c)">→</span></button>`;
     }
     if (window.KodeshLuna) html += KodeshLuna.cardHtml();
     el.innerHTML = html; el.hidden = false;
@@ -293,12 +295,12 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
       <div class="md-kick">${esc(kickOf(f))}</div>
       <div class="md-name">${esc(f.n)}</div><div class="md-he" lang="he">${esc(f.he)}</div>
       <div class="md-lema">${esc(f.lema)}</div>${f.eco ? `<div class="md-eco">${esc(f.eco)}</div>` : ''}
-      ${t ? `<div class="md-when">Comienza al atardecer · ${esc(fmtD(t.start, t.tz, yr))}</div>
+      ${t ? `<div class="md-when">${TX('Comienza al atardecer')} · ${esc(fmtD(t.start, t.tz, yr))}</div>
       <div class="md-cd"><div class="md-kick" data-cdk></div><div class="md-n" data-cd></div></div>
       <div class="md-be"><div><small>☀︎ Comienza</small><b>${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))}</b></div><div><small>☾ Termina</small><b>${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}</b></div></div>
-      <button class="md-place" data-place>📍 ${esc(t.pl.n)}${t.pl.guess ? ' · elegir mi ciudad' : ''}</button>
+      <button class="md-place" data-place>📍 ${esc(TX(t.pl.n))}${t.pl.guess ? ' · ' + TX('elegir mi ciudad') : ''}</button>
       ${t.maybeEarlier ? '<div style="color:#bfb29a;font-size:.82rem;margin-top:4px">Si la luna nueva se ve una tarde antes, se adelanta un día.</div>' : ''}` : ''}
-      <button class="md-up" data-up aria-label="Ver más sobre ${esc(f.n)}"><span>︿</span>Desliza hacia arriba</button>`;
+      <button class="md-up" data-up aria-label="${esc(TX('Ver más sobre {n}', { n: TX(f.n) }))}"><span>︿</span>${TX('Desliza hacia arriba')}</button>`;
     o.querySelector('[data-up]').onclick = info;
     o.querySelectorAll('[data-dot]').forEach(d => d.onclick = () => show(d.dataset.dot));
     const pb = o.querySelector('[data-place]'); if (pb) pb.onclick = () => pickPlace();
@@ -318,8 +320,8 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
     const f = byId(cur), t = times(cur), m = ov.querySelector('.md-more'), I = SHABAT_INFO;
     const ref = (r, n) => `<a class="r" href="${readUrl(r)}">${esc(n || niceRef(r))}</a>`;
     let html = `<button class="md-down rv" data-down aria-label="Volver">﹀</button>
-      <div class="rv"><div class="md-name">${esc(f.n)}</div><div class="md-he" lang="he">${esc(f.he)}</div><div class="md-sub">${esc(cur === 'shabat' ? f.lema : `${f.alt} · ${f.sig}`)}</div></div>`;
-    if (t) html += `<h4 class="rv">${cur === 'shabat' ? 'Esta semana' : 'Próxima fecha'} · ${esc(t.pl.n)}</h4><div class="when rv">Comienza ${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))}<br>Termina ${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}${f.fecha ? `<div style="color:#bfb29a;font-size:.88rem;margin-top:4px">${esc(f.fecha)}</div>` : ''}</div>`;
+      <div class="rv"><div class="md-name">${esc(f.n)}</div><div class="md-he" lang="he">${esc(f.he)}</div><div class="md-sub">${esc(cur === 'shabat' ? TX(f.lema) : `${TX(f.alt)} · ${TX(f.sig)}`)}</div></div>`;
+    if (t) html += `<h4 class="rv">${TX(cur === 'shabat' ? 'Esta semana' : 'Próxima fecha')} · ${esc(TX(t.pl.n))}</h4><div class="when rv">${TX('Comienza')} ${esc(fmtShort(t.start, t.tz))} · ${esc(fmtT(t.start, t.tz))}<br>${TX('Termina')} ${esc(fmtShort(t.end, t.tz))} · ${esc(fmtT(t.end, t.tz))}${f.fecha ? `<div style="color:#bfb29a;font-size:.88rem;margin-top:4px">${esc(f.fecha)}</div>` : ''}</div>`;
     if (cur === 'shabat') {
       html += `<h4 class="rv">Qué mandó YHWH</h4><ul class="rv">${I.mando.map(([x, r, n]) => `<li>${esc(x)} ${ref(r, n)}</li>`).join('')}</ul>
         <h4 class="rv">En tiempos de Yeshúa</h4><ul class="rv">${I.yeshua.map(([x, r, n]) => `<li>${esc(x)} ${ref(r, n)}</li>`).join('')}</ul>
@@ -353,8 +355,8 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
       const t = times(cur); const el = ov && ov.querySelector('[data-cd]'); if (!t || !el) return;
       const now = new Date(), on = t.start <= now, left = Math.max(0, (on ? t.end : t.start) - now);
       const s = Math.floor(left / 1000), p = n => String(n).padStart(2, '0');
-      ov.querySelector('[data-cdk]').textContent = on ? (cur === 'shabat' ? 'Shabat shalom · termina en' : 'Se celebra ahora · termina en') : 'Comienza en';
-      el.innerHTML = `<div><b>${Math.floor(s / 86400)}</b><small>DÍAS</small></div><i>:</i><div><b>${p(Math.floor(s / 3600) % 24)}</b><small>HORAS</small></div><i>:</i><div><b>${p(Math.floor(s / 60) % 60)}</b><small>MIN</small></div><i>:</i><div><b>${p(s % 60)}</b><small>SEG</small></div>`;
+      ov.querySelector('[data-cdk]').textContent = TX(on ? (cur === 'shabat' ? 'Shabat shalom · termina en' : 'Se celebra ahora · termina en') : 'Comienza en');
+      el.innerHTML = `<div><b>${Math.floor(s / 86400)}</b><small>${TX('DÍAS')}</small></div><i>:</i><div><b>${p(Math.floor(s / 3600) % 24)}</b><small>${TX('HORAS')}</small></div><i>:</i><div><b>${p(Math.floor(s / 60) % 60)}</b><small>MIN</small></div><i>:</i><div><b>${p(s % 60)}</b><small>${TX('SEG')}</small></div>`;
     };
     run(); timer = setInterval(run, 1000);
   }
@@ -375,7 +377,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
     const after = () => { if (typeof done === 'function') done(); else show(cur); };
     const box = document.createElement('div'); box.className = 'md-pick';
     const cur0 = rj('kodesh_place', null);
-    box.innerHTML = `<div><h3>Ciudad para el atardecer</h3><button data-me class="me">📍 Usar mi ubicación</button>${CITIES.map((c, i) => `<button data-c="${i}"${cur0 && cur0.n === c[0] ? ' style="color:var(--gold,#c9a84c)"' : ''}>${esc(c[0])}</button>`).join('')}</div>`;
+    box.innerHTML = `<div><h3>Ciudad para el atardecer</h3><button data-me class="me">📍 Usar mi ubicación</button>${CITIES.map((c, i) => `<button data-c="${i}" data-noi18n${cur0 && cur0.n === c[0] ? ' style="color:var(--gold,#c9a84c)"' : ''}>${esc(TX(c[0]))}</button>`).join('')}</div>`;
     box.addEventListener('click', e => { if (e.target === box) box.remove(); });
     box.querySelector('[data-me]').onclick = async () => {
       try { await useMyLocation(); box.remove(); after(); } catch (e) { if (typeof showToast === 'function') showToast(e.message); else alert(e.message); }

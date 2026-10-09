@@ -26,6 +26,18 @@
   document.documentElement.lang = lang;
   if (isEn) document.documentElement.classList.add('lang-en');
 
+  // Fechas y números: el código pide 'es' / 'es-ES'; en inglés se formatean en 'en-US' («Thursday, October 9»)
+  if (isEn) {
+    const loc = l => typeof l === 'string' ? l.replace(/^es(-[A-Za-z]{2}(?=$|-))?/, 'en-US').replace(/^en-US-u-/, 'en-u-') : Array.isArray(l) ? l.map(loc) : l;
+    const wrap = (proto, name) => { const f = proto[name]; proto[name] = function (l, o) { return f.call(this, loc(l), o); }; };
+    wrap(Date.prototype, 'toLocaleDateString'); wrap(Date.prototype, 'toLocaleTimeString'); wrap(Date.prototype, 'toLocaleString'); wrap(Number.prototype, 'toLocaleString');
+    for (const k of ['DateTimeFormat', 'NumberFormat', 'RelativeTimeFormat', 'PluralRules', 'ListFormat']) {
+      const C = Intl[k]; if (!C) continue;
+      const W = function (l, o) { return new C(loc(l), o); };
+      W.prototype = C.prototype; W.supportedLocalesOf = C.supportedLocalesOf; Intl[k] = W;
+    }
+  }
+
   const BOOKS_EN = {
     GEN: ['Genesis', 'Gen'], EXO: ['Exodus', 'Exo'], LEV: ['Leviticus', 'Lev'], NUM: ['Numbers', 'Num'], DEU: ['Deuteronomy', 'Deu'],
     JOS: ['Joshua', 'Josh'], JDG: ['Judges', 'Judg'], RUT: ['Ruth', 'Ruth'], '1SA': ['1 Samuel', '1Sa'], '2SA': ['2 Samuel', '2Sa'],
@@ -216,8 +228,9 @@
     interlinear: '#btnInterlinearToggle, .btn-interlinear, [onclick*="verseSheetAction(\'interlinear\')"]',
     audio: '.audio-chip, .ka-player, .hm-play, [data-act="play"], [data-act="listen"]',
     verseday: '',
+    calpage: 'a[href^="calendario-biblico.html"], a[href^="/calendario-biblico.html"]',
   };
-  const READY = new Set(['tiempo']);
+  const READY = new Set(['tiempo', 'moedim', 'luna']);
   const ok = f => !isEn || READY.has(f);
   if (isEn) {
     const st = document.createElement('style');
