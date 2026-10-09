@@ -29,3 +29,14 @@ test('red bíblica: solo conexiones válidas y frases que están en el versícul
   assert.equal(rows[1].phrase, null);
   assert.equal(parseLinks('no es json', 'MAT', 1, src, BIBLE), null);
 });
+
+test('red bíblica: nota en inglés con nombres mesiánicos y sin español', () => {
+  const src = { '23': 'He aquí la virgen concebirá y parirá un hijo' };
+  const raw = JSON.stringify({ l: [
+    { v: 23, ref: 'ISA 7:14', kind: 'cumplimiento', note: 'Isaías…', note_en: 'Fulfilled in Jesus Christ, as the LORD said.' },
+    { v: 23, ref: 'ISA 7:15', kind: 'alusion', note: 'Eco', note_en: 'Eco de Isaías' },
+  ] });
+  const rows = parseLinks(raw, 'MAT', 1, src, BIBLE);
+  assert.equal(rows[0].note_en, 'Fulfilled in Yeshua Messiah, as YHWH said.');
+  assert.equal(rows[1].note_en, null);   // tenía español → no se muestra en inglés
+});

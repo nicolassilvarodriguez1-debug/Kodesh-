@@ -21,16 +21,17 @@ REGLAS
 - "ref": código del libro + capítulo:versículo del Tanaj, con rango si hace falta. Códigos: ${OT_IDS.join(', ')}. Ejemplos: "ISA 7:14", "PSA 22:1", "MIC 5:2", "ZEC 9:9", "DEU 6:4-5". Usa la numeración de la Reina-Valera (los Salmos con su número en español).
 - "phrase": las palabras EXACTAS del versículo del NT (tal como aparecen en el texto que te doy) que hacen la referencia, de 2 a 12 palabras. Si la conexión es todo el versículo, deja "".
 - "note": una frase breve en español (máx. 140 caracteres) que explique la conexión. Usa Yeshúa (nunca "Jesús"), Mashíaj (nunca "Cristo"), Elohim/YHWH.
+- "note_en": la misma nota en inglés natural (máx. 140 caracteres), para la edición en inglés. Usa Yeshua (nunca "Jesus"), Messiah (nunca "Christ"), YHWH (nunca "the LORD"), Elohim/God; libros y nombres en su forma inglesa.
 - Máximo 15 conexiones por capítulo; prioriza profecías y citas explícitas.
 
-Responde SOLO con JSON: {"l":[{"v":23,"ref":"ISA 7:14","kind":"cumplimiento","phrase":"He aquí la virgen concebirá","note":"Isaías anunció que una virgen daría a luz al Emanuel."}]}`;
+Responde SOLO con JSON: {"l":[{"v":23,"ref":"ISA 7:14","kind":"cumplimiento","phrase":"He aquí la virgen concebirá","note":"Isaías anunció que una virgen daría a luz al Emanuel.","note_en":"Isaiah announced that a virgin would give birth to Immanuel."}]}`;
 
 export function linksParams(bookId, chapter, sourceVerses) {
   const keys = sortedVerseKeys(sourceVerses);
   const text = keys.map(k => `${k}. ${sourceVerses[k]}`).join('\n');
   return {
     model: LINKS_MODEL,
-    max_tokens: 2500,
+    max_tokens: 3500,
     system: SYSTEM,
     messages: [{ role: 'user', content: `${BOOK_NAMES[bookId] || bookId} ${chapter} (Reina-Valera):\n\n${text}` }],
   };
@@ -73,10 +74,14 @@ export function parseLinks(raw, ntBook, ntChapter, sourceVerses, bibleData) {
     if (phrase && !norm(verseText).includes(norm(phrase))) phrase = '';   // solo si está de verdad en el versículo
     let note = String(it?.note || '').trim().replace(/\s+/g, ' ').slice(0, 200);
     if (/\bJes[uú]s\b|\bCristo\b/i.test(note)) note = note.replace(/\bJes[uú]s\b/g, 'Yeshúa').replace(/\bCristo\b/g, 'Mashíaj');
+    // Nota en inglés (edición en inglés): sin ella, la conexión no se muestra en inglés.
+    let noteEn = String(it?.note_en || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+    if (/[áéíóúñ¿¡«»]/i.test(noteEn) || /\b(el|los|las|del|que|para|con|por|una)\b/i.test(noteEn)) noteEn = '';
+    noteEn = noteEn.replace(/\bJesus\b/g, 'Yeshua').replace(/\bChrist\b/g, 'Messiah').replace(/\bthe LORD\b/g, 'YHWH').replace(/\bLORD\b/g, 'YHWH');
     out.push({
       nt_book: ntBook, nt_chapter: ntChapter, nt_verse: v,
       ot_book: r.book, ot_chapter: r.chapter, ot_verse: r.verse, ot_verse_end: r.verseEnd,
-      kind: KINDS.has(it?.kind) ? it.kind : 'alusion', phrase: phrase || null, note: note || null, model_version: LINKS_MODEL,
+      kind: KINDS.has(it?.kind) ? it.kind : 'alusion', phrase: phrase || null, note: note || null, note_en: noteEn || null, model_version: LINKS_MODEL,
     });
   }
   return out.slice(0, 15);

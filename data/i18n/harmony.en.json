@@ -472,5 +472,9 @@
 "Ningún otro Evangelio cuenta «{t}».": "No other Gospel tells “{t}.”",
 "` : EN ?": "__skip__",
 "` : EN ? '' : `": "__skip__",
-"font-size:10.5px": "__skip__"
+"font-size:10.5px": "__skip__",
+"Conexiones del capítulo con el Nuevo Testamento": "Chapter connections with the New Testament",
+"Conexiones del capítulo con el Tanaj": "Chapter connections with the Tanakh",
+"Gold ✦": "__skip__",
+"Red {n}": "Web {n}"
 }

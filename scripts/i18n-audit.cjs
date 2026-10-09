@@ -86,6 +86,10 @@ const STEPS = [
   ['fiestas · de punta a punta', 'index.html', "KodeshHome.hide(); selectBook('LEV'); loadChapter('LEV', 23).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); setTimeout(() => { const t = document.querySelector('.fr-tab[data-tab=hilo]'); if (t) t.click(); }, 500); }, 1500))"],
   ['fiestas · templo', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 10).then(() => setTimeout(() => { const p = document.querySelector('.fr-pill'); if (p) p.click(); }, 1500))"],
   ['imagen del versículo', 'index.html', "KodeshHome.hide(); selectBook('JHN'); loadChapter('JHN', 3).then(() => setTimeout(() => openVerseImage({ book: 'JHN', chapter: 3, verse: 16 }), 600))"],
+  ['red bíblica en el lector', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 2).then(() => setTimeout(() => { const w = document.querySelector('.verse.xlv-strong .word'); if (w) w.click(); }, 1000))"],
+  ['red bíblica · versículo', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 2).then(() => setTimeout(() => { const m = document.querySelector('.xl-mark'); if (m) m.click(); }, 1000))"],
+  ['red bíblica · capítulo', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 2).then(() => setTimeout(() => { const m = document.querySelector('.xl-net-btn'); if (m) m.click(); }, 1000))"],
+  ['red bíblica · tanaj', 'index.html', "KodeshHome.hide(); selectBook('ISA'); loadChapter('ISA', 53).then(() => setTimeout(() => { const m = document.querySelector('.xl-mark'); if (m) m.click(); }, 1000))"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];
@@ -110,7 +114,9 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
     // Sin red: Supabase de mentira (sin sesión) para que las páginas terminen de pintar
     await ctx.route(/supabase-js|@supabase/, r => r.fulfill({ contentType: 'application/javascript', body: (name.startsWith('cuenta') ? STUB_USER : '') + STUB }));
     await ctx.route(/\/api\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
-    await ctx.route(/supabase\.co\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+    // Red bíblica: conexiones de muestra (Mateo 2) para ver el panel con datos reales
+    const LINKS = require('fs').readFileSync(require('path').join(__dirname, 'fixtures/bible-links-mat2.json'), 'utf8');
+    await ctx.route(/supabase\.co\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: /bible_links\?select=\*&nt_book=eq\.MAT/.test(r.request().url()) ? LINKS : '[]' }));
     const p = await ctx.newPage();
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + page, { waitUntil: 'domcontentloaded' }).catch(() => {});

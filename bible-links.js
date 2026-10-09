@@ -6,7 +6,10 @@
 (function () {
   'use strict';
   const NT = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
-  const KIND = { cita: 'Cita', cumplimiento: 'Cumplimiento', alusion: 'Alusión' };
+  // Inglés: nota traducida (note_en) y subrayado del versículo completo (la frase guardada es de la RVR).
+  const EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+  const TX = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
+  const KIND = { cita: TX('Cita'), cumplimiento: TX('Cumplimiento'), alusion: TX('Alusión') };
   const byBook = {};   // book → Promise<rows[]>
   const $ = id => document.getElementById(id);
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -78,7 +81,8 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     if (!byBook[book]) {
       byBook[book] = (async () => {
         const col = NT.has(book) ? 'nt_book' : 'ot_book';
-        return await rest(`bible_links?select=*&${col}=eq.${encodeURIComponent(book)}&limit=3000`);
+        const rows = await rest(`bible_links?select=*&${col}=eq.${encodeURIComponent(book)}&limit=3000`);
+        return EN ? rows.filter(r => r.note_en).map(r => ({ ...r, note: r.note_en, phrase: null })) : rows;
       })().catch(() => { delete byBook[book]; return []; });
     }
     return byBook[book];
@@ -105,7 +109,6 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     return false;
   }
   async function decorate(container, book, chapter) {
-    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter) return;
     const rows = (await rowsFor(book)).filter(r => NT.has(book) ? r.nt_chapter === chapter : r.ot_chapter === chapter);
     if (!rows.length) return;
@@ -128,7 +131,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
         if (strong && !vEl.querySelector('.xl-mark')) {
           const b = document.createElement('button');
           b.className = 'xl-mark'; b.type = 'button'; b.textContent = '✦';
-          b.setAttribute('aria-label', 'Ver la conexión con el Tanaj');
+          b.setAttribute('aria-label', TX('Ver la conexión con el Tanaj'));
           vEl.appendChild(b);
         }
       }
@@ -140,7 +143,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
   // Aviso único la primera vez que alguien ve una profecía marcada
   function firstHint() {
     try { if (localStorage.getItem('kodesh_xl_hint')) return; localStorage.setItem('kodesh_xl_hint', '1'); } catch (e) { return; }
-    if (typeof showToast === 'function') setTimeout(() => showToast('✦ Lo subrayado en dorado viene del Tanaj: toca la ✦ para ver la conexión'), 900);
+    if (typeof showToast === 'function') setTimeout(() => showToast(TX('✦ Lo subrayado en dorado viene del Tanaj: toca la ✦ para ver la conexión')), 900);
   }
 
   // Botón «Red» en el encabezado del capítulo
@@ -149,8 +152,8 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     if (!meta || meta.querySelector('.xl-net-btn')) return;
     const b = document.createElement('button');
     b.className = 'version-chip xl-net-btn';
-    b.innerHTML = `<span style="color:var(--gold)">✦</span><span>Red ${rows.length}</span>`;
-    b.setAttribute('aria-label', 'Conexiones del capítulo con ' + (NT.has(book) ? 'el Tanaj' : 'el Nuevo Testamento'));
+    b.innerHTML = `<span style="color:var(--gold)">✦</span><span>${TX('Red {n}', { n: rows.length })}</span>`;
+    b.setAttribute('aria-label', TX(NT.has(book) ? 'Conexiones del capítulo con el Tanaj' : 'Conexiones del capítulo con el Nuevo Testamento'));
     b.onclick = () => openChapter(book, chapter);
     const notes = meta.querySelector('.btn-notes-chapter');
     meta.insertBefore(b, notes || null);
@@ -195,7 +198,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     rows.sort((a, b) => STRONG(b.kind) - STRONG(a.kind));
     const r = rows[0];
     const other = isNT ? refLabel(r.ot_book, r.ot_chapter, r.ot_verse, r.ot_verse_end) : refLabel(r.nt_book, r.nt_chapter, r.nt_verse);
-    const label = isNT ? (r.kind === 'cumplimiento' ? 'Cumple' : r.kind === 'cita' ? 'Cita' : 'Eco de') : 'Se cumple en';
+    const label = TX(isNT ? (r.kind === 'cumplimiento' ? 'Cumple' : r.kind === 'cita' ? 'Cita' : 'Eco de') : 'Se cumple en');
     // espera a que el lexicón esté abierto
     for (let i = 0; i < 20; i++) { const pop = document.getElementById('lexiconPopup'); if (pop && pop.classList.contains('visible')) break; await new Promise(res => setTimeout(res, 60)); }
     const pop = document.getElementById('lexiconPopup');
@@ -203,7 +206,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     const b = document.createElement('button');
     b.id = 'xlLexBanner'; b.type = 'button';
     b.style.cssText = 'display:flex;align-items:center;gap:8px;width:calc(100% - 24px);margin:10px 12px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--gold-dim,#3a3220);background:var(--gold-soft,rgba(201,168,76,.06));color:var(--text);font:inherit;font-size:.9rem;text-align:left;cursor:pointer';
-    b.innerHTML = `<span style="color:var(--gold)">✦</span><span style="flex:1">${label} <b style="color:var(--gold)">${esc(other)}</b>${rows.length > 1 ? ` y ${rows.length - 1} más` : ''}</span><span style="color:var(--gold);white-space:nowrap">Ver conexión →</span>`;
+    b.innerHTML = `<span style="color:var(--gold)">✦</span><span style="flex:1">${label} <b style="color:var(--gold)">${esc(other)}</b>${rows.length > 1 ? ' ' + TX('y {n} más', { n: rows.length - 1 }) : ''}</span><span style="color:var(--gold);white-space:nowrap">${TX('Ver conexión →')}</span>`;
     b.onclick = e => { e.stopPropagation(); if (typeof closeLexicon === 'function') closeLexicon(); open(p.book, p.chapter, p.verse); };
     pop.insertBefore(b, pop.firstChild);
   }
@@ -213,7 +216,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
   function ensureSheet() {
     if (sheet) return;
     overlay = document.createElement('div'); overlay.className = 'xl-overlay'; overlay.onclick = close;
-    sheet = document.createElement('div'); sheet.className = 'xl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Conexiones bíblicas');
+    sheet = document.createElement('div'); sheet.className = 'xl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', TX('Conexiones bíblicas'));
     document.body.append(overlay, sheet);
   }
   function close() { if (sheet) { sheet.classList.remove('open'); overlay.classList.remove('open'); } }
@@ -268,7 +271,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
       dots.push(h);
     });
     const lbl = p => `<text x="${p.x}" y="${p.y + (p.parent ? (p.up ? -11 : 19) : -14)}" text-anchor="middle"${p.parent ? ' style="font-size:10.5px"' : ''}>${esc(p.label)}</text>`;
-    return `<svg class="xl-graph" viewBox="0 0 ${W} ${H}" role="img" aria-label="Red de conexiones">
+    return `<svg class="xl-graph" viewBox="0 0 ${W} ${H}" role="img" aria-label="${TX('Red de conexiones')}">
       ${lines.join('')}
       <circle class="n-me" cx="${cx}" cy="${cy}" r="12"/><text x="${cx}" y="${cy + 28}" text-anchor="middle" style="fill:var(--gold);font-size:13px">${esc(center)}</text>
       ${dots.map(p => `<g class="nd" data-b="${p.b}" data-c="${p.c}" data-v="${p.v}"><circle class="${p.ot ? 'n-ot' : 'n-nt'}" cx="${p.x}" cy="${p.y}" r="${p.parent ? 6 : 9}"/>${lbl(p)}</g>`).join('')}
@@ -277,7 +280,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
 
   async function open(book, chapter, verse) {
     ensureSheet();
-    sheet.innerHTML = '<div class="xl-grab"></div><div class="xl-kicker">Red bíblica</div><div class="xl-title">Cargando…</div>';
+    sheet.innerHTML = `<div class="xl-grab"></div><div class="xl-kicker">${TX('Red bíblica')}</div><div class="xl-title">${TX('Cargando…')}</div>`;
     overlay.classList.add('open'); requestAnimationFrame(() => sheet.classList.add('open'));
     const isNT = NT.has(book);
     const rows = (await rowsFor(book)).filter(r => isNT ? (r.nt_chapter === chapter && r.nt_verse === verse)
@@ -292,11 +295,11 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
         nodes.push({ key: hk, b: r.ot_book, c: r.ot_chapter, v: r.ot_verse, ot: true, label: refLabel(r.ot_book, r.ot_chapter, r.ot_verse) });
         rest.slice(0, 4).forEach(o => nodes.push({ parent: hk, b: o.nt_book, c: o.nt_chapter, v: o.nt_verse, label: refLabel(o.nt_book, o.nt_chapter, o.nt_verse) }));
         return `<div class="xl-card">
-          <div class="xl-row"><span class="xl-ref">${esc(refLabel(r.ot_book, r.ot_chapter, r.ot_verse, r.ot_verse_end))}</span><span class="xl-kind">${KIND[r.kind] || 'Conexión'}</span></div>
+          <div class="xl-row"><span class="xl-ref">${esc(refLabel(r.ot_book, r.ot_chapter, r.ot_verse, r.ot_verse_end))}</span><span class="xl-kind">${KIND[r.kind] || TX('Conexión')}</span></div>
           ${text ? `<div class="xl-text">${esc(text)}</div>` : ''}
           ${r.note ? `<div class="xl-note">${esc(r.note)}</div>` : ''}
-          <div class="xl-also"><button class="xl-go" data-go="${r.ot_book}|${r.ot_chapter}|${r.ot_verse}">Leer en contexto →</button>
-          ${rest.length ? `<span>También lo cita:</span>${rest.slice(0, 8).map(o => `<button class="xl-chip" data-go="${o.nt_book}|${o.nt_chapter}|${o.nt_verse}">${esc(refLabel(o.nt_book, o.nt_chapter, o.nt_verse))}</button>`).join('')}` : ''}</div>
+          <div class="xl-also"><button class="xl-go" data-go="${r.ot_book}|${r.ot_chapter}|${r.ot_verse}">${TX('Leer en contexto →')}</button>
+          ${rest.length ? `<span>${TX('También lo cita:')}</span>${rest.slice(0, 8).map(o => `<button class="xl-chip" data-go="${o.nt_book}|${o.nt_chapter}|${o.nt_verse}">${esc(refLabel(o.nt_book, o.nt_chapter, o.nt_verse))}</button>`).join('')}` : ''}</div>
         </div>`;
       }));
       cards = parts.join('');
@@ -305,28 +308,30 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
         const text = await verseText(r.nt_book, r.nt_chapter, r.nt_verse);
         nodes.push({ b: r.nt_book, c: r.nt_chapter, v: r.nt_verse, label: refLabel(r.nt_book, r.nt_chapter, r.nt_verse) });
         return `<div class="xl-card">
-          <div class="xl-row"><span class="xl-ref">${esc(refLabel(r.nt_book, r.nt_chapter, r.nt_verse))}</span><span class="xl-kind">${KIND[r.kind] || 'Conexión'}</span></div>
+          <div class="xl-row"><span class="xl-ref">${esc(refLabel(r.nt_book, r.nt_chapter, r.nt_verse))}</span><span class="xl-kind">${KIND[r.kind] || TX('Conexión')}</span></div>
           ${text ? `<div class="xl-text">${esc(text)}</div>` : ''}
           ${r.note ? `<div class="xl-note">${esc(r.note)}</div>` : ''}
-          <div class="xl-also"><button class="xl-go" data-go="${r.nt_book}|${r.nt_chapter}|${r.nt_verse}">Leer en contexto →</button></div>
+          <div class="xl-also"><button class="xl-go" data-go="${r.nt_book}|${r.nt_chapter}|${r.nt_verse}">${TX('Leer en contexto →')}</button></div>
         </div>`;
       }));
       cards = parts.join('');
     }
     const seen = new Set(); nodes = nodes.filter(nd => { const k = `${nd.parent || ''}>${nd.b}.${nd.c}.${nd.v}`; if (seen.has(k)) return false; seen.add(k); return true; });
     sheet.innerHTML = `<div class="xl-grab"></div>
-      <div class="xl-kicker">${isNT ? 'Red bíblica · el Tanaj en este versículo' : 'Red bíblica · cumplido en el Nuevo Testamento'}</div>
+      <div class="xl-kicker">${TX(isNT ? 'Red bíblica · el Tanaj en este versículo' : 'Red bíblica · cumplido en el Nuevo Testamento')}</div>
       <div class="xl-title">${esc(me)}</div>
       ${tipHtml()}
-      ${nodes.length ? graph(me, nodes) + `<div class="xl-legend"><span><i style="background:var(--gold)"></i>Este versículo</span><span><i style="background:color-mix(in srgb, var(--gold) 35%, var(--bg3));border:1px solid var(--gold)"></i>${isNT ? 'Pasaje del Tanaj' : 'Dónde se cumple'}</span>${isNT ? '<span><i style="background:var(--bg3);border:1px solid var(--text-dim)"></i>Otros que lo citan</span>' : ''}</div>` : ''}
-      ${cards || '<div class="xl-note">No hay conexiones registradas.</div>'}`;
+      ${nodes.length ? graph(me, nodes) + `<div class="xl-legend"><span><i style="background:var(--gold)"></i>${TX('Este versículo')}</span><span><i style="background:color-mix(in srgb, var(--gold) 35%, var(--bg3));border:1px solid var(--gold)"></i>${TX(isNT ? 'Pasaje del Tanaj' : 'Dónde se cumple')}</span>${isNT ? `<span><i style="background:var(--bg3);border:1px solid var(--text-dim)"></i>${TX('Otros que lo citan')}</span>` : ''}</div>` : ''}
+      ${cards || `<div class="xl-note">${TX('No hay conexiones registradas.')}</div>`}`;
     bindTip();
     sheet.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const [bb, c, v] = b.dataset.go.split('|'); goTo(bb, Number(c), Number(v)); });
     sheet.querySelectorAll('g.nd').forEach(g => g.onclick = () => goTo(g.dataset.b, Number(g.dataset.c), Number(g.dataset.v)));
   }
   function tipHtml() {
     try { if (localStorage.getItem('kodesh_xl_tip')) return ''; } catch (e) { return ''; }
-    return `<div class="xl-tip"><b>La red bíblica</b><br>Lo subrayado en el texto viene del Tanaj o se cumple en el Nuevo Testamento. Las palabras siguen abriendo el lexicón; la <b>✦</b> al final del versículo (o el aviso dentro del lexicón) abre estas conexiones. El punto del centro es el versículo que lees; alrededor, los pasajes con los que se conecta. Toca cualquiera para ir ahí.<br><b>✦ dorado</b> = profecía cumplida o cita · <b>punteado</b> = alusión<br><button type="button" data-tip-ok>Entendido</button></div>`;
+    return EN
+      ? `<div class="xl-tip"><b>The biblical web</b><br>Underlined verses come from the Tanakh or are fulfilled in the New Testament. Words still open the lexicon; the <b>✦</b> at the end of the verse (or the notice inside the lexicon) opens these connections. The center dot is the verse you are reading; around it are the passages it connects to. Tap any of them to go there.<br><b>Gold ✦</b> = fulfilled prophecy or quotation · <b>dotted</b> = allusion<br><button type="button" data-tip-ok>Got it</button></div>`
+      : `<div class="xl-tip"><b>La red bíblica</b><br>Lo subrayado en el texto viene del Tanaj o se cumple en el Nuevo Testamento. Las palabras siguen abriendo el lexicón; la <b>✦</b> al final del versículo (o el aviso dentro del lexicón) abre estas conexiones. El punto del centro es el versículo que lees; alrededor, los pasajes con los que se conecta. Toca cualquiera para ir ahí.<br><b>✦ dorado</b> = profecía cumplida o cita · <b>punteado</b> = alusión<br><button type="button" data-tip-ok>Entendido</button></div>`;
   }
   function bindTip() {
     const b = sheet && sheet.querySelector('[data-tip-ok]');
@@ -340,19 +345,19 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
     const rows = (await rowsFor(book)).filter(r => (isNT ? r.nt_chapter : r.ot_chapter) === chapter)
       .sort((a, b) => (isNT ? a.nt_verse - b.nt_verse : a.ot_verse - b.ot_verse) || (STRONG(b.kind) - STRONG(a.kind)));
     const count = k => rows.filter(r => r.kind === k).length;
-    const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const pl = (n, one, many) => `${n} ${TX(n === 1 ? one : many)}`;
     const items = rows.map(r => {
       const v = isNT ? r.nt_verse : r.ot_verse;
       const other = isNT ? refLabel(r.ot_book, r.ot_chapter, r.ot_verse, r.ot_verse_end) : refLabel(r.nt_book, r.nt_chapter, r.nt_verse);
       return `<button type="button" class="xl-item${STRONG(r.kind) ? '' : ' soft'}" data-v="${v}"><span class="v">${STRONG(r.kind) ? '✦ ' : ''}v. ${v}</span><span class="r">${esc(other)}${r.note ? `<br><span style="font-size:.8rem;color:var(--text-dim)">${esc(r.note)}</span>` : ''}</span><span class="t">${KIND[r.kind] || ''}</span></button>`;
     }).join('');
     sheet.innerHTML = `<div class="xl-grab"></div>
-      <div class="xl-kicker">${isNT ? 'Red bíblica · el Tanaj en este capítulo' : 'Red bíblica · cumplido en el Nuevo Testamento'}</div>
+      <div class="xl-kicker">${TX(isNT ? 'Red bíblica · el Tanaj en este capítulo' : 'Red bíblica · cumplido en el Nuevo Testamento')}</div>
       <div class="xl-title">${esc(bookName(book))} ${chapter}</div>
       ${tipHtml()}
       <div class="xl-sum">${count('cumplimiento') ? `<span>✦ ${pl(count('cumplimiento'), 'profecía cumplida', 'profecías cumplidas')}</span>` : ''}${count('cita') ? `<span>✦ ${pl(count('cita'), 'cita', 'citas')}</span>` : ''}${count('alusion') ? `<span>${pl(count('alusion'), 'alusión', 'alusiones')}</span>` : ''}</div>
-      ${items || '<div class="xl-note">No hay conexiones registradas en este capítulo.</div>'}
-      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.85rem;color:var(--text-mid)"><input type="checkbox" data-alu ${alusionesOn() ? 'checked' : ''}> Mostrar también las alusiones (punteado)</label>`;
+      ${items || `<div class="xl-note">${TX('No hay conexiones registradas en este capítulo.')}</div>`}
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.85rem;color:var(--text-mid)"><input type="checkbox" data-alu ${alusionesOn() ? 'checked' : ''}> ${TX('Mostrar también las alusiones (punteado)')}</label>`;
     overlay.classList.add('open'); requestAnimationFrame(() => sheet.classList.add('open'));
     bindTip();
     sheet.querySelectorAll('.xl-item').forEach(b => b.onclick = () => open(book, chapter, Number(b.dataset.v)));
