@@ -24,12 +24,26 @@
 
   let DATA = null, DET = rj('kodesh_pp_det', null), dataP = null, detP = null;
   const books = {};
+  // Completa el linaje con las personas y eslabones que faltan en los datos (Isaí, Ocozías, Yeshua…)
+  function patchLineage(j, ly) {
+    for (const [k, v] of Object.entries(ly.add || {})) if (!j.p[k]) j.p[k] = v;
+    const rr = k => (j.r[k] = j.r[k] || {});
+    for (const [c, rel, par] of ly.links || []) {
+      if (!j.p[c] || !j.p[par]) continue;
+      const up = rr(c)[rel] = rr(c)[rel] || []; if (!up.includes(par)) up.unshift(par);
+      const down = rr(par).hi = rr(par).hi || []; if (!down.includes(c)) (c === 'x_yeshua' ? down.unshift(c) : down.push(c));
+    }
+    for (const [k, list] of Object.entries(ly.he || {})) {
+      rr(k).he = [...new Set([...(rr(k).he || []), ...list])];
+      list.forEach(x => { if (j.p[x]) rr(x).he = [...new Set([k, ...(rr(x).he || [])])]; });
+    }
+  }
   let LY = new Set();       // linaje de Yeshua (Mateo 1 y Lucas 3) — se marca en dorado
   function loadData() {
     if (!dataP) dataP = Promise.all([
       fetch('./data/personas.json').then(r => r.json()),
       fetch('./data/linaje-yeshua.json').then(r => r.json()).catch(() => null),
-    ]).then(([j, ly]) => { if (ly && ly.ids) LY = new Set(ly.ids); return (DATA = j); }).catch(() => { dataP = null; return null; });
+    ]).then(([j, ly]) => { if (ly && ly.ids) { LY = new Set(ly.ids); patchLineage(j, ly); } return (DATA = j); }).catch(() => { dataP = null; return null; });
     return dataP;
   }
   function loadBook(b) { if (!books[b]) books[b] = fetch(`./data/personas/${b}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})); return books[b]; }
@@ -138,7 +152,9 @@ html.pp-off .pp-row { display: none !important; }
     (r.pr || []).forEach(x => fam.push([x, p[1] === 'F' ? 'esposo' : 'esposa'])); (r.he || []).forEach(x => fam.push([x, 'hermano/a']));
     (r.hi || []).forEach(x => fam.push([x, 'hijo/a']));
     const nt = !NT.has((p[4][0] || '').split(':')[0]) ? p[4].filter(k => NT.has(k.split(':')[0])) : [];
-    return `${d && d.resumen ? `<p class="pp-p">${esc(d.resumen)}</p>` : `<p class="pp-p" style="color:var(--text-mid,#b8af9c)">Aparece en ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'} de la Biblia.</p>`}
+    const intro = id === 'x_yeshua' ? '«Hijo de David, hijo de Abraham» (Mateo 1:1). Mateo 1 y Lucas 3 recorren su genealogía; aquí puedes subir por ella hasta Adán.'
+      : p[2] ? `Aparece en ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'} de la Biblia.` : 'Nombrado en la genealogía de Yeshua.';
+    return `${d && d.resumen ? `<p class="pp-p">${esc(d.resumen)}</p>` : `<p class="pp-p" style="color:var(--text-mid,#b8af9c)">${esc(intro)}</p>`}
       ${fam.length ? `<div class="pp-sec">Familia</div><div class="pp-chips">${fam.slice(0, 14).map(([x, l]) => chip(x, l)).join('')}</div>` : ''}
       ${d && d.momentos ? `<div class="pp-sec">Momentos clave</div>${d.momentos.map(m => `<div class="pp-mom" data-go="${esc(m.ref)}"><b>${esc(nice(m.ref))}</b><span>${esc(m.t)}</span></div>`).join('')}` : ''}
       ${nt.length ? `<div class="pp-sec">En el Nuevo Testamento</div><div class="pp-refs">${nt.slice(0, 16).map(k => `<a class="pp-ref" href="${readUrl(k)}">${esc(nice(k))}</a>`).join('')}</div>` : ''}
@@ -202,10 +218,10 @@ html.pp-off .pp-row { display: none !important; }
     if (d && d.edades) tabs.push(['vida', 'Línea de vida']);
     if (!tabs.some(t => t[0] === tab)) tab = 'ficha';
     const body = tab === 'familia' ? treeHtml(id) : tab === 'red' ? netHtml(id) : tab === 'vida' ? lifeHtml(id) : fichaHtml(id);
-    s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${p[1] === 'F' ? 'Mujer' : 'Hombre'} de la Biblia · ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'}</div>
+    s.innerHTML = `<div class="pp-head"><div><div class="pp-kick">${id === 'x_yeshua' ? 'El Mesías' : `${p[1] === 'F' ? 'Mujer' : 'Hombre'} de la Biblia${p[2] ? ` · ${p[2]} ${p[2] === 1 ? 'versículo' : 'versículos'}` : ''}`}</div>
         <div class="pp-h">${esc(p[0])} ${d && d.heb ? `<span class="pp-heb" lang="${d.heb.strong[0] === 'H' ? 'he' : 'el'}">${esc(d.heb.lemma)}</span>` : ''}</div>
         ${d && d.heb && d.heb.sig ? `<div class="pp-sig">${esc(d.heb.sig)}</div>` : ''}
-        ${LY.has(id) ? '<div class="pp-lyb">✦ Linaje de Yeshua</div>' : ''}</div>
+        ${LY.has(id) && id !== 'x_yeshua' ? '<div class="pp-lyb">✦ Linaje de Yeshua</div>' : ''}</div>
         <button class="pp-x" data-close aria-label="Cerrar">✕</button></div>
       ${hist.length ? `<div class="pp-nav"><button class="pp-back" data-back>‹ Volver a ${esc(nameOf(hist[hist.length - 1].id))}</button>${hist.length > 1 ? `<button class="pp-back home" data-home>⌂ ${esc(nameOf(hist[0].id))}</button>` : ''}</div>` : ''}
       <div class="pp-tabs">${tabs.map(([k, l]) => `<button class="pp-tab${tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
