@@ -4868,7 +4868,7 @@ async function purchasePremiumDirect() {
 
     const preCheckInfo = await PurchasesSDK.getCustomerInfo();
     if (preCheckInfo?.entitlements?.active?.[RC_ENTITLEMENT]) {
-      throw new Error(`Esta ${rcStoreName()} ya tiene una suscripción KODESH Premium activa asociada a otra cuenta. Si es tuya, inicia sesión con esa cuenta o contáctanos para transferirla.`);
+      throw new Error(TT('Esta {s} ya tiene una suscripción KODESH Premium activa asociada a otra cuenta. Si es tuya, inicia sesión con esa cuenta o contáctanos para transferirla.', { s: TT(rcStoreName()) }));
     }
 
     const { current } = await PurchasesSDK.getOfferings();
@@ -5084,6 +5084,8 @@ loadStrongs();
    STATE
 ════════════════════════════════════ */
 const BASE_VERSION = window.KodeshI18n ? KodeshI18n.version : 'RVR60';
+// Frases con valores (i18n.js): TT('Te faltan {n} de maná', { n }) — en español queda igual, en inglés se traduce entera
+function TT(s, v) { if (window.KodeshI18n) return KodeshI18n.t(s, v); let r = s; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; }
 let state = {
   testament: 'AT',
   currentBook: 'GEN',
@@ -5284,11 +5286,11 @@ function insertParashaBreak() {
   const el = document.createElement('a');
   el.className = 'parasha-break';
   el.href = 'parashot.html?p=' + Number(p.num);
-  el.setAttribute('aria-label', `Aquí comienza la parashá ${p.nombre}`);
+  el.setAttribute('aria-label', TT('Aquí comienza la parashá {p}', { p: TT(p.nombre) }));
   el.innerHTML = `
     <span class="pb-line" aria-hidden="true"></span>
     <span class="pb-body">
-      <span class="pb-kicker">Comienza la parashá ${Number(p.num)}</span>
+      <span class="pb-kicker">${TT('Comienza la parashá {n}', { n: Number(p.num) })}</span>
       <span class="pb-heb" lang="he">${escHtml(p.heb || '')}</span>
       <span class="pb-name">${escHtml(p.nombre)}<span class="pb-sig"> · ${escHtml(p.sig || '')}</span></span>
     </span>
@@ -6237,7 +6239,7 @@ function shareLexicon() {
   const translit = document.getElementById('lexTranslit').textContent;
   const strongs = document.getElementById('lexStrongs').textContent;
   const def = document.getElementById('lexDef').textContent;
-  const text = `${lemma} (${translit}) — ${strongs}\n${def}\n\nEstudiado en KODESH · kodeshbible.com`;
+  const text = `${lemma} (${translit}) — ${strongs}\n${def}\n\n${TT('Estudiado en KODESH · kodeshbible.com')}`;
   if (navigator.share) {
     navigator.share({ text }).catch(() => {});
   } else {
@@ -6457,9 +6459,9 @@ function renderLimitManaOffer(type) {
   box.style.display = 'block';
   box.innerHTML = `
     <div style="font-family: var(--font-display);font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">✨ O usa tu maná</div>
-    <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px">1 consulta más por <b style="color:var(--gold)">${price} maná</b> · tienes ${s.mana.toLocaleString('es')}</div>
+    <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:10px">${TT('1 consulta más por {p} · tienes {n}', { p: `<b style="color:var(--gold)">${TT('{n} maná', { n: price })}</b>`, n: s.mana.toLocaleString('es') })}</div>
     <button ${can ? '' : 'disabled'} style="width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family: var(--font-display);font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;padding:11px;border-radius:8px;cursor:${can ? 'pointer' : 'default'};${can ? '' : 'opacity:0.45;'}"
-      onclick="redeemFromLimit('${type}')">${can ? `Canjear ${price} maná` : `Te faltan ${price - s.mana} de maná`}</button>`;
+      onclick="redeemFromLimit('${type}')">${can ? TT('Canjear {n} maná', { n: price }) : TT('Te faltan {n} de maná', { n: price - s.mana })}</button>`;
 }
 
 async function redeemFromLimit(type) {
@@ -6581,7 +6583,7 @@ async function renderInterlinearInline(bookId, chapterNum, rvVerses) {
     if (!stillHere()) return;
     box.innerHTML = e.code === 'not_available'
       ? `<div class="interlinear-locked"><div class="lock-big">📜</div><div class="il-locked-text">${escHtml(e.message || 'El interlineal aún no está disponible para este capítulo.')}</div></div>`
-      : `<div class="interlinear-locked"><div class="il-locked-text">No se pudo cargar el interlineal. ${escHtml(e.message || '')}</div>
+      : `<div class="interlinear-locked"><div class="il-locked-text">${TT('No se pudo cargar el interlineal.')} ${escHtml(e.message || '')}</div>
           <button class="btn-go-premium" onclick="toggleInterlinearMode(true)">Reintentar</button></div>`;
     return;
   }
@@ -6806,7 +6808,7 @@ function showDailyPromise() {
       currentPromise = { libro: verse.book, cap: verse.chapter, verso: verse.v1, ref: verse.refText, verse };
       document.getElementById('promiseLabel').textContent = '✦ VERSÍCULO DEL DÍA';
       document.getElementById('promiseHebrew').textContent = verse.word ? verse.word.lemma : '';
-      document.getElementById('promiseText').textContent = `«${verse.text}»`;
+      document.getElementById('promiseText').textContent = BASE_VERSION === 'WMB' ? `“${verse.text}”` : `«${verse.text}»`;
       document.getElementById('promiseRef').textContent = verse.refText;
       listen.hidden = false;
       document.getElementById('promisePlay').hidden = !verse.audio;
@@ -7361,9 +7363,9 @@ function renderManaSection() {
   const canBuy = s.shields < max && s.mana >= price;
   const shieldIcons = Array.from({ length: max }, (_, i) =>
     `<span style="opacity:${i < s.shields ? 1 : 0.2};font-size:1.3rem">🛡️</span>`).join('');
-  const btnLabel = s.shields >= max ? 'Máximo de protectores'
-    : s.mana >= price ? `Comprar protector · ${price} maná`
-    : `Te faltan ${price - s.mana} de maná`;
+  const btnLabel = s.shields >= max ? TT('Máximo de protectores')
+    : s.mana >= price ? TT('Comprar protector · {n} maná', { n: price })
+    : TT('Te faltan {n} de maná', { n: price - s.mana });
   const atRisk = s.current > 0 && !s.readToday && !s.isShabbat;
   const restingShabbat = s.isShabbat && !s.readToday;
   // Parashá de la semana
@@ -7380,13 +7382,13 @@ function renderManaSection() {
       <div style="grid-column:span 2;background:var(--bg3);border:1px solid ${pa.done ? 'var(--green)' : 'var(--border)'};border-radius:10px;padding:14px;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px">
           <div style="font-family: var(--font-display);font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">📜 Parashá de la semana</div>
-          <div style="font-size:0.75rem;color:${pa.done ? 'var(--green)' : 'var(--gold)'}">${pa.done ? '✓ completada' : `+${pa.reward} maná`}</div>
+          <div style="font-size:0.75rem;color:${pa.done ? 'var(--green)' : 'var(--gold)'}">${pa.done ? TT('✓ completada') : TT('+{n} maná', { n: pa.reward })}</div>
         </div>
-        <div style="font-family: var(--font-display);font-size:0.85rem;color:var(--text);margin-bottom:8px">${names} · ${pa.read}/${pa.total} capítulos</div>
+        <div style="font-family: var(--font-display);font-size:0.85rem;color:var(--text);margin-bottom:8px">${(pa.names || []).map(x => TT(x)).join('–')} · ${TT('{a}/{b} capítulos', { a: pa.read, b: pa.total })}</div>
         <div style="background:var(--bg2);border-radius:6px;height:6px;overflow:hidden;margin-bottom:${pa.done ? 0 : 10}px">
           <div style="height:100%;width:${pct}%;background:${pa.done ? 'var(--green)' : 'linear-gradient(90deg,var(--gold-dim),var(--gold))'};border-radius:6px"></div>
         </div>
-        ${pa.done ? '' : `<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:6px">Léela completa antes del ${new Date(pa.reading_day + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short' })}. Te faltan:</div>
+        ${pa.done ? '' : `<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:6px">${TT('Léela completa antes del {d}. Te faltan:', { d: new Date(pa.reading_day + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short' }) })}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">${missing}${(pa.missing || []).length > 6 ? ` <span style="font-size:0.7rem;color:var(--text-dim)">+${pa.missing.length - 6}</span>` : ''}</div>`}
       </div>`;
   }
@@ -7399,7 +7401,7 @@ function renderManaSection() {
       style="flex:1;min-width:0;background:${ok ? 'var(--gold-glow)' : 'transparent'};border:1px solid ${ok ? 'var(--gold-dim)' : 'var(--border)'};
       color:${ok ? 'var(--gold)' : 'var(--text-dim)'};border-radius:8px;padding:8px 4px;cursor:${ok ? 'pointer' : 'default'};line-height:1.3">
       <div style="font-family: var(--font-display);font-size:0.55rem;letter-spacing:1px;text-transform:uppercase">${label}</div>
-      <div style="font-size:0.7rem">${cp[type]} maná${cr[type] ? ` · tienes ${cr[type]}` : ''}</div>
+      <div style="font-size:0.7rem">${TT('{n} maná', { n: cp[type] })}${cr[type] ? ` · ${TT('tienes {n}', { n: cr[type] })}` : ''}</div>
     </button>`;
   };
   const creditsHtml = `
@@ -7418,15 +7420,15 @@ function renderManaSection() {
     </div>
     <div class="stat-card">
       <div class="stat-card-num" style="display:flex;gap:4px;justify-content:center">${shieldIcons}</div>
-      <div class="stat-card-label">Protectores ${s.shields}/${max}</div>
+      <div class="stat-card-label">${TT('Protectores {a}/{b}', { a: s.shields, b: max })}</div>
     </div>
     <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
       <div style="font-size:0.8rem;color:var(--text-dim);line-height:1.5;margin-bottom:12px">
-        ${atRisk ? `<div style="color:#f0a040;margin-bottom:6px">🔥 Lee un capítulo hoy para mantener tu racha de ${s.current} día${s.current === 1 ? '' : 's'}${s.shields ? ' (si no, se usará un protector)' : ''}.</div>` : ''}
+        ${atRisk ? `<div style="color:#f0a040;margin-bottom:6px">🔥 ${TT(s.current === 1 ? 'Lee un capítulo hoy para mantener tu racha de {n} día' : 'Lee un capítulo hoy para mantener tu racha de {n} días', { n: s.current })}${s.shields ? ' ' + TT('(si no, se usará un protector)') : ''}.</div>` : ''}
         ${restingShabbat && s.current > 0 ? `<div style="color:var(--gold);margin-bottom:6px">🕯️ Shabat shalom. Hoy tu racha descansa contigo: no se pierde aunque no leas.</div>` : ''}
-        Ganas <b style="color:var(--gold)">10 maná</b> por capítulo (hasta 5 al día), <b style="color:var(--gold)">+20</b> al cumplir tu meta diaria y bonos a los 7, 30, 100 y 365 días seguidos.
-        Un protector cubre un día sin leer y se usa solo.${s.premium ? ' Con Premium recibes 1 gratis cada mes 💎' : ''}
-        El Shabat nunca rompe tu racha 🕯️ y completar la parashá de la semana da maná extra.
+        ${TT('Ganas {a} por capítulo (hasta 5 al día), {b} al cumplir tu meta diaria y bonos a los 7, 30, 100 y 365 días seguidos.', { a: `<b style="color:var(--gold)">${TT('{n} maná', { n: 10 })}</b>`, b: '<b style="color:var(--gold)">+20</b>' })}
+        ${TT('Un protector cubre un día sin leer y se usa solo.')}${s.premium ? ' ' + TT('Con Premium recibes 1 gratis cada mes 💎') : ''}
+        ${TT('El Shabat nunca rompe tu racha 🕯️ y completar la parashá de la semana da maná extra.')}
       </div>
       <button onclick="buyStreakShield()" ${canBuy ? '' : 'disabled'}
         style="width:100%;background:${canBuy ? 'var(--gold-glow)' : 'transparent'};border:1px solid ${canBuy ? 'var(--gold)' : 'var(--border)'};
@@ -7624,7 +7626,7 @@ function renderProfileStats() {
   const todayPlanHtml = nextChapters.length > 0 ? `
     <div style="grid-column:span 2;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
       <div style="font-family: var(--font-display);font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">
-        📅 Plan de hoy — ${todayRead}/${goalChapters} cap. leídos
+        📅 ${TT('Plan de hoy — {a}/{b} cap. leídos', { a: todayRead, b: goalChapters })}
       </div>
       <div style="background:var(--bg2);border-radius:6px;height:6px;margin-bottom:12px;overflow:hidden">
         <div style="height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));width:${todayPct}%;border-radius:6px;transition:width 0.5s"></div>
@@ -8070,7 +8072,7 @@ function openVerseSheet(book, chapter, verse, versesList) {
   document.getElementById('verseSheetRef').textContent = formatVerseRange(bookName, chapter, verses);
   if (multi) {
     const t = verseTextFor(verses[0]);
-    document.getElementById('verseSheetText').textContent = `«${t.length > 120 ? t.slice(0, 117) + '…' : t} …»`;
+    document.getElementById('verseSheetText').textContent = (BASE_VERSION === 'WMB' ? '“{t} …”' : '«{t} …»').replace('{t}', t.length > 120 ? t.slice(0, 117) + '…' : t);
     document.getElementById('verseSheetNote').value = '';
     renderVerseSheetColors();
     document.getElementById('verseSheetOverlay').classList.add('open');
@@ -8081,7 +8083,7 @@ function openVerseSheet(book, chapter, verse, versesList) {
   const vEl = document.getElementById(`v-${verse}`);
   let vText = '';
   if (vEl) { const c = vEl.cloneNode(true); c.querySelectorAll('.verse-num, .bookmark-dot').forEach(n => n.remove()); vText = c.textContent.trim().replace(/\s+/g, ' '); }
-  document.getElementById('verseSheetText').textContent = vText ? `«${vText.length > 220 ? vText.slice(0, 217) + '…' : vText}»` : '';
+  document.getElementById('verseSheetText').textContent = vText ? (BASE_VERSION === 'WMB' ? '“{t}”' : '«{t}»').replace('{t}', vText.length > 220 ? vText.slice(0, 217) + '…' : vText) : '';
 
   renderVerseSheetColors();
 

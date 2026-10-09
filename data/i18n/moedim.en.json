@@ -579,5 +579,12 @@
 "Esta semana": "This week",
 "Comienza al atardecer": "Begins at sunset",
 "elegir mi ciudad": "choose my city",
-"Shabat shalom · termina en": "Shabbat shalom · ends in"
+"Shabat shalom · termina en": "Shabbat shalom · ends in",
+"FRI": "FRI",
+"MON": "MON",
+"SHABBAT": "SHABBAT",
+"SUN": "SUN",
+"THU": "THU",
+"TUE": "TUE",
+"WED": "WED"
 }

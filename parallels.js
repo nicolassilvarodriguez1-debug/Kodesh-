@@ -31,7 +31,7 @@
   const ev = id => DATA && DATA.events.find(e => e.id === id);
   async function bibleText() {
     if (typeof loadBibleData === 'function') return loadBibleData();
-    if (!window.__plBible) window.__plBible = fetch('./biblia-rvr.json').then(r => r.json());
+    if (!window.__plBible) window.__plBible = fetch(window.KodeshI18n ? KodeshI18n.bible : './biblia-rvr.json').then(r => r.json());
     return window.__plBible;
   }
 

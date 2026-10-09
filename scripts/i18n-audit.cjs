@@ -33,9 +33,44 @@ const STEPS = [
   ['ciudad', 'index.html', "KodeshHome.hide(); KodeshMoedim.pickPlace(() => {})"],
   ['luna', 'index.html', "KodeshHome.hide(); KodeshLuna.open()"],
   ['luna · abajo', 'index.html', "KodeshHome.hide(); KodeshLuna.open().then(() => { const b = document.querySelector('.ln-ov .ln-body, .ln-ov [class*=scroll], .ln-ov'); if (b) b.scrollTop = 99999; })"],
+  ['ciclo (parashot)', 'parashot.html', ''],
+  ['ciclo · abajo', 'parashot.html', "window.scrollTo(0, 99999)"],
+  ['perfil (página)', 'profile.html', ''],
+  ['estudio (página)', 'estudio.html', ''],
+  ['lexicón (página)', 'lexicon.html', ''],
+  ['estudio · cuaderno', 'estudio.html', "createStudy('notebook')"],
+  ['estudio · lienzo', 'estudio.html', "createStudy('canvas')"],
+  ['estudio · biblia', 'estudio.html', "createStudy('notebook').then(() => togglePanel('left'))"],
+  ['estudio · asistente', 'estudio.html', "createStudy('notebook').then(() => togglePanel('right'))"],
+  ['estudio · menú', 'estudio.html', "createStudy('notebook').then(() => toggleMenu({ stopPropagation(){}, preventDefault(){} }))"],
+  ['actividades', 'actividades.html', ''],
+  ['onboarding', 'onboarding.html', ''],
+  ['ayuda → help', 'ayuda.html', ''],
+  ['calendario → en', 'calendario-biblico.html', ''],
+  ['términos → en', 'terminos.html', ''],
+  ['privacidad → en', 'privacidad.html', ''],
+  ['eliminar cuenta → en', 'eliminar-cuenta.html', ''],
+  ['cuenta · inicio', 'index.html', ''],
+  ['cuenta · perfil', 'index.html', "KodeshHome.hide(); openProfile()"],
+  ['cuenta · perfil marcadores', 'index.html', "KodeshHome.hide(); openProfile(); switchProfileTab('bookmarks')"],
+  ['cuenta · perfil notas', 'index.html', "KodeshHome.hide(); openProfile(); switchProfileTab('notes')"],
+  ['cuenta · historial', 'index.html', "KodeshHome.hide(); typeof openHistory === 'function' && openHistory()"],
+  ['cuenta · premium', 'index.html', "KodeshHome.hide(); typeof openPremium === 'function' ? openPremium() : (typeof showPaywall === 'function' && showPaywall())"],
+  ['cuenta · página perfil', 'profile.html', ''],
+  ['cuenta · ciclo', 'parashot.html', ''],
+  ['cuenta · estudio', 'estudio.html', ''],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];
+const STUB_USER = `window.__STUB_SESSION = { access_token: 'x', user: { id: '00000000-0000-0000-0000-000000000001', email: 'test@kodesh.app', user_metadata: { full_name: 'Test' } } };`;
+const STUB = `(function(){
+  const res = { data: [], error: null, count: 0 };
+  const chain = () => new Proxy(function(){}, { get: (t, k) => k === 'then' ? (ok, ko) => Promise.resolve(res).then(ok, ko) : (k === 'single' || k === 'maybeSingle') ? () => Promise.resolve({ data: null, error: null }) : () => chain(), apply: () => chain() });
+  const S = window.__STUB_SESSION || null;
+  const auth = { getSession: async () => ({ data: { session: S }, error: null }), getUser: async () => ({ data: { user: S && S.user }, error: null }),
+    onAuthStateChange: (cb) => { if (S) setTimeout(() => cb('SIGNED_IN', S), 50); return { data: { subscription: { unsubscribe() {} } } }; }, signOut: async () => ({}), mfa: { listFactors: async () => ({ data: { all: [], totp: [] } }), getAuthenticatorAssuranceLevel: async () => ({ data: {} }) } };
+  window.supabase = { createClient: () => ({ auth, from: () => chain(), rpc: () => chain(), storage: { from: () => chain() }, functions: { invoke: async () => ({ data: null }) }, channel: () => chain(), removeChannel() {} }) };
+})();`;
 const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x => x.split('::'));
 
 (async () => {
@@ -44,7 +79,11 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
   const ONLY = process.env.AUDIT_ONLY ? new RegExp(process.env.AUDIT_ONLY, 'i') : null;
   for (const [name, page, js] of [...STEPS, ...EXTRA].filter(x => !ONLY || ONLY.test(x[0]))) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
-    await ctx.addInitScript((LANG) => { try { localStorage.setItem('kodesh_lang', LANG); localStorage.setItem('welcome_seen', '1'); localStorage.setItem('kodesh_home_cal', '1'); } catch (e) {} }, process.env.AUDIT_LANG || 'en');
+    await ctx.addInitScript((LANG) => { try { localStorage.setItem('kodesh_lang', LANG); localStorage.setItem('welcome_seen', '1'); localStorage.setItem('kodesh_home_cal', '1'); localStorage.setItem('kodesh_guest', '1'); } catch (e) {} }, process.env.AUDIT_LANG || 'en');
+    // Sin red: Supabase de mentira (sin sesión) para que las páginas terminen de pintar
+    await ctx.route(/supabase-js|@supabase/, r => r.fulfill({ contentType: 'application/javascript', body: (name.startsWith('cuenta') ? STUB_USER : '') + STUB }));
+    await ctx.route(/\/api\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+    await ctx.route(/supabase\.co\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
     const p = await ctx.newPage();
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + page, { waitUntil: 'domcontentloaded' }).catch(() => {});

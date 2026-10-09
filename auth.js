@@ -516,13 +516,15 @@ function userTimezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (e) { return null; }
 }
 
+// Frases con valores (i18n.js): en inglés se traducen enteras
+const TA = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
 const STREAK_NOTICE_TEXT = {
-  shield_used: n => `🛡️ Tu protector salvó tu racha de ${n.streak} día${n.streak === 1 ? '' : 's'}` +
-    (n.days > 1 ? ` (${n.days} días cubiertos)` : ''),
-  streak_lost: n => `Tu racha de ${n.streak} día${n.streak === 1 ? '' : 's'} terminó. ¡Hoy empieza una nueva! 📖`,
-  milestone: n => `🎉 ¡${n.streak} días seguidos! +${n.mana} maná`,
+  shield_used: n => TA(n.streak === 1 ? '🛡️ Tu protector salvó tu racha de {n} día' : '🛡️ Tu protector salvó tu racha de {n} días', { n: n.streak }) +
+    (n.days > 1 ? ' ' + TA('({n} días cubiertos)', { n: n.days }) : ''),
+  streak_lost: n => TA(n.streak === 1 ? 'Tu racha de {n} día terminó. ¡Hoy empieza una nueva! 📖' : 'Tu racha de {n} días terminó. ¡Hoy empieza una nueva! 📖', { n: n.streak }),
+  milestone: n => TA('🎉 ¡{n} días seguidos! +{m} maná', { n: n.streak, m: n.mana }),
   premium_shield: () => '💎 Premium: recibiste tu protector de racha del mes',
-  parasha: n => `📜 ¡Completaste ${(n.names || []).join('–')}! +${n.mana} maná`,
+  parasha: n => TA('📜 ¡Completaste {p}! +{m} maná', { p: (n.names || []).map(x => TA(x)).join('–'), m: n.mana }),
 };
 
 function showStreakNotices(notices) {
@@ -586,10 +588,10 @@ async function updateStreak() {
   const gained = userStreak.mana - before.mana;
   if (userStreak.current > before.current || (!before.readToday && userStreak.readToday)) {
     showToast(userStreak.current > 1
-      ? `🔥 ¡${userStreak.current} días seguidos leyendo!${gained > 0 ? ` · +${gained} maná` : ''}`
-      : `✨ ¡Nuevo día de lectura!${gained > 0 ? ` · +${gained} maná` : ''}`);
+      ? TA('🔥 ¡{n} días seguidos leyendo!', { n: userStreak.current }) + (gained > 0 ? ' · ' + TA('+{n} maná', { n: gained }) : '')
+      : TA('✨ ¡Nuevo día de lectura!') + (gained > 0 ? ' · ' + TA('+{n} maná', { n: gained }) : ''));
   } else if (gained > 0) {
-    showToast(`✨ +${gained} maná`);
+    showToast('✨ ' + TA('+{n} maná', { n: gained }));
   }
   renderStreakBadge();
   if (document.getElementById('profileOverlay')?.classList.contains('open') && typeof renderProfileStats === 'function') {
@@ -605,13 +607,13 @@ async function buyStreakShield() {
     if (error) throw error;
     if (!data.ok) {
       showToast(data.error === 'max_shields'
-        ? `Ya tienes el máximo de ${userStreak.maxShields} protectores 🛡️`
-        : `Te faltan ${userStreak.shieldPrice - (data.mana || 0)} de maná. ¡Sigue leyendo! 📖`);
+        ? TA('Ya tienes el máximo de {n} protectores 🛡️', { n: userStreak.maxShields })
+        : TA('Te faltan {n} de maná. ¡Sigue leyendo! 📖', { n: userStreak.shieldPrice - (data.mana || 0) }));
       return;
     }
     userStreak.mana = data.mana;
     userStreak.shields = data.shields;
-    showToast(`🛡️ ¡Protector comprado! Tienes ${data.shields}`);
+    showToast(TA('🛡️ ¡Protector comprado! Tienes {n}', { n: data.shields }));
     if (typeof renderProfileStats === 'function') { try { renderProfileStats(); } catch (e) {} }
   } catch (e) {
     showToast('No se pudo comprar el protector. Intenta de nuevo.');
@@ -641,12 +643,12 @@ async function buyAiCredit(type) {
     if (!data.ok) {
       showToast(data.error === 'max_credits'
         ? 'Ya tienes 10 consultas guardadas de ese tipo'
-        : `Te faltan ${(data.price || 0) - (data.mana || 0)} de maná. ¡Sigue leyendo! 📖`);
+        : TA('Te faltan {n} de maná. ¡Sigue leyendo! 📖', { n: (data.price || 0) - (data.mana || 0) }));
       return false;
     }
     userStreak.mana = data.mana;
     userStreak.credits = { ...userStreak.credits, [type]: data.credits };
-    showToast(`✨ +1 consulta de ${AI_CREDIT_LABEL[type]} (tienes ${data.credits})`);
+    showToast(TA('✨ +1 consulta de {t} (tienes {n})', { t: TA(AI_CREDIT_LABEL[type]), n: data.credits }));
     if (typeof renderProfileStats === 'function' && document.getElementById('profileOverlay')?.classList.contains('open')) {
       try { renderProfileStats(); } catch (e) {}
     }

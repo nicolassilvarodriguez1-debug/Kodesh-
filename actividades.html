@@ -3,6 +3,9 @@
 <head>
 <script src="/native-insets.js"></script>
 <meta charset="UTF-8">
+<script src="/bible-ref.js"></script>
+<script src="/i18n.js"></script>
+<script src="/i18n-en.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · Niños del Reino</title>
 <link rel="manifest" href="/manifest.json">
@@ -151,7 +154,7 @@ function setFilter(filter, btn) {
 
 function renderActividades() {
   const filtered = activeFilter === 'todos' ? allActividades : allActividades.filter(a => a.categoria === activeFilter);
-  document.getElementById('countLabel').textContent = `${filtered.length} actividad${filtered.length !== 1 ? 'es' : ''}`;
+  document.getElementById('countLabel').textContent = window.KodeshI18n ? KodeshI18n.t(filtered.length === 1 ? '{n} actividad' : '{n} actividades', { n: filtered.length }) : `${filtered.length} actividad${filtered.length !== 1 ? 'es' : ''}`;
   const grid = document.getElementById('actGrid');
   if (!filtered.length) {
     grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-title">Sin actividades</div><div class="empty-sub">Pronto habrá contenido en esta categoría</div></div>`;

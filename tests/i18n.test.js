@@ -41,3 +41,18 @@ test('WMB: mismo formato y versículos que la RVR, con YHWH', () => {
   assert.match(W.MAL['4']['5'], /Elijah/);
   assert.ok(!/\bLORD\b/.test(JSON.stringify(W.GEN)));
 });
+
+// Garantía de «sin mezcla»: todo texto de las funciones activas en inglés tiene traducción (o es técnico).
+// Si agregas un texto nuevo en español, corre scripts/i18n-extract.py <módulo> y tradúcelo en data/i18n/<módulo>.en.json.
+import { spawnSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+test('idioma: los módulos activos en inglés no tienen textos sin traducir', () => {
+  for (const mod of ['core', 'tiempo', 'moedim', 'parashot', 'profile', 'ayuda', 'estudio']) {
+    const out = path.join(os.tmpdir(), `i18n-${mod}-${process.pid}.json`);
+    const r = spawnSync('python3', ['scripts/i18n-extract.py', mod, out], { cwd: new URL('..', import.meta.url).pathname, encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    const todo = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.deepEqual(todo.slice(0, 10), [], `${mod}: ${todo.length} textos sin traducir`);
+  }
+});

@@ -1,3 +1,4 @@
+const TXs = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
 /* ════════════════════════════════════════════════════════════════
    KODESH · Lienzo de estudio
    Un estudio = { id, title, format: 'notebook'|'free', template, pages, chat, ref }
@@ -275,7 +276,7 @@ function bosquejoRemovePoint(pageId) {
   const Lold = bosquejoLayout(n);
   let series = bosquejoSeries(head);
   const last = findBq(Lold, b => b.point === n);
-  if (series[last.k] && series[last.k].els.some(e => inBox(e, last.b))) { toast(`El punto ${roman(n)} tiene contenido; bórralo primero`); return; }
+  if (series[last.k] && series[last.k].els.some(e => inBox(e, last.b))) { toast(TXs('El punto {n} tiene contenido; bórralo primero', { n: roman(n) })); return; }
   snapshot();
   const from = findBq(Lold, b => b.conclusion);
   head.tpl = { ...head.tpl, points: n - 1 };
@@ -621,7 +622,7 @@ function renameStudy(v) {
 }
 async function deleteStudy() {
   hideMenu();
-  if (!study || !window.confirm(`¿Borrar «${study.title}»? No se puede deshacer.`)) return;
+  if (!study || !window.confirm(TXs('¿Borrar «{t}»? No se puede deshacer.', { t: study.title }))) return;
   const id = study.id;
   try { localStorage.removeItem(studyKey(id)); } catch (e) {}
   studiesIndex = studiesIndex.filter(x => x.id !== id);
@@ -742,7 +743,7 @@ function renderPages() {
   $('pages').innerHTML = study.pages.map((p, i) => { const pg = pageSize(p); return `
     <div class="page-wrap" style="width:${pg.w * s}px;height:${pg.h * s}px" data-wrap="${p.id}">
       <div class="page ${free ? 'free' : ''}" id="page-${p.id}" data-page="${p.id}" style="width:${pg.w}px;height:${pg.h}px;transform:scale(${s})"></div>
-      ${free ? '' : `<span class="page-num">Página ${i + 1} de ${study.pages.length}</span>`}
+      ${free ? '' : `<span class="page-num">${window.KodeshI18n ? KodeshI18n.t('Página {a} de {b}', { a: i + 1, b: study.pages.length }) : `Página ${i + 1} de ${study.pages.length}`}</span>`}
     </div>`; }).join('') + (free ? '' : `
     <div class="add-page">
       <button class="pill" onclick="addPage('lined')">+ Página</button>
@@ -1502,7 +1503,7 @@ async function initBible() {
   initVerseTouchDrag();
   setVerseStyle(verseStyle());
   if (!BIBLE) {
-    try { BIBLE = await (await fetch('./biblia-rvr.json')).json(); }
+    try { BIBLE = await (await fetch(window.KodeshI18n ? KodeshI18n.bible : './biblia-rvr.json')).json(); }
     catch (e) { $('bibleList').innerHTML = '<div class="hint">No se pudo cargar la Biblia.</div>'; return; }
   }
   loadBibleChapter();
@@ -1572,7 +1573,7 @@ async function lookupBibleWord(n, span) {
     const d = await res.json();
     if (req !== wordPopReq) return;
     if (res.status === 429) throw new Error(d.message || 'Alcanzaste tu límite de consultas al lexicón este mes.');
-    if (!res.ok || !d || d.found === false || !d.lemma) throw new Error(`«${word}» no tiene una palabra propia en el original (suele pasar con artículos y conectores).`);
+    if (!res.ok || !d || d.found === false || !d.lemma) throw new Error(TXs('«{w}» no tiene una palabra propia en el original (suele pasar con artículos y conectores).', { w: word }));
     const nt = window.KodeshRef && ['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV'].includes(bibleBook);
     wordPopData = { type: 'word', w: 360, lemma: d.lemma, translit: d.transliteration || '', strongs: d.strongs || '', def: String(d.definition || '').slice(0, 400), lang: d.language || (nt ? 'griego' : 'hebreo'), word: word.toLowerCase() };
     pop.innerHTML = `<div class="wp-head"><span>«${esc(word)}» · ${esc(bookName(bibleBook))} ${bibleChapter}:${n}</span><button class="ibtn" onclick="closeWordPop()" aria-label="Cerrar">✕</button></div>

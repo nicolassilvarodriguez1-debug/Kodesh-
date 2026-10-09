@@ -307,7 +307,7 @@
 "NT": "__skip__",
 "Negrita": "Bold",
 "Negrita (Ctrl/⌘ B)": "Bold (Ctrl/⌘ B)",
-"No se pudo buscar.": "Search failed.",
+"No se pudo buscar.": "Could not search.",
 "Nota:": "Note:",
 "Nuevo estudio": "New study",
 "Observa, interpreta, aplica": "Observe, interpret, apply",
@@ -574,5 +574,10 @@
 "words": "__skip__",
 "xref\\n0": "__skip__",
 "zoom-label ibtn": "__skip__",
-"− Punto": "− Point"
+"− Punto": "− Point",
+"Página {a} de {b}": "Page {a} of {b}",
+"El punto {n} tiene contenido; bórralo primero": "Point {n} has content; delete it first",
+"¿Borrar «{t}»? No se puede deshacer.": "Delete “{t}”? This cannot be undone.",
+"«{w}» no tiene una palabra propia en el original (suele pasar con artículos y conectores).": "“{w}” has no word of its own in the original (this often happens with articles and connectors).",
+"Página": "Page"
 }

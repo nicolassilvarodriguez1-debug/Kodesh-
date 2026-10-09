@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="/bible-ref.js"></script>
 <script src="/i18n.js"></script>
-<script src="/i18n-en.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Guía de Uso · KODESH</title>
+<title>User Guide · KODESH</title>
+<meta name="kodesh-lang" content="en">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -209,9 +208,9 @@ body {
   font-family: 'Cinzel', serif; font-size: 0.88rem; font-weight: 700;
   color: var(--text); margin-bottom: 6px;
 }
-.faq-item .q::before { content: "P · "; color: var(--gold); }
+.faq-item .q::before { content: "Q · "; color: var(--gold); }
 .faq-item .a { font-size: 0.92rem; color: var(--text-mid); }
-.faq-item .a::before { content: "R · "; color: var(--text-dim); }
+.faq-item .a::before { content: "A · "; color: var(--text-dim); }
 
 .back-to-top {
   position: fixed; bottom: 24px; right: 24px;
@@ -250,26 +249,26 @@ footer a { color: var(--gold); text-decoration: none; }
   </a>
   <div class="topbar-spacer"></div>
   <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
-  <a href="/" class="back-link"><span>←</span> Volver a la app</a>
+  <a href="/" class="back-link"><span>←</span> Back to the app</a>
 </header>
 
 <section class="hero">
   <div class="hero-hebrew">קֹדֶשׁ</div>
-  <h1>Guía de Uso de KODESH</h1>
-  <p>Todo lo que necesitas saber para aprovechar al máximo tu plataforma de estudio bíblico Hebreo-Mesiánico.</p>
+  <h1>KODESH User Guide</h1>
+  <p>Everything you need to know to get the most out of your Hebrew-Messianic Bible study platform.</p>
 </section>
 
 <div class="toc-wrap">
   <div class="toc">
-    <a href="#navegacion"><span class="toc-icon">📖</span> Navegar la Biblia</a>
-    <a href="#lexicon"><span class="toc-icon">✶</span> Lexicón Hebreo/Griego</a>
-    <a href="#interlineal"><span class="toc-icon">📜</span> Modo Interlineal</a>
-    <a href="#marcadores"><span class="toc-icon">🎨</span> Marcadores y Notas</a>
-    <a href="#asistente"><span class="toc-icon">✦</span> Asistente de Estudio</a>
-    <a href="#busqueda"><span class="toc-icon">🔍</span> Búsqueda</a>
-    <a href="#ciclo"><span class="toc-icon">🔥</span> Ciclo de Estudio</a>
+    <a href="#navegacion"><span class="toc-icon">📖</span> Read the Bible</a>
+    <a href="#lexicon"><span class="toc-icon">✶</span> Hebrew/Greek Lexicon</a>
+    <a href="#interlineal"><span class="toc-icon">📜</span> Interlinear</a>
+    <a href="#marcadores"><span class="toc-icon">🎨</span> Bookmarks and Notes</a>
+    <a href="#asistente"><span class="toc-icon">✦</span> Study Assistant</a>
+    <a href="#busqueda"><span class="toc-icon">🔍</span> Search</a>
+    <a href="#ciclo"><span class="toc-icon">🔥</span> Study cycle</a>
     <a href="#premium"><span class="toc-icon">👑</span> Premium</a>
-    <a href="#faq"><span class="toc-icon">❓</span> Preguntas Frecuentes</a>
+    <a href="#faq"><span class="toc-icon">❓</span> FAQ</a>
   </div>
 </div>
 
@@ -280,41 +279,41 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">📖</div>
       <div>
-        <h2>Navegar la Biblia</h2>
-        <div class="subtitle">Moverte entre libros, capítulos y versículos</div>
+        <h2>Read the Bible</h2>
+        <div class="subtitle">Move between books, chapters and verses</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Elige Antiguo o Nuevo Testamento</h3>
-        <p>En el menú lateral (o el botón ☰ en móvil) verás dos pestañas: <strong>Antiguo</strong> y <strong>Nuevo</strong>. Selecciona el testamento que quieres leer.</p>
+        <h3>Choose Old or New Testament</h3>
+        <p>In the side menu (or the ☰ button on mobile) you'll see two tabs: <strong>Old</strong> and <strong>New</strong>. Select the testament you want to read.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Selecciona un libro</h3>
-        <p>Debajo aparece la lista completa de libros con tu progreso de lectura (por ejemplo "6/50" significa que llevas 6 de 50 capítulos leídos en Génesis). Toca cualquier libro para abrirlo.</p>
+        <h3>Select a book</h3>
+        <p>Below it you'll find the full list of books with your reading progress (for example, "6/50" means you've read 6 of the 50 chapters in Genesis). Tap any book to open it.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Cambia de capítulo</h3>
-        <p>Dentro de un libro puedes pasar al capítulo siguiente o anterior con las flechas, o usar el selector de capítulos en la parte superior.</p>
-        <div class="tip"><strong>Tip:</strong> el botón verde <strong>✓ Leído</strong> marca el capítulo como completado y actualiza tu progreso automáticamente.</div>
+        <h3>Change chapters</h3>
+        <p>Inside a book you can move to the next or previous chapter with the arrows, or use the chapter selector at the top.</p>
+        <div class="tip"><strong>Tip:</strong> the green <strong>✓ Read</strong> button marks the chapter as completed and updates your progress automatically.</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-content">
-        <h3>Cambia de versión bíblica</h3>
-        <p>En la barra superior puedes elegir entre las versiones disponibles (como RVR60) según tu preferencia de lectura.</p>
+        <h3>Change Bible version</h3>
+        <p>In the top bar you can choose among the available versions (such as the World Messianic Bible, WMB) according to your reading preference.</p>
       </div>
     </div>
   </section>
@@ -324,44 +323,44 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">✶</div>
       <div>
-        <h2>Lexicón Hebreo y Griego</h2>
-        <div class="subtitle">Descubre el significado original de cada palabra</div>
+        <h2>Hebrew and Greek Lexicon</h2>
+        <div class="subtitle">Discover the original meaning of every word</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Toca cualquier palabra del texto</h3>
-        <p>Mientras lees, simplemente toca o haz click sobre cualquier palabra del versículo. KODESH identifica automáticamente la palabra exacta en hebreo (Antiguo Testamento) o griego (Nuevo Testamento) usada en ese pasaje específico.</p>
+        <h3>Tap any word in the text</h3>
+        <p>While you read, simply tap or click any word in the verse. KODESH automatically identifies the exact Hebrew (Old Testament) or Greek (New Testament) word used in that specific passage.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Explora el panel del lexicón</h3>
-        <p>Se abre un panel con la palabra original, su transliteración, número Strong's, y definición. Según la palabra, también puedes ver:</p>
+        <h3>Explore the lexicon panel</h3>
+        <p>A panel opens with the original word, its transliteration, Strong's number, and definition. Depending on the word, you can also see:</p>
         <div class="feature-grid">
           <div class="feature-card">
             <div class="icon">⛪</div>
-            <h4>Significado Bíblico</h4>
-            <p>El significado teológico profundo de la palabra en su contexto mesiánico.</p>
+            <h4>Biblical Meaning</h4>
+            <p>The deep theological meaning of the word in its Messianic context.</p>
           </div>
           <div class="feature-card">
             <div class="icon">📜</div>
-            <h4>Origen de la Palabra</h4>
-            <p>La etimología y raíces del término en el idioma original.</p>
+            <h4>Word Origin</h4>
+            <p>The etymology and roots of the term in the original language.</p>
           </div>
           <div class="feature-card">
             <div class="icon">💡</div>
-            <h4>¿Sabías que?</h4>
-            <p>Datos curiosos que enriquecen tu comprensión del texto.</p>
+            <h4>Did you know?</h4>
+            <p>Interesting facts that enrich your understanding of the text.</p>
           </div>
           <div class="feature-card">
             <div class="icon">❤️</div>
-            <h4>Aplícalo</h4>
-            <p>Una reflexión práctica para tu vida de fe hoy.</p>
+            <h4>Apply it</h4>
+            <p>A practical reflection for your life of faith today.</p>
           </div>
         </div>
       </div>
@@ -370,16 +369,16 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Explora palabras relacionadas y versículos clave</h3>
-        <p>Toca cualquier palabra relacionada para abrir su propio análisis, o toca un versículo en "Explorar en la Escritura" para saltar directamente a ese pasaje.</p>
+        <h3>Explore related words and key verses</h3>
+        <p>Tap any related word to open its own analysis, or tap a verse under "Explore in Scripture" to jump straight to that passage.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-content">
-        <h3>Copia o comparte</h3>
-        <p>Usa los íconos ⎘ y ↗ en la parte superior del panel para copiar el análisis al portapapeles o compartirlo directamente.</p>
+        <h3>Copy or share</h3>
+        <p>Use the ⎘ and ↗ icons at the top of the panel to copy the analysis to your clipboard or share it directly.</p>
       </div>
     </div>
   </section>
@@ -389,33 +388,33 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">📜</div>
       <div>
-        <h2>Modo Interlineal</h2>
-        <div class="subtitle">Lee el texto bíblico palabra por palabra en su idioma original</div>
+        <h2>Interlinear</h2>
+        <div class="subtitle">Read the biblical text word by word in its original language</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Abre el modo Interlineal</h3>
-        <p>Dentro de cualquier capítulo, toca el botón <strong>📜 Interlineal</strong> ubicado junto a "Estudiar" y "Notas".</p>
+        <h3>Open the Interlinear</h3>
+        <p>Inside any chapter, tap the <strong>📜 Interlinear</strong> button next to "Study" and "Notes".</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Lee palabra por palabra</h3>
-        <p>Cada versículo se descompone en sus palabras originales (hebreo o griego), mostrando debajo de cada una su transliteración y traducción al español. Así puedes seguir el versículo en el idioma original sin perder el sentido.</p>
+        <h3>Read word by word</h3>
+        <p>Each verse is broken down into its original words (Hebrew or Greek), with the transliteration and translation shown beneath each one. That way you can follow the verse in the original language without losing the meaning.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Toca cualquier número Strong's</h3>
-        <p>Encima de cada palabra verás su código Strong's (como H7225 o G3056). Tócalo para abrir el lexicón completo de esa palabra específica.</p>
-        <div class="tip"><strong>Nota:</strong> la primera vez que abres un capítulo, el interlineal puede tardar unos segundos en generarse. Las próximas veces se carga al instante porque KODESH lo guarda en caché.</div>
+        <h3>Tap any Strong's number</h3>
+        <p>Above each word you'll see its Strong's code (such as H7225 or G3056). Tap it to open the full lexicon entry for that specific word.</p>
+        <div class="tip"><strong>Note:</strong> the first time you open a chapter, the interlinear may take a few seconds to generate. After that it loads instantly because KODESH caches it.</div>
       </div>
     </div>
   </section>
@@ -425,58 +424,58 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">🎨</div>
       <div>
-        <h2>Marcadores y Notas</h2>
-        <div class="subtitle">Resalta, anota y guarda tus versículos favoritos</div>
+        <h2>Bookmarks and Notes</h2>
+        <div class="subtitle">Highlight, annotate and save your favorite verses</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Abre el panel de acciones del versículo</h3>
-        <p>Sobre cualquier versículo, usa uno de estos gestos:</p>
+        <h3>Open the verse actions panel</h3>
+        <p>On any verse, use one of these gestures:</p>
         <div class="gesture-row">
-          <span class="gesture-tag">📱 <b>Doble toque</b> en móvil</span>
-          <span class="gesture-tag">🖱️ <b>Click derecho</b> en computadora</span>
+          <span class="gesture-tag">📱 <b>Double tap</b> on mobile</span>
+          <span class="gesture-tag">🖱️ <b>Right click</b> on a computer</span>
         </div>
-        <p style="margin-top:10px">Se abre un panel desde abajo con todas las acciones disponibles para ese versículo.</p>
+        <p style="margin-top:10px">A panel slides up from the bottom with all the actions available for that verse.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Elige una acción rápida</h3>
+        <h3>Choose a quick action</h3>
         <div class="feature-grid">
           <div class="feature-card">
             <div class="icon">✦</div>
-            <h4>Explicar</h4>
-            <p>Abre el asistente de estudio con una explicación del versículo.</p>
+            <h4>Explain</h4>
+            <p>Opens the Study Assistant with an explanation of the verse.</p>
           </div>
           <div class="feature-card">
             <div class="icon">📜</div>
-            <h4>Interlineal</h4>
-            <p>Salta directo al modo interlineal de ese capítulo.</p>
+            <h4>Interlinear</h4>
+            <p>Jumps straight to the interlinear view of that chapter.</p>
           </div>
           <div class="feature-card">
             <div class="icon">📖</div>
-            <h4>Estudio Profundo</h4>
-            <p>Análisis estructurado: contexto histórico, idioma original, conexiones mesiánicas y aplicación.</p>
+            <h4>Deep Study</h4>
+            <p>Structured analysis: historical context, original language, Messianic connections and application.</p>
           </div>
           <div class="feature-card">
             <div class="icon">📝</div>
-            <h4>Nota</h4>
-            <p>Abre el panel de notas del capítulo para escribir tus reflexiones.</p>
+            <h4>Note</h4>
+            <p>Opens the chapter's notes panel so you can write your reflections.</p>
           </div>
           <div class="feature-card">
             <div class="icon">↗</div>
-            <h4>Compartir</h4>
-            <p>Comparte el versículo con la cita incluida.</p>
+            <h4>Share</h4>
+            <p>Shares the verse with its reference included.</p>
           </div>
           <div class="feature-card">
             <div class="icon">⎘</div>
-            <h4>Copiar</h4>
-            <p>Copia el texto del versículo al portapapeles.</p>
+            <h4>Copy</h4>
+            <p>Copies the verse text to your clipboard.</p>
           </div>
         </div>
       </div>
@@ -485,15 +484,15 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Resalta con un color</h3>
-        <p>Más abajo en el mismo panel, elige uno de los colores disponibles para marcar el versículo según su significado para ti:</p>
+        <h3>Highlight with a color</h3>
+        <p>Further down in the same panel, choose one of the available colors to mark the verse by what it means to you:</p>
         <div class="color-legend">
-          <span class="color-chip"><span class="color-dot" style="background:#5a9cf0"></span> Promesa</span>
-          <span class="color-chip"><span class="color-dot" style="background:#5ccc68"></span> Enseñanza</span>
-          <span class="color-chip"><span class="color-dot" style="background:#c9a84c"></span> Mesiánico</span>
-          <span class="color-chip"><span class="color-dot" style="background:#e05a5a"></span> Advertencia</span>
-          <span class="color-chip"><span class="color-dot" style="background:#b56ae0"></span> Oración</span>
-          <span class="color-chip"><span class="color-dot" style="background:#e0a050"></span> Profecía</span>
+          <span class="color-chip"><span class="color-dot" style="background:#5a9cf0"></span> Promise</span>
+          <span class="color-chip"><span class="color-dot" style="background:#5ccc68"></span> Teaching</span>
+          <span class="color-chip"><span class="color-dot" style="background:#c9a84c"></span> Messianic</span>
+          <span class="color-chip"><span class="color-dot" style="background:#e05a5a"></span> Warning</span>
+          <span class="color-chip"><span class="color-dot" style="background:#b56ae0"></span> Prayer</span>
+          <span class="color-chip"><span class="color-dot" style="background:#e0a050"></span> Prophecy</span>
           <span class="color-chip"><span class="color-dot" style="background:#888"></span> General</span>
         </div>
       </div>
@@ -502,16 +501,16 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-content">
-        <h3>Añade una nota opcional y guarda</h3>
-        <p>Puedes escribir una breve nota personal antes de tocar <strong>✓ Guardar marcador</strong>. Para quitar un marcador existente, toca <strong>Quitar</strong>.</p>
+        <h3>Add an optional note and save</h3>
+        <p>You can write a short personal note before tapping <strong>✓ Save bookmark</strong>. To remove an existing bookmark, tap <strong>Remove</strong>.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">5</div>
       <div class="step-content">
-        <h3>Revisa todos tus marcadores</h3>
-        <p>Ve a la pestaña <strong>Marcadores</strong> en la navegación inferior (móvil) o el menú lateral (escritorio) para ver la lista completa, filtrar por color, y saltar directamente a cada versículo guardado.</p>
+        <h3>Review all your bookmarks</h3>
+        <p>Go to the <strong>Bookmarks</strong> tab in the bottom navigation (mobile) or the side menu (desktop) to see the full list, filter by color, and jump straight to each saved verse.</p>
       </div>
     </div>
   </section>
@@ -521,33 +520,33 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">✦</div>
       <div>
-        <h2>Asistente de Estudio</h2>
-        <div class="subtitle">Tu compañero de inteligencia artificial para profundizar en la Escritura</div>
+        <h2>Study Assistant</h2>
+        <div class="subtitle">Your artificial intelligence companion for going deeper into Scripture</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Abre el asistente</h3>
-        <p>Toca el botón <strong>✦ Estudiar</strong> en cualquier capítulo, o el ícono ✦ en la barra superior. También se abre automáticamente cuando usas "Explicar" o "Estudio Profundo" desde el panel de un versículo.</p>
+        <h3>Open the assistant</h3>
+        <p>Tap the <strong>✦ Study</strong> button in any chapter, or the ✦ icon in the top bar. It also opens automatically when you use "Explain" or "Deep Study" from a verse's panel.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Haz cualquier pregunta bíblica</h3>
-        <p>Puedes preguntar sobre el significado de un pasaje, conexiones entre la Torá y el Nuevo Testamento, contexto histórico, cumplimiento mesiánico en Yeshúa, o cualquier duda teológica desde una perspectiva Hebreo-Mesiánica.</p>
+        <h3>Ask any Bible question</h3>
+        <p>You can ask about the meaning of a passage, connections between the Torah and the New Testament, historical context, Messianic fulfillment in Yeshua, or any theological question from a Hebrew-Messianic perspective.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Mantén el contexto del capítulo</h3>
-        <p>El asistente sabe en qué libro y capítulo estás leyendo, así que tus preguntas se responden con ese contexto en mente sin que tengas que repetirlo.</p>
-        <div class="tip"><strong>Tip:</strong> el plan gratuito tiene un número limitado de consultas mensuales al asistente. El plan Premium ofrece uso ampliado.</div>
+        <h3>Keep the chapter's context</h3>
+        <p>The assistant knows which book and chapter you're reading, so your questions are answered with that context in mind without you having to repeat it.</p>
+        <div class="tip"><strong>Tip:</strong> the free plan includes a limited number of monthly questions to the assistant. The Premium plan offers expanded use.</div>
       </div>
     </div>
   </section>
@@ -557,32 +556,32 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">🔍</div>
       <div>
-        <h2>Búsqueda</h2>
-        <div class="subtitle">Encuentra versículos, palabras o temas en toda la Biblia</div>
+        <h2>Search</h2>
+        <div class="subtitle">Find verses, words or topics across the whole Bible</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Abre el buscador</h3>
-        <p>Toca <strong>🔍 Buscar</strong> en la barra superior o en la navegación inferior.</p>
+        <h3>Open Search</h3>
+        <p>Tap <strong>🔍 Search</strong> in the top bar or in the bottom navigation.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Escribe tu búsqueda</h3>
-        <p>Puedes buscar una palabra clave, una frase, o una referencia exacta (como "Génesis 1:1" o "Juan 3:16"). Los resultados muestran el versículo completo con la coincidencia resaltada.</p>
+        <h3>Type your search</h3>
+        <p>You can search for a keyword, a phrase, or an exact reference (such as "Genesis 1:1" or "John 3:16"). The results show the full verse with the match highlighted.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Toca un resultado</h3>
-        <p>Te lleva directamente a ese capítulo y versículo dentro de la Biblia.</p>
+        <h3>Tap a result</h3>
+        <p>It takes you straight to that chapter and verse in the Bible.</p>
       </div>
     </div>
   </section>
@@ -592,32 +591,32 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">🔥</div>
       <div>
-        <h2>Ciclo de Estudio y Racha</h2>
-        <div class="subtitle">Sigue el calendario de lectura de las porciones semanales (parashot)</div>
+        <h2>Study cycle and Reading streak</h2>
+        <div class="subtitle">Follow the reading calendar of the weekly portions (parashot)</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>Observa la porción actual</h3>
-        <p>En la parte superior de cada libro verás un recuadro con la <strong>Porción de la semana</strong> (parashá), su nombre en hebreo, y el rango de capítulos que cubre — por ejemplo, "Bereshit — En el Principio · Génesis 1:1–6:8".</p>
+        <h3>See the current portion</h3>
+        <p>At the top of each book you'll see a box with the <strong>Parashah of the week</strong>, its Hebrew name, and the range of chapters it covers — for example, "Bereshit — In the Beginning · Genesis 1:1–6:8".</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Sigue tu progreso</h3>
-        <p>Los cuadros de color junto al nombre de la porción muestran cuántos capítulos de esa parashá ya marcaste como leídos. Toca <strong>Ver Ciclo</strong> para ver el calendario completo de todas las porciones del año.</p>
+        <h3>Track your progress</h3>
+        <p>The colored squares next to the portion's name show how many chapters of that parashah you've already marked as read. Tap <strong>View Cycle</strong> to see the full calendar of all the portions of the year.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-content">
-        <h3>Mantén tu racha</h3>
-        <p>El ícono 🔥 con un número en la barra superior muestra cuántos días consecutivos has leído la Biblia en KODESH. Lee al menos un capítulo cada día para mantener tu racha activa.</p>
+        <h3>Keep your streak</h3>
+        <p>The 🔥 icon with a number in the top bar shows how many consecutive days you've read the Bible in KODESH. Read at least one chapter every day to keep your streak alive.</p>
       </div>
     </div>
   </section>
@@ -628,29 +627,29 @@ footer a { color: var(--gold); text-decoration: none; }
       <div class="section-icon">👑</div>
       <div>
         <h2>Premium</h2>
-        <div class="subtitle">Desbloquea el potencial completo de tu estudio</div>
+        <div class="subtitle">Unlock the full potential of your study</div>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-content">
-        <h3>¿Qué incluye Premium?</h3>
-        <p>El plan Premium elimina los límites mensuales de consultas al lexicón, al asistente de estudio, y a la generación del modo interlineal, además de futuras funciones exclusivas.</p>
+        <h3>What does Premium include?</h3>
+        <p>The Premium plan removes the monthly limits on Lexicon lookups, the Study Assistant, and Interlinear generation, plus future exclusive features.</p>
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-content">
-        <h3>Cómo suscribirte</h3>
-        <p>Toca el botón <strong>✦ Premium</strong> en la barra superior para ver los planes disponibles y completar tu suscripción de forma segura a través de Stripe.</p>
+        <h3>How to subscribe</h3>
+        <p>Tap the <strong>✦ Premium</strong> button in the top bar to see the available plans and complete your subscription securely through Stripe.</p>
       </div>
     </div>
 
     <div class="premium-banner">
       <span class="icon">✦</span>
-      <p>El plan gratuito te permite explorar todas las funciones de KODESH con límites mensuales razonables — perfecto para comenzar tu estudio sin compromiso.</p>
+      <p>The free plan lets you explore every KODESH feature with reasonable monthly limits — perfect for starting your study with no commitment.</p>
     </div>
   </section>
 
@@ -659,42 +658,42 @@ footer a { color: var(--gold); text-decoration: none; }
     <div class="section-header">
       <div class="section-icon">❓</div>
       <div>
-        <h2>Preguntas Frecuentes</h2>
-        <div class="subtitle">Dudas comunes sobre el uso de KODESH</div>
+        <h2>Frequently Asked Questions</h2>
+        <div class="subtitle">Common questions about using KODESH</div>
       </div>
     </div>
 
     <div class="faq-item">
-      <div class="q">¿Por qué el interlineal tarda en cargar la primera vez?</div>
-      <div class="a">KODESH genera el análisis palabra por palabra usando inteligencia artificial la primera vez que alguien abre ese capítulo. Una vez generado, queda guardado y carga instantáneamente para todos los usuarios después.</div>
+      <div class="q">Why does the interlinear take a while to load the first time?</div>
+      <div class="a">KODESH generates the word-by-word analysis using artificial intelligence the first time anyone opens that chapter. Once generated, it's saved and loads instantly for every user after that.</div>
     </div>
 
     <div class="faq-item">
-      <div class="q">¿Por qué algunas palabras no muestran el lexicón al tocarlas?</div>
-      <div class="a">Palabras gramaticales como artículos, preposiciones o conjunciones (como "el", "de", "y") no tienen una entrada léxica propia en hebreo o griego, por lo que no se muestra ningún panel al tocarlas.</div>
+      <div class="q">Why don't some words show the lexicon when I tap them?</div>
+      <div class="a">Grammatical words such as articles, prepositions or conjunctions (like "the", "of", "and") don't have their own lexical entry in Hebrew or Greek, so no panel appears when you tap them.</div>
     </div>
 
     <div class="faq-item">
-      <div class="q">¿Puedo usar KODESH sin conexión a internet?</div>
-      <div class="a">La lectura básica de la Biblia funciona con conexión limitada, pero las funciones de inteligencia artificial (lexicón, interlineal, asistente) requieren conexión a internet activa.</div>
+      <div class="q">Can I use KODESH without an internet connection?</div>
+      <div class="a">Basic Bible reading works with a limited connection, but the artificial intelligence features (Lexicon, Interlinear, Study Assistant) require an active internet connection.</div>
     </div>
 
     <div class="faq-item">
-      <div class="q">¿Cómo cambio entre modo claro y oscuro?</div>
-      <div class="a">Toca el ícono ☀️/🌙 en la barra superior de la app para alternar entre los dos temas visuales.</div>
+      <div class="q">How do I switch between light and dark mode?</div>
+      <div class="a">Tap the ☀️/🌙 icon in the app's top bar to switch between the two visual themes.</div>
     </div>
 
     <div class="faq-item">
-      <div class="q">¿Mis marcadores y notas se guardan en la nube?</div>
-      <div class="a">Sí, todos tus marcadores, notas y tu progreso de lectura se sincronizan a tu cuenta, así que puedes acceder a ellos desde cualquier dispositivo donde inicies sesión.</div>
+      <div class="q">Are my bookmarks and notes saved in the cloud?</div>
+      <div class="a">Yes. All your bookmarks, notes and reading progress sync to your account, so you can access them from any device where you sign in.</div>
     </div>
   </section>
 
 </main>
 
 <footer>
-  <p>KODESH · קֹדֶשׁ — Plataforma de Estudio Bíblico Hebreo-Mesiánico</p>
-  <p style="margin-top:6px"><a href="/terminos.html">Términos</a> · <a href="/privacidad.html">Privacidad</a> · <a href="/">Volver a la app</a></p>
+  <p>KODESH · קֹדֶשׁ — Hebrew-Messianic Bible Study Platform</p>
+  <p style="margin-top:6px"><a href="/terminos.html">Terms</a> · <a href="/privacidad.html">Privacy</a> · <a href="/">Back to the app</a></p>
 </footer>
 
 <a href="#top" class="back-to-top" id="backToTop">↑</a>

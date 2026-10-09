@@ -4,6 +4,9 @@
 <script src="/recovery-guard.js"></script>
 <script src="/native-insets.js"></script>
 <meta charset="UTF-8">
+<script src="/bible-ref.js"></script>
+<script src="/i18n.js"></script>
+<script src="/i18n-en.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · Mi Perfil</title>
 <link rel="manifest" href="/manifest.json">
@@ -268,6 +271,8 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 </div>
 
 <script>
+const TX = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
+
 const SB_URL = 'https://fvknbqdsgqdmwirrgcvb.supabase.co';
 // Clave de sesion fijada a mano. supabase-js la deduce del subdominio de la
 // URL, asi que el dia que apuntemos a un dominio propio (auth.kodeshbible.com)
@@ -606,7 +611,8 @@ async function syncPremiumWithSupabase() {
 }
 
 // ══════════════════════════════════════════
-// ELIMINAR CUENTA
+// ELIMINAR CUENTA — palabra de confirmación según el idioma (DELETE en inglés)
+const CONFIRM_WORD = window.KodeshI18n && KodeshI18n.isEn ? 'DELETE' : 'ELIMINAR';
 // ══════════════════════════════════════════
 function showDeleteAccountModal() {
   if (document.getElementById('deleteModalOverlay')) return;
@@ -620,13 +626,13 @@ function showDeleteAccountModal() {
       <div class="delete-modal-text">
         Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán todos tus datos:
         progreso de lectura, notas, marcadores, racha, y tu cuenta de acceso.<br><br>
-        Para confirmar, escribe <strong>ELIMINAR</strong> en el campo de abajo.
+        Para confirmar, escribe <strong>${CONFIRM_WORD}</strong> en el campo de abajo.
       </div>
       <input
         type="text"
         id="deleteConfirmInput"
         class="delete-modal-confirm"
-        placeholder="Escribe ELIMINAR para confirmar"
+        placeholder="Escribe ${CONFIRM_WORD} para confirmar"
         oninput="checkDeleteConfirm()"
         autocomplete="off"
         autocorrect="off"
@@ -652,7 +658,7 @@ function checkDeleteConfirm() {
   const input = document.getElementById('deleteConfirmInput');
   const btn = document.getElementById('btnConfirmDelete');
   if (!input || !btn) return;
-  btn.disabled = input.value.trim().toUpperCase() !== 'ELIMINAR';
+  btn.disabled = input.value.trim().toUpperCase() !== CONFIRM_WORD;
 }
 
 function closeDeleteModal() {
@@ -828,7 +834,7 @@ async function loadProfile(user) {
 
     <div class="section">
       <div class="section-header">
-        <div class="section-title">🤖 Uso de IA — ${month}</div>
+        <div class="section-title">🤖 ${TX('Uso de IA — {m}', { m: month })}</div>
         <span class="badge ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? premiumBadgeLabel : 'Gratuito'}</span>
       </div>
       <div class="section-body">
@@ -863,7 +869,7 @@ async function loadProfile(user) {
     <div class="section">
       <div class="section-header">
         <div class="section-title">📊 Progreso de Lectura</div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim)">${streak.total_days_read || 0} días totales</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim)">${TX('{n} días totales', { n: streak.total_days_read || 0 })}</span>
       </div>
       <div class="section-body">
         <div class="progress-row">
@@ -915,8 +921,8 @@ async function loadProfile(user) {
 
     <div class="section">
       <div class="profile-tabs">
-        <button class="profile-tab active" onclick="switchTab('bookmarks',this)">🔖 Marcadores (${bookmarks.length})</button>
-        <button class="profile-tab" onclick="switchTab('notes',this)">📝 Notas (${notes.length})</button>
+        <button class="profile-tab active" onclick="switchTab('bookmarks',this)">🔖 ${TX('Marcadores ({n})', { n: bookmarks.length })}</button>
+        <button class="profile-tab" onclick="switchTab('notes',this)">📝 ${TX('Notas ({n})', { n: notes.length })}</button>
       </div>
       <div class="tab-panel active" id="tab-bookmarks">
         ${bookmarks.length > 0

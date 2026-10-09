@@ -202,7 +202,7 @@ html.tl-off .tl-pill { display: none !important; }
   function salmosHtml() {
     const cur = ctx.book === 'PSA' ? ctx.ch : null;
     return `<p style="margin:4px 0 0;color:var(--text-mid,#b8af9c)">Estos salmos dicen en su título cuándo se escribieron. Lee el salmo junto a la historia que lo provocó.</p>`
-      + D.pshist.map(([n, t, r]) => `<div class="tl-card${cur === n ? ' on' : ''}"><div class="tl-row"><button class="tl-link" style="color:inherit;font-size:1rem" data-go="PSA ${n}"><b>Salmo ${n}</b></button><button class="tl-link" data-go="${r}">${esc(nice(r))} →</button></div><div style="color:var(--text-mid,#b8af9c);margin-top:2px">${esc(t)}</div></div>`).join('');
+      + D.pshist.map(([n, t, r]) => `<div class="tl-card${cur === n ? ' on' : ''}"><div class="tl-row"><button class="tl-link" style="color:inherit;font-size:1rem" data-go="PSA ${n}"><b>${T('Salmo {n}', { n })}</b></button><button class="tl-link" data-go="${r}">${esc(nice(r))} →</button></div><div style="color:var(--text-mid,#b8af9c);margin-top:2px">${esc(t)}</div></div>`).join('');
   }
   /* E · ¿Quién vivía? */
   const pref = (k, v) => { try { return localStorage.getItem(k) === v; } catch (e) { return false; } };

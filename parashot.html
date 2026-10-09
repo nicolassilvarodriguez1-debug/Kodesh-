@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script src="/bible-ref.js"></script>
+<script src="/i18n.js"></script>
+<script src="/i18n-en.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script src="/native-insets.js"></script>
 <title>KODESH · Ciclo de Estudio</title>
@@ -489,11 +492,13 @@ function shortDate(reading) {
   if (!reading) return '';
   return localDate(reading.date).toLocaleDateString('es', { day: 'numeric', month: 'short' }).replace('.', '');
 }
+// Idioma (i18n.js): TX traduce frases con {huecos}
+const TX = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
 function readingTitle(reading) {
   if (!reading) return '';
   const d = localDate(reading.date);
   const f = d.toLocaleDateString('es', { day: 'numeric', month: 'short' }).replace('.', '');
-  return reading.nums.includes(54) ? `Simjat Torá · ${f}` : `Shabat ${f}`;
+  return reading.nums.includes(54) ? `${TX('Simjat Torá')} · ${f}` : TX('Shabat {d}', { d: f });
 }
 
 /* ── IR A LA BIBLIA ── */
@@ -547,7 +552,7 @@ function paintWeekChapters(ps) {
   if (reading) { const d = Math.round((localDate(reading.date) - today0()) / 86400000); days = d > 1 ? `Shabat en <b>${d} días</b>` : d === 1 ? '<b>Shabat es mañana</b>' : d === 0 ? '<b>Hoy es Shabat</b>' : ''; }
   box.hidden = false;
   box.innerHTML = `<div class="wk-prog-bars">${uniq.map(k => `<span class="${map[k] ? 'on' : ''}"></span>`).join('')}</div>
-    <div class="wk-prog-row"><span>${done === uniq.length ? '<b>✓ Porción completa</b>' : `${done} de ${uniq.length} capítulos leídos`}</span><span>${days}</span></div>`;
+    <div class="wk-prog-row"><span>${done === uniq.length ? '<b>✓ Porción completa</b>' : TX('{a} de {b} capítulos leídos', { a: done, b: uniq.length })}</span><span>${days}</span></div>`;
 }
 const KB_BOOKS = [['GEN', 'Génesis'], ['EXO', 'Éxodo'], ['LEV', 'Levítico'], ['NUM', 'Números'], ['DEU', 'Deut.']];
 function paintBadges() {
@@ -559,7 +564,7 @@ function paintBadges() {
   document.getElementById('kbTabs').innerHTML = KB_BOOKS.map(([id, n]) => `<button class="kb-tab ${id === kbBook ? 'on' : ''}" role="tab" aria-selected="${id === kbBook}" onclick="kbBook='${id}';paintBadges()">${n}</button>`).join('');
   document.getElementById('kbGrid').innerHTML = PARASHOT.filter(p => p.book === kbBook).map(p => {
     const on = KodeshBadges.isEarned(p, map);
-    return `<button class="kb-item" onclick="openSheet(${PARASHOT.indexOf(p)})" aria-label="${esc(p.nombre)}${on ? ' (ganada)' : ''}">${KodeshBadges.badgeHtml(p, { size: 64, earned: on })}<span class="kb-name">${esc(p.nombre)}</span></button>`;
+    return `<button class="kb-item" onclick="openSheet(${PARASHOT.indexOf(p)})" aria-label="${esc(TX(p.nombre))}${on ? ' (' + TX('ganada') + ')' : ''}">${KodeshBadges.badgeHtml(p, { size: 64, earned: on })}<span class="kb-name">${esc(p.nombre)}</span></button>`;
   }).join('');
 }
 async function paintStreak() {
@@ -572,7 +577,7 @@ async function paintStreak() {
   box.innerHTML = `<div class="year-head"><span class="label">Semanas con la Torá</span></div>
     <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
       <div class="kb-big">${st.streak}</div>
-      <div style="font-size:15px;color:var(--text-mid);line-height:1.4">${st.streak === 1 ? 'semana seguida' : 'semanas seguidas'} completando la porción<br><span style="font-size:13px;color:var(--text-dim)">Cuenta si la terminas antes del Shabat${st.loggedIn ? '' : ' · inicia sesión para contar también lo leído en otros dispositivos'}</span></div>
+      <div style="font-size:15px;color:var(--text-mid);line-height:1.4">${TX(st.streak === 1 ? 'semana seguida completando la porción' : 'semanas seguidas completando la porción')}<br><span style="font-size:13px;color:var(--text-dim)">${TX('Cuenta si la terminas antes del Shabat')}${st.loggedIn ? '' : ' · ' + TX('inicia sesión para contar también lo leído en otros dispositivos')}</span></div>
     </div>
     <div class="kb-weeks">${cells}</div>`;
 }
@@ -630,7 +635,7 @@ function renderWeek() {
   const simjat = p.num === 54;
 
   document.getElementById('weekKicker').textContent =
-    `${simjat ? 'Fin del ciclo' : isToday ? 'Hoy' : 'Esta semana'}${reading ? ' · ' + readingTitle(reading) : ''}`;
+    `${TX(simjat ? 'Fin del ciclo' : isToday ? 'Hoy' : 'Esta semana')}${reading ? ' · ' + readingTitle(reading) : ''}`;
   document.getElementById('weekName').textContent = ps.map(x => x.nombre).join(' – ');
   document.getElementById('weekSig').textContent = ps.map(x => x.sig).join(' · ');
   document.getElementById('weekHeb').textContent = p.heb;
@@ -643,10 +648,10 @@ function renderWeek() {
 
   const checks = readingChecks[p.num] || {};
   const done = READINGS.filter(r => checks[r.key]).length;
-  document.getElementById('readingsCount').textContent = `${done} de 3`;
+  document.getElementById('readingsCount').textContent = TX('{a} de {b}', { a: done, b: 3 });
   document.getElementById('weekReadings').innerHTML = READINGS.map(r => `
     <div class="reading ${checks[r.key] ? 'done' : ''}">
-      <button class="reading-check" onclick="toggleReading(${p.num}, '${r.key}')" aria-pressed="${!!checks[r.key]}" aria-label="Marcar ${r.label} como leída"><span>${checks[r.key] ? '✓' : ''}</span></button>
+      <button class="reading-check" onclick="toggleReading(${p.num}, '${r.key}')" aria-pressed="${!!checks[r.key]}" aria-label="${TX('Marcar {x} como leída', { x: TX(r.label) })}"><span>${checks[r.key] ? '✓' : ''}</span></button>
       <a class="reading-link" href="${bibleUrl(p[r.field])}">
         <span class="reading-text">
           <span class="reading-label ${r.cls}">${r.label}</span>
@@ -667,10 +672,10 @@ function renderWeek() {
   let txt = '';
   if (reading) {
     const days = Math.round((localDate(reading.date) - today0()) / 86400000);
-    if (simjat) txt = days === 0 ? 'Hoy es Simjat Torá: se completa el ciclo' : `Faltan ${days} día${days === 1 ? '' : 's'} para Simjat Torá`;
-    else if (days === 0) txt = 'Hoy es Shabat · Shabat shalom';
-    else if (days === 1) txt = 'Shabat empieza hoy al atardecer';
-    else txt = `Faltan ${days} días para Shabat · empieza el viernes al atardecer`;
+    if (simjat) txt = days === 0 ? TX('Hoy es Simjat Torá: se completa el ciclo') : TX(days === 1 ? 'Falta {n} día para Simjat Torá' : 'Faltan {n} días para Simjat Torá', { n: days });
+    else if (days === 0) txt = TX('Hoy es Shabat · Shabat shalom');
+    else if (days === 1) txt = TX('Shabat empieza hoy al atardecer');
+    else txt = TX('Faltan {n} días para Shabat · empieza el viernes al atardecer', { n: days });
   }
   document.getElementById('shabbatText').textContent = txt;
   document.getElementById('shabbatLine').hidden = !txt;
@@ -698,7 +703,7 @@ function renderYear() {
   document.getElementById('yearBars').innerHTML = BOOKS.map(b => {
     const n = b.range[1] - b.range[0] + 1;
     let s = 0; for (let i = b.range[0]; i <= b.range[1]; i++) if (studiedParashot[i]) s++;
-    return `<button class="year-bar ${b.id === cur ? 'current' : ''}" onclick="jumpToBook('${b.id}')" aria-label="${b.name}: ${s} de ${n} estudiadas">
+    return `<button class="year-bar ${b.id === cur ? 'current' : ''}" onclick="jumpToBook('${b.id}')" aria-label="${TX('{b}: {s} de {n} estudiadas', { b: TX(b.name), s, n })}">
       <span class="year-track"><span class="year-fill" style="display:block;width:${Math.round(s / n * 100)}%"></span></span>
       <span class="year-name">${b.name}</span>
     </button>`;
@@ -747,7 +752,7 @@ function renderPath() {
       <button class="book-head" onclick="toggleBook('${b.id}')" aria-expanded="${!!open}">
         <span class="book-head-left">
           <span class="book-heb" lang="he">${b.heb}</span>
-          <span><span class="label">${b.name}</span><br><span class="book-meta">${n} porciones · ${s} estudiada${s === 1 ? '' : 's'}</span></span>
+          <span><span class="label">${b.name}</span><br><span class="book-meta">${TX('{n} porciones', { n })} · ${TX(s === 1 ? '{s} estudiada' : '{s} estudiadas', { s })}</span></span>
         </span>
         <svg class="book-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
@@ -755,7 +760,7 @@ function renderPath() {
         const isCur = cur.includes(p.num);
         const reading = getNextReading(p.num);
         const partner = reading && reading.nums.length > 1 ? PARASHOT.find(x => x.num === reading.nums.find(k => k !== p.num)) : null;
-        const sub = isCur ? 'Esta semana · arriba' : (partner ? `${p.torah} · junto con ${partner.nombre}` : p.torah);
+        const sub = isCur ? 'Esta semana · arriba' : (partner ? `${p.torah} · ${TX('junto con {p}', { p: TX(partner.nombre) })}` : p.torah);
         return `<li class="step ${isCur ? 'current' : ''} ${studiedParashot[p.num] && !isCur ? 'studied' : ''}">
           <span class="node" aria-hidden="true">${studiedParashot[p.num] && !isCur ? '✓' : p.num}</span>
           <button class="step-btn" onclick="openSheet(${p.num - 1})">
@@ -796,7 +801,7 @@ function openSheet(idx) {
   if (!p) return;
   sheetIndex = idx;
   const reading = getNextReading(p.num);
-  document.getElementById('sheetNum').textContent = `Porción ${p.num} de 54${reading ? ' · ' + readingTitle(reading) : ''}`;
+  document.getElementById('sheetNum').textContent = TX('Porción {n} de 54', { n: p.num }) + (reading ? ' · ' + readingTitle(reading) : '');
   document.getElementById('sheetHeb').textContent = p.heb;
   document.getElementById('sheetName').textContent = p.nombre;
   document.getElementById('sheetSig').textContent = p.sig;
@@ -907,7 +912,7 @@ function toggleTheme() {
 (function () {
   try {
     const y = new Intl.DateTimeFormat('es-u-ca-hebrew', { year: 'numeric' }).format(new Date()).replace(/\D/g, '');
-    if (y) document.getElementById('hebYear').textContent = `Año ${y} · 54 porciones`;
+    if (y) document.getElementById('hebYear').textContent = TX('Año {y} · 54 porciones', { y });
   } catch (e) {}
 })();
 

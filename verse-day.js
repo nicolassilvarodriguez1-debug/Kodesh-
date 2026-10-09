@@ -387,6 +387,8 @@
 
   /* ── Abrir ── */
   async function open({ autoplay = false, date } = {}) {
+    // El versículo del día se graba en español: en inglés no se abre (el inicio lo muestra con la WMB)
+    if (window.KodeshI18n && KodeshI18n.isEn) return;
     await load();
     const it = today(date);
     if (!it) { if (typeof showToast === 'function') showToast('El versículo del día no está disponible ahora'); return false; }

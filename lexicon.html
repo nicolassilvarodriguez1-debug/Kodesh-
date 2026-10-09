@@ -3,6 +3,9 @@
 <head>
 <script src="/native-insets.js"></script>
 <meta charset="UTF-8">
+<script src="/bible-ref.js"></script>
+<script src="/i18n.js"></script>
+<script src="/i18n-en.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>KODESH · Lexicón Bíblico</title>
 <link rel="manifest" href="/manifest.json">
@@ -324,7 +327,7 @@ async function loadCounts() {
     const [w, st] = await Promise.all([countRows(false), countRows(true)]);
     document.getElementById('nWords').textContent = fmt(w);
     document.getElementById('nStrongs').textContent = fmt(st);
-    document.getElementById('countBadge').textContent = `${fmt(w + st)} entradas`;
+    document.getElementById('countBadge').textContent = window.KodeshI18n ? KodeshI18n.t('{n} entradas', { n: fmt(w + st) }) : `${fmt(w + st)} entradas`;
   } catch (e) { console.warn('count', e); }
 }
 
