@@ -31,3 +31,12 @@ test('línea de tiempo: profetas, salmos con historia y edades', () => {
   const ages = Object.fromEntries(D.lives.flatMap(g => g[1]).map(([n, a]) => [n, a]));
   assert.equal(ages['Matusalén'], 969); assert.equal(ages['Moisés'], 120); assert.equal(ages['Abraham'], 175);
 });
+
+test('línea de tiempo: ¿quién vivía? — años sumados del texto', () => {
+  const G = Object.fromEntries(D.gen.people.map(p => [p[0], p]));
+  assert.equal(G['Matusalén'][2], 1656);           // murió el año del diluvio
+  assert.equal(G['Noé'][1] + 600, 1656);           // Gn 7:6
+  assert.equal(G['Abraham'][1], 1948);
+  assert.equal(G['Lamec'][1] < G['Adán'][2], true); // Lamec conoció a Adán
+  for (const [n, b, d] of D.gen.people) assert.ok(d > b, n);
+});

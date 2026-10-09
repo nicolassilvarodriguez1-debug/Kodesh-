@@ -99,6 +99,46 @@ FACTS = [['Abraham tenía 100 años cuando nació Isaac, e Isaac 60 cuando nacie
          ['Enoc no murió a los 365 años: «desapareció, porque le llevó Dios».', 'GEN 5:24', ''],
          ['Moisés tenía 80 años y Aarón 83 cuando hablaron con Faraón.', 'EXO 7:7', '']]
 
+# ── ¿Quién vivía? · años desde la creación, sumados del texto (Gn 5 y 11) ──
+# [nombre, edad del padre al engendrarlo (o None), años que vivió, cita de la edad del padre, cita de su vida, padre]
+CHAIN = [
+    ['Adán', None, 930, '', 'GEN 5:5', None],
+    ['Set', 130, 912, 'GEN 5:3', 'GEN 5:8', 'Adán'], ['Enós', 105, 905, 'GEN 5:6', 'GEN 5:11', 'Set'],
+    ['Cainán', 90, 910, 'GEN 5:9', 'GEN 5:14', 'Enós'], ['Mahalaleel', 70, 895, 'GEN 5:12', 'GEN 5:17', 'Cainán'],
+    ['Jared', 65, 962, 'GEN 5:15', 'GEN 5:20', 'Mahalaleel'], ['Enoc', 162, 365, 'GEN 5:18', 'GEN 5:23', 'Jared'],
+    ['Matusalén', 65, 969, 'GEN 5:21', 'GEN 5:27', 'Enoc'], ['Lamec', 187, 777, 'GEN 5:25', 'GEN 5:31', 'Matusalén'],
+    ['Noé', 182, 950, 'GEN 5:28', 'GEN 9:29', 'Lamec'],
+    # Sem tenía 100 «dos años después del diluvio» (Noé 600 en el diluvio) → Noé tenía 502
+    ['Sem', 502, 600, 'GEN 11:10', 'GEN 11:11', 'Noé'],
+    ['Arfaxad', 100, 438, 'GEN 11:10', 'GEN 11:13', 'Sem'], ['Sala', 35, 433, 'GEN 11:12', 'GEN 11:15', 'Arfaxad'],
+    ['Heber', 30, 464, 'GEN 11:14', 'GEN 11:17', 'Sala'], ['Peleg', 34, 239, 'GEN 11:16', 'GEN 11:19', 'Heber'],
+    ['Reu', 30, 239, 'GEN 11:18', 'GEN 11:21', 'Peleg'], ['Serug', 32, 230, 'GEN 11:20', 'GEN 11:23', 'Reu'],
+    ['Nacor', 30, 148, 'GEN 11:22', 'GEN 11:25', 'Serug'], ['Taré', 29, 205, 'GEN 11:24', 'GEN 11:32', 'Nacor'],
+    ['Abraham', 70, 175, 'GEN 11:26', 'GEN 25:7', 'Taré'],
+    ['Sara', 10, 127, 'GEN 17:17', 'GEN 23:1', 'Abraham'],        # diez años menor que Abraham
+    ['Ismael', 86, 137, 'GEN 16:16', 'GEN 25:17', 'Abraham'],
+    ['Isaac', 100, 180, 'GEN 21:5', 'GEN 35:28', 'Abraham'], ['Jacob', 60, 147, 'GEN 25:26', 'GEN 47:28', 'Isaac'],
+    # Jacob 130 al llegar a Egipto (Gn 47:9); José 39 entonces (30 en Gn 41:46 + 7 de abundancia + 2 de hambre, Gn 45:6)
+    ['José', 91, 110, 'GEN 47:9', 'GEN 50:26', 'Jacob'],
+]
+born = {}
+GEN = []
+ABR = {'Abraham', 'Sara', 'Ismael', 'Isaac', 'Jacob', 'José'}
+for n, a, life, r1, r2, par in CHAIN:
+    b = 0 if par is None else born[par] + a
+    born[n] = b
+    r1 and chk(r1); chk(r2)
+    GEN.append([n, b, b + life, r2, 1 if n in ABR else 0, 'o' if n in ('Sara', 'Ismael') else ''])
+assert born['Noé'] + 600 == 1656 and born['Abraham'] == 1948 and born['José'] == 2199, born
+for g in LIVES:
+    for n, a, r in g[1]:
+        x = next((q for q in GEN if q[0] == n), None)
+        if x: assert x[2] - x[1] == a, n
+GEN_EVENTS = [[0, 'La creación', 'GEN 1:1'], [1656, 'El diluvio', 'GEN 7:6'],
+              ['Abraham+75', 'Abram sale de Harán', 'GEN 12:4'], ['Jacob+130', 'Jacob baja a Egipto', 'GEN 47:9']]
+for e in GEN_EVENTS: chk(e[2])
+chk('GEN 11:26'); chk('ACT 7:4'); chk('GEN 12:4'); chk('GEN 5:24')
+
 for e in ERAS:
     if e[5]: chk(e[5])
 for _, _, r in PSHIST: chk(r)
@@ -116,6 +156,7 @@ for b, v in BOOKS.items():
 assert len(BOOKS) == 66, len(BOOKS)
 out = {'src': 'Épocas y fechas aproximadas (c.); edades y reyes según el texto bíblico; títulos de los salmos.',
        'eras': ERAS, 'books': BOOKS, 'notes': NOTES, 'psalms': PSALMS, 'pshist': PSHIST,
-       'prophets': PROPHETS, 'prophetNote': PROPHET_NOTE, 'noking': NOKING, 'reigns': REIGNS, 'lives': LIVES, 'facts': FACTS}
+       'prophets': PROPHETS, 'prophetNote': PROPHET_NOTE, 'noking': NOKING, 'reigns': REIGNS, 'lives': LIVES, 'facts': FACTS,
+       'gen': {'people': GEN, 'events': GEN_EVENTS}}
 json.dump(out, open(os.path.join(ROOT, 'data/linea-tiempo.json'), 'w'), ensure_ascii=False)
 print('ok', len(BOOKS), 'libros')

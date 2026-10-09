@@ -3,7 +3,8 @@
    - B · La historia completa: las épocas con sus libros, la del capítulo resaltada.
    - C · Profetas y reyes: los reyes que nombra cada libro profético y quiénes fueron contemporáneos.
    - D · El salmo en su momento: los salmos cuyo título cuenta cuándo se escribieron, enlazados a la historia (y al revés).
-   - E · Vidas comparadas: las edades que da el texto, cada una con su versículo.
+   - E · ¿Quién vivía?: de Adán a José en años desde la creación (sumados de Gn 5 y 11). Se arrastra el tiempo con una aguja;
+     al tocar una vida se ve a quién conoció (su vida en vinotinto y, encima, el tramo compartido). Más las edades que da el texto.
    Datos: data/linea-tiempo.json (scripts/tiempo/build.py valida todas las citas). Fechas aproximadas, con «c.».
    Expone window.KodeshTiempo. */
 (function () {
@@ -86,7 +87,37 @@ html.tl-off .tl-pill { display: none !important; }
 .tl-life .tl-row span { font-size: 1rem; }
 .tl-life .tl-row em { font-style: normal; color: var(--gold, #c9a84c); }
 .tl-life .bb { height: 10px; border-radius: 5px; margin-top: 5px; background: rgba(201,168,76,.55); }
-.tl-life button { margin-top: 3px; font-size: .8rem; color: var(--text-dim, #6e6656); }`;
+.tl-life button { margin-top: 3px; font-size: .8rem; color: var(--text-dim, #6e6656); }
+.tl-seg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--text-mid, #b8af9c); margin: 6px 0 2px; }
+.tl-seg span { flex: 1 1 160px; min-width: 0; line-height: 1.3; }
+.tl-seg .sg { display: inline-flex; padding: 3px; gap: 3px; border-radius: 11px; background: var(--bg2, #12111a); border: 1px solid var(--border2, #2a2836); }
+.tl-seg .sg button { border: none; background: none; color: var(--text-mid, #b8af9c); font: inherit; font-size: .8rem; padding: 5px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.tl-seg .sg button.on { background: var(--gold, #c9a84c); color: #15120a; }
+.tl-yr { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 10px 0 4px; }
+.tl-yr b { font-family: var(--font-display, serif); font-size: 2rem; font-weight: 600; color: var(--gold, #c9a84c); font-variant-numeric: tabular-nums; line-height: 1; }
+.tl-yr b small { font-family: var(--font-body, serif); font-size: .8rem; font-weight: 400; color: var(--text-dim, #6e6656); margin-left: 6px; }
+.tl-yr > small { color: var(--text-mid, #b8af9c); text-align: right; }
+.tl-gantt { position: relative; height: 352px; margin: 0 -18px; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; border-top: 1px solid var(--border2, #2a2836); border-bottom: 1px solid var(--border2, #2a2836); }
+.tl-gantt svg { position: absolute; inset: 0; }
+.tl-needle { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: #e0603c; pointer-events: none; }
+.tl-needle:before { content: ''; position: absolute; top: 0; left: -6px; border: 7px solid transparent; border-top: 10px solid #e0603c; }
+.tl-alive { padding: 10px 0 0; }
+.tl-alive p { margin: 4px 0 0; line-height: 1.5; }
+.tl-alive button { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(201,168,76,.4); text-underline-offset: 3px; }
+.tl-alive small { color: var(--text-dim, #6e6656); }
+.tl-back { border: none; background: none; color: var(--gold, #c9a84c); font: inherit; font-size: .95rem; padding: 6px 0; cursor: pointer; }
+.tl-chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
+.tl-chip { flex-shrink: 0; border: 1px solid var(--border2, #2a2836); background: none; color: var(--text, #e9e3d3); border-radius: 15px; padding: 5px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+.tl-chip.on { background: #7a1f33; border-color: #7a1f33; color: #fff; }
+.tl-lifebar { height: 12px; border-radius: 6px; background: #7a1f33; margin-top: 10px; }
+.tl-lifeax { display: flex; justify-content: space-between; color: var(--text-dim, #6e6656); font-size: .78rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tl-kn { margin: 12px 0; }
+.tl-kn .tl-row { align-items: baseline; }
+.tl-kn .tl-row button { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.tl-kn small { color: var(--text-dim, #6e6656); }
+.tl-kn em { font-style: normal; color: var(--gold, #c9a84c); white-space: nowrap; }
+.tl-kn .tr { position: relative; height: 12px; margin-top: 5px; border-radius: 6px; background: #7a1f33; }
+.tl-kn .tr i { position: absolute; top: 0; bottom: 0; border-radius: 6px; box-shadow: 0 0 0 2px var(--bg, #0b0b12); }`;
   document.head.appendChild(css);
 
   function paintToggle() {
@@ -158,23 +189,102 @@ html.tl-off .tl-pill { display: none !important; }
     return `<p style="margin:4px 0 0;color:var(--text-mid,#b8af9c)">Estos salmos dicen en su título cuándo se escribieron. Lee el salmo junto a la historia que lo provocó.</p>`
       + D.pshist.map(([n, t, r]) => `<div class="tl-card${cur === n ? ' on' : ''}"><div class="tl-row"><button class="tl-link" style="color:inherit;font-size:1rem" data-go="PSA ${n}"><b>Salmo ${n}</b></button><button class="tl-link" data-go="${r}">${esc(nice(r))} →</button></div><div style="color:var(--text-mid,#b8af9c);margin-top:2px">${esc(t)}</div></div>`).join('');
   }
+  /* E · ¿Quién vivía? */
+  let gy = 1656, who = null, tShift = (() => { try { return localStorage.getItem('kodesh_tl_tare') === '130' ? 60 : 0; } catch (e) { return 0; } })();
+  const GCOL = p => p.kind === 'o' ? '#c98a9e' : p.b >= 1656 ? '#c9a84c' : '#6fa0d8';
+  function genPeople() { return D.gen.people.map(([n, b, d, r, ab, kind]) => ({ n, b: b + (ab ? tShift : 0), d: d + (ab ? tShift : 0), r, kind })); }
+  function genEvents(G) {
+    return D.gen.events.map(([y, t, r]) => { if (typeof y === 'string') { const [n, k] = y.split('+'); y = G.find(p => p.n === n).b + +k; } return [y, t, r]; });
+  }
+  const shared = (a, b) => Math.max(0, Math.min(a.d, b.d) - Math.max(a.b, b.b));
+  const MAXY = 2400, PX = 0.42, ROW = 13;
+  function tareHtml() {
+    return `<div class="tl-seg"><span>Edad de Taré al nacer Abram: Génesis 11:26 se lee como 70; con Hechos 7:4 serían 130.</span><span class="sg" role="group" aria-label="Edad de Taré"><button type="button" data-tare="0" class="${tShift ? '' : 'on'}">70 · Gn 11:26</button><button type="button" data-tare="60" class="${tShift ? 'on' : ''}">130 · Hch 7:4</button></span></div>`;
+  }
   function vidasHtml() {
-    const max = 969;
-    return D.lives.map(([g, list]) => `<div class="tl-sec">${esc(g)}</div>` + list.map(([n, a, r]) =>
-      `<div class="tl-life"><div class="tl-row"><span>${esc(n)}</span><em>${a} años</em></div><div class="bb" style="width:${Math.max(3, a / max * 100).toFixed(1)}%"></div><button class="tl-link" data-go="${r}">${esc(nice(r))}</button></div>`).join('')).join('')
-      + `<div class="tl-sec">Datos</div>` + D.facts.map(([t, r1, r2]) => `<div class="tl-card"><div>${esc(t)}</div><div style="margin-top:4px"><button class="tl-link" data-go="${r1}">${esc(nice(r1))}</button>${r2 ? ` · <button class="tl-link" data-go="${r2}">${esc(nice(r2))}</button>` : ''}</div></div>`).join('')
-      + '<p class="tl-src">Solo las edades que dice el texto bíblico, con el versículo de cada una.</p>';
+    if (who) return conocioHtml();
+    return tareHtml()
+      + `<div class="tl-yr"><b data-gy></b><small data-gev></small></div>
+      <div class="tl-gantt" data-gantt><svg></svg><div class="tl-needle"></div></div>
+      <div class="tl-alive"><div class="tl-kick" data-gk></div><p data-gp></p></div>
+      <p class="tl-src" style="margin-top:8px">Arrastra para moverte en el tiempo. Toca una barra o un nombre para ver a quién conoció. Años contados desde la creación con las edades de Génesis 5 y 11, no fechas de calendario. Enoc no murió: «le llevó Dios» (Génesis 5:24).</p>`
+      + `<div class="tl-sec">Edades que da el texto</div>` + D.lives.map(([g, list]) => `<div class="tl-sec" style="color:var(--text-mid,#b8af9c)">${esc(g)}</div>` + list.map(([n, a, r]) =>
+      `<div class="tl-life"><div class="tl-row"><span>${esc(n)}</span><em>${a} años</em></div><div class="bb" style="width:${Math.max(3, a / 969 * 100).toFixed(1)}%"></div><button class="tl-link" data-go="${r}">${esc(nice(r))}</button></div>`).join('')).join('')
+      + `<div class="tl-sec">Datos</div>` + D.facts.map(([t, r1, r2]) => `<div class="tl-card"><div>${esc(t)}</div><div style="margin-top:4px"><button class="tl-link" data-go="${r1}">${esc(nice(r1))}</button>${r2 ? ` · <button class="tl-link" data-go="${r2}">${esc(nice(r2))}</button>` : ''}</div></div>`).join('');
+  }
+  function conocioHtml() {
+    const G = genPeople(), me = G.find(p => p.n === who), span = me.d - me.b, rel = y => (y - me.b) / span * 100;
+    const list = G.filter(p => p !== me && shared(p, me) > 0).sort((a, b) => shared(b, me) - shared(a, me));
+    return `<button type="button" class="tl-back" data-who="">‹ ¿Quién vivía?</button>
+      <div class="tl-chips">${G.map(p => `<button type="button" class="tl-chip${p === me ? ' on' : ''}" data-who="${esc(p.n)}">${esc(p.n)}</button>`).join('')}</div>
+      <div class="tl-card"><div class="tl-kick">${esc(me.n)} · año ${me.b} – ${me.d}</div>
+        <div style="margin-top:4px">Compartió años de vida con <b>${list.length}</b> de esta lista. <button class="tl-link" data-go="${me.r}">${esc(nice(me.r))}</button></div>
+        <div class="tl-lifebar"></div><div class="tl-lifeax"><span>nace</span><span>${Math.round(span / 2)} años</span><span>${me.n === 'Enoc' ? 'Dios se lo llevó' : 'muere'} a los ${span}</span></div></div>`
+      + list.map(p => { const a = Math.max(rel(p.b), 0), b = Math.min(rel(p.d), 100);
+        return `<div class="tl-kn"><div class="tl-row"><button type="button" data-who="${esc(p.n)}">${esc(p.n)} <small>· de sus ${Math.max(p.b, me.b) - me.b} a sus ${Math.min(p.d, me.d) - me.b}</small></button><em>${shared(p, me)} años juntos</em></div><div class="tr"><i style="left:${a.toFixed(2)}%;width:${Math.max(1, b - a).toFixed(2)}%;background:${GCOL(p)}"></i></div></div>`; }).join('')
+      + `<p class="tl-src">La línea vinotinto es la vida de ${esc(me.n)}, de su nacimiento (izquierda) a su muerte (derecha). Lo coloreado encima es el tramo que vivió junto a cada persona.${tShift ? ' Con Taré de 130 años (Hechos 7:4).' : ''}</p>`;
+  }
+  function drawGantt(s) {
+    const g = s.querySelector('[data-gantt]'); if (!g) return;
+    const svg = g.querySelector('svg'), W = g.clientWidth, H = g.clientHeight, G = genPeople(), EV = genEvents(G);
+    const NS = 'http://www.w3.org/2000/svg', X = y => W / 2 + (y - gy) * PX;
+    const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+    svg.setAttribute('width', W); svg.setAttribute('height', H); svg.textContent = '';
+    for (let y = 0; y <= MAXY; y += 100) {
+      const x = X(y); if (x < -40 || x > W + 40) continue;
+      el('line', { x1: x, y1: 0, x2: x, y2: H, style: `stroke:var(--border2,#2a2836);opacity:${y % 500 ? .45 : 1}` });
+      if (y % 500 === 0) el('text', { x: x + 3, y: H - 6, 'font-size': 10, style: 'fill:var(--text-dim,#6e6656)' }).textContent = y;
+    }
+    for (const [y] of EV) { const x = X(y); if (x > -10 && x < W + 10) el('line', { x1: x, y1: 0, x2: x, y2: H - 18, stroke: '#6fa0d8', 'stroke-dasharray': '3 3' }); }
+    G.forEach((p, i) => {
+      const y0 = 6 + i * ROW, x1 = X(p.b), x2 = X(p.d), on = gy >= p.b && gy <= p.d;
+      if (x2 < 0 || x1 > W) return;
+      el('rect', { x: x1, y: y0, width: Math.max(2, x2 - x1), height: ROW - 3, rx: 4, fill: GCOL(p), opacity: on ? .95 : .25 });
+      const vx = Math.max(x1, 0);
+      if (Math.min(x2, W) - vx > 44) el('text', { x: vx + 5, y: y0 + ROW - 5, 'font-size': 10, style: `fill:${on ? '#15120a' : 'var(--text,#e9e3d3)'}` }).textContent = p.n;
+    });
+    s.querySelector('[data-gy]').innerHTML = `${Math.round(gy)}<small>desde la creación</small>`;
+    const ev = EV.find(([y]) => Math.abs(y - gy) <= 6);
+    s.querySelector('[data-gev]').textContent = ev ? `${ev[1]} · ${nice(ev[2])}` : '';
+    const alive = G.filter(p => gy >= p.b && gy <= p.d);
+    s.querySelector('[data-gk]').textContent = alive.length ? `Vivían ${alive.length}` : 'Vivían';
+    const pEl = s.querySelector('[data-gp]');
+    pEl.innerHTML = alive.length ? alive.map(p => `<button type="button" data-who="${esc(p.n)}">${esc(p.n)}</button> <small>(${Math.round(gy - p.b)})</small>`).join(' · ') : 'Nadie de esta lista.';
+    pEl.querySelectorAll('[data-who]').forEach(b => b.onclick = () => openWho(b.dataset.who));
+  }
+  function openWho(n) { who = n || null; render(); const b = sheet().querySelector('.tl-body'); if (b) b.scrollTop = 0; }
+  function bindGantt(s) {
+    const g = s.querySelector('[data-gantt]'); if (!g) return;
+    let x0 = null, t0 = null, v = 0, lt = 0, raf = 0;
+    const clamp = y => Math.max(0, Math.min(MAXY, y));
+    g.addEventListener('pointerdown', e => { x0 = e.clientX; t0 = [e.clientX, e.clientY]; lt = performance.now(); v = 0; cancelAnimationFrame(raf); try { g.setPointerCapture(e.pointerId); } catch (_) {} });
+    g.addEventListener('pointermove', e => { if (x0 == null) return; const dx = e.clientX - x0, now = performance.now(); x0 = e.clientX; gy = clamp(gy - dx / PX); v = -dx / PX / Math.max(8, now - lt); lt = now; drawGantt(s); });
+    const up = e => {
+      if (x0 == null) return; x0 = null;
+      if (t0 && e && Math.hypot(e.clientX - t0[0], e.clientY - t0[1]) < 6) {
+        const r = g.getBoundingClientRect(), p = genPeople()[Math.floor((e.clientY - r.top - 6) / ROW)], yr = gy + (e.clientX - r.left - g.clientWidth / 2) / PX;
+        if (p && yr >= p.b - 25 && yr <= p.d + 25) return openWho(p.n);
+      }
+      let vv = v * 16; const step = () => { gy = clamp(gy + vv); vv *= .92; drawGantt(s); if (Math.abs(vv) > .3) raf = requestAnimationFrame(step); };
+      if (Math.abs(vv) > .3) raf = requestAnimationFrame(step);
+    };
+    g.addEventListener('pointerup', up); g.addEventListener('pointercancel', () => { x0 = null; });
+    drawGantt(s);
   }
   function render() {
     const s = sheet(), w = ctx.book ? where(ctx.book, ctx.ch) : null;
-    const tabs = [['historia', 'La historia'], ['profetas', 'Profetas y reyes'], ['salmos', 'Salmos con su historia'], ['vidas', 'Vidas comparadas']];
+    const tabs = [['historia', 'La historia'], ['profetas', 'Profetas y reyes'], ['salmos', 'Salmos con su historia'], ['vidas', '¿Quién vivía?']];
     const body = ctx.tab === 'profetas' ? profetasHtml() : ctx.tab === 'salmos' ? salmosHtml() : ctx.tab === 'vidas' ? vidasHtml() : historiaHtml(w);
-    s.innerHTML = `<div class="tl-grab" data-grab></div><div class="tl-head"><div><div class="tl-kick">Línea de tiempo</div><div class="tl-h">${ctx.tab === 'profetas' ? 'Profetas y reyes' : ctx.tab === 'salmos' ? 'El salmo en su momento' : ctx.tab === 'vidas' ? 'Vidas comparadas' : 'De Génesis a Apocalipsis'}</div></div><button class="tl-x" data-close aria-label="Cerrar">✕</button></div>
+    s.innerHTML = `<div class="tl-grab" data-grab></div><div class="tl-head"><div><div class="tl-kick">Línea de tiempo</div><div class="tl-h">${ctx.tab === 'profetas' ? 'Profetas y reyes' : ctx.tab === 'salmos' ? 'El salmo en su momento' : ctx.tab === 'vidas' ? (who ? 'A quién conoció' : '¿Quién vivía entonces?') : 'De Génesis a Apocalipsis'}</div></div><button class="tl-x" data-close aria-label="Cerrar">✕</button></div>
       <div class="tl-tabs">${tabs.map(([k, l]) => `<button class="tl-tab${ctx.tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="tl-body">${body}</div>`;
     s.querySelector('[data-close]').onclick = close;
-    s.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { ctx.tab = b.dataset.tab; render(); });
+    s.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { ctx.tab = b.dataset.tab; who = null; render(); });
     s.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+    s.querySelectorAll('.tl-body [data-who]').forEach(b => b.onclick = () => openWho(b.dataset.who));
+    s.querySelectorAll('[data-tare]').forEach(b => b.onclick = () => { tShift = +b.dataset.tare; try { localStorage.setItem('kodesh_tl_tare', tShift ? '130' : '70'); } catch (e) {} render(); });
+    if (ctx.tab === 'vidas' && !who) requestAnimationFrame(() => bindGantt(s));
+    if (ctx.tab === 'vidas' && who) { const c = s.querySelector('.tl-chip.on'); if (c) setTimeout(() => c.scrollIntoView({ inline: 'center', block: 'nearest' }), 30); }
     let y0 = null; const head = s.querySelector('.tl-head'), grab = s.querySelector('[data-grab]');
     for (const h of [head, grab]) {
       h.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
@@ -185,6 +295,7 @@ html.tl-off .tl-pill { display: none !important; }
   async function open(opts = {}) {
     await load(); if (!D) return;
     ctx = { book: opts.book || (typeof state !== 'undefined' ? state.currentBook : null), ch: opts.ch || (typeof state !== 'undefined' ? state.currentChapter : null), tab: opts.tab || 'historia' };
+    who = opts.who || null;
     sheet(); render();
     requestAnimationFrame(() => ov.classList.add('open'));
     document.body.style.overflow = 'hidden';
