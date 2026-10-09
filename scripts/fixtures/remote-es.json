@@ -1,0 +1,10 @@
+{
+  "personas/index.json": { "items": {
+    "abraham_58": { "resumen": "Padre de la fe: dejó su tierra cuando YHWH lo llamó y creyó la promesa.", "momentos": [{ "ref": "GEN 12:1", "t": "YHWH lo llama a salir de Harán" }], "edades": [{ "edad": 75, "t": "Sale de Harán", "ref": "GEN 12:4" }], "heb": { "lemma": "אַבְרָהָם", "strong": "H85", "sig": "padre de una multitud" } },
+    "moses_2108": { "resumen": "Profeta y libertador que sacó a Israel de Egipto y recibió la Torá en el Sinaí.", "momentos": [{ "ref": "EXO 3:2", "t": "La zarza que ardía" }] }
+  } },
+  "paralelos/index.json": { "items": { "20": { "u": { "MAT": [{ "c": 4, "v": 1, "f": "fue llevado por el Espíritu", "n": "Mateo subraya que el Espíritu lo guía." }] }, "c": "Los tres cuentan las tentaciones en el desierto." } } },
+  "raices/index.json": { "items": { "EXO:12": [{ "v": 11, "frase": "vuestros lomos ceñidos", "tema": "costumbre", "titulo": "Comer listos para salir", "texto": "La ropa ceñida era señal de prisa.", "refs": ["EXO 12:11"] }] } },
+  "grupos/index.json": { "ready": { "1": 1, "2": 1, "3": 1 } },
+  "verso-dia/index.json": { "items": [{ "ref": "JHN 3:16", "refText": "Juan 3:16", "text": "Porque de tal manera amó Dios al mundo", "audio": "" }] }
+}

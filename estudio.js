@@ -548,8 +548,9 @@ async function createStudy(format, template, opts = {}) {
   const page = await makePage(template);
   if (template === 'parasha' && opts.parasha) page.tpl = (await currentParasha(opts.parasha)) || page.tpl;
   const now = new Date().toISOString();
-  const title = template === 'parasha' && page.tpl.nombre ? `${page.tpl.nombre} · ${page.tpl.sig || 'estudio'}`.slice(0, 120)
-    : format === 'free' ? 'Mapa de estudio' : tplById(template).name;
+  // El título se guarda con el estudio: se escribe ya en el idioma de la app
+  const title = template === 'parasha' && page.tpl.nombre ? `${page.tpl.nombre} · ${TXs(page.tpl.sig || 'estudio')}`.slice(0, 120)
+    : TXs(format === 'free' ? 'Mapa de estudio' : tplById(template).name);
   const s = { id: uid(), title, format, template, pages: [page], chat: [], ref: null, createdAt: now, updatedAt: now };
   if (template === 'parasha' && page.tpl.book) s.ref = { bookId: page.tpl.book, chapter: page.tpl.startChapter || 1 };
   saveLocal(s);
@@ -615,7 +616,7 @@ function closeEditor() {
 }
 function renameStudy(v) {
   snapshot();
-  study.title = (v || '').trim().slice(0, 120) || 'Estudio';
+  study.title = (v || '').trim().slice(0, 120) || TXs('Estudio');
   $('titleInput').value = study.title;
   renderPages();
   markDirty();
@@ -1768,10 +1769,39 @@ function searchWordsSoon() { clearTimeout(wordTimer); wordTimer = setTimeout(sea
 // mencionan. Antes se mezclaban y salían primero coincidencias de la definición.
 const cleanWordKey = w => String(w || '').startsWith('strongs_') ? '' : String(w || '').replace(/_[0-9A-Z]{3}_\d+_\d+$/, '').replace(/_/g, ' ');
 const LEX_SEL = 'word, testament, strongs, lemma, transliteration, definition, language';
+// Inglés: el diccionario original de Strong (data/strongs-en.json); lexicon_cache tiene definiciones en español.
+const LEX_EN = !!(window.KodeshI18n && KodeshI18n.isEn);
+let strongsEnP = null;
+function strongsEn() {
+  if (!strongsEnP) strongsEnP = fetch('/data/strongs-en.json').then(r => r.json()).then(rows => rows.map(([code, lemma, xlit, pron, def]) => ({
+    word: 'strongs_' + code.toLowerCase(), strongs: code, lemma, transliteration: xlit, definition: def,
+    testament: code[0] === 'G' ? 'NT' : 'AT', language: code[0] === 'G' ? 'griego' : 'hebreo',
+    _l: (lemma + ' ' + xlit).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), _d: def.toLowerCase(),
+  }))).catch(() => (strongsEnP = null, []));
+  return strongsEnP;
+}
+async function searchWordsEn(raw, list) {
+  const req = ++wordReq;
+  list.innerHTML = `<div class="hint">${TXs('Buscando…')}</div>`;
+  const all = await strongsEn();
+  if (req !== wordReq) return;
+  const code = raw.match(/^([hg])0*(\d+)$/i);
+  const term = raw.toLowerCase().trim(), t2 = term.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const wordRe = new RegExp('\\b' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
+  const groups = code ? [all.filter(r => r.strongs === code[1].toUpperCase() + code[2])]
+    : [all.filter(r => r._l.includes(t2)).slice(0, 12), all.filter(r => wordRe.test(r._d.split(/[;,]/)[0])).slice(0, 12), all.filter(r => wordRe.test(r._d)).slice(0, 12).map(r => ({ ...r, _def: true }))];
+  return groups;
+}
 async function searchWords() {
   const raw = $('wordInput').value.trim();
   const list = $('wordList');
-  if (raw.length < 2) { list.innerHTML = '<div class="hint">Busca una palabra en español, hebreo o griego, o un número Strong (H1285, G26).</div>'; return; }
+  if (raw.length < 2) { list.innerHTML = LEX_EN ? '<div class="hint">Search for an English, Hebrew or Greek word, or a Strong\'s number (H1285, G26).</div>' : '<div class="hint">Busca una palabra en español, hebreo o griego, o un número Strong (H1285, G26).</div>'; return; }
+  if (LEX_EN) {
+    const req0 = wordReq + 1;
+    const groups = await searchWordsEn(raw, list);
+    if (!groups || req0 !== wordReq) return;
+    return renderWordGroups(groups, list);
+  }
   if (!sb) { list.innerHTML = '<div class="hint">Sin conexión con el lexicón.</div>'; return; }
   const req = ++wordReq;
   list.innerHTML = '<div class="hint">Buscando…</div>';
@@ -1796,6 +1826,12 @@ async function searchWords() {
       groups = [exact, prefix, l.data || [], (d.data || []).map(r => ({ ...r, _def: true }))];
     }
     if (req !== wordReq) return;
+    renderWordGroups(groups, list);
+  } catch (e) {
+    if (req === wordReq) list.innerHTML = '<div class="hint">No se pudo buscar. Intenta de nuevo.</div>';
+  }
+}
+function renderWordGroups(groups, list) {
     const seen = new Set();
     wordRows = groups.flat().filter(r => { const k = r.strongs || r.lemma; if (!k || seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
     let shownDefLabel = false;
@@ -1804,15 +1840,12 @@ async function searchWords() {
       const label = r._def && !shownDefLabel && i > 0 ? (shownDefLabel = true, `<div class="label" style="padding:8px 2px 0">También aparece en estas definiciones</div>`) : '';
       if (r._def) shownDefLabel = true;
       return `${label}<div class="wcard">
-        <div class="w-top"><span class="w-orig" lang="${r.testament === 'NT' ? 'grc' : 'he'}">${esc(r.lemma)}</span><span class="w-code">${esc(r.strongs || '')} · ${r.testament === 'NT' ? 'griego' : 'hebreo'}</span></div>
-        <div class="w-tr">${esc(r.transliteration || '')}${es ? ' · «' + esc(es) + '»' : ''}</div>
-        <p>${esc(String(r.definition || '').slice(0, 220))}${String(r.definition || '').length > 220 ? '…' : ''}</p>
+        <div class="w-top"><span class="w-orig" lang="${r.testament === 'NT' ? 'grc' : 'he'}">${esc(r.lemma)}</span><span class="w-code">${esc(r.strongs || '')} · ${TXs(r.testament === 'NT' ? 'griego' : 'hebreo')}</span></div>
+        <div class="w-tr" data-noi18n>${esc(r.transliteration || '')}${es ? ' · «' + esc(es) + '»' : ''}</div>
+        <p data-noi18n>${esc(String(r.definition || '').slice(0, 220))}${String(r.definition || '').length > 220 ? '…' : ''}</p>
         <button class="small-btn" onclick="insertWord(${i})">+ Insertar en la página</button>
       </div>`;
     }).join('') : '<div class="hint">Sin resultados. Prueba con otra forma de la palabra (singular, sin conjugar) o con un número Strong.</div>';
-  } catch (e) {
-    if (req === wordReq) list.innerHTML = '<div class="hint">No se pudo buscar. Intenta de nuevo.</div>';
-  }
 }
 function insertWord(i) {
   const r = wordRows[i]; if (!r) return;

@@ -90,6 +90,9 @@ const STEPS = [
   ['red bíblica · versículo', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 2).then(() => setTimeout(() => { const m = document.querySelector('.xl-mark'); if (m) m.click(); }, 1000))"],
   ['red bíblica · capítulo', 'index.html', "KodeshHome.hide(); selectBook('MAT'); loadChapter('MAT', 2).then(() => setTimeout(() => { const m = document.querySelector('.xl-net-btn'); if (m) m.click(); }, 1000))"],
   ['red bíblica · tanaj', 'index.html', "KodeshHome.hide(); selectBook('ISA'); loadChapter('ISA', 53).then(() => setTimeout(() => { const m = document.querySelector('.xl-mark'); if (m) m.click(); }, 1000))"],
+  ['personajes · ficha (caché es)', 'index.html', "KodeshHome.hide(); KodeshPeople.open('moses_2108')"],
+  ['parashot · preguntas del grupo', 'parashot.html', "setTimeout(() => { if (typeof openSheet === 'function') openSheet(0); }, 800)"],
+  ['estudio · buscar palabra', 'estudio.html', "createStudy('notebook').then(() => { togglePanel('left'); setLeftTab('words'); const i = document.getElementById('wordInput'); i.value = 'covenant'; return searchWords(); })"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];
@@ -116,7 +119,21 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
     await ctx.route(/\/api\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     // Red bíblica: conexiones de muestra (Mateo 2) para ver el panel con datos reales
     const LINKS = require('fs').readFileSync(require('path').join(__dirname, 'fixtures/bible-links-mat2.json'), 'utf8');
-    await ctx.route(/supabase\.co\//, r => r.fulfill({ status: 200, contentType: 'application/json', body: /bible_links\?select=\*&nt_book=eq\.MAT/.test(r.request().url()) ? LINKS : '[]' }));
+    // Contenido remoto en español (fichas, paralelos, raíces, preguntas, versículo del día), servido y también
+    // guardado en el teléfono como lo tendría alguien que usó la app en español: en inglés no debe aparecer.
+    const REMOTE_ES = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'fixtures/remote-es.json'), 'utf8'));
+    await ctx.addInitScript(R => { try {
+      localStorage.setItem('kodesh_pp_det', JSON.stringify(R['personas/index.json']));
+      localStorage.setItem('kodesh_pl_det', JSON.stringify(R['paralelos/index.json']));
+      localStorage.setItem('kodesh_fr_roots', JSON.stringify(R['raices/index.json']));
+      localStorage.setItem('kodesh_gq_index', JSON.stringify(R['grupos/index.json']));
+      localStorage.setItem('kodesh_vdd_index', JSON.stringify(R['verso-dia/index.json']));
+    } catch (e) {} }, REMOTE_ES);
+    await ctx.route(/supabase\.co\//, r => {
+      const u = r.request().url();
+      const k = Object.keys(REMOTE_ES).find(x => u.includes('/' + x));
+      r.fulfill({ status: 200, contentType: 'application/json', body: k ? JSON.stringify(REMOTE_ES[k]) : /bible_links\?select=\*&nt_book=eq\.MAT/.test(u) ? LINKS : '[]' });
+    });
     const p = await ctx.newPage();
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + page, { waitUntil: 'domcontentloaded' }).catch(() => {});
@@ -140,6 +157,8 @@ const EXTRA = (process.env.AUDIT_STEPS || '').split('|').filter(Boolean).map(x =
         const bad = w.filter(x => I.esWord(x) && !['Asa', 'Dan', 'Gad', 'Job', 'Is', 'He', 'Am', 'Mi', 'Ex', 'Mar', 'Sal', 'Ziv', 'Bul'].includes(x));
         if (bad.length) vis.add(t + '   ⟵ ' + bad.join(', '));
       }
+      // valores escritos por la app en campos de texto (títulos, etc.)
+      document.querySelectorAll('input:not([type]),input[type=text],textarea').forEach(e => { if (e.closest('[data-noi18n]') || !shown(e)) return; if (e.value && I.looksEs(e.value)) vis.add('@value: ' + e.value); });
       document.querySelectorAll('input[placeholder],textarea[placeholder],[aria-label],[title]').forEach(e => { if (e.closest('[data-noi18n]') || !shown(e)) return; for (const a of ['placeholder', 'aria-label', 'title']) { const v = e.getAttribute(a); if (v && I.looksEs(v)) vis.add(`@${a}: ${v}`); } });
       return { vis: [...vis] };
     });

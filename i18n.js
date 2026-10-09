@@ -240,6 +240,7 @@
     verseday: '',
     calpage: 'a[href^="calendario-biblico.html"], a[href^="/calendario-biblico.html"]',
     people: '[onclick*="KodeshPeople"], .pp-chips',
+    groups: '#sheetGroup, #weekQuestion',   // preguntas para el grupo (contenido en español)
   };
   const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile', 'maps', 'people', 'harmony', 'lexicon', 'interlinear']);
   const ok = f => !isEn || READY.has(f);

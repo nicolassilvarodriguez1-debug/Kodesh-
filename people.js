@@ -60,7 +60,7 @@
   const TP = (t, v) => { if (window.KodeshI18n) return KodeshI18n.t(t, v); let r = t; for (const k in v || {}) r = r.split('{' + k + '}').join(v[k]); return r; };
   const nameOf = id => { const x = P(id) || [id]; return EN && x[3] ? x[3] : x[0]; };
   const R = id => (DATA && DATA.r[id]) || {};
-  const det = id => (DET && DET.items && DET.items[id]) || null;
+  const det = id => (!(window.KodeshI18n && KodeshI18n.isEn) && DET && DET.items && DET.items[id]) || null;   // fichas en español (también las guardadas en el teléfono): nunca en inglés
 
   /* ── Ajustes ── */
   const isOn = () => { try { return localStorage.getItem('kodesh_pp_on') !== '0'; } catch (e) { return true; } };

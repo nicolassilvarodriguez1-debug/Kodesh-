@@ -25,6 +25,8 @@
     return LIST;
   }
   async function get(num) {
+    // Las preguntas están redactadas en español (también las guardadas en el teléfono): en inglés no se muestran
+    if (window.KodeshI18n && KodeshI18n.isEn) return null;
     await loadIndex();
     const v = INDEX && INDEX.ready && INDEX.ready[num];
     if (!v) return null;
