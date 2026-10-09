@@ -241,7 +241,7 @@
     calpage: 'a[href^="calendario-biblico.html"], a[href^="/calendario-biblico.html"]',
     people: '[onclick*="KodeshPeople"], .pp-chips',
     // marcas del lector que buscan frases del texto en español (lugares, personajes, fiestas, paralelos)
-    readermarks: '.settings-row:has(#mpToggle), .settings-row:has(#ppToggle), .settings-row:has(#frToggle), .settings-row:has(#plToggle)',
+    readermarks: '.settings-row:has(#frToggle), .settings-row:has(#plToggle)',
   };
   const READY = new Set(['tiempo', 'moedim', 'luna', 'ayuda', 'calpage', 'parashot', 'estudio', 'profile', 'maps', 'people']);
   const ok = f => !isEn || READY.has(f);

@@ -432,7 +432,6 @@ html.mp-off .mp-chips { display: none !important; }
     return false;
   }
   async function decorate(container, book, chapter) {
-    if (window.KodeshI18n && KodeshI18n.isEn) return; // en inglés: pendiente (marca frases del texto en español)
     if (!container || !book || !chapter || container.dataset.mp === `${book}:${chapter}`) return;
     container.dataset.mp = `${book}:${chapter}`;
     await loadPlaces(); if (!PLACES) return;
@@ -448,7 +447,7 @@ html.mp-off .mp-chips { display: none !important; }
     const trips = (TRIPS ? TRIPS.j : []).filter(j => j.stops.some(st => st.r.startsWith(`${book} ${chapter}:`)));
     if (trips.length && !container.previousElementSibling?.classList?.contains('mp-chips')) {
       const box = document.createElement('div'); box.className = 'mp-chips';
-      box.innerHTML = trips.map(j => `<button type="button" class="mp-chip" data-trip="${j.id}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Mapa: ${esc(j.t)}</button>`).join('');
+      box.innerHTML = trips.map(j => `<button type="button" class="mp-chip" data-trip="${j.id}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>${esc(TX('Mapa: {t}', { t: TX(j.t) }))}</button>`).join('');
       container.before(box);
       box.querySelectorAll('[data-trip]').forEach(b => b.onclick = () => openTrip(b.dataset.trip));
     }

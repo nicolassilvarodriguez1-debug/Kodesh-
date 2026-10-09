@@ -555,5 +555,6 @@
 "Unos {n} km {dir} de Jerusalén": "About {n} km {dir} of Jerusalem",
 "Lo que pasó aquí": "What happened here",
 "{n} mención": "{n} mention",
-"{n} menciones": "{n} mentions"
+"{n} menciones": "{n} mentions",
+"Mapa: {t}": "Map: {t}"
 }

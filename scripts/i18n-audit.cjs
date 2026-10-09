@@ -69,6 +69,8 @@ const STEPS = [
   ['personajes · familia', 'index.html', "KodeshHome.hide(); KodeshPeople.open('abraham_58').then(() => { const t = document.querySelector('[data-tab=familia]'); if (t) t.click(); })"],
   ['personajes · relaciones', 'index.html', "KodeshHome.hide(); KodeshPeople.open('moses_2108').then(() => { const t = document.querySelector('[data-tab=red]'); if (t) t.click(); })"],
   ['personajes · dos genealogías', 'index.html', "KodeshHome.hide(); KodeshPeople.open('x_yeshua').then(() => { const t = document.querySelector('[data-tab=dos]'); if (t) t.click(); })"],
+  ['lugares en el texto', 'index.html', "KodeshHome.hide(); selectBook('GEN'); loadChapter('GEN', 12).then(() => setTimeout(() => { const w = document.querySelector('.mp-place'); if (w) w.click(); }, 1800))"],
+  ['ruta en el capítulo', 'index.html', "KodeshHome.hide(); selectBook('ACT'); loadChapter('ACT', 13)"],
   ['login', 'login.html', ''],
   ['login · correo', 'login.html?mode=login', ''],
 ];
