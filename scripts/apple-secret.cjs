@@ -3,7 +3,7 @@
 // Apple solo lo acepta con vigencia máxima de ~6 meses: hay que regenerarlo antes de que venza.
 //
 // Uso:
-//   node scripts/apple-secret.js --p8 ~/Downloads/AuthKey_XXXXXXXXXX.p8 \
+//   node scripts/apple-secret.cjs --p8 ~/Downloads/AuthKey_XXXXXXXXXX.p8 \
 //        --team TEAMID1234 --key XXXXXXXXXX --client com.tu.services.id
 //
 //   --p8      archivo .p8 descargado al crear la llave (Keys → Sign in with Apple)
