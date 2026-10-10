@@ -1,0 +1,20 @@
+<div style="background:#0d0a07;padding:32px 16px;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+  <div style="max-width:480px;margin:0 auto;background:#16110b;border:1px solid #3a2e1c;border-radius:18px;padding:30px 26px">
+    <p style="font-family:Georgia,serif;font-size:26px;color:#c9a84c;margin:0;text-align:center">קֹדֶשׁ</p>
+    <p style="font-family:Georgia,serif;font-size:15px;letter-spacing:7px;color:#f6efdf;margin:2px 0 26px;text-align:center">KODESH</p>
+    {{ if eq .Data.lang "en" }}
+      <p style="font-family:Georgia,serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;margin:0 0 6px">Your account</p>
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;color:#f6efdf;margin:0 0 14px">Confirm your new email</h1>
+      <p style="font-size:16px;line-height:1.6;color:#d9cfb9;margin:0 0 22px">You asked to change your KODESH account email from {{ .Email }} to {{ .NewEmail }}. Tap the button to confirm.</p>
+      <p style="margin:0 0 22px"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#c9a84c;color:#15120a;text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:24px">Confirm the change</a></p>
+      <p style="font-size:13px;line-height:1.5;color:#9a8e74;margin:0">If you didn't request this change, ignore this email and your account will stay the same.</p>
+    {{ else }}
+      <p style="font-family:Georgia,serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;margin:0 0 6px">Tu cuenta</p>
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;color:#f6efdf;margin:0 0 14px">Confirma tu nuevo correo</h1>
+      <p style="font-size:16px;line-height:1.6;color:#d9cfb9;margin:0 0 22px">Pediste cambiar el correo de tu cuenta de KODESH de {{ .Email }} a {{ .NewEmail }}. Toca el botón para confirmarlo.</p>
+      <p style="margin:0 0 22px"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#c9a84c;color:#15120a;text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:24px">Confirmar el cambio</a></p>
+      <p style="font-size:13px;line-height:1.5;color:#9a8e74;margin:0">Si no pediste este cambio, ignora este correo y tu cuenta seguirá igual.</p>
+    {{ end }}
+  </div>
+  <p style="text-align:center;font-size:12px;color:#6c6150;margin:16px 0 0">kodeshbible.com</p>
+</div>

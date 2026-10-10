@@ -1,0 +1,20 @@
+<div style="background:#0d0a07;padding:32px 16px;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+  <div style="max-width:480px;margin:0 auto;background:#16110b;border:1px solid #3a2e1c;border-radius:18px;padding:30px 26px">
+    <p style="font-family:Georgia,serif;font-size:26px;color:#c9a84c;margin:0;text-align:center">קֹדֶשׁ</p>
+    <p style="font-family:Georgia,serif;font-size:15px;letter-spacing:7px;color:#f6efdf;margin:2px 0 26px;text-align:center">KODESH</p>
+    {{ if eq .Data.lang "en" }}
+      <p style="font-family:Georgia,serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;margin:0 0 6px">Sign in</p>
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;color:#f6efdf;margin:0 0 14px">Your sign-in link</h1>
+      <p style="font-size:16px;line-height:1.6;color:#d9cfb9;margin:0 0 22px">Tap the button to sign in to KODESH. The link expires soon and can only be used once.</p>
+      <p style="margin:0 0 22px"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#c9a84c;color:#15120a;text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:24px">Sign in to KODESH</a></p>
+      <p style="font-size:13px;line-height:1.5;color:#9a8e74;margin:0">If you didn't try to sign in, you can ignore this email.</p>
+    {{ else }}
+      <p style="font-family:Georgia,serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;margin:0 0 6px">Entrar</p>
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;color:#f6efdf;margin:0 0 14px">Tu enlace para entrar</h1>
+      <p style="font-size:16px;line-height:1.6;color:#d9cfb9;margin:0 0 22px">Toca el botón para entrar a KODESH. El enlace es válido por poco tiempo y solo se puede usar una vez.</p>
+      <p style="margin:0 0 22px"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#c9a84c;color:#15120a;text-decoration:none;font-weight:600;font-size:16px;padding:13px 26px;border-radius:24px">Entrar a KODESH</a></p>
+      <p style="font-size:13px;line-height:1.5;color:#9a8e74;margin:0">Si no intentaste entrar, puedes ignorar este correo.</p>
+    {{ end }}
+  </div>
+  <p style="text-align:center;font-size:12px;color:#6c6150;margin:16px 0 0">kodeshbible.com</p>
+</div>
