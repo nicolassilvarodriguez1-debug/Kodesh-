@@ -97,7 +97,7 @@
   css.textContent = `
 .pp-row { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; margin-bottom: 4px; scrollbar-width: none; }
 .pp-row::-webkit-scrollbar { display: none; }
-.pp-row .pp-lbl { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); align-self: center; white-space: nowrap; margin-right: 2px; }
+.pp-row .pp-lbl { font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); align-self: center; white-space: nowrap; margin-right: 2px; }
 .pp-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border2, #2a2836); background: none; color: var(--text, #e9e3d3); border-radius: 18px; padding: 4px 11px 4px 4px; font: inherit; font-size: .88rem; cursor: pointer; white-space: nowrap; }
 .pp-chip.on { border-color: var(--gold, #c9a84c); }
 .pp-av { width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-family: 'Frank Ruhl Libre', serif; font-size: .85rem; background: rgba(201,168,76,.16); color: var(--gold, #c9a84c); flex-shrink: 0; }
@@ -112,7 +112,7 @@ html.pp-off .pp-row { display: none !important; }
 .pp-sheet { width: min(720px, 100%); height: 92vh; display: flex; flex-direction: column; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; border: 1px solid var(--border2, #2a2836); border-bottom: none; transform: translateY(30px); transition: transform .3s cubic-bezier(.2,.8,.2,1); font-family: var(--font-body, serif); overflow: hidden; }
 .pp-ov.open .pp-sheet { transform: none; }
 .pp-head { padding: 16px 18px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-shrink: 0; }
-.pp-kick { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.pp-kick { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .pp-h { font-family: var(--font-display, serif); font-size: 1.6rem; font-weight: 600; line-height: 1.15; margin-top: 2px; }
 .pp-heb { font-family: 'Frank Ruhl Libre', serif; font-size: 1.5rem; color: var(--gold, #c9a84c); }
 .pp-sig { color: var(--text-mid, #b8af9c); font-style: italic; font-size: .95rem; margin-top: 2px; }
@@ -121,7 +121,7 @@ html.pp-off .pp-row { display: none !important; }
 .pp-tab { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 18px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; white-space: nowrap; }
 .pp-tab.on { border-color: var(--gold, #c9a84c); color: var(--gold, #c9a84c); }
 .pp-body { flex: 1; overflow: auto; padding: 4px 18px 24px; }
-.pp-sec { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 6px; }
+.pp-sec { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 6px; }
 .pp-p { line-height: 1.6; color: var(--text, #e9e3d3); font-size: 1.02rem; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .pp-chips small { color: var(--text-dim, #6e6656); font-size: .78rem; margin-left: 2px; }
@@ -131,7 +131,7 @@ html.pp-off .pp-row { display: none !important; }
 .pp-ref { border: 1px solid var(--border2, #2a2836); border-radius: 12px; padding: 3px 9px; font-size: .85rem; color: var(--text-mid, #b8af9c); text-decoration: none; }
 .pp-tree { display: grid; gap: 14px; justify-items: center; padding: 6px 0 30vh; }
 .pp-gen { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.pp-gen-l { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); text-align: center; margin-bottom: -6px; }
+.pp-gen-l { font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim, #6e6656); text-align: center; margin-bottom: -6px; }
 .pp-node { border: 1px solid var(--border2, #2a2836); background: var(--bg2, #12111a); color: var(--text, #e9e3d3); border-radius: 12px; padding: 7px 12px; font: inherit; font-size: .95rem; cursor: pointer; }
 .pp-node.me { border-color: var(--gold, #c9a84c); background: rgba(201,168,76,.12); font-weight: 600; }
 .pp-node.ly, .pp-chip.ly { border: 1.5px solid #c9a03a; color: var(--text, #e9e3d3); background: rgba(201,160,58,.10); font-weight: 600; }
@@ -146,7 +146,7 @@ html.pp-off .pp-row { display: none !important; }
 .pp-gcard small { color: var(--text-mid, #b8af9c); font-size: .86rem; }
 .pp-gcols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 .pp-gc { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 14px; border: 1px solid var(--border2, #2a2836); }
-.pp-gc > b { font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.pp-gc > b { font-family: 'Cinzel', serif; font-size: 0.77rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .pp-gc > small { color: var(--text-mid, #b8af9c); font-size: .8rem; text-align: center; margin-bottom: 4px; }
 .pp-gc .pp-node { font-size: .86rem; padding: 5px 10px; }
 .pp-dots { color: var(--text-dim, #6e6656); line-height: .8; }
@@ -161,7 +161,7 @@ html.pp-off .pp-row { display: none !important; }
 .pp-age i { position: absolute; left: -22px; top: 2px; width: 42px; height: 30px; border-radius: 15px; background: var(--gold, #c9a84c); color: #15120a; font-style: normal; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .9rem; }
 .pp-age b { display: block; font-weight: 500; font-size: 1rem; }
 .pp-age small { color: var(--text-dim, #6e6656); }
-.pp-src { font-size: .7rem; color: var(--text-dim, #6e6656); margin-top: 18px; }`;
+.pp-src { font-size: 0.77rem; color: var(--text-dim, #6e6656); margin-top: 18px; }`;
   document.head.appendChild(css);
 
   /* ── Hoja del personaje ── */

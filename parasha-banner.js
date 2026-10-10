@@ -25,7 +25,7 @@
 .ps-banner { position: relative; display: block; height: clamp(160px, 32vw, 280px); margin: 0 -8px 14px; border-radius: 18px; overflow: hidden; text-decoration: none; color: #fff; }
 .ps-banner .ps-img { position: absolute; inset: 0; background-size: cover; background-position: center; -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); }
 .ps-banner .ps-txt { position: absolute; left: 16px; bottom: 14px; right: 16px; display: flex; align-items: baseline; gap: 8px; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
-.ps-banner .ps-k { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.ps-banner .ps-k { font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .ps-banner b { font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 1.35rem; font-weight: 600; color: var(--text, #e9e3d3); }
 .ps-banner .he { font-family: 'Frank Ruhl Libre', serif; color: var(--gold, #c9a84c); font-size: 1.1rem; }
 html.light .ps-banner .ps-txt { text-shadow: 0 1px 8px rgba(255,255,255,.8); }

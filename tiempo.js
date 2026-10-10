@@ -57,14 +57,14 @@ html.tl-off .tl-pill { display: none !important; }
 .tl-ov.open .tl-sheet { transform: none; }
 .tl-grab { width: 42px; height: 5px; border-radius: 3px; background: var(--border2, #2a2836); margin: 8px auto 0; flex-shrink: 0; }
 .tl-head { padding: 10px 18px 4px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-shrink: 0; }
-.tl-kick { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.tl-kick { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .tl-h { font-family: var(--font-display, serif); font-size: 1.6rem; font-weight: 600; line-height: 1.15; margin-top: 2px; }
 .tl-x { width: 38px; height: 38px; border-radius: 19px; border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); cursor: pointer; flex-shrink: 0; }
 .tl-tabs { display: flex; gap: 6px; padding: 8px 18px 10px; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
 .tl-tab { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 18px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; white-space: nowrap; }
 .tl-tab.on { border-color: var(--gold, #c9a84c); color: var(--gold, #c9a84c); }
 .tl-body { flex: 1; overflow: auto; padding: 4px 18px 28px; overscroll-behavior: contain; }
-.tl-sec { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 8px; }
+.tl-sec { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 8px; }
 .tl-src { font-size: .78rem; color: var(--text-dim, #6e6656); margin-top: 16px; line-height: 1.4; }
 .tl-era { display: grid; grid-template-columns: 86px 6px 1fr; gap: 12px; align-items: stretch; width: 100%; padding: 8px 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tl-era .yr { font-size: .8rem; color: var(--text-dim, #6e6656); text-align: right; padding-top: 3px; }
@@ -78,7 +78,7 @@ html.tl-off .tl-pill { display: none !important; }
 .tl-here { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--gold-dim, #6e5a2a); background: rgba(201,168,76,.07); font-size: .95rem; }
 .tl-grid { overflow-x: auto; padding-bottom: 6px; }
 .tl-grid table { border-collapse: separate; border-spacing: 3px 6px; }
-.tl-grid th { font-weight: 500; font-size: .74rem; color: var(--text-mid, #b8af9c); min-width: 62px; text-align: center; padding: 4px 2px; border-radius: 8px; background: var(--bg2, #12111a); }
+.tl-grid th { font-weight: 500; font-size: 0.778rem; color: var(--text-mid, #b8af9c); min-width: 62px; text-align: center; padding: 4px 2px; border-radius: 8px; background: var(--bg2, #12111a); }
 .tl-grid td.bar { cursor: pointer; }
 .tl-grid td.bar span { display: block; height: 26px; line-height: 26px; padding: 0 8px; border-radius: 7px; background: rgba(110,160,220,.22); color: var(--text, #e9e3d3); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tl-grid td.bar.on span { background: var(--gold, #c9a84c); color: #15120a; font-weight: 600; }

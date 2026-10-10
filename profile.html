@@ -18,13 +18,13 @@
 :root {
   --gold:#c9a84c; --gold-bright:#e8c46a; --gold-dim:rgba(201,168,76,0.2); --gold-glow:rgba(201,168,76,0.08);
   --bg:#06060e; --bg2:#0b0b16; --bg3:#10101e;
-  --text:#ede5d0; --text-mid:#a89878; --text-dim:#4a4030;
+  --text:#ede5d0; --text-mid:#a89878; --text-dim:#9a8e74;
   --border:rgba(255,255,255,0.05); --border2:rgba(201,168,76,0.15);
   --green:#4caf7d; --red:#e05c5c;
 }
 html[data-theme="light"] {
   --bg:#faf8f3; --bg2:#f3efe4; --bg3:#ede8d8;
-  --text:#1a1408; --text-mid:#6b5a38; --text-dim:#b0a080;
+  --text:#1a1408; --text-mid:#6b5a38; --text-dim:#7a6c4c;
   --border:rgba(0,0,0,0.06); --border2:rgba(201,168,76,0.3);
 }
 html, body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'EB Garamond',Georgia,serif; transition:background 0.3s,color 0.3s; }
@@ -32,10 +32,10 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 /* TOPBAR */
 .topbar { background:var(--bg2); border-bottom:1px solid var(--border2); padding-left:24px; padding-right:24px; padding-bottom:14px; padding-top:max(env(safe-area-inset-top),44px); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
 .topbar-left { display:flex; align-items:center; gap:16px; }
-.back-btn { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-decoration:none; text-transform:uppercase; transition:color 0.2s; }
+.back-btn { font-family:'Cinzel',serif; font-size:0.746rem; letter-spacing:2px; color:var(--text-dim); text-decoration:none; text-transform:uppercase; transition:color 0.2s; }
 .back-btn:hover { color:var(--gold); }
 .topbar-title { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:4px; color:var(--gold); text-transform:uppercase; }
-.theme-toggle { background:none; border:1px solid var(--border2); border-radius:20px; padding:4px 12px; font-size:0.7rem; cursor:pointer; color:var(--text-mid); transition:all 0.2s; }
+.theme-toggle { background:none; border:1px solid var(--border2); border-radius:20px; padding:4px 12px; font-size:0.77rem; cursor:pointer; color:var(--text-mid); transition:all 0.2s; }
 .theme-toggle:hover { border-color:var(--gold); color:var(--gold); }
 
 /* MAIN */
@@ -68,7 +68,7 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .badge {
   display:inline-flex; align-items:center; gap:4px;
   padding:3px 10px; border-radius:12px;
-  font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:1.5px; text-transform:uppercase;
+  font-family:'Cinzel',serif; font-size:0.73rem; letter-spacing:1.5px; text-transform:uppercase;
 }
 .badge-premium { background:rgba(201,168,76,0.12); color:var(--gold); border:1px solid var(--gold-dim); }
 .badge-free { background:rgba(255,255,255,0.05); color:var(--text-dim); border:1px solid var(--border); }
@@ -76,11 +76,11 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .badge-google { background:rgba(66,133,244,0.1); color:#4285f4; border:1px solid rgba(66,133,244,0.2); }
 
 .profile-actions { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
-.btn-read { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; background:var(--gold); border:none; color:#1a0e00; padding:10px 18px; border-radius:8px; cursor:pointer; text-decoration:none; transition:opacity 0.2s; white-space:nowrap; }
+.btn-read { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; background:var(--gold); border:none; color:#1a0e00; padding:10px 18px; border-radius:8px; cursor:pointer; text-decoration:none; transition:opacity 0.2s; white-space:nowrap; }
 .btn-read:hover { opacity:0.85; }
-.btn-logout { font-family:'Cinzel',serif; font-size:0.55rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:8px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.btn-logout { font-family:'Cinzel',serif; font-size:0.74rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:8px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
 .btn-logout:hover { border-color:var(--red); color:var(--red); }
-.btn-delete { font-family:'Cinzel',serif; font-size:0.48rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid rgba(224,92,92,0.3); color:var(--red); padding:6px 12px; border-radius:8px; cursor:pointer; transition:all 0.2s; opacity:0.7; white-space:nowrap; }
+.btn-delete { font-family:'Cinzel',serif; font-size:0.726rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid rgba(224,92,92,0.3); color:var(--red); padding:6px 12px; border-radius:8px; cursor:pointer; transition:all 0.2s; opacity:0.7; white-space:nowrap; }
 .btn-delete:hover { opacity:1; border-color:var(--red); background:rgba(224,92,92,0.08); }
 @media(max-width:600px) {
   .profile-hero { flex-direction:column; align-items:flex-start; padding:20px; gap:16px; }
@@ -128,13 +128,13 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 }
 .premium-feature-icon { color:var(--gold); font-size:0.9rem; flex-shrink:0; }
 .premium-legal {
-  font-size:0.72rem; color:var(--text-dim);
+  font-size:0.774rem; color:var(--text-dim);
   line-height:1.6; margin-bottom:20px;
 }
 .premium-legal a { color:var(--gold); text-decoration:none; }
 .premium-legal a:hover { text-decoration:underline; }
 .btn-premium-buy {
-  width:100%; font-family:'Cinzel',serif; font-size:0.7rem;
+  width:100%; font-family:'Cinzel',serif; font-size:0.77rem;
   letter-spacing:2px; text-transform:uppercase;
   background:var(--gold); border:none; color:#1a0e00;
   padding:14px; border-radius:10px; cursor:pointer;
@@ -143,7 +143,7 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .btn-premium-buy:hover { opacity:0.85; }
 .btn-premium-buy:disabled { opacity:0.5; cursor:not-allowed; }
 .btn-premium-cancel {
-  width:100%; font-family:'Cinzel',serif; font-size:0.6rem;
+  width:100%; font-family:'Cinzel',serif; font-size:0.75rem;
   letter-spacing:1px; text-transform:uppercase;
   background:none; border:1px solid var(--border2);
   color:var(--text-dim); padding:10px; border-radius:10px;
@@ -166,12 +166,12 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .delete-modal-icon { font-size:2.5rem; margin-bottom:12px; }
 .delete-modal-title { font-family:'Cinzel',serif; font-size:1rem; color:var(--red); margin-bottom:12px; letter-spacing:1px; }
 .delete-modal-text { font-size:0.9rem; color:var(--text-mid); line-height:1.6; margin-bottom:20px; }
-.delete-modal-confirm { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text-dim); font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:1px; padding:10px; border-radius:8px; margin-bottom:12px; outline:none; }
+.delete-modal-confirm { width:100%; background:var(--bg3); border:1px solid var(--border2); color:var(--text-dim); font-family:'Cinzel',serif; font-size:0.76rem; letter-spacing:1px; padding:10px; border-radius:8px; margin-bottom:12px; outline:none; }
 .delete-modal-confirm:focus { border-color:var(--red); }
 .delete-modal-buttons { display:flex; gap:10px; }
-.btn-cancel-delete { flex:1; font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:10px; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+.btn-cancel-delete { flex:1; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:1px; text-transform:uppercase; background:none; border:1px solid var(--border2); color:var(--text-dim); padding:10px; border-radius:8px; cursor:pointer; transition:all 0.2s; }
 .btn-cancel-delete:hover { border-color:var(--gold); color:var(--gold); }
-.btn-confirm-delete { flex:1; font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; text-transform:uppercase; background:var(--red); border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; transition:opacity 0.2s; }
+.btn-confirm-delete { flex:1; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:1px; text-transform:uppercase; background:var(--red); border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; transition:opacity 0.2s; }
 .btn-confirm-delete:disabled { opacity:0.4; cursor:not-allowed; }
 .btn-confirm-delete:not(:disabled):hover { opacity:0.85; }
 
@@ -180,22 +180,22 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 @media(max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } }
 .stat-card { background:var(--bg2); border:1px solid var(--border2); border-radius:12px; padding:18px; text-align:center; }
 .stat-number { font-family:'Cinzel',serif; font-size:1.6rem; font-weight:700; color:var(--gold); line-height:1; margin-bottom:4px; }
-.stat-label { font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
+.stat-label { font-family:'Cinzel',serif; font-size:0.73rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
 
 /* SECTION */
 .section { background:var(--bg2); border:1px solid var(--border2); border-radius:14px; margin-bottom:20px; overflow:hidden; }
 .section-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-.section-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:3px; color:var(--gold); text-transform:uppercase; }
+.section-title { font-family:'Cinzel',serif; font-size:0.76rem; letter-spacing:3px; color:var(--gold); text-transform:uppercase; }
 .section-body { padding:20px; }
 
 /* USAGE BARS */
 .usage-row { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
 .usage-row:last-child { margin-bottom:0; }
-.usage-label { font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:1px; color:var(--text-mid); text-transform:uppercase; width:100px; flex-shrink:0; }
+.usage-label { font-family:'Cinzel',serif; font-size:0.746rem; letter-spacing:1px; color:var(--text-mid); text-transform:uppercase; width:100px; flex-shrink:0; }
 .usage-bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; }
 .usage-bar-fill { height:100%; border-radius:3px; background:var(--gold); transition:width 0.6s ease; }
 .usage-bar-fill.danger { background:var(--red); }
-.usage-count { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--text-mid); width:60px; text-align:right; flex-shrink:0; }
+.usage-count { font-family:'JetBrains Mono',monospace; font-size:0.766rem; color:var(--text-mid); width:60px; text-align:right; flex-shrink:0; }
 
 /* GOALS */
 .goals-list { display:flex; flex-wrap:wrap; gap:8px; }
@@ -214,7 +214,7 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 .cal-day.read-little { background:rgba(201,168,76,0.08); border-color:var(--gold-dim); }
 .cal-day.today { outline:2px solid var(--gold); outline-offset:2px; }
 .cal-day.future { opacity:0.2; }
-.cal-day span { font-family:'JetBrains Mono',monospace; font-size:0.58rem; color:var(--text-dim); }
+.cal-day span { font-family:'JetBrains Mono',monospace; font-size:0.746rem; color:var(--text-dim); }
 .cal-day.read-full span, .cal-day.read-partial span { color:var(--gold); }
 .cal-day.read-full span { color:#1a0e00; }
 
@@ -228,19 +228,19 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 }
 .bookmark-item:hover { border-color:var(--border2); }
 .bookmark-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-.bookmark-ref { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; white-space:nowrap; }
+.bookmark-ref { font-family:'Cinzel',serif; font-size:0.754rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; white-space:nowrap; }
 .bookmark-text { font-size:0.9rem; color:var(--text-mid); font-style:italic; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .bookmark-empty { text-align:center; padding:24px; color:var(--text-dim); font-style:italic; }
 
 /* NOTES */
 .note-item { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:8px; }
-.note-ref { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; margin-bottom:6px; }
+.note-ref { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:1px; color:var(--gold); text-transform:uppercase; margin-bottom:6px; }
 .note-text { font-size:0.9rem; color:var(--text-mid); line-height:1.5; }
 .note-empty { text-align:center; padding:24px; color:var(--text-dim); font-style:italic; }
 
 /* TABS */
 .profile-tabs { display:flex; border-bottom:1px solid var(--border); }
-.profile-tab { flex:1; padding:12px; background:none; border:none; border-bottom:2px solid transparent; font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
+.profile-tab { flex:1; padding:12px; background:none; border:none; border-bottom:2px solid transparent; font-family:'Cinzel',serif; font-size:0.746rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
 .profile-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
 .tab-panel { display:none; padding:20px; }
 .tab-panel.active { display:block; }
@@ -248,8 +248,8 @@ html, body { min-height:100vh; background:var(--bg); color:var(--text); font-fam
 /* PROGRESS BAR */
 .progress-row { margin-bottom:16px; }
 .progress-label-row { display:flex; justify-content:space-between; margin-bottom:6px; }
-.progress-name { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:1px; color:var(--text-mid); text-transform:uppercase; }
-.progress-pct { font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--gold); }
+.progress-name { font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:1px; color:var(--text-mid); text-transform:uppercase; }
+.progress-pct { font-family:'JetBrains Mono',monospace; font-size:0.76rem; color:var(--gold); }
 .progress-bar { height:5px; background:var(--border); border-radius:3px; }
 .progress-fill { height:100%; border-radius:3px; background:var(--gold); transition:width 0.6s; }
 
@@ -806,9 +806,9 @@ async function loadProfile(user) {
       <div class="profile-actions">
         <a href="/index.html" class="btn-read">📖 Abrir Biblia</a>
         <button class="btn-logout" onclick="signOut()">Cerrar sesión</button>
-        <button class="btn-logout" onclick="window.location.href='/login.html?reset=1'" style="font-size:0.48rem;">Cambiar contraseña</button>
-        ${isNative ? `<button id="btnRestore" class="btn-logout" onclick="restorePurchases()" style="font-size:0.48rem;">Restaurar compras</button>` : ''}
-        ${isPremium ? `<button id="btnManageSub" class="btn-logout" onclick="manageSubscription()" style="font-size:0.48rem;">Gestionar / cancelar suscripción</button>` : ''}
+        <button class="btn-logout" onclick="window.location.href='/login.html?reset=1'" style="font-size:0.726rem;">Cambiar contraseña</button>
+        ${isNative ? `<button id="btnRestore" class="btn-logout" onclick="restorePurchases()" style="font-size:0.726rem;">Restaurar compras</button>` : ''}
+        ${isPremium ? `<button id="btnManageSub" class="btn-logout" onclick="manageSubscription()" style="font-size:0.726rem;">Gestionar / cancelar suscripción</button>` : ''}
         <button class="btn-delete" onclick="showDeleteAccountModal()">Eliminar cuenta</button>
       </div>
     </div>
@@ -856,10 +856,10 @@ async function loadProfile(user) {
         ${!isPremium ? `
         <div style="margin-top:16px;padding:14px 16px;background:rgba(201,168,76,0.05);border:1px solid var(--gold-dim);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium · 7 días gratis</div>
+            <div style="font-family:'Cinzel',serif;font-size:0.754rem;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">✦ KODESH Premium · 7 días gratis</div>
             <div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">80 búsquedas · 70 asistente · lexicón ilimitado</div>
           </div>
-          <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
+          <button id="btnPremium" onclick="purchasePremium()" style="font-family:'Cinzel',serif;font-size:0.746rem;letter-spacing:1.5px;text-transform:uppercase;background:var(--gold);border:none;color:#1a0e00;padding:8px 16px;border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:700;">
             Probar gratis →
           </button>
         </div>` : ''}
@@ -869,7 +869,7 @@ async function loadProfile(user) {
     <div class="section">
       <div class="section-header">
         <div class="section-title">📊 Progreso de Lectura</div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim)">${TX('{n} días totales', { n: streak.total_days_read || 0 })}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.76rem;color:var(--text-dim)">${TX('{n} días totales', { n: streak.total_days_read || 0 })}</span>
       </div>
       <div class="section-body">
         <div class="progress-row">
@@ -899,7 +899,7 @@ async function loadProfile(user) {
     <div class="section">
       <div class="section-header">
         <div class="section-title">📅 Calendario de Lectura</div>
-        <span style="font-size:0.7rem;color:var(--text-dim);font-style:italic">Últimas 5 semanas</span>
+        <span style="font-size:0.77rem;color:var(--text-dim);font-style:italic">Últimas 5 semanas</span>
       </div>
       <div class="section-body">
         <div class="calendar-grid">${calendarHtml}</div>

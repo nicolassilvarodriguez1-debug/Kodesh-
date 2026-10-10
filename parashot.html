@@ -21,7 +21,7 @@
 :root {
   --bg: #0b0b12; --bg2: #12111a; --bg3: #1b1a26; --bg-sunk: #0e0d15;
   --border: #22212e; --border2: #2a2836; --hair: #1c1b26;
-  --text: #e9e3d3; --text-mid: #b8af9c; --text-dim: #8e8676; --text-soft: #cfc7b5;
+  --text: #e9e3d3; --text-mid: #b8af9c; --text-dim: #a39a88; --text-soft: #cfc7b5;
   --gold: #c9a84c; --gold-line: #3a3220; --gold-glow: rgba(201,168,76,0.14); --gold-heb: #a8935a;
   --on-gold: #15120a;
   --blue: #8db8f5; --blue-soft: rgba(90,156,240,0.14);
@@ -39,7 +39,7 @@
 html.light {
   --bg: #f6f1e6; --bg2: #fffdf8; --bg3: #f0e9da; --bg-sunk: #f8f3e8;
   --border: #e6dcc6; --border2: #d9cdb2; --hair: #ece3d0;
-  --text: #241d12; --text-mid: #4f4636; --text-dim: #7a6f5c; --text-soft: #4f4636;
+  --text: #241d12; --text-mid: #4f4636; --text-dim: #625846; --text-soft: #4f4636;
   --gold: #8a6a1e; --gold-line: #dccb9c; --gold-glow: rgba(138,106,30,0.12); --gold-heb: #8a6a1e;
   --on-gold: #fffdf8;
   --blue: #1f5a9e; --blue-soft: rgba(31,90,158,0.1);
@@ -76,7 +76,7 @@ a { color: var(--gold); }
 .icon-btn:active { background: var(--gold-glow); }
 .topbar-title { flex: 1; text-align: center; min-width: 0; }
 .topbar-title h1 { margin: 0; font-family: var(--font-display); font-size: 21px; font-weight: 600; line-height: 1.15; }
-.topbar-sub { font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+.topbar-sub { font-size: 12.2px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
 
 .page { max-width: 640px; margin: 0 auto; padding: 16px 16px calc(40px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 14px; }
 
@@ -99,7 +99,7 @@ a { color: var(--gold); }
    y cortaba la primera letra y los puntos vocálicos). El tamaño se ajusta en
    fitWatermark() para que el nombre completo quepa. */
 .week-watermark { position: absolute; right: 18px; top: 4px; font-size: 104px; color: var(--gold); opacity: 0.09; line-height: 1.3; pointer-events: none; white-space: nowrap; direction: rtl; unicode-bidi: isolate; }
-.week-kicker { display: flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); position: relative; }
+.week-kicker { display: flex; align-items: center; gap: 8px; font-size: 12.4px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); position: relative; }
 .week-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 4px; background: var(--gold); flex-shrink: 0; }
 .week-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; position: relative; }
 .week-name { margin: 0; font-family: var(--font-display); font-size: 40px; font-weight: 600; line-height: 1; }
@@ -124,7 +124,7 @@ a { color: var(--gold); }
 .reading.done .reading-check span { background: var(--gold); border-color: var(--gold); }
 .reading-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 56px; padding-right: 14px; text-decoration: none; color: var(--text); }
 .reading-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.reading-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; }
+.reading-label { font-size: 12.3px; letter-spacing: 1.5px; text-transform: uppercase; }
 .reading-ref { font-size: 16.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .reading.done .reading-ref { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--node); }
 .c-torah { color: var(--gold); } .c-haftarah { color: var(--blue); } .c-np { color: var(--purple); }
@@ -166,7 +166,7 @@ a { color: var(--gold); }
 .year-bar { display: flex; flex-direction: column; gap: 5px; min-width: 0; border: none; background: transparent; padding: 0; cursor: pointer; text-align: left; }
 .year-track { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
 .year-fill { height: 6px; background: var(--gold); border-radius: 3px; }
-.year-name { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.year-name { font-size: 12.4px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .year-bar.current .year-name { color: var(--gold); }
 
 /* ── El camino ── */

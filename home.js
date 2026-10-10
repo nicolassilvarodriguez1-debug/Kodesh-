@@ -87,7 +87,7 @@ html.light .hm-logo { text-shadow: 0 1px 10px rgba(255,250,238,.9), 0 0 2px rgba
 html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%, #20170e 60%, var(--bg) 100%); }
 .hm-hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 45%; background: linear-gradient(180deg, transparent, var(--bg)); pointer-events: none; }
 .hm-hero > * { position: relative; z-index: 1; }
-.hm-k { font-family: 'Cinzel', var(--font-display, serif); font-size: .66rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.hm-k { font-family: 'Cinzel', var(--font-display, serif); font-size: 0.762rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .hm-h1 { font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 3.4rem; font-weight: 600; line-height: 1; margin-top: 4px; }
 .hm-sub { font-family: var(--font-display, serif); font-style: italic; font-size: 1.35rem; margin-top: 2px; }
 .hm-wrap { padding: 0 16px; display: grid; gap: 16px; }
@@ -98,7 +98,7 @@ html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%
 .hm-q { font-family: var(--font-display, serif); font-style: italic; font-size: 1.4rem; line-height: 1.3; margin-top: 8px; max-width: 78%; }
 .hm-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
 .hm-chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--border2, #2a2836); background: var(--bg, #0b0b12); color: var(--text-mid, #b8af9c); font: inherit; font-size: .92rem; cursor: pointer; }
-.hm-ref { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-mid, #b8af9c); }
+.hm-ref { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-mid, #b8af9c); }
 .hm-cont { background: #2a1f14; border-color: #2a1f14; color: #f6efdf; }
 .hm-cont .bgimg::after { background: linear-gradient(90deg, #2a1f14 0%, rgba(42,31,20,.2) 70%); }
 .hm-cont h3 { margin: 0; font-family: var(--font-display, serif); font-size: 1.65rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
@@ -110,7 +110,7 @@ html:not(.light) .hm-hero.noimg { background: linear-gradient(180deg, #3a2a18 0%
 .hm-go { flex: 1; height: 48px; border: none; border-radius: 12px; background: #c9a24e; color: #241d12; font: inherit; font-size: 1.05rem; cursor: pointer; }
 .hm-play { width: 52px; height: 48px; border: none; border-radius: 12px; background: rgba(255,255,255,.12); color: #e8c27a; font-size: 1.1rem; cursor: pointer; }
 .hm-sh { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-.hm-sh a { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); text-decoration: none; }
+.hm-sh a { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); text-decoration: none; }
 .hm-par .pimg { display: block; height: 170px; background-size: cover; background-position: center; background-color: #cbb48a; }
 .hm-par .pimg.noimg { background: linear-gradient(160deg, #e9dcc0 0%, #cbb48a 60%, #9a8058 100%); }
 html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c28 0%, #2a2014 70%, #12111a 100%); }
@@ -123,7 +123,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
 .hm-reads { display: flex; gap: 8px; }
 .hm-reads a { flex: 1; border-left: 1px solid var(--border2, #2a2836); padding-left: 8px; text-decoration: none; color: inherit; }
 .hm-reads a:first-child { border-left: none; padding-left: 0; }
-.hm-reads b { display: block; font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 1.4px; text-transform: uppercase; color: var(--gold, #c9a84c); font-weight: 600; }
+.hm-reads b { display: block; font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 1.4px; text-transform: uppercase; color: var(--gold, #c9a84c); font-weight: 600; }
 .hm-reads small { font-size: .82rem; color: var(--text-mid, #b8af9c); }
 .hm-ask { display: flex; gap: 12px; align-items: center; padding: 14px 16px; }
 .hm-ask p { margin: 0; flex: 1; font-size: .98rem; color: var(--text-mid, #b8af9c); }
@@ -132,7 +132,7 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
 .hm-tile .bgimg { position: absolute; top: 0; right: 0; bottom: 0; width: 60%; background-size: cover; background-position: center; opacity: .55; }
 .hm-tile .bgimg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg2, #12111a) 0%, transparent 80%); }
 .hm-tile > svg, .hm-tile > span { position: relative; }
-.hm-tile b { display: block; font-family: 'Cinzel', serif; font-size: .66rem; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 600; }
+.hm-tile b { display: block; font-family: 'Cinzel', serif; font-size: 0.762rem; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 600; }
 .hm-tile small { display: block; font-size: .85rem; color: var(--text-mid, #b8af9c); line-height: 1.25; margin-top: 2px; }
 .hm-tile svg { color: var(--gold, #c9a84c); flex-shrink: 0; }
 @media (min-width: 900px) { .hm-grid { grid-template-columns: 1fr 1fr 1fr; } .hm-hero { min-height: 320px; } }`;

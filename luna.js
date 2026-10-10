@@ -251,17 +251,17 @@
 .ln-wrap { max-width: 560px; margin: 0 auto; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 10px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
 .ln-top { display: flex; justify-content: space-between; align-items: center; }
 .ln-top button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(225,190,120,.3); background: rgba(20,18,26,.6); color: #e6c27a; font-size: 17px; cursor: pointer; }
-.ln-top span { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2.6px; text-transform: uppercase; color: #c9a86a; }
+.ln-top span { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2.6px; text-transform: uppercase; color: #c9a86a; }
 .ln-hero { text-align: center; padding: 10px 0 6px; }
 .ln-hero svg { filter: drop-shadow(0 0 28px rgba(240,220,170,.18)); }
-.ln-kick { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2.4px; text-transform: uppercase; color: #c9a86a; }
+.ln-kick { font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2.4px; text-transform: uppercase; color: #c9a86a; }
 .ln-ph { font-family: 'Cormorant Garamond', serif; font-size: 2.1rem; font-weight: 600; line-height: 1.1; margin-top: 6px; }
 .ln-sub { color: #bdb4a2; font-size: 1rem; margin-top: 2px; }
 .ln-day { margin-top: 10px; font-size: 1.12rem; }
 .ln-day b { color: #e6c27a; font-weight: 600; }
 .ln-day small { display: block; color: #9f97a8; font-size: .86rem; font-style: italic; }
 .ln-box { margin-top: 16px; border: 1px solid rgba(225,190,120,.22); border-radius: 16px; padding: 14px 16px; background: rgba(255,255,255,.025); }
-.ln-box h4 { margin: 0; font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2.2px; text-transform: uppercase; color: #c9a86a; font-weight: 500; }
+.ln-box h4 { margin: 0; font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2.2px; text-transform: uppercase; color: #c9a86a; font-weight: 500; }
 .ln-nm { display: flex; gap: 14px; align-items: center; margin-top: 8px; }
 .ln-nm b { display: block; font-family: 'Cormorant Garamond', serif; font-size: 1.35rem; font-weight: 600; }
 .ln-nm small { color: #bdb4a2; font-size: .92rem; }
@@ -280,13 +280,13 @@
 .ln-mh b { display: block; font-family: 'Cormorant Garamond', serif; font-size: 1.45rem; font-weight: 600; }
 .ln-mh small { color: #9f97a8; font-size: .85rem; }
 .ln-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
-.ln-wd { text-align: center; font-family: 'Cinzel', serif; font-size: .52rem; letter-spacing: 1.2px; color: #8f879a; padding-bottom: 4px; }
+.ln-wd { text-align: center; font-family: 'Cinzel', serif; font-size: 0.734rem; letter-spacing: 1.2px; color: #8f879a; padding-bottom: 4px; }
 .ln-wd.sh { color: #e6c27a; }
 .ln-c { position: relative; min-height: 58px; border-radius: 10px; border: 1px solid rgba(255,255,255,.05); background: rgba(255,255,255,.025); padding: 4px 5px; text-align: left; color: inherit; font: inherit; display: flex; flex-direction: column; overflow: hidden; }
 .ln-c.sh { background: rgba(201,168,76,.08); border-color: rgba(201,168,76,.2); }
 .ln-c b { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; font-weight: 600; line-height: 1; }
-.ln-c small { color: #8f879a; font-size: .66rem; }
-.ln-c .ln-f { margin-top: auto; font-size: .6rem; line-height: 1.1; color: #f0b46a; }
+.ln-c small { color: #8f879a; font-size: 0.762rem; }
+.ln-c .ln-f { margin-top: auto; font-size: 0.75rem; line-height: 1.1; color: #f0b46a; }
 .ln-c.fe { background: rgba(224,123,57,.12); border-color: rgba(224,123,57,.35); cursor: pointer; }
 .ln-c.today { box-shadow: 0 0 0 2px #e6c27a inset; }
 .ln-c .ln-mo { position: absolute; top: 4px; right: 4px; }

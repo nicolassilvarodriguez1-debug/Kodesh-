@@ -37,14 +37,14 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
 .xl-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.35em; height: 1.35em; margin-left: 2px; border-radius: 50%; border: none; background: var(--gold-glow, rgba(201,168,76,.14)); color: var(--gold); font-size: .78em; line-height: 1; vertical-align: .15em; cursor: pointer; padding: 0; }
 .xl-tip { border: 1px solid var(--gold-dim, #3a3220); border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; background: var(--gold-soft, rgba(201,168,76,.06)); font-size: .92rem; line-height: 1.5; }
 .xl-tip button { margin-top: 8px; border: none; background: var(--gold); color: #15120a; border-radius: 14px; padding: 6px 14px; font: inherit; font-size: .85rem; cursor: pointer; }
-.xl-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; font-size: .74rem; color: var(--text-dim); margin: -2px 0 8px; }
+.xl-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; font-size: 0.778rem; color: var(--text-dim); margin: -2px 0 8px; }
 .xl-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 5px; vertical-align: -1px; }
 .xl-sum { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
 .xl-sum span { border: 1px solid var(--border2, #2A2836); border-radius: 12px; padding: 4px 10px; font-size: .8rem; color: var(--text-mid); }
 .xl-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--border, #2A2836); border-radius: 12px; padding: 10px 12px; margin: 6px 0; background: transparent; color: var(--text); font: inherit; cursor: pointer; }
 .xl-item .v { font-family: var(--font-display); color: var(--gold); min-width: 48px; }
 .xl-item .r { flex: 1; font-size: .95rem; }
-.xl-item .t { font-size: .62rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.xl-item .t { font-size: 0.754rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
 .xl-item.soft { opacity: .75; }
 .xl-net-btn { gap: 6px; }
 @keyframes xlGlow { 0%, 100% { box-shadow: 0 0 0 4px rgba(201,168,76,.28), 0 0 18px rgba(201,168,76,.25); } 50% { box-shadow: 0 0 0 7px rgba(201,168,76,.42), 0 0 30px rgba(201,168,76,.4); } }
@@ -57,7 +57,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
   transition: transform .28s cubic-bezier(.2,.8,.2,1); color: var(--text); box-shadow: 0 -12px 40px rgba(0,0,0,.4); overscroll-behavior: contain; }
 .xl-sheet.open { transform: translate(-50%, 0); }
 .xl-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--border2, #2A2836); margin: 2px auto 10px; }
-.xl-kicker { font-family: var(--font-display); font-size: .72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+.xl-kicker { font-family: var(--font-display); font-size: 0.774rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
 .xl-title { font-family: var(--font-display); font-size: 1.35rem; margin: 2px 0 10px; }
 .xl-graph { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto 6px; }
 .xl-graph text { font-family: var(--font-display); font-size: 12px; fill: var(--text-mid, #B8AF9C); }
@@ -69,7 +69,7 @@ html.xl-no-alusion .word.xl-soft, html.xl-no-alusion .verse.xlv-soft .word { tex
 .xl-card { border: 1px solid var(--border, #2A2836); border-radius: 14px; padding: 12px 14px; margin: 10px 0; background: var(--bg, transparent); }
 .xl-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .xl-ref { font-family: var(--font-display); font-size: 1.05rem; color: var(--gold); }
-.xl-kind { font-size: .66rem; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--gold-dim, #3a3220); color: var(--text-mid); }
+.xl-kind { font-size: 0.762rem; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--gold-dim, #3a3220); color: var(--text-mid); }
 .xl-text { font-size: 1rem; line-height: 1.6; margin: 6px 0; }
 .xl-note { font-size: .86rem; color: var(--text-mid, #B8AF9C); font-style: italic; }
 .xl-also { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .78rem; color: var(--text-dim); }

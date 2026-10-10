@@ -20,12 +20,12 @@
   --gold: #c9a84c; --gold-bright: #e8c46a;
   --gold-dim: rgba(201,168,76,0.2); --gold-glow: rgba(201,168,76,0.08);
   --bg: #06060e; --bg2: #0b0b16; --bg3: #10101e;
-  --text: #ede5d0; --text-mid: #a89878; --text-dim: #4a4030;
+  --text: #ede5d0; --text-mid: #a89878; --text-dim: #9a8e74;
   --border: rgba(255,255,255,0.05); --border2: rgba(201,168,76,0.15);
 }
 html[data-theme="light"] {
   --bg: #faf8f3; --bg2: #f3efe4; --bg3: #ede8d8;
-  --text: #1a1408; --text-mid: #6b5a38; --text-dim: #b0a080;
+  --text: #1a1408; --text-mid: #6b5a38; --text-dim: #7a6c4c;
   --border: rgba(0,0,0,0.06); --border2: rgba(201,168,76,0.3);
 }
 html, body {
@@ -45,7 +45,7 @@ html, body {
 }
 .topbar-left { display: flex; align-items: center; gap: 16px; }
 .back-btn {
-  font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 2px;
+  font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2px;
   color: var(--text-dim); text-decoration: none; text-transform: uppercase;
   transition: color 0.2s;
 }
@@ -57,12 +57,12 @@ html, body {
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .theme-toggle {
   background: none; border: 1px solid var(--border2); border-radius: 20px;
-  padding: 4px 12px; font-size: 0.7rem; cursor: pointer;
+  padding: 4px 12px; font-size: 0.77rem; cursor: pointer;
   color: var(--text-mid); transition: all 0.2s;
 }
 .theme-toggle:hover { border-color: var(--gold); color: var(--gold); }
 .count-badge {
-  font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 2px;
+  font-family: 'Cinzel', serif; font-size: 0.74rem; letter-spacing: 2px;
   color: var(--text-dim); text-transform: uppercase;
 }
 
@@ -90,7 +90,7 @@ html, body {
   display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
 }
 .filter-btn {
-  font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 1.5px;
+  font-family: 'Cinzel', serif; font-size: 0.74rem; letter-spacing: 1.5px;
   text-transform: uppercase; padding: 5px 14px; border-radius: 20px;
   border: 1px solid var(--border2); background: none;
   color: var(--text-dim); cursor: pointer; transition: all 0.2s;
@@ -107,7 +107,7 @@ html, body {
   display: flex; flex-wrap: wrap; gap: 4px;
 }
 .alpha-btn {
-  font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 1px;
   padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
   background: none; color: var(--text-dim); cursor: pointer; transition: all 0.15s;
   text-transform: uppercase;
@@ -157,7 +157,7 @@ html, body {
 .word-original.greek { color: #a84cc9; }
 .word-badges { display: flex; gap: 4px; flex-shrink: 0; }
 .lang-badge {
-  font-family: 'Cinzel', serif; font-size: 0.48rem; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 0.726rem; letter-spacing: 1px;
   padding: 2px 7px; border-radius: 3px; text-transform: uppercase;
 }
 .lang-badge.heb {
@@ -169,7 +169,7 @@ html, body {
   border: 1px solid rgba(168,76,201,0.2);
 }
 .word-testament {
-  font-family: 'Cinzel', serif; font-size: 0.45rem; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 1px;
   padding: 2px 7px; border-radius: 3px; text-transform: uppercase;
   background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border);
 }
@@ -178,11 +178,11 @@ html, body {
   color: var(--text-mid); margin-bottom: 2px; font-style: italic;
 }
 .word-strongs {
-  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.754rem;
   color: var(--text-dim); margin-bottom: 6px;
 }
 .word-spanish {
-  font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 0.76rem; letter-spacing: 1px;
   color: var(--text); text-transform: capitalize; margin-bottom: 6px;
   font-weight: 600;
 }
@@ -197,7 +197,7 @@ html, body {
 }
 .empty-icon { font-size: 2.5rem; margin-bottom: 16px; }
 .empty-title {
-  font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 3px;
+  font-family: 'Cinzel', serif; font-size: 0.77rem; letter-spacing: 3px;
   color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;
 }
 .empty-sub { font-size: 0.9rem; font-style: italic; }
@@ -206,14 +206,14 @@ html, body {
 .mode-tabs { display: flex; gap: 6px; padding: 0 20px 12px; max-width: 900px; margin: 0 auto; }
 .mode-tab {
   flex: 1; background: none; border: 1px solid var(--border, rgba(201,168,76,0.2)); color: var(--text-dim);
-  font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase;
   padding: 10px 8px; border-radius: 10px; cursor: pointer;
 }
 .mode-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
 .mode-tab .n { display: block; font-family: 'Crimson Pro', serif; font-size: 0.75rem; letter-spacing: 0; text-transform: none; margin-top: 2px; opacity: 0.8; }
 .load-more {
   display: block; margin: 8px auto 40px; background: none; border: 1px solid var(--gold-dim, #8a6d2b);
-  color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 1.5px;
+  color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 1.5px;
   text-transform: uppercase; padding: 12px 22px; border-radius: 10px; cursor: pointer;
 }
 .load-more:disabled { opacity: 0.5; }
@@ -260,7 +260,7 @@ html, body {
 
 <!-- FILTERS -->
 <div class="filters">
-  <span style="font-family:'Cinzel',serif;font-size:0.52rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase">Filtrar:</span>
+  <span style="font-family:'Cinzel',serif;font-size:0.734rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase">Filtrar:</span>
   <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">Todos</button>
   <button class="filter-btn heb" data-filter="heb" onclick="setFilter('heb',this)">Hebreo AT</button>
   <button class="filter-btn grk" data-filter="grk" onclick="setFilter('grk',this)">Griego NT</button>

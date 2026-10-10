@@ -19,7 +19,7 @@
 .ag-ov.open { opacity: 1; }
 .ag-sh { width: min(520px, 100%); background: var(--bg2, #12111a); color: var(--text, #e9e3d3); border: 1px solid var(--border2, #2a2836); border-bottom: none; border-radius: 22px 22px 0 0; padding: 22px 20px calc(env(safe-area-inset-bottom, 0px) + 18px); font-family: var(--font-body, 'EB Garamond', serif); transform: translateY(24px); transition: transform .25s; }
 .ag-ov.open .ag-sh { transform: none; }
-.ag-k { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
+.ag-k { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold, #c9a84c); }
 .ag-h { font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 1.7rem; font-weight: 600; margin-top: 4px; }
 .ag-p { color: var(--text-mid, #b8af9c); font-size: 1.05rem; line-height: 1.45; margin: 6px 0 16px; }
 .ag-b { display: block; width: 100%; height: 50px; border-radius: 14px; border: none; font: inherit; font-size: 1.08rem; cursor: pointer; margin-top: 8px; }

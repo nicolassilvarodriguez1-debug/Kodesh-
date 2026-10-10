@@ -117,7 +117,7 @@
 .md-card .md-img { position: absolute; inset: 0; background-size: cover; background-position: center 40%; }
 .md-card .md-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,0) 20%, rgba(10,8,5,.55) 55%, rgba(14,10,6,.96) 100%); }
 .md-card .md-in { position: relative; padding: 170px 20px 18px; }
-.md-kick { font-family: 'Cinzel', 'Cormorant Garamond', serif; font-size: .62rem; letter-spacing: 2.5px; text-transform: uppercase; color: #e1a35a; }
+.md-kick { font-family: 'Cinzel', 'Cormorant Garamond', serif; font-size: 0.754rem; letter-spacing: 2.5px; text-transform: uppercase; color: #e1a35a; }
 .md-name { font-family: 'Cormorant Garamond', 'EB Garamond', serif; font-size: 2.3rem; font-weight: 600; line-height: 1.05; margin-top: 4px; }
 .md-name .he { font-family: 'Frank Ruhl Libre', serif; font-size: 1.35rem; color: #e1a35a; margin-left: 8px; }
 .md-lema { font-family: 'EB Garamond', serif; font-style: italic; color: #e9dfca; margin-top: 4px; font-size: 1.02rem; }
@@ -125,7 +125,7 @@
 .md-line:before { content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 1px; background: rgba(225,163,90,.35); }
 .md-line i { position: relative; width: 9px; height: 9px; border-radius: 5px; background: #8c6a3c; }
 .md-line i.on { width: 16px; height: 16px; border-radius: 8px; background: #e07b39; box-shadow: 0 0 0 4px rgba(224,123,57,.25); }
-.md-seasons { display: flex; justify-content: space-between; font-family: 'Cinzel', serif; font-size: .55rem; letter-spacing: 1.8px; color: #d58a47; text-transform: uppercase; }
+.md-seasons { display: flex; justify-content: space-between; font-family: 'Cinzel', serif; font-size: 0.74rem; letter-spacing: 1.8px; color: #d58a47; text-transform: uppercase; }
 .md-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(225,163,90,.18); }
 .md-foot b { font-family: 'Cormorant Garamond', serif; font-size: 1.35rem; font-weight: 600; color: #e1a35a; }
 .md-foot small { display: block; font-style: italic; color: #bfb29a; font-size: .9rem; }
@@ -152,17 +152,17 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
 .md-body .md-he { font-family: 'Frank Ruhl Libre', serif; font-size: 1.7rem; color: #e1a35a; margin-top: 2px; }
 .md-body .md-lema { font-size: 1.15rem; }
 .md-body .md-eco { color: #e0805a; font-style: italic; font-size: .95rem; margin-top: 6px; }
-.md-when { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: #d58a47; margin-top: 10px; }
+.md-when { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: #d58a47; margin-top: 10px; }
 .md-cd { margin: 14px auto 0; max-width: 420px; border: 1px solid rgba(225,163,90,.35); border-radius: 6px; padding: 10px 8px 12px; background: rgba(13,10,7,.6); position: relative; }
 .md-cd .md-kick { text-align: center; margin-bottom: 4px; }
 .md-cd .md-n { display: flex; justify-content: center; align-items: baseline; gap: 6px; font-family: 'Cormorant Garamond', serif; color: #e8b36c; }
 .md-cd .md-n div { min-width: 58px; }
 .md-cd .md-n b { display: block; font-size: 2.3rem; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
-.md-cd .md-n small { font-family: 'Cinzel', serif; font-size: .5rem; letter-spacing: 1.8px; color: #b98a52; }
+.md-cd .md-n small { font-family: 'Cinzel', serif; font-size: 0.73rem; letter-spacing: 1.8px; color: #b98a52; }
 .md-cd .md-n i { font-style: normal; font-size: 1.6rem; color: #8c6a3c; }
 .md-be { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 420px; margin: 8px auto 0; }
 .md-be div { border: 1px solid rgba(225,163,90,.25); border-radius: 6px; padding: 8px 10px; text-align: left; background: rgba(13,10,7,.5); }
-.md-be small { display: block; font-family: 'Cinzel', serif; font-size: .5rem; letter-spacing: 1.8px; color: #b98a52; }
+.md-be small { display: block; font-family: 'Cinzel', serif; font-size: 0.73rem; letter-spacing: 1.8px; color: #b98a52; }
 .md-be b { font-weight: 500; font-size: .98rem; }
 .md-place { display: inline-flex; gap: 6px; margin-top: 10px; border: none; background: none; color: #bfb29a; font: inherit; font-size: .88rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .md-go { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 11px 26px; border-radius: 10px; border: 1px solid rgba(224,123,57,.6); background: rgba(90,40,18,.55); color: #f6efdf; font: inherit; font-size: 1.02rem; cursor: pointer; }
@@ -183,7 +183,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
 .md-more .md-name { font-size: 2.4rem; text-align: center; }
 .md-more .md-he { font-family: 'Frank Ruhl Libre', serif; font-size: 1.5rem; color: #e1a35a; text-align: center; }
 .md-more .md-sub { text-align: center; color: #d9cdb4; font-style: italic; margin-top: 2px; }
-.md-more h4 { margin: 22px 0 8px; font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2.4px; text-transform: uppercase; color: #e1a35a; font-weight: 500; }
+.md-more h4 { margin: 22px 0 8px; font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2.4px; text-transform: uppercase; color: #e1a35a; font-weight: 500; }
 .md-more ul { margin: 0; padding-left: 18px; line-height: 1.6; font-size: 1.06rem; }
 .md-more li { margin: 6px 0; }
 .md-more li::marker { color: #e1a35a; }
@@ -195,7 +195,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
 .md-more .hilo:before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: rgba(225,163,90,.45); }
 .md-more .hilo a { position: relative; display: block; padding: 6px 0 10px; color: inherit; text-decoration: none; }
 .md-more .hilo a:before { content: ''; position: absolute; left: -21px; top: 12px; width: 10px; height: 10px; border-radius: 5px; background: #e1a35a; }
-.md-more .hilo b { display: block; font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: #e1a35a; font-weight: 500; }
+.md-more .hilo b { display: block; font-family: 'Cinzel', serif; font-size: 0.746rem; letter-spacing: 2px; text-transform: uppercase; color: #e1a35a; font-weight: 500; }
 .md-more .hilo small { color: #bfb29a; font-size: .82rem; }
 .md-more .when { border: 1px solid rgba(225,163,90,.35); border-radius: 8px; padding: 10px 12px; background: rgba(13,10,7,.45); }
 .md-more .btns { display: grid; gap: 8px; margin-top: 22px; }

@@ -20,7 +20,7 @@
   --gold:#c9a84c; --gold-bright:#e8c96a; --gold-dim:#5a4820; --gold-glow:rgba(201,168,76,0.15);
   --bg:#05050a; --bg2:#0a0a12; --bg3:#0f0f1a;
   --border:#1a1a2a; --border2:#252538;
-  --text:#ede5d5; --text-mid:#a09880; --text-dim:#5a5870;
+  --text:#ede5d5; --text-mid:#a09880; --text-dim:#9a96ad;
   --green:#5ccc68; --red:#e05a5a;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -72,7 +72,7 @@ body::before {
 @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
 .step-eyebrow {
-  font-family:'Cinzel',serif; font-size:0.6rem;
+  font-family:'Cinzel',serif; font-size:0.75rem;
   letter-spacing:3px; text-transform:uppercase;
   color:var(--gold-dim); margin-bottom:8px;
 }
@@ -90,7 +90,7 @@ body::before {
 /* Form elements */
 .form-group { margin-bottom:18px; }
 .form-label {
-  font-family:'Cinzel',serif; font-size:0.6rem;
+  font-family:'Cinzel',serif; font-size:0.75rem;
   letter-spacing:2px; text-transform:uppercase;
   color:var(--text-dim); display:block; margin-bottom:6px;
 }
@@ -126,7 +126,7 @@ body::before {
 .goal-icon { font-size:1.3rem; flex-shrink:0; margin-top:1px; }
 .goal-text-wrap {}
 .goal-title {
-  font-family:'Cinzel',serif; font-size:0.68rem;
+  font-family:'Cinzel',serif; font-size:0.766rem;
   font-weight:600; letter-spacing:0.5px;
   color:var(--text); margin-bottom:2px;
 }
@@ -151,7 +151,7 @@ body::before {
   font-weight:900; color:var(--gold); line-height:1;
 }
 .pace-label {
-  font-family:'Cinzel',serif; font-size:0.55rem;
+  font-family:'Cinzel',serif; font-size:0.74rem;
   letter-spacing:1px; text-transform:uppercase;
   color:var(--text-dim); text-align:center;
 }
@@ -162,7 +162,7 @@ body::before {
   width:100%;
   background:linear-gradient(135deg,var(--gold-dim),#3a2a08);
   border:1px solid var(--gold-dim); color:var(--gold-bright);
-  font-family:'Cinzel',serif; font-size:0.7rem;
+  font-family:'Cinzel',serif; font-size:0.77rem;
   letter-spacing:2px; text-transform:uppercase;
   padding:13px; border-radius:8px; cursor:pointer;
   transition:all 0.2s; margin-top:8px;
@@ -204,7 +204,7 @@ body::before {
   margin-bottom:4px;
 }
 .welcome-stat-label {
-  font-family:'Cinzel',serif; font-size:0.52rem;
+  font-family:'Cinzel',serif; font-size:0.734rem;
   letter-spacing:1.5px; text-transform:uppercase;
   color:var(--text-dim);
 }
@@ -214,7 +214,7 @@ body::before {
   padding:16px; margin-bottom:20px;
 }
 .welcome-plan-title {
-  font-family:'Cinzel',serif; font-size:0.65rem;
+  font-family:'Cinzel',serif; font-size:0.76rem;
   letter-spacing:2px; text-transform:uppercase;
   color:var(--gold); margin-bottom:8px;
 }
@@ -341,27 +341,27 @@ body::before {
         <div class="pace-btn" data-pace="1" onclick="selectPace(this)">
           <div class="pace-num">1</div>
           <div class="pace-label">Cap. / día</div>
-          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Relajado</div>
+          <div style="font-size:0.774rem;color:var(--text-dim);margin-top:4px">Relajado</div>
         </div>
         <div class="pace-btn selected" data-pace="2" onclick="selectPace(this)">
           <div class="pace-num">2</div>
           <div class="pace-label">Cap. / día</div>
-          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Recomendado</div>
+          <div style="font-size:0.774rem;color:var(--text-dim);margin-top:4px">Recomendado</div>
         </div>
         <div class="pace-btn" data-pace="3" onclick="selectPace(this)">
           <div class="pace-num">3</div>
           <div class="pace-label">Cap. / día</div>
-          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Constante</div>
+          <div style="font-size:0.774rem;color:var(--text-dim);margin-top:4px">Constante</div>
         </div>
         <div class="pace-btn" data-pace="5" onclick="selectPace(this)">
           <div class="pace-num">5</div>
           <div class="pace-label">Cap. / día</div>
-          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">Intenso</div>
+          <div style="font-size:0.774rem;color:var(--text-dim);margin-top:4px">Intenso</div>
         </div>
       </div>
 
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin:16px 0;text-align:center;">
-        <div style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Con este ritmo leerás la Biblia completa en</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.754rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Con este ritmo leerás la Biblia completa en</div>
         <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold)" id="completionTime">~1 año y 2 meses</div>
       </div>
 

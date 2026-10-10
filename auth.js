@@ -356,7 +356,7 @@ function updateUserUI(user) {
     `;
     userBtn.onclick = openProfile;
   } else {
-    userBtn.innerHTML = `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:1px">Entrar</span>`;
+    userBtn.innerHTML = `<span style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:1px">Entrar</span>`;
     userBtn.onclick = () => window.location.href = 'login.html';
   }
 }
@@ -389,7 +389,7 @@ function showUserMenu() {
       <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px">${email}</div>
     </div>
     <button onclick="signOut()" style="width:100%;background:none;border:none;color:var(--red);
-      font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:1px;text-transform:uppercase;
+      font-family:'Cinzel',serif;font-size:0.754rem;letter-spacing:1px;text-transform:uppercase;
       padding:8px 10px;text-align:left;cursor:pointer;border-radius:6px;transition:background 0.15s;"
       onmouseover="this.style.background='rgba(224,90,90,0.1)'"
       onmouseout="this.style.background='none'">

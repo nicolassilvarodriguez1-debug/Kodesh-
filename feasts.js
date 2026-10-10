@@ -76,7 +76,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-sheet { width: min(720px, 100%); height: 92vh; display: flex; flex-direction: column; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); border-radius: 20px 20px 0 0; border: 1px solid var(--border2, #2a2836); border-bottom: none; transform: translateY(30px); transition: transform .3s cubic-bezier(.2,.8,.2,1); font-family: var(--font-body, serif); overflow: hidden; }
 .fr-ov.open .fr-sheet { transform: none; }
 .fr-head { padding: 16px 18px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-shrink: 0; }
-.fr-kick { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: 2.5px; text-transform: uppercase; color: #5a9cf0; }
+.fr-kick { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 2.5px; text-transform: uppercase; color: #5a9cf0; }
 .fr-h { font-family: var(--font-display, serif); font-size: 1.6rem; font-weight: 600; line-height: 1.15; margin-top: 2px; }
 .fr-heb { font-family: 'Frank Ruhl Libre', serif; font-size: 1.4rem; color: #5a9cf0; }
 .fr-sub { color: var(--text-mid, #b8af9c); font-size: .95rem; margin-top: 2px; }
@@ -85,7 +85,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-tab { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 18px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .fr-tab.on { border-color: #5a9cf0; color: #5a9cf0; }
 .fr-body { flex: 1; overflow: auto; padding: 4px 18px 28px; }
-.fr-sec { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: #5a9cf0; margin: 18px 0 6px; }
+.fr-sec { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2px; text-transform: uppercase; color: #5a9cf0; margin: 18px 0 6px; }
 .fr-p { line-height: 1.6; font-size: 1.02rem; }
 .fr-ul { margin: 0; padding-left: 18px; line-height: 1.55; font-size: 1rem; }
 .fr-ul li { margin: 4px 0; }
@@ -106,7 +106,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-fe i { width: 42px; height: 42px; border-radius: 21px; border: 1.5px solid var(--border2, #2a2836); display: flex; align-items: center; justify-content: center; font-family: 'Frank Ruhl Libre', serif; font-style: normal; font-size: 1.05rem; color: var(--text-mid, #b8af9c); }
 .fr-fe.on i { background: #5a9cf0; border-color: #5a9cf0; color: #0b0b12; }
 .fr-fe span { font-size: .8rem; line-height: 1.15; }
-.fr-fe small { font-size: .72rem; color: var(--text-dim, #6e6656); }
+.fr-fe small { font-size: 0.774rem; color: var(--text-dim, #6e6656); }
 .fr-fe.on small { color: #5a9cf0; }
 .fr-line { height: 2px; background: var(--border2, #2a2836); margin: 14px 20px; }
 .fr-thread { position: relative; padding-left: 40px; }
@@ -114,7 +114,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-step { position: relative; padding: 4px 0 16px; cursor: pointer; }
 .fr-step:before { content: ''; position: absolute; left: -36px; top: 4px; width: 24px; height: 24px; border-radius: 12px; border: 2px solid #5a9cf0; background: var(--bg, #0b0b12); box-sizing: border-box; }
 .fr-step.y:before { background: #5a9cf0; }
-.fr-step b { display: block; font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: #5a9cf0; font-weight: 500; }
+.fr-step b { display: block; font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: #5a9cf0; font-weight: 500; }
 .fr-step span { font-size: 1.02rem; line-height: 1.45; }
 .fr-step small { display: block; color: var(--text-dim, #6e6656); font-size: .82rem; }
 .fr-tpl svg { width: 100%; height: auto; display: block; max-width: 420px; margin: 0 auto; }
