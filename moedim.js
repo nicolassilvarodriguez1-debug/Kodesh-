@@ -137,7 +137,7 @@
 .md-ov.open { opacity: 1; pointer-events: auto; }
 .md-ov { overscroll-behavior: contain; touch-action: none; }
 .md-ov .md-body, .md-ov .md-more { touch-action: pan-y; overscroll-behavior: contain; }
-html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !important; overscroll-behavior: none; }
+html.md-lock #homeView { overflow: hidden !important; }   /* html/body no: en iPhone desplazaba los toques (ver scroll-lock.js) */
 .md-ov .md-bg { position: absolute; left: 0; right: 0; top: 0; height: 100%; background-size: cover; background-position: center; transition: background-image .3s; }
 @media (orientation: portrait) { .md-ov .md-bg:not(.none) { height: min(56vh, 92vw); } .md-ov .md-bg:not(.none)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 45%; background: linear-gradient(180deg, rgba(13,10,7,0), #0d0a07); } }
 .md-ov .md-bg.none { background: radial-gradient(ellipse at 50% 25%, #5a3a1a 0%, #24170c 45%, #0d0a07 80%); }

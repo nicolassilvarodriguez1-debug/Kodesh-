@@ -73,7 +73,7 @@
 /* Ojo: NO poner overflow:hidden en <html> (ni overscroll-behavior en html/body). En el iPhone (contentInset
    «always» de Capacitor) eso desplazaba los toques: se iluminaba el botón de abajo del que se tocaba.
    El deslizamiento que se «escapaba» al lector se evita con overscroll-behavior en #homeView y el respaldo de 1 px. */
-body.home-on { overflow: hidden; }
+/* body.home-on ya no usa overflow:hidden: el bloqueo del fondo lo hace scroll-lock.js */
 .hm-in { max-width: 720px; margin: 0 auto; padding-bottom: calc(110px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 .hm-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 10px) 18px 6px; }
 .hm-logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 1.1rem; letter-spacing: 4px; color: var(--text); text-decoration: none; }
