@@ -70,9 +70,10 @@
   css.textContent = `
 #homeView { position: fixed; inset: 0; z-index: 260; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; opacity: 0; pointer-events: none; transition: opacity .25s; font-family: var(--font-body, 'EB Garamond', serif); }
 #homeView.on { opacity: 1; pointer-events: auto; }
-/* Con el inicio abierto, la página de atrás (el lector) no debe moverse: en iPhone el deslizamiento se
-   «escapaba» a ella (se movía su barra y no el inicio) hasta soltar el dedo. */
-html:has(body.home-on), body.home-on { overflow: hidden; overscroll-behavior: none; }
+/* Ojo: NO poner overflow:hidden en <html> (ni overscroll-behavior en html/body). En el iPhone (contentInset
+   «always» de Capacitor) eso desplazaba los toques: se iluminaba el botón de abajo del que se tocaba.
+   El deslizamiento que se «escapaba» al lector se evita con overscroll-behavior en #homeView y el respaldo de 1 px. */
+body.home-on { overflow: hidden; }
 .hm-in { max-width: 720px; margin: 0 auto; padding-bottom: calc(110px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 .hm-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 10px) 18px 6px; }
 .hm-logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 1.1rem; letter-spacing: 4px; color: var(--text); text-decoration: none; }
