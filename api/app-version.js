@@ -20,7 +20,7 @@ const MIN_VERSIONS = {
 
 // Última versión disponible (informativa — no bloquea).
 const LATEST_VERSIONS = {
-  ios:     '2.0',
+  ios:     '2.2',   // 2.2 (build 13) aprobada por Apple el 10 oct 2026
   android: '1.0.4',
 };
 
