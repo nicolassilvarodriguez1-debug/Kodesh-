@@ -188,7 +188,7 @@ body {
   transition: background-color var(--dur-slow) ease, color var(--dur-slow) ease;
 }
 
-button, select, input, textarea {
+a, button, select, input, textarea {
   -webkit-tap-highlight-color: transparent;
   font: inherit;
 }
@@ -3693,7 +3693,10 @@ html.light .app-menu { box-shadow: 16px 0 40px rgba(70,52,18,0.18); }
 }
 .app-menu-item svg { color: var(--gold); flex-shrink: 0; }
 .app-menu-item.active { background: var(--gold-glow); color: var(--gold); }
-.app-menu-item:active { background: var(--gold-glow); }
+.app-menu-item { -webkit-tap-highlight-color: transparent; }
+/* El resaltado al tocar lo pone JS (.pressed) sobre el elemento que de verdad recibió el toque: en el iPhone el
+   :active de WebKit a veces caía en la opción de abajo (se abría la correcta pero se iluminaba la siguiente). */
+.app-menu-item.pressed { background: var(--gold-glow); }
 .app-menu-sep { height: 1px; background: var(--border); margin: 8px 22px; }
 
 /* ── Accesos a Inicio y Ciclo de estudio dentro de «Escrituras» ── */
@@ -8867,6 +8870,17 @@ function closeAppMenu() {
   if (!document.querySelector('.verse-sheet-overlay.open, .notes-overlay.open, .assistant-overlay.open')) document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppMenu(); });
+// Resaltar la opción tocada (la misma que recibe el clic)
+(function () {
+  let on = null, t = null;
+  const off = () => { if (on) on.classList.remove('pressed'); on = null; };
+  document.addEventListener('pointerdown', e => {
+    const it = e.target.closest && e.target.closest('#appMenu .app-menu-item');
+    off(); if (!it) return;
+    on = it; it.classList.add('pressed'); clearTimeout(t); t = setTimeout(off, 600);
+  }, true);
+  ['pointercancel', 'scroll'].forEach(ev => document.addEventListener(ev, off, true));
+})();
 // Deslizar hacia la izquierda para cerrar
 (function () {
   const init = () => {
