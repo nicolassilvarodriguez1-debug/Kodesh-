@@ -145,7 +145,7 @@ html.md-lock, html.md-lock body, html.md-lock #homeView { overflow: hidden !impo
 .md-ov .md-fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,5,.35) 0%, rgba(10,8,5,0) 16%, rgba(10,8,5,0) 100%); }
 @media (orientation: landscape) { .md-ov .md-fade { background: linear-gradient(180deg, rgba(10,8,5,.3) 0%, rgba(10,8,5,0) 25%, rgba(12,9,6,.7) 60%, #0d0a07 95%); } }
 .md-top { position: absolute; left: 0; right: 0; top: 0; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 10px) 14px 0; display: flex; justify-content: space-between; z-index: 4; pointer-events: none; }
-.md-top > * { pointer-events: auto; }
+.md-ov.open .md-top > * { pointer-events: auto; }   /* solo con la hoja abierta: cerrada, sus botones invisibles tapaban el perfil */
 .md-top button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(225,163,90,.35); background: rgba(13,10,7,.55); color: #e1a35a; font-size: 17px; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .md-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 18px calc(env(safe-area-inset-bottom, 0px) + 18px); text-align: center; z-index: 2; max-height: 72%; overflow-y: auto; }
 .md-body .md-name { font-size: 2.7rem; }
