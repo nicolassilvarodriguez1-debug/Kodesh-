@@ -1535,5 +1535,8 @@
 "Elige tu idioma · Choose your language": "__skip__",
 "Español": "__skip__",
 "Podrás cambiarlo cuando quieras en Ajustes.": "__skip__",
-"World Messianic Bible": "__skip__"
+"World Messianic Bible": "__skip__",
+"font-family: var(--font-display);font-size:0.74rem;letter-spacing:1px;text-transform:uppercase": "__skip__",
+"font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:1px": "__skip__",
+"font-size:0.77rem": "__skip__"
 }
