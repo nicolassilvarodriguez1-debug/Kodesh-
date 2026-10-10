@@ -28,6 +28,7 @@ def ok(t, data=False):
     if len(t) < 2 or not re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]{2}', t): return False
     if TECH.search(t) or CODEY.search(t): return False
     if re.fullmatch(r'[1-3]?[A-Z]{2,3}[ :]\d+([:.,\-–]\d+)*', t): return False          # GEN 5:3
+    if re.fullmatch(r"(\s*[a-z-]+\s*:\s*[^;]+;?)+\s*", t) and re.search(r'\b(font|color|margin|padding|width|height|letter-spacing|opacity|border|background|text-transform|display|line-height)', t): return False   # estilos CSS
     if data and re.fullmatch(r'[a-z0-9_-]+', t): return False                          # ids en datos
     if re.fullmatch(r'[a-z]+', t) and not ES.search(t) and not re.search(r'[áéíóúñ]', t) and len(t) <= 3: return False
     return True
