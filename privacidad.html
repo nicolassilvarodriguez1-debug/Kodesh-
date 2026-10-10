@@ -5,7 +5,7 @@
 <script src="/bible-ref.js"></script>
 <script src="/i18n.js"></script>
 <script src="/i18n-en.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Política de Privacidad · KODESH</title>
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,6 +50,7 @@ body {
   display: flex; align-items: center; gap: 12px;
   padding: 18px 24px; border-bottom: 1px solid var(--border);
   background: var(--bg2); position: sticky; top: 0; z-index: 10;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);   /* iPhone: debajo de la barra de estado */
 }
 .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
 .logo-hebrew { font-family: serif; font-size: 1.3rem; color: var(--gold); }

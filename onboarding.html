@@ -6,7 +6,7 @@
 <script src="/bible-ref.js"></script>
 <script src="/i18n.js"></script>
 <script src="/i18n-en.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>KODESH · Bienvenido</title>
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
@@ -30,6 +30,7 @@ body {
   min-height:100vh;
   display:flex; align-items:center; justify-content:center;
   padding:20px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 20px); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px);
 }
 body::before {
   content:'';

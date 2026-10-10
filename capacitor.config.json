@@ -4,7 +4,7 @@
   "webDir": "www",
   "ios": {
     "allowsLinkPreview": false,
-    "contentInset": "always"
+    "contentInset": "never"
   },
   "android": {
     "allowMixedContent": true
