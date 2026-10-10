@@ -60,7 +60,7 @@ html.light .pl-mark { color: #2f5d94; }
 .pl-tabs { display: flex; gap: 6px; padding: 4px 18px 10px; overflow-x: auto; flex-shrink: 0; }
 .pl-tab { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 18px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; white-space: nowrap; }
 .pl-tab.on { border-color: var(--gold, #c9a84c); color: var(--gold, #c9a84c); }
-.pl-body { flex: 1; overflow: auto; padding: 4px 18px 20px; }
+.pl-body { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 4px 18px 20px; }
 .pl-pick { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .pl-g { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 14px; padding: 4px 12px; font: inherit; font-size: .85rem; cursor: pointer; }
 .pl-g.on { background: var(--gold, #c9a84c); border-color: var(--gold, #c9a84c); color: #15120a; }

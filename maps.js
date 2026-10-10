@@ -70,7 +70,7 @@ html.mp-off .mp-chips { display: none !important; }
 .mp-h { font-family: var(--font-display, serif); font-size: 1.4rem; font-weight: 600; margin-top: 2px; }
 .mp-sub { color: var(--text-dim, #6e6656); font-size: .88rem; margin-top: 2px; }
 .mp-x { width: 38px; height: 38px; border-radius: 19px; border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); cursor: pointer; flex-shrink: 0; }
-.mp-body { flex: 1; overflow: auto; }
+.mp-body { flex: 1; overflow: auto; overscroll-behavior: contain; }
 .mp-map { position: relative; margin: 0 14px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border2, #2a2836); background: var(--mp-sea); }
 .mp-map svg { display: block; width: 100%; height: auto; touch-action: none; }
 .mp-zoom { position: absolute; right: 8px; top: 8px; display: grid; gap: 6px; }

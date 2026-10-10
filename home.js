@@ -68,9 +68,11 @@
   /* ── Estilos ── */
   const css = document.createElement('style');
   css.textContent = `
-#homeView { position: fixed; inset: 0; z-index: 260; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); overflow-y: auto; -webkit-overflow-scrolling: touch; opacity: 0; pointer-events: none; transition: opacity .25s; font-family: var(--font-body, 'EB Garamond', serif); }
+#homeView { position: fixed; inset: 0; z-index: 260; background: var(--bg, #0b0b12); color: var(--text, #e9e3d3); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; opacity: 0; pointer-events: none; transition: opacity .25s; font-family: var(--font-body, 'EB Garamond', serif); }
 #homeView.on { opacity: 1; pointer-events: auto; }
-body.home-on { overflow: hidden; }
+/* Con el inicio abierto, la página de atrás (el lector) no debe moverse: en iPhone el deslizamiento se
+   «escapaba» a ella (se movía su barra y no el inicio) hasta soltar el dedo. */
+html:has(body.home-on), body.home-on { overflow: hidden; overscroll-behavior: none; }
 .hm-in { max-width: 720px; margin: 0 auto; padding-bottom: calc(110px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 .hm-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--ios-top-min, 0px)) + 10px) 18px 6px; }
 .hm-logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display, 'Cormorant Garamond', serif); font-size: 1.1rem; letter-spacing: 4px; color: var(--text); text-decoration: none; }
@@ -287,6 +289,17 @@ html:not(.light) .hm-par .pimg.noimg { background: linear-gradient(160deg, #4a3c
   async function show() {
     if (!el) el = document.getElementById('homeView');
     if (!el) { el = document.createElement('div'); el.id = 'homeView'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', 'Inicio'); document.body.appendChild(el); }
+    // iPhone: si el inicio está justo arriba o justo abajo al empezar a deslizar, iOS mueve la página de atrás.
+    // Dejarlo siempre a 1 px del borde hace que el gesto se quede en el inicio (respaldo para iOS sin overscroll-behavior).
+    if (!el.dataset.touchFix) {
+      el.dataset.touchFix = '1';
+      el.addEventListener('touchstart', () => {
+        const max = el.scrollHeight - el.clientHeight;
+        if (max <= 0) return;
+        if (el.scrollTop <= 0) el.scrollTop = 1;
+        else if (el.scrollTop >= max) el.scrollTop = max - 1;
+      }, { passive: true });
+    }
     navActive(true);
     // La promesa ya está en el inicio: no se abre la tarjeta flotante hoy
     try { if (typeof getLocalDateStr === 'function') localStorage.setItem('kodesh_promise_' + getLocalDateStr(), '1'); } catch (e) {}

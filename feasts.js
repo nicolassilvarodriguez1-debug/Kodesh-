@@ -84,7 +84,7 @@ html.fr-off .word.fr-u { text-decoration: none; }
 .fr-tabs { display: flex; gap: 6px; padding: 6px 18px 10px; overflow-x: auto; flex-shrink: 0; }
 .fr-tab { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 18px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .fr-tab.on { border-color: #5a9cf0; color: #5a9cf0; }
-.fr-body { flex: 1; overflow: auto; padding: 4px 18px 28px; }
+.fr-body { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 4px 18px 28px; }
 .fr-sec { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2px; text-transform: uppercase; color: #5a9cf0; margin: 18px 0 6px; }
 .fr-p { line-height: 1.6; font-size: 1.02rem; }
 .fr-ul { margin: 0; padding-left: 18px; line-height: 1.55; font-size: 1rem; }

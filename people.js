@@ -120,7 +120,7 @@ html.pp-off .pp-row { display: none !important; }
 .pp-tabs { display: flex; gap: 6px; padding: 6px 18px 10px; overflow-x: auto; flex-shrink: 0; }
 .pp-tab { border: 1px solid var(--border2, #2a2836); background: none; color: var(--text-mid, #b8af9c); border-radius: 18px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; white-space: nowrap; }
 .pp-tab.on { border-color: var(--gold, #c9a84c); color: var(--gold, #c9a84c); }
-.pp-body { flex: 1; overflow: auto; padding: 4px 18px 24px; }
+.pp-body { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 4px 18px 24px; }
 .pp-sec { font-family: 'Cinzel', serif; font-size: 0.754rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold, #c9a84c); margin: 18px 0 6px; }
 .pp-p { line-height: 1.6; color: var(--text, #e9e3d3); font-size: 1.02rem; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
